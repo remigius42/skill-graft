@@ -24,13 +24,19 @@ A **Skill**'s **Deployed name** SHALL be its `[rename]` value when one names its
 ### Requirement: Renamed folder and name
 
 `build` SHALL vendor each **Hull** **Skill** to `.apm/skills/<deployed name>/`. A renamed **Skill**'s `SKILL.md`
-SHALL carry `name: <deployed name>`: an existing `name:` line replaced, else inserted as the front matter's first
+SHALL carry `name: <deployed name>`, quoted when YAML would read the bare name as anything but that string
+(`true`, `null`, `123`): an existing `name:` line replaced, else inserted as the front matter's first
 line, else a front matter of just that line prepended. An unrenamed **Skill**'s `name:` SHALL be unchanged.
 
 #### Scenario: Name line replaced
 
 - **WHEN** `mp/grilling`'s `SKILL.md` has `name: grilling # upstream` and is renamed to `mp-grilling`
 - **THEN** `.apm/skills/mp-grilling/SKILL.md` has `name: mp-grilling` and is otherwise unchanged
+
+#### Scenario: Name YAML would misread
+
+- **WHEN** `mp/tdd` is renamed to `true`
+- **THEN** the vendored `SKILL.md` has `name: "true"`
 
 #### Scenario: Front matter without a name
 
@@ -53,6 +59,11 @@ other bytes, and files that are not UTF-8, SHALL be unchanged.
 
 - **WHEN** `mp/tdd` calls `/grilling`, and `mp/grilling` is renamed to `mp-grilling`
 - **THEN** the vendored `tdd/SKILL.md` holds `/mp-grilling` where it held `/grilling`
+
+#### Scenario: Sentence end kept
+
+- **WHEN** `mp/tdd` holds `Run /grilling.`, and `mp/grilling` is renamed to `mp-grilling`
+- **THEN** the vendored copy holds `Run /mp-grilling.`
 
 #### Scenario: Skill tool and prose forms
 

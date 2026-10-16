@@ -6,9 +6,9 @@
 
 A prose **Reference** SHALL be a code span whose whole content is a name (`` `grilling` ``), or a bare hyphenated
 token `[a-z0-9]+(-[a-z0-9]+)+` standing as its own token: not preceded by a letter, digit, `_`, `/`, `.`, `-`,
-`~`, `:`, `\`, `<`, `@`, `](`, `="` or `='`, and not followed by a letter, digit, `_`, `/`, `-`, or `.` or `:`
-and a letter or digit. It SHALL count anywhere, code blocks included, and never inside a slash or Skill tool
-**Reference**.
+`~`, `:`, `\`, `<`, `@`, `#`, `](`, `="` or `='`, and not followed by a letter, digit, `_`, `/`, `-`, or `.` or `:`
+and a letter or digit. It SHALL count anywhere, code blocks included, except the
+value of `SKILL.md`'s front matter `name:`, and never inside a slash or Skill tool **Reference**.
 
 #### Scenario: Backticked and hyphenated
 
@@ -19,9 +19,15 @@ and a letter or digit. It SHALL count anywhere, code blocks included, and never 
 #### Scenario: Not prose
 
 - **WHEN** it holds `grilling` unquoted, `` `grilling --fast` ``, `` `mp/grilling` ``, `--dry-run`,
-  `refs/red-green.md`, `x-ray.png`, `[see](my-skill)`, `id="my-skill"`, `foo_my-skill` or
+  `refs/red-green.md`, `x-ray.png`, `[see](my-skill)`, `[x](#my-skill)`, `id="my-skill"`, `foo_my-skill` or
   `https://x.org/my-skill`
 - **THEN** none is a prose **Reference**
+
+#### Scenario: Own name line
+
+- **WHEN** `mp/code-review`'s `SKILL.md` front matter has `name: code-review`, and `[bind]` has
+  `"mp/code-review" = "own/review"`
+- **THEN** that line is no **Reference**, and the vendored `name:` stays `code-review`
 
 #### Scenario: Slash form wins
 
@@ -63,6 +69,51 @@ edge of kind `prose`, otherwise a suggestion.
 - **THEN** the command prints nothing about it
 
 ## MODIFIED Requirements
+
+### Requirement: Every Markdown file
+
+**References** SHALL be read from every file ending in `.md` (any case) in the **Skill**'s folder, at any depth,
+`.git` excepted, once the **Skill**'s symlinks are checked and any file that is not a regular file, folder or
+symlink (a FIFO, socket or device) is refused as an error naming it. A Markdown file that is not UTF-8 SHALL be skipped
+with a warning naming it; it is still vendored. One that cannot be read at all, a dangling link included, SHALL be
+an error naming it. A **Reference** that resolves, **Binds** applied, to the referencing **Skill** SHALL give no
+edge, and is still rewritten as the `renames` capability says.
+
+#### Scenario: Reference in a sibling file
+
+- **WHEN** `mp/tdd`'s `refs/loop.md` holds `/grilling`, and its `SKILL.md` does not
+- **THEN** `mp/grilling` is in the **Hull**
+
+#### Scenario: Not UTF-8
+
+- **WHEN** a **Hull** **Skill**'s `notes.md` holds invalid UTF-8
+- **THEN** the command warns naming `notes.md`, finds no **References** in it, and succeeds
+
+#### Scenario: Symlink to a device
+
+- **WHEN** a **Skill** reached from an **Entry** holds `x.md` as a symlink to `/dev/zero`
+- **THEN** the command exits non-zero naming `x.md` as pointing outside the **Skill**, without reading it
+
+#### Scenario: Dangling link
+
+- **WHEN** a **Hull** **Skill** holds `notes.md` as a symlink to a missing `gone.md` inside it
+- **THEN** the command exits non-zero naming `notes.md`, without a traceback, and writes nothing
+
+#### Scenario: Special file
+
+- **WHEN** a **Hull** **Skill** holds a FIFO named `pipe`
+- **THEN** `resolve` and `build` exit non-zero naming `pipe` as not a regular file, without reading it
+
+#### Scenario: Self-reference
+
+- **WHEN** `mp/tdd` holds `/tdd`, and no **Bind** names `mp/tdd`
+- **THEN** the **Hull** gets no edge from `mp/tdd` to itself
+
+#### Scenario: Bound self-reference
+
+- **WHEN** `mp/tdd` holds `/tdd`, and `[bind]` has `"mp/tdd" = "own/tdd"`
+- **THEN** `own/tdd` is pulled in, and the command exits non-zero as `mp/tdd` and `own/tdd` share a **Deployed
+  name**
 
 ### Requirement: Binds override resolution
 

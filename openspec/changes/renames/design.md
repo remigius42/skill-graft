@@ -24,7 +24,9 @@ awareness beyond the regex); YAML beyond the `name:` line.
   `` (?<!`)`(?P<code>NAME)`(?!`) `` and the hyphenated token with the slash lookbehinds (`[\w./:~\\<@-]`, `](`,
   `="`, `='`) and `(?![\w/-]|[.:]\w)`, exactly the boundaries the hull spec lists.
   One leftmost scan means `` `/grilling` `` and `Skill(diagnosing-bugs)` yield one **Reference**, never a prose
-  one inside. `Reference` gains `kind = "prose"` and `span`: the name's offsets in the decoded text, for rewriting.
+  one inside. `Reference` gains `kind = "prose"` and `span`: the offsets in the decoded text of the name alone (a slash
+  name's trailing dots excluded, as `scan` strips them), for rewriting. The front matter `name:` value of
+  `SKILL.md` is skipped, so a **Bind** on a **Skill**'s own name never rewrites its `name:`.
   Alternative, a second pass for prose: overlaps must then be removed by hand.
 
 - **Prose resolves after the walk**: whether a prose target is in the **Hull** is known only when the BFS ends.
@@ -51,24 +53,28 @@ awareness beyond the regex); YAML beyond the `name:` line.
     from the written name, back to front; for a renamed **Skill**, `SKILL.md` gets `set_name`. Files that end up
     unchanged are left out.
   - `set_name(text, name)`: line-based on the front matter `discovery.read_name` reads (BOM and line endings kept):
-    replace the `name:` line, else insert after the opening `---`, else prepend `---\nname: x\n---\n`.
+    replace the `name:` line, else insert after the opening `---`, else prepend `---\nname: x\n---\n`. The value
+    is double-quoted unless it is `[a-z][a-z0-9-]*` and not a YAML 1.1 bool or null word (`y`, `no`, `on`, …).
   - `SHIPPED`: a sorted tuple of names, Claude Code's built-in commands and bundled skills (`agents`, `clear`,
     `code-review`, `compact`, `config`, `context`, `doctor`, `help`, `hooks`, `init`, `loop`, `mcp`, `memory`,
     `model`, `resume`, `review`, `schedule`, `security-review`, `simplify`, …) and Codex's (`diff`, `status`, …).
     Matched by `casefold`.
 
-- **Hull carries names**: `Hull` gains `deployed`, `occurrences`, `suggestions`, and `rewrites`, filled by
-  `resolve.resolve`, so `resolve`, `build` and `update` share them.
+- **Hull carries names**: `Hull` gains `deployed`, `occurrences` and `suggestions`, filled by `resolve.resolve`.
+  `rename.rewrites(hull)` is a function, called where bytes are needed (vendor, lock hash, update diff), not stored:
+  `update` resolves twice, and its previous **Hull** needs only hashes.
 
-- **Vendor**: `vendor.vendor(hull)` copies each folder to `skills.new/<deployed>/`, then writes `rewrites` over the
-  copy, before the swap; a failure still leaves `.apm/skills/` as it was. Writing after `copytree` keeps the copy
-  code unchanged. Each rewrite goes through `files.atomic_write` (temp file, `copymode`, `os.replace`), so a
-  read-only upstream file (`0444`) is replaced, not opened for writing, and keeps its mode.
+- **Vendor**: `vendor.vendor(hull)` copies each folder to `skills.new/<deployed>/` with `copytree` and a
+  `copy_function` that writes the rewritten bytes (then `copymode`) for a rewritten path and `copy2`s any other,
+  before the swap; a failure still leaves `.apm/skills/` as it was. No file is opened twice and `copytree` applies
+  folder modes last, so a read-only upstream file or folder (`0444`, `0555`, a Nix store) never blocks a rewrite.
+  Alternative, writing over the copy afterwards: fails on read-only copies.
 
 - **Hash**: `lock.folder_hash(folder, overrides)` hashes `overrides[path]` instead of the file's bytes where
-  given. `resolve` passes the rewrites; `build` keeps hashing the vendored copies (now under deployed names), which
-  are the same bytes by construction; a test pins `resolve` lock == `build` lock. Alternative, hashing upstream
-  bytes: a changed rename would not show in the lock.
+  given, and `lock.render` passes each **Skill**'s rewrites itself, so `resolve`, `build` and `update` (lock and
+  hull diff) hash alike. `build` stops hashing its vendored copies (`cli.py`'s `copies`, keyed by `skill.name`,
+  would miss a renamed folder): same bytes by construction, and a test pins `resolve` lock == `build` lock.
+  Alternative, hashing upstream bytes: a changed rename would not show in the lock.
 
 - **Lock**: `[[skills]]` gains `deployed` only when renamed; edges gain kind `prose`; new `[[suggestions]]` with
   `id` and sorted `from` list, sorted by `id`. Still `version = 1`: the lock is output only.
@@ -95,6 +101,11 @@ awareness beyond the regex); YAML beyond the `name:` line.
 - \[A relative link into a renamed **Skill**'s folder (`../diagnosing-bugs/SKILL.md`) is not rewritten\] → out of
   scope: a **Skill** is its own folder, and such links already break when the upstream layout differs from the
   flat `.apm/skills/`; a **Patch** (next change) fixes one.
+- \[Prose naming a **Skill** that a slash **Reference** reached in another **Source** stays as written: `/notes`
+  becomes `/own-notes` while `` `notes` `` beside it does not\] → ADR 0002: prose never looks across **Sources**;
+  a **Bind** `"mp/notes" = "own/notes"` makes the prose follow.
+- [Rename values follow the name pattern, not the stricter Agent Skills one (lowercase, hyphens)] → as agreed: a
+  rename is no stricter than names vendored unrenamed; APM reports one it rejects.
 - \[`SHIPPED` goes stale as harnesses add commands\] → a warning only; the user's `reserved` covers the gap.
 - [Rewriting by span on decoded text] → re-encoded as UTF-8; the only bytes that change are the replaced names
   (and a BOM is kept as read).

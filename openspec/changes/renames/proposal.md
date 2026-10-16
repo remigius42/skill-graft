@@ -51,7 +51,8 @@ says to add the **Skill ID** to `entries`), and any finer escape than a `false` 
 - Changed: `config.py` (`[rename]`, `reserved`), `references.py` (prose form, spans), `hull.py` (prose
   resolution, suggestions, every resolved occurrence kept for rewriting), `resolve.py` (name checks move to
   `rename.py`), `vendor.py` (deployed folder, rewritten files), `lock.py` (deployed, prose, suggestions, hash of
-  the rewritten copy, tree), `cli.py` (suggestions printed).
+  the rewritten copy, tree), `cli.py` (suggestions printed; `build` no longer hashes the copies), `update.py`
+  (lock and hull diff hash the rewritten bytes).
 - `docs/design.md`, `README.md`: renames and prose built; the reserved list.
 - Behavior: a bound **Reference** naming a different **Skill** name is now rewritten in the vendored copy, so
   lock hashes of such **Skills** change once. A **Skill** whose name is in the shipped reserved list now warns on
