@@ -42,7 +42,9 @@ beyond what git does itself.
   stripped, characters outside `[A-Za-z0-9._-]` replaced by `_`, and `repo` if that leaves nothing: readable,
   and distinct per URL.
 
-- **`git.py`**, one runner: `subprocess.run(["git", *args], capture_output=True)`, stdin inherited. No prompt
+- **`git.py`**, one runner: `subprocess.run(["git", *args], capture_output=True)`, stdin inherited, with the
+  variables that redirect git to another repository (`GIT_DIR`, `GIT_OBJECT_DIRECTORY`, …, as a git hook sets
+  them) removed, since skill-graft always names its repository with `--git-dir`. No prompt
   overrides: git and ssh ask for credentials, passphrases and host keys on `/dev/tty`, as in the user's shell,
   and the user's git config (`core.sshCommand`, credential helpers, `insteadOf`) applies. Clones and fetches
   pass `-c transfer.fsckObjects=true`, so git rejects malformed trees (paths with `..` or `.git`) before they

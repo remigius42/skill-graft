@@ -24,7 +24,7 @@ Apply with the `tdd` skill: each task red-green-refactor (failing test first, th
 
 - [x] 3.1 `paths.cache()` (`XDG_CACHE_HOME` if absolute, else `~/.cache/skill-graft`) and the URL key
   (trailing `/` and `.git` stripped, `repo` if empty). Verify: default-location, shared-URL and key unit tests.
-- [ ] 3.2 `git.py`: runner (no prompt overrides, stdin inherited, `transfer.fsckObjects`, error wrapping, `--`
+- [x] 3.2 `git.py`: runner (no prompt overrides, stdin inherited, `transfer.fsckObjects`, error wrapping, `--`
   before URLs), repository by `clone --bare` into a temporary name (leftover deleted first) then renamed, fetch
   all branches with `--prune`, once per URL per command, has-commit. Verify: git-missing, unreachable-remote,
   shared-URL-fetched-once, interrupted-clone and SHA-256-remote scenarios.
