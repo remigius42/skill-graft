@@ -6,9 +6,9 @@
 
 A prose **Reference** SHALL be a code span whose whole content is a name (`` `grilling` ``), or a bare hyphenated
 token `[a-z0-9]+(-[a-z0-9]+)+` standing as its own token: not preceded by a letter, digit, `_`, `/`, `.`, `-`,
-`~`, `:`, `\`, `<`, `@`, `#`, `](`, `="` or `='`, and not followed by a letter, digit, `_`, `/`, `-`, or `.` or `:`
-and a letter or digit. It SHALL count anywhere, code blocks included, except the
-value of `SKILL.md`'s front matter `name:`, and never inside a slash or Skill tool **Reference**.
+`~`, `:`, `\`, `<`, `@`, `#`, `=`, `?`, `&`, `$` or `](`, and not followed by a letter, digit, `_`, `/`, `-`, or
+`.` or `:` and a letter or digit. It SHALL count anywhere, code blocks included, except the value of `SKILL.md`'s
+front matter `name:`, and never inside a slash or Skill tool **Reference**.
 
 #### Scenario: Backticked and hyphenated
 
@@ -19,8 +19,8 @@ value of `SKILL.md`'s front matter `name:`, and never inside a slash or Skill to
 #### Scenario: Not prose
 
 - **WHEN** it holds `grilling` unquoted, `` `grilling --fast` ``, `` `mp/grilling` ``, `--dry-run`,
-  `refs/red-green.md`, `x-ray.png`, `[see](my-skill)`, `[x](#my-skill)`, `id="my-skill"`, `foo_my-skill` or
-  `https://x.org/my-skill`
+  `refs/red-green.md`, `x-ray.png`, `[see](my-skill)`, `[x](#my-skill)`, `id="my-skill"`, `foo_my-skill`,
+  `?q=my-skill` or `https://x.org/my-skill`
 - **THEN** none is a prose **Reference**
 
 #### Scenario: Own name line
