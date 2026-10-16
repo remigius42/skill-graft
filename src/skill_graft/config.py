@@ -1,12 +1,16 @@
 """Reads `skill-graft.toml`: path sources and entries."""
 
+import re
 import tomllib
 from dataclasses import dataclass
 from pathlib import Path
-from typing import Any, NamedTuple
+from typing import NamedTuple
 
 from skill_graft import paths
 from skill_graft.errors import SkillGraftError
+
+# A source alias or skill name: one path segment, so `<alias>/<name>` splits cleanly.
+NAME = re.compile(r"[A-Za-z0-9][A-Za-z0-9._-]*")
 
 
 class SkillId(NamedTuple):
@@ -31,21 +35,31 @@ def load() -> Config:
         raise SkillGraftError(f"{file} not found: run `skill-graft init`") from None
     except tomllib.TOMLDecodeError as error:
         raise SkillGraftError(f"{file}: {error}") from None
-    _reject_unsupported(data)
-    sources = {
-        alias: _source_folder(alias, table["path"], file.parent)
-        for alias, table in data.get("sources", {}).items()
-    }
-    entries = [_entry(entry, sources) for entry in data.get("entries", [])]
-    return Config(sources, entries)
-
-
-def _reject_unsupported(data: dict[str, Any]) -> None:
     if unknown := sorted(data.keys() - {"sources", "entries"}):
         raise SkillGraftError(f"{unknown[0]!r} is unsupported in skill-graft.toml")
-    for alias, table in data.get("sources", {}).items():
+    sources = _sources(data.get("sources", {}), file.parent)
+    return Config(sources, _entries(data.get("entries", []), sources))
+
+
+def _sources(raw: object, base: Path) -> dict[str, Path]:
+    if not isinstance(raw, dict):
+        raise SkillGraftError("'sources' must hold [sources.<alias>] tables")
+    sources = {}
+    for alias, table in raw.items():
+        if not NAME.fullmatch(alias):
+            raise SkillGraftError(
+                f"source alias {alias!r}: expected one path segment, {NAME.pattern}"
+            )
+        if not isinstance(table, dict):
+            raise SkillGraftError(f"'sources.{alias}' must be a table")
         if unknown := sorted(table.keys() - {"path"}):
             raise SkillGraftError(f"'sources.{alias}.{unknown[0]}' is unsupported")
+        if "path" not in table:
+            raise SkillGraftError(f"'sources.{alias}.path' is missing")
+        if not isinstance(table["path"], str):
+            raise SkillGraftError(f"'sources.{alias}.path' must be a string")
+        sources[alias] = _source_folder(alias, table["path"], base)
+    return sources
 
 
 def _source_folder(alias: str, raw: str, base: Path) -> Path:
@@ -53,6 +67,18 @@ def _source_folder(alias: str, raw: str, base: Path) -> Path:
     if not folder.is_dir():
         raise SkillGraftError(f"source {alias!r}: {raw} is not a folder")
     return folder
+
+
+def _entries(raw: object, sources: dict[str, Path]) -> list[SkillId]:
+    if not isinstance(raw, list) or not all(isinstance(e, str) for e in raw):
+        raise SkillGraftError("'entries' must be a list of strings")
+    entries: list[SkillId] = []
+    for entry in raw:
+        skill_id = _entry(entry, sources)
+        if skill_id in entries:
+            raise SkillGraftError(f"entry {entry!r} is repeated")
+        entries.append(skill_id)
+    return entries
 
 
 def _entry(entry: str, sources: dict[str, Path]) -> SkillId:

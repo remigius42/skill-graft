@@ -73,3 +73,47 @@ def test_invalid_toml() -> None:
     write_config("entries = [\n")
     with pytest.raises(SkillGraftError, match=r"skill-graft\.toml"):
         load()
+
+
+def test_entries_as_a_string() -> None:
+    write_config('entries = "own/chisel"\n')
+    with pytest.raises(SkillGraftError, match=r"'entries'.*list"):
+        load()
+
+
+def test_entry_not_a_string() -> None:
+    write_config("entries = [1]\n")
+    with pytest.raises(SkillGraftError, match=r"'entries'.*list of strings"):
+        load()
+
+
+@pytest.mark.parametrize("sources", ['sources = "x"', "sources = {own = 1}"])
+def test_sources_not_tables(sources: str) -> None:
+    write_config(sources + "\n")
+    with pytest.raises(SkillGraftError, match=r"'sources"):
+        load()
+
+
+def test_empty_source() -> None:
+    write_config("[sources.own]\n")
+    with pytest.raises(SkillGraftError, match=r"'sources\.own\.path'.*missing"):
+        load()
+
+
+def test_path_not_a_string() -> None:
+    write_config("[sources.own]\npath = 1\n")
+    with pytest.raises(SkillGraftError, match=r"'sources\.own\.path'"):
+        load()
+
+
+@pytest.mark.parametrize("alias", ["a/b", "..", "-x", ""])
+def test_bad_alias(home: Path, alias: str) -> None:
+    write_config(f'[sources."{alias}"]\npath = "~"\n')
+    with pytest.raises(SkillGraftError, match=f"alias '{alias}'"):
+        load()
+
+
+def test_repeated_entry(home: Path) -> None:
+    write_config('entries = ["own/a", "own/a"]\n[sources.own]\npath = "~"\n')
+    with pytest.raises(SkillGraftError, match=r"'own/a'.*repeated"):
+        load()
