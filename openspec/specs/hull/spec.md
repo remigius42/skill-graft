@@ -2,8 +2,8 @@
 
 ## Purpose
 
-Finds the slash and Skill tool **References** in each **Skill**, resolves them to **Skills**, and spans the
-**Hull**: the **Entries** plus every **Skill** they reach.
+Finds the slash, Skill tool and prose **References** in each **Skill**, resolves them to **Skills**, and spans
+the **Hull**: the **Entries** plus every **Skill** the slash and Skill tool ones reach.
 
 ## Requirements
 

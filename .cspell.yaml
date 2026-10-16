@@ -6,6 +6,7 @@ words:
   - blocklist
   - cacheinfo
   - cacheprovider
+  - casefold
   - capfd
   - capsys
   - commitlint
@@ -43,6 +44,7 @@ words:
   - testpaths
   - tomlkit
   - tomllib
+  - unrenamed
   - unsets
   - venv
   - worktree
