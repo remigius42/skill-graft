@@ -11,7 +11,8 @@ would fail quietly.
 
 `skill-graft build` SHALL make `~/.apm/skill-graft/.apm/skills/` hold exactly one folder per **Entry**, named
 after the **Entry**'s name and holding a copy of the **Skill**'s whole folder. Nothing outside that folder is
-vendored. Folders from earlier builds that are no longer **Entries** SHALL be removed.
+vendored. Folders from earlier builds that are no longer **Entries** SHALL be removed. The folder SHALL be
+replaced only once every copy succeeded; a failed copy SHALL leave it as it was.
 
 #### Scenario: Whole folder copied
 
@@ -22,6 +23,11 @@ vendored. Folders from earlier builds that are no longer **Entries** SHALL be re
 
 - **WHEN** a previous build vendored `chisel` and `chisel` is no longer an **Entry**
 - **THEN** `.apm/skills/chisel/` no longer exists after `build`
+
+#### Scenario: Copy fails
+
+- **WHEN** a previous build vendored `chisel`, and an **Entry**'s folder holds a dangling symlink
+- **THEN** `build` exits non-zero naming the file, and `.apm/skills/` still holds the previous `chisel`
 
 ### Requirement: Deployed names are unique
 
@@ -35,13 +41,24 @@ same **Deployed name** SHALL be an error, and `build` SHALL then write nothing.
 
 ### Requirement: Deploy through APM
 
-After vendoring, `build` SHALL run `apm install -g` and succeed only if APM exits 0 and `~/.apm/apm.yml` lists
-`~/.apm/skill-graft`, written either with `~` or as an absolute path. APM's output SHALL reach the user.
+After vendoring, `build` SHALL run `apm install -g <absolute path of ~/.apm/skill-graft>`, which also
+registers the package, and succeed only if APM exits 0 and `~/.apm/apm.yml` lists the package: as `- x` or
+`- path: x`, with `~` or an absolute path, compared resolved. APM's output SHALL reach the user.
 
 #### Scenario: APM succeeds
 
 - **WHEN** APM exits 0 and `~/.apm/apm.yml` lists the package
 - **THEN** `build` exits 0
+
+#### Scenario: Registration removed by hand
+
+- **WHEN** the user deleted the package's line from `~/.apm/apm.yml` and runs `build`
+- **THEN** APM re-adds it and `build` exits 0
+
+#### Scenario: Symlinked home
+
+- **WHEN** `HOME` is a symlink and `~/.apm/apm.yml` lists the package by its resolved path
+- **THEN** `build` treats the package as registered
 
 #### Scenario: APM exits non-zero
 
@@ -51,7 +68,7 @@ After vendoring, `build` SHALL run `apm install -g` and succeed only if APM exit
 #### Scenario: Package not registered
 
 - **WHEN** APM exits 0 but `~/.apm/apm.yml` is missing or does not list the package
-- **THEN** `build` exits non-zero and prints `apm install -g ~/.apm/skill-graft` as the fix
+- **THEN** `build` exits non-zero naming `~/.apm/apm.yml` and the expected path
 
 #### Scenario: APM missing
 

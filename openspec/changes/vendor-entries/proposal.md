@@ -11,15 +11,19 @@ explain-and-edit) add resolution on top.
 - Packaging: `[project]` table in `pyproject.toml`, built with `uv`, console script `skill-graft`. Runtime
   dependencies: none yet (`tomlkit` arrives with the first command that edits the TOML).
 - `skill-graft init`: creates `~/.apm/skill-graft/` with a commented `skill-graft.toml` and the two-line
-  `apm.yml`, then registers it with `apm install -g ~/.apm/skill-graft`. Refuses if the folder exists.
+  `apm.yml`, then registers it with `apm install -g <absolute path of ~/.apm/skill-graft>`. Refuses if the
+  folder exists.
 - Config: `skill-graft.toml` with `[sources.<alias>]` tables holding `path` only, and `entries`. Any other key
   (including `git`, `rename`, `bind`, `patches`, `reserved`) is an error, so no declared intent is silently
   ignored.
-- Skill discovery: every folder holding a `SKILL.md`, at any depth of a **Source**. **Skill ID** is
-  `<alias>/<name>`, name from front matter `name:`, else the folder name.
-- `skill-graft build`: copies each **Entry**'s whole folder to `~/.apm/skill-graft/.apm/skills/<name>/`
-  (replacing what was there), runs `apm install -g`, and fails unless APM exits 0 and `~/.apm/apm.yml` lists
-  the package. `--no-install` stops before APM.
+  Wrong value types, repeated entries, and sources overlapping the package are errors too.
+- Skill discovery: every folder holding a `SKILL.md`, at any depth of a **Source**, symlinked folders
+  included. **Skill ID** is `<alias>/<name>`, name from front matter `name:`, else the folder name; aliases and
+  names are single path segments.
+- `skill-graft build`: copies each **Entry**'s whole folder to `~/.apm/skill-graft/.apm/skills/<name>/`,
+  swapping the folder in only once every copy succeeded, runs the same `apm install -g <absolute path>` as
+  `init` (re-registering if needed), and fails unless APM exits 0 and `~/.apm/apm.yml` lists the package.
+  `--no-install` stops before APM.
 
 Out of scope: git sources, **References** and the **Hull**, the lock, **Renames**, **Binds**, **Patches**,
 **Reserved names**, `resolve`/`add`/`update`/`why`/`tree`.

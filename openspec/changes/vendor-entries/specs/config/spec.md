@@ -10,7 +10,8 @@ anything this version cannot honor.
 ### Requirement: Path sources
 
 Each `[sources.<alias>]` table SHALL hold exactly one key, `path`: a folder, with `~` expanded and a relative
-path taken relative to the folder holding `skill-graft.toml`. The alias names the **Source**.
+path taken relative to the folder holding `skill-graft.toml`. The alias names the **Source** and SHALL be one
+path segment: `[A-Za-z0-9][A-Za-z0-9._-]*`.
 
 #### Scenario: Home-relative path
 
@@ -21,6 +22,27 @@ path taken relative to the folder holding `skill-graft.toml`. The alias names th
 
 - **WHEN** a source's `path` does not name an existing folder
 - **THEN** the command exits non-zero naming the alias and the path
+
+#### Scenario: Bad alias
+
+- **WHEN** the TOML has `[sources."a/b"]` or `[sources.".."]`
+- **THEN** the command exits non-zero naming the alias
+
+### Requirement: Sources stay clear of the package and deploy folders
+
+A source whose folder is inside `~/.apm/skill-graft/` or contains it SHALL be an error. A source inside or
+containing an APM deploy folder (`~/.agents/skills`, `~/.claude/skills`, and the other harness skill folders)
+SHALL be a warning naming the alias and the folder. Paths are compared resolved.
+
+#### Scenario: Source is the package
+
+- **WHEN** `[sources.own]` has `path = "."` (the folder holding `skill-graft.toml`)
+- **THEN** the command exits non-zero naming `own` and writes nothing
+
+#### Scenario: Source is a deploy folder
+
+- **WHEN** `[sources.own]` has `path = "~/.agents/skills"`
+- **THEN** the command prints a warning naming `own` and `~/.agents/skills`, and continues
 
 ### Requirement: Entries
 
@@ -36,6 +58,31 @@ builds no skills.
 
 - **WHEN** an entry has no `/`, or an empty alias or name
 - **THEN** the command exits non-zero naming the entry
+
+#### Scenario: Repeated entry
+
+- **WHEN** `entries = ["own/a", "own/a"]`
+- **THEN** the command exits non-zero naming `own/a` as repeated
+
+### Requirement: Value types
+
+`sources` SHALL be a table of tables, each source's `path` a string, and `entries` a list of strings. A wrong
+type or a source table without `path` SHALL be an error naming the key, never a crash.
+
+#### Scenario: Entries as a string
+
+- **WHEN** `entries = "own/chisel"`
+- **THEN** the command exits non-zero naming `entries` and the expected list
+
+#### Scenario: Empty source
+
+- **WHEN** the TOML has `[sources.own]` with no keys
+- **THEN** the command exits non-zero naming `sources.own.path` as missing
+
+#### Scenario: Path not a string
+
+- **WHEN** `[sources.own]` has `path = 1`
+- **THEN** the command exits non-zero naming `sources.own.path`
 
 ### Requirement: Unsupported keys are errors
 

@@ -45,13 +45,13 @@ path = "~/Documents/sync/2_areas/software/chisel_skill"
 ## Commands
 
 - `init`: creates `~/.apm/skill-graft/` with a commented `skill-graft.toml` and the two-line `apm.yml`, then
-  registers it with `apm install -g ~/.apm/skill-graft`. Refuses if the folder exists. (Verify that APM writes
-  the dependency into `~/.apm/apm.yml` before relying on it.)
+  registers it with `apm install -g <absolute path of ~/.apm/skill-graft>`. Refuses if the folder exists.
+  (Verify that APM writes the dependency into `~/.apm/apm.yml` before relying on it.)
 - `add <skill-id>`, `rename <skill-id> <name>`: edit the TOML, then resolve.
 - `resolve`: computes the hull from the TOML, writes the lock, prints the tree, warnings and suggestions.
   Never fetches beyond the pinned `ref`.
-- `build`: resolves, writes `.apm/skills/`, runs `apm install -g`. `--no-install` stops before APM. Fails
-  unless `apm` exits 0 and `~/.apm/apm.yml` lists `~/.apm/skill-graft`.
+- `build`: resolves, writes `.apm/skills/`, runs the same `apm install -g` as `init`. `--no-install` stops
+  before APM. Fails unless `apm` exits 0 and `~/.apm/apm.yml` lists `~/.apm/skill-graft`.
 - `update [source…]`: fetches, writes each branch tip's sha into `ref`, resolves, prints the hull diff and any
   failing patch hunks. `--dry-run` does all of it in memory and writes nothing.
 - `why <skill>`: the reverse paths from the entries.
