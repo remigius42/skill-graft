@@ -48,7 +48,7 @@ Apply with the `tdd` skill: each task red-green-refactor (failing test first, th
   the tip is not cached; print lines. No TOML write yet. Verify: path-source-named, unknown-alias,
   other-source-without-a-ref, revision-syntax-as-branch, missing-branch, branch-deleted-upstream,
   no-default-branch, tip-already-cached and output scenarios.
-- [ ] 5.2 Resolve at the new tips; on success write `ref` via tomlkit (trivia kept, symlink target written,
+- [x] 5.2 Resolve at the new tips; on success write `ref` via tomlkit (trivia kept, symlink target written,
   atomic replace, skipped when unchanged). Verify: new-commit, named-branch, default-branch-renamed,
   source-without-a-ref, only-named, entry-gone, no-deploy, comments-survive, symlinked-config and nothing-new
   scenarios.

@@ -32,8 +32,7 @@ def main(argv: list[str] | None = None) -> int:
         if args.command == "init":
             init.init()
         elif args.command == "update":
-            for line in update.update(args.aliases):
-                print(line)
+            update.update(args.aliases)
         elif args.command == "build":
             loaded = config.load()
             for warning in loaded.warnings:

@@ -51,9 +51,11 @@ repos:
       - id: mypy
         # The hook's default args turn off checks; the strictness lives in pyproject.toml.
         args: []
-        # The hook's environment lacks the dev group; pytest is enough for the tests to type-check.
+        # The hook's environment lacks the project's dependencies: tomlkit for the code, pytest for
+        # the tests.
         additional_dependencies:
           - pytest
+          - tomlkit
 
   - repo: local
     hooks:

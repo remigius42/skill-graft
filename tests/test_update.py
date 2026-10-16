@@ -1,12 +1,13 @@
 """The `update` spec, through `skill-graft update`."""
 
+import os
 from pathlib import Path
 from typing import TypeAlias
 
 import pytest
-from conftest import Upstream, skill, write_config
+from conftest import FakeApm, Upstream, skill, vendored, write_config
 
-from skill_graft import cache, paths
+from skill_graft import cache, config, paths
 from skill_graft.cli import main
 
 Capsys: TypeAlias = pytest.CaptureFixture[str]
@@ -136,3 +137,146 @@ def test_tip_already_cached(upstream: Upstream, capsys: Capsys) -> None:
     assert update(capsys, "mp")[0] == 0
 
     assert not (repo / "FETCH_HEAD").exists()
+
+
+def ref(alias: str) -> str | None:
+    source = config.load().sources[alias]
+    assert isinstance(source, config.GitSource)
+    return source.ref
+
+
+def test_new_commit_upstream(upstream: Upstream, capsys: Capsys) -> None:
+    old = upstream.commit({"tdd/SKILL.md": "1\n"})
+    new = upstream.commit({"tdd/SKILL.md": "2\n"})
+    write_config(git_source("mp", upstream, f'ref = "{old}"\n'))
+
+    assert update(capsys)[0] == 0
+
+    assert ref("mp") == new
+
+
+def test_named_branch(upstream: Upstream, capsys: Capsys) -> None:
+    upstream.commit({"tdd/SKILL.md": "1\n"})
+    upstream.git("checkout", "-q", "-b", "dev")
+    dev = upstream.commit({"tdd/SKILL.md": "dev\n"})
+    upstream.git("checkout", "-q", "main")
+    write_config(git_source("mp", upstream, 'branch = "dev"\n'))
+
+    assert update(capsys)[0] == 0
+
+    assert ref("mp") == dev
+
+
+def test_default_branch_renamed(upstream: Upstream, capsys: Capsys) -> None:
+    upstream.commit({"tdd/SKILL.md": "1\n"})
+    write_config(git_source("mp", upstream))
+    assert update(capsys)[0] == 0
+    upstream.git("checkout", "-q", "-b", "trunk")
+    trunk = upstream.commit({"tdd/SKILL.md": "trunk\n"})
+
+    assert update(capsys)[0] == 0
+
+    assert ref("mp") == trunk
+
+
+def test_source_without_a_ref_then_builds(upstream: Upstream, capsys: Capsys) -> None:
+    upstream.commit({"tdd/SKILL.md": "# tdd\n"})
+    write_config('entries = ["mp/tdd"]\n' + git_source("mp", upstream))
+
+    assert update(capsys)[0] == 0
+    assert main(["build", "--no-install"]) == 0
+
+    assert vendored() == {"tdd"}
+
+
+def test_only_the_named_sources(tmp_path: Path, capsys: Capsys) -> None:
+    a, b = Upstream(tmp_path / "a"), Upstream(tmp_path / "b")
+    a_old, b_old = a.commit({"x/SKILL.md": "1\n"}), b.commit({"y/SKILL.md": "1\n"})
+    a.commit({"x/SKILL.md": "2\n"})
+    b.commit({"y/SKILL.md": "2\n"})
+    write_config(
+        git_source("a", a, f'ref = "{a_old}"\n')
+        + git_source("b", b, f'ref = "{b_old}"\n')
+    )
+
+    assert update(capsys, "a")[0] == 0
+
+    assert ref("a") != a_old and ref("b") == b_old
+
+
+def test_entry_gone_upstream(upstream: Upstream, capsys: Capsys) -> None:
+    old = upstream.commit({"tdd/SKILL.md": "# tdd\n"})
+    upstream.git("rm", "-q", "-r", "tdd")
+    new = upstream.commit({"other/SKILL.md": "# other\n"})
+    file = write_config(
+        'entries = ["mp/tdd"]\n' + git_source("mp", upstream, f'ref = "{old}"\n')
+    )
+    before = file.read_bytes()
+
+    code, out, err = update(capsys)
+
+    assert code == 1 and "mp/tdd" in err
+    assert out.splitlines() == [f"mp {new}"]
+    assert file.read_bytes() == before
+
+
+def test_no_deploy(upstream: Upstream, fake_apm: FakeApm, capsys: Capsys) -> None:
+    upstream.commit({"tdd/SKILL.md": "# tdd\n"})
+    write_config('entries = ["mp/tdd"]\n' + git_source("mp", upstream))
+
+    assert update(capsys)[0] == 0
+
+    assert vendored() == set() and fake_apm.calls == []
+
+
+def test_comments_survive(upstream: Upstream, capsys: Capsys) -> None:
+    old = upstream.commit({"tdd/SKILL.md": "1\n"})
+    new = upstream.commit({"tdd/SKILL.md": "2\n"})
+    text = (
+        "# my skills\n"
+        'entries = ["mp/tdd"]  # just one\n'
+        "\n"
+        "[sources.mp]\n"
+        f'git = "{upstream.url}"\n'
+        f'ref    = "{old}"  # bumped by update\n'
+        "# the end\n"
+    )
+    file = write_config(text)
+
+    assert update(capsys)[0] == 0
+
+    assert file.read_text() == text.replace(old, new)
+
+
+def test_ref_added_to_an_inline_table(upstream: Upstream, capsys: Capsys) -> None:
+    sha = upstream.commit({"tdd/SKILL.md": "1\n"})
+    file = write_config(f'sources.mp = {{ git = "{upstream.url}" }}  # inline\n')
+
+    assert update(capsys)[0] == 0
+
+    assert ref("mp") == sha and file.read_text().endswith("  # inline\n")
+
+
+def test_symlinked_config(tmp_path: Path, upstream: Upstream, capsys: Capsys) -> None:
+    sha = upstream.commit({"tdd/SKILL.md": "1\n"})
+    real = tmp_path / "dotfiles" / "skill-graft.toml"
+    real.parent.mkdir()
+    real.write_text(git_source("mp", upstream))
+    link = write_config("")
+    link.unlink()
+    link.symlink_to(real)
+
+    assert update(capsys)[0] == 0
+
+    assert link.is_symlink() and sha in real.read_text()
+
+
+def test_nothing_new(upstream: Upstream, capsys: Capsys) -> None:
+    sha = upstream.commit({"tdd/SKILL.md": "1\n"})
+    file = write_config(git_source("mp", upstream, f'ref = "{sha}"\n'))
+    os.utime(file, (1_000_000, 1_000_000))
+    before = file.read_bytes()
+
+    assert update(capsys)[0] == 0
+
+    assert file.read_bytes() == before and file.stat().st_mtime == 1_000_000

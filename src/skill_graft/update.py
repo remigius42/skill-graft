@@ -1,13 +1,25 @@
 """Moves each git source's ref to the tip of its branch."""
 
+import os
+import shutil
+import tempfile
+
+import tomlkit
+from tomlkit.container import Container
+from tomlkit.items import InlineTable, Table
+
 from skill_graft import config, git, paths, resolve
 from skill_graft.cache import Cache
 from skill_graft.config import Config, GitSource
 from skill_graft.errors import SkillGraftError
 
 
-def update(aliases: list[str]) -> list[str]:
-    """Fetches the selected git sources; returns one line per source."""
+def update(aliases: list[str]) -> None:
+    """Moves the selected git sources to their tips, if every entry resolves there.
+
+    Prints one line per source first, so a resolution error still shows the shas
+    it would have written.
+    """
     loaded = config.load()
     selected = _select(loaded, aliases)
     resolve.check_refs(loaded, selected)
@@ -15,17 +27,42 @@ def update(aliases: list[str]) -> list[str]:
         if source.branch is not None:
             _check_branch(alias, source.branch)
     git_cache = Cache(paths.cache())
-    tips: dict[tuple[str, str | None], str] = {}
-    lines = []
+    places: dict[tuple[str, str | None], str] = {}
+    tips = {}
     for alias, source in selected.items():
         place = (source.url, source.branch)
-        if place not in tips:
-            tips[place] = _tip(alias, source)
-        tip = tips[place]
-        if not git_cache.has_commit(source.url, tip):
+        if place not in places:
+            places[place] = _tip(alias, source)
+        tips[alias] = places[place]
+        if not git_cache.has_commit(source.url, tips[alias]):
             git_cache.fetch(alias, source.url)
-        lines.append(f"{alias} {tip}" + (" (unchanged)" if tip == source.ref else ""))
-    return lines
+        unchanged = " (unchanged)" if tips[alias] == source.ref else ""
+        print(f"{alias} {tips[alias]}{unchanged}")
+    resolve.resolve(loaded, resolve.folders(loaded, git_cache, tips))
+    moved = {alias: tip for alias, tip in tips.items() if tip != selected[alias].ref}
+    if moved:
+        _write_refs(moved)
+
+
+def _write_refs(refs: dict[str, str]) -> None:
+    """Sets each `sources.<alias>.ref`, keeping every comment and all formatting.
+
+    Replaces the file a symlinked `skill-graft.toml` points to, not the link.
+    """
+    file = paths.config_file().resolve()
+    document = tomlkit.parse(file.read_text())
+    sources = document["sources"]
+    assert isinstance(sources, Container | Table)
+    for alias, ref in refs.items():
+        table = sources[alias]
+        assert isinstance(table, Table | InlineTable)
+        table["ref"] = ref
+    with tempfile.NamedTemporaryFile(
+        "w", dir=file.parent, prefix=f".{file.name}.", delete=False
+    ) as tmp:
+        tmp.write(tomlkit.dumps(document))
+    shutil.copymode(file, tmp.name)
+    os.replace(tmp.name, file)
 
 
 def _select(loaded: Config, aliases: list[str]) -> dict[str, GitSource]:
