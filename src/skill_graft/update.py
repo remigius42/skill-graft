@@ -130,6 +130,8 @@ def _tip(alias: str, source: GitSource) -> str:
                 sha = value
         if branch and sha:
             return sha
+        if not git.run("ls-remote", "--heads", "--", source.url, context=context):
+            raise SkillGraftError(f"{context}: the remote has no commits yet")
         raise SkillGraftError(
             f"{context}: the remote names no default branch; "
             'set `branch = "…"` in its [sources] table'

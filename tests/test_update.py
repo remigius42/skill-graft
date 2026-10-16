@@ -100,6 +100,14 @@ def test_no_default_branch(upstream: Upstream, capsys: Capsys) -> None:
     assert code == 1 and "'mp'" in err and "branch = " in err
 
 
+def test_empty_remote(upstream: Upstream, capsys: Capsys) -> None:
+    write_config(git_source("mp", upstream))
+
+    code, _, err = update(capsys, "mp")
+
+    assert code == 1 and "'mp'" in err and "no commits" in err
+
+
 def test_detached_head_is_no_default_branch(upstream: Upstream, capsys: Capsys) -> None:
     upstream.commit({"tdd/SKILL.md": "# tdd\n"})
     upstream.git("checkout", "-q", "--detach")
