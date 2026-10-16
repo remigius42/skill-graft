@@ -11,7 +11,7 @@ Apply with the `tdd` skill: each task red-green-refactor (failing test first, th
 
 ## 2. References
 
-- [ ] 2.1 `references.py`: scan a skill folder's `*.md` files (sorted, `SKILL.md` first, `.git` skipped) for
+- [x] 2.1 `references.py`: scan a skill folder's `*.md` files (sorted, `SKILL.md` first, `.git` skipped) for
   slash (longest name run, possessive) and Skill tool references in text order, each with its text as written;
   non-UTF-8 is skipped with a warning naming the file. Verify: unit tests for standalone-token, paths-and-URLs
   (`/my-dir/file`, `/tmp.d/x` included), call-forms (trailing arguments included), different-case,
