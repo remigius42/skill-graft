@@ -18,7 +18,7 @@ again. An interrupted clone or checkout SHALL never be mistaken for a complete o
 
 - **WHEN** `XDG_CACHE_HOME` is unset and `build` reads a git **Source**
 - **THEN** its repository and checkout are under `~/.cache/skill-graft/`, and `build` writes nothing under
-  `~/.apm/skill-graft/` outside `.apm/skills/`
+  `~/.apm/skill-graft/` outside `.apm/skills/` and `skill-graft.lock`
 
 #### Scenario: Shared URL
 
