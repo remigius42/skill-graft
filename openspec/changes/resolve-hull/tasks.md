@@ -42,7 +42,7 @@ Apply with the `tdd` skill: each task red-green-refactor (failing test first, th
 
 ## 5. Lock and resolve command
 
-- [ ] 5.1 `lock.py`: render TOML (sources, skills with entry flag and folder hash over `fsencode`d `/` paths,
+- [x] 5.1 `lock.py`: render TOML (sources, skills with entry flag and folder hash over `fsencode`d `/` paths,
   edges unique on from, to, kind and bind), sorted, written atomically to `~/.apm/skill-graft/skill-graft.lock`. Verify:
   edges-with-kinds,
   bound-and-default-edge-to-one-skill, symlinked-config, hash-follows-content, same-input tests.
