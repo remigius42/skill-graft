@@ -2,6 +2,7 @@
 
 import argparse
 import sys
+from dataclasses import replace
 
 from skill_graft import apm, config, init, lock, paths, resolve, update, vendor
 from skill_graft.cache import Cache
@@ -49,7 +50,9 @@ def main(argv: list[str] | None = None) -> int:
             loaded, resolved = _resolve()
             _warn(resolved.warnings)
             vendor.vendor(resolved.skills)
-            lock.write(lock.render(loaded, {}, resolved))  # what was vendored
+            # Hashes the vendored copies, so the lock holds exactly what was vendored.
+            copies = {skill: paths.skills() / skill.name for skill in resolved.skills}
+            lock.write(lock.render(loaded, {}, replace(resolved, skills=copies)))
             if not args.no_install:
                 apm.install()
     except (SkillGraftError, OSError) as error:

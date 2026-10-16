@@ -7,6 +7,7 @@ from typing import TypeAlias
 import pytest
 from conftest import Upstream, configure, skill, write_config
 
+from skill_graft import config, lock, vendor
 from skill_graft.cli import main
 
 Capsys: TypeAlias = pytest.CaptureFixture[str]
@@ -124,6 +125,26 @@ def test_build_writes_the_lock(home: Path) -> None:
 
     skills = tomllib.loads(lock_file(home).read_text())["skills"]
     assert [s["id"] for s in skills] == ["own/grilling", "own/tdd"]
+
+
+def test_lock_hashes_what_was_vendored(
+    home: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    tdd = skill(home / "own" / "tdd", "vendored\n")
+    configure(["own/tdd"], own="~/own")
+    copy = vendor.vendor
+
+    def copy_then_edit(skills: dict[config.SkillId, Path]) -> None:
+        copy(skills)
+        (tdd / "SKILL.md").write_text("edited during the build\n")
+
+    monkeypatch.setattr(vendor, "vendor", copy_then_edit)
+
+    assert main(["build", "--no-install"]) == 0
+
+    vendored = home / ".apm" / "skill-graft" / ".apm" / "skills" / "tdd"
+    locked = tomllib.loads(lock_file(home).read_text())["skills"][0]["hash"]
+    assert locked == lock.folder_hash(vendored)
 
 
 def test_vendoring_fails(home: Path) -> None:

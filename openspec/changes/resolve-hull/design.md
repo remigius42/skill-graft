@@ -96,7 +96,7 @@ order, warnings); every error before any write.
 
 - **Command wiring**: `resolve` = load → folders → resolve → write lock → print tree (stdout), warnings
   (stderr, `skill-graft: warning:` like config warnings). `build` = same minus the tree, then vendor, then write
-  the lock, then APM: the lock describes what `.apm/skills/` holds. `update` = resolve at new tips (errors as
+  the lock, then APM: its hashes are of the vendored copies. `update` = resolve at new tips (errors as
   today) → if old `ref`s all exist and are cached (`has_commit`, real cache; never fetched), resolve again at
   them, its warnings dropped, and diff skill sets and hashes, else print "no previous hull to compare" with the
   reason → write the lock always and the TOML when a `ref` moved (neither on `--dry-run`, whose message names
