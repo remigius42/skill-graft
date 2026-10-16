@@ -25,7 +25,7 @@ Each task: failing test first, then code, one commit, `pre-commit run --all-file
 
 ## 3. Skill discovery
 
-- [ ] 3.1 Walk a source: any depth, hidden folders, symlinked folders once each, prune `.git`, stop inside a
+- [x] 3.1 Walk a source: any depth, hidden folders, symlinked folders once each, prune `.git`, stop inside a
   skill. Verify: nested, skill-in-skill, symlinked-folder, symlink-cycle and `.git` scenario tests pass.
 - [ ] 3.2 Name from front matter `name:` (BOM, fence whitespace, quotes, trailing comment handled; unsupported
   forms an error) else folder. Verify: name, comment-and-quotes and unsupported-form scenario tests pass.
