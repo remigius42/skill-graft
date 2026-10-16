@@ -4,9 +4,9 @@ from collections.abc import Iterable
 from dataclasses import replace
 from pathlib import Path
 
-from skill_graft import discovery, hull
+from skill_graft import discovery, hull, rename
 from skill_graft.cache import Cache
-from skill_graft.config import Config, GitSource, SkillId
+from skill_graft.config import Config, GitSource
 from skill_graft.errors import SkillGraftError
 from skill_graft.hull import Hull
 
@@ -43,28 +43,12 @@ def resolve(config: Config, folders: dict[str, Path]) -> Hull:
 
     Clashing entries are reported before anything is searched.
     """
-    _check_deployed_names(config.entries)
+    rename.check_unique(rename.deployed(config, config.entries)[0])
     indexes = {
         alias: discovery.index(folder, isinstance(config.sources[alias], GitSource))
         for alias, folder in folders.items()
     }
     result = hull.walk(config, indexes)
-    _check_deployed_names(list(result.skills))
-    return replace(result, deployed={skill: skill.name for skill in result.skills})
-
-
-def _check_deployed_names(skills: list[SkillId]) -> None:
-    """Without renames, a skill's deployed name is its name.
-
-    Compared ignoring case: on a case-insensitive file system the folders collide.
-    """
-    by_name: dict[str, list[SkillId]] = {}
-    for skill in skills:
-        by_name.setdefault(skill.name.casefold(), []).append(skill)
-    for clashing in by_name.values():
-        if len(clashing) > 1:
-            names = " / ".join(sorted({repr(skill.name) for skill in clashing}))
-            ids = ", ".join(str(skill) for skill in clashing)
-            raise SkillGraftError(
-                f"deployed name {names} is taken by several skills: {ids}"
-            )
+    names, warnings = rename.deployed(config, list(result.skills))
+    rename.check_unique(names)
+    return replace(result, deployed=names, warnings=result.warnings + warnings)

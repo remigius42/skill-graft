@@ -37,7 +37,7 @@ that honors them in full, so no commit accepts intent it ignores.
 
 ## 4. Renames and reserved names
 
-- [ ] 4.1 `[rename]` end to end: `Config.renames` (key a declared **Skill ID**, value one segment), `rename.deployed`
+- [x] 4.1 `[rename]` end to end: `Config.renames` (key a declared **Skill ID**, value one segment), `rename.deployed`
   with unused-rename warnings, uniqueness after renames with the `[rename]` hint (entries-only early check, no
   warnings), `vendor` under `.apm/skills/<deployed>/`, `name:` set. Verify: valid-rename, value-not-a-name,
   undeclared-alias-in-a-rename, rename-table (its `[rename]` half), patches-table, renamed, not-renamed,

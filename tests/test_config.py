@@ -83,7 +83,7 @@ def test_not_initialized(capsys: Capsys) -> None:
         ),
         ('[sources.mp]\ngit = "/srv/s"\nbranch = ""\n', ["'sources.mp.branch'"]),
         ('[sources.mp]\ngit = "/srv/s"\nbranch = "-x"\n', ["'sources.mp.branch'"]),
-        ('[rename]\n"mp/a" = "b"\n', ["'rename'", "unsupported"]),
+        ('[patches]\n"mp/a" = ["x.patch"]\n', ["'patches'", "unsupported"]),
         ("entries = [\n", ["skill-graft.toml"]),
         ('entries = "own/chisel"\n', ["'entries'", "list"]),
         ("entries = [1]\n", ["'entries'", "list of strings"]),
@@ -225,6 +225,48 @@ def test_bad_bind(home: Path, capsys: Capsys, bind: str, expected: list[str]) ->
     assert code == 1
     for text in expected:
         assert text in err
+
+
+def test_valid_rename_loads(home: Path) -> None:
+    (home / "a").mkdir()
+    write_config(
+        '[sources.mp]\npath = "~/a"\n[rename]\n"mp/code-review" = "mp-code-review"\n'
+    )
+
+    assert config.load().renames == {
+        config.SkillId("mp", "code-review"): "mp-code-review"
+    }
+
+
+@pytest.mark.parametrize(
+    ("rename", "expected"),
+    [
+        ('"mp/tdd" = "a/b"', ['rename."mp/tdd"']),
+        ('"mp/tdd" = ""', ['rename."mp/tdd"']),
+        ('"mp/tdd" = 1', ['rename."mp/tdd"']),
+        ('"nope/tdd" = "tdd2"', ['rename."nope/tdd"', "'nope'"]),
+        ('"tdd" = "tdd2"', ['rename."tdd"']),
+    ],
+)
+def test_bad_rename(
+    home: Path, capsys: Capsys, rename: str, expected: list[str]
+) -> None:
+    (home / "a").mkdir()
+    write_config(f'[sources.mp]\npath = "~/a"\n[rename]\n{rename}\n')
+
+    code, err = build(capsys)
+
+    assert code == 1
+    for text in expected:
+        assert text in err
+
+
+def test_rename_not_a_table(capsys: Capsys) -> None:
+    write_config('rename = "x"\n')
+
+    code, err = build(capsys)
+
+    assert code == 1 and "'rename'" in err
 
 
 def test_bind_not_a_table(capsys: Capsys) -> None:

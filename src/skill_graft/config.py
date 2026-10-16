@@ -1,4 +1,4 @@
-"""Reads `skill-graft.toml`: path and git sources, and entries."""
+"""Reads `skill-graft.toml`: path and git sources, entries, binds and renames."""
 
 import re
 import tomllib
@@ -51,6 +51,8 @@ class Config:
     warnings: list[str]
     # Where references to a name from a source resolve; None: nowhere.
     binds: dict[SkillId, SkillId | None]
+    # The deployed name the user gives a skill.
+    renames: dict[SkillId, str]
 
 
 def load() -> Config:
@@ -61,12 +63,13 @@ def load() -> Config:
         raise SkillGraftError(f"{file} not found: run `skill-graft init`") from None
     except (tomllib.TOMLDecodeError, UnicodeDecodeError) as error:
         raise SkillGraftError(f"{file}: {error}") from None
-    if unknown := sorted(data.keys() - {"sources", "entries", "bind"}):
+    if unknown := sorted(data.keys() - {"sources", "entries", "bind", "rename"}):
         raise SkillGraftError(f"{unknown[0]!r} is unsupported in skill-graft.toml")
     sources = _sources(data.get("sources", {}), file.parent)
     entries = _entries(data.get("entries", []), sources)
     binds = _binds(data.get("bind", {}), sources)
-    return Config(sources, entries, _overlap_warnings(sources), binds)
+    renames = _renames(data.get("rename", {}), sources)
+    return Config(sources, entries, _overlap_warnings(sources), binds, renames)
 
 
 def _sources(raw: object, base: Path) -> dict[str, Source]:
@@ -176,6 +179,18 @@ def _binds(raw: object, sources: dict[str, Source]) -> dict[SkillId, SkillId | N
             raise SkillGraftError(f"{where} must be a skill ID or false")
         binds[_skill_id(where, key, sources)] = target
     return binds
+
+
+def _renames(raw: object, sources: dict[str, Source]) -> dict[SkillId, str]:
+    if not isinstance(raw, dict):
+        raise SkillGraftError("'rename' must be a table of \"<alias>/<name>\" keys")
+    renames: dict[SkillId, str] = {}
+    for key, value in raw.items():
+        where = f'rename."{key}"'
+        if not (isinstance(value, str) and NAME.fullmatch(value)):
+            raise SkillGraftError(f"{where} must be a name: {NAME.pattern}")
+        renames[_skill_id(where, key, sources)] = value
+    return renames
 
 
 def _skill_id(where: str, text: str, sources: dict[str, Source]) -> SkillId:

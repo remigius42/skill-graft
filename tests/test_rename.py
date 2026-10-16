@@ -232,3 +232,87 @@ def test_update_and_resolve_agree(home: Path, tmp_path: Path) -> None:
     assert main(["resolve"]) == 0
 
     assert lock.read_bytes() == updated_lock
+
+
+def with_renames(home: Path, entries: list[str], renames: str) -> None:
+    """Sources `mp` and `own` under `home`, these entries, and a [rename] table."""
+    for alias in ["mp", "own"]:
+        (home / alias).mkdir(exist_ok=True)
+    configure(entries, mp="~/mp", own="~/own")
+    file = package() / "skill-graft.toml"
+    file.write_text(file.read_text() + f"[rename]\n{renames}\n")
+
+
+def skills_dir() -> Path:
+    return package() / ".apm" / "skills"
+
+
+def test_renamed_skill_vendored(home: Path, capsys: pytest.CaptureFixture[str]) -> None:
+    skill(
+        home / "mp" / "tdd",
+        "---\nname: tdd # upstream\n---\n/grilling and `grilling`\n",
+    )
+    skill(home / "mp" / "grilling")
+    with_renames(home, ["mp/tdd"], '"mp/tdd" = "mp-tdd"\n"mp/grilling" = "mp-grilling"')
+
+    assert main(["build", "--no-install"]) == 0
+
+    assert capsys.readouterr().err == ""
+    assert {p.name for p in skills_dir().iterdir()} == {"mp-tdd", "mp-grilling"}
+    assert (skills_dir() / "mp-tdd" / "SKILL.md").read_text() == (
+        "---\nname: mp-tdd\n---\n/mp-grilling and `mp-grilling`\n"
+    )
+
+
+def test_rename_outside_the_hull(
+    home: Path, capsys: pytest.CaptureFixture[str]
+) -> None:
+    skill(home / "mp" / "tdd")
+    skill(home / "mp" / "review")
+    with_renames(home, ["mp/tdd"], '"mp/review" = "mp-review"')
+
+    assert main(["build", "--no-install"]) == 0
+
+    err = capsys.readouterr().err
+    assert err.count("mp/review") == 1 and "renames no skill in the hull" in err
+
+
+def test_clash_across_sources(home: Path, capsys: pytest.CaptureFixture[str]) -> None:
+    skill(home / "mp" / "tdd")
+    skill(home / "own" / "tdd")
+    skill(home / "own" / "x")
+    with_renames(home, ["own/x"], '"own/x" = "own-x"')
+    assert main(["build", "--no-install"]) == 0
+    lock = (package() / "skill-graft.lock").read_bytes()
+    with_renames(home, ["mp/tdd", "own/tdd"], '"own/x" = "own-x"')
+
+    assert main(["build", "--no-install"]) == 1
+
+    err = capsys.readouterr().err
+    assert "mp/tdd" in err and "own/tdd" in err
+    assert '[rename] "own/tdd" = "own-tdd"' in err
+    assert {p.name for p in skills_dir().iterdir()} == {"own-x"}
+    assert (package() / "skill-graft.lock").read_bytes() == lock
+
+
+def test_rename_settles_a_clash(home: Path) -> None:
+    skill(home / "mp" / "tdd")
+    skill(home / "own" / "tdd")
+    with_renames(home, ["mp/tdd", "own/tdd"], '"own/tdd" = "own-tdd"')
+
+    assert main(["build", "--no-install"]) == 0
+
+    assert {p.name for p in skills_dir().iterdir()} == {"tdd", "own-tdd"}
+
+
+def test_rename_onto_another_skills_name(
+    home: Path, capsys: pytest.CaptureFixture[str]
+) -> None:
+    skill(home / "mp" / "grilling")
+    skill(home / "own" / "notes")
+    with_renames(home, ["mp/grilling", "own/notes"], '"mp/grilling" = "Notes"')
+
+    assert main(["resolve"]) == 1
+
+    err = capsys.readouterr().err
+    assert "mp/grilling" in err and "own/notes" in err
