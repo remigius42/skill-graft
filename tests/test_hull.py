@@ -7,7 +7,11 @@ from typing import TypeAlias
 import pytest
 from conftest import build, configure, skill, vendored
 
+from skill_graft import config, paths, resolve
+from skill_graft.cache import Cache
 from skill_graft.cli import main
+from skill_graft.config import SkillId
+from skill_graft.hull import Hull
 
 Capsys: TypeAlias = pytest.CaptureFixture[str]
 
@@ -293,6 +297,117 @@ def test_prose_never_extends_the_hull(home: Path, capsys: Capsys) -> None:
 
     assert build(capsys) == (0, "")
     assert vendored() == {"tdd"}
+
+
+def resolved() -> Hull:
+    loaded = config.load()
+    return resolve.resolve(loaded, resolve.folders(loaded, Cache(paths.cache()), {}))
+
+
+def prose_edges(hull: Hull) -> set[tuple[str, str, bool]]:
+    return {
+        (str(e.source), str(e.target), e.bind) for e in hull.edges if e.kind == "prose"
+    }
+
+
+def test_prose_inside_the_hull(home: Path) -> None:
+    skill(home / "mp" / "grilling")
+    skill(home / "mp" / "notes")
+    two_sources(home, "/grilling, then `notes`\n")
+    configure(["mp/tdd", "mp/notes"], mp="~/mp", own="~/own")
+
+    hull = resolved()
+
+    assert prose_edges(hull) == {("mp/tdd", "mp/notes", False)}
+    assert hull.suggestions == {}
+
+
+def test_prose_outside_the_hull(home: Path) -> None:
+    skill(home / "mp" / "diagnosing-bugs")
+    skill(home / "mp" / "grilling", "see diagnosing-bugs\n")
+    two_sources(home, "/grilling, then diagnosing-bugs\n")
+
+    hull = resolved()
+
+    assert list(hull.skills) == [SkillId("mp", "tdd"), SkillId("mp", "grilling")]
+    assert prose_edges(hull) == set()
+    assert hull.suggestions == {
+        SkillId("mp", "diagnosing-bugs"): {
+            SkillId("mp", "tdd"),
+            SkillId("mp", "grilling"),
+        }
+    }
+
+
+@pytest.mark.parametrize(
+    "layout",
+    [
+        "only-another-source-has-it",
+        "ambiguous-in-its-own-source",
+        "unreadable-in-its-own-source",
+        "matches-nothing",
+    ],
+)
+def test_prose_is_no_reference(home: Path, capsys: Capsys, layout: str) -> None:
+    if layout == "only-another-source-has-it":
+        skill(home / "own" / "notes")
+    elif layout == "ambiguous-in-its-own-source":
+        skill(home / "mp" / "a" / "notes")
+        skill(home / "mp" / "b" / "notes")
+    elif layout == "unreadable-in-its-own-source":
+        skill(home / "mp" / "notes", "---\nname: [x]\n---\n")
+    two_sources(home, "see `notes`\n")
+
+    hull = resolved()
+
+    assert prose_edges(hull) == set() and hull.suggestions == {}
+    assert main(["resolve"]) == 0
+    assert capsys.readouterr().err == ""
+
+
+def test_bound_prose(home: Path) -> None:
+    skill(home / "own" / "notes")
+    two_sources(home, "/x and `notes`\n")
+    configure(["mp/tdd", "own/notes"], mp="~/mp", own="~/own")
+    with_binds('"mp/notes" = "own/notes"\n"mp/x" = false')
+
+    hull = resolved()
+
+    assert prose_edges(hull) == {("mp/tdd", "own/notes", True)}
+
+
+def test_bound_prose_outside_the_hull(home: Path) -> None:
+    skill(home / "own" / "notes")
+    two_sources(home, "see `notes`\n")
+    with_binds('"mp/notes" = "own/notes"')
+
+    hull = resolved()
+
+    assert list(hull.skills) == [SkillId("mp", "tdd")]
+    assert hull.suggestions == {SkillId("own", "notes"): {SkillId("mp", "tdd")}}
+    assert "binds no reference" not in " ".join(hull.warnings)
+
+
+def test_bound_prose_to_a_missing_skill(home: Path, capsys: Capsys) -> None:
+    two_sources(home, "see `notes`\n")
+    with_binds('"mp/notes" = "own/nope"')
+
+    assert main(["resolve"]) == 1
+    err = capsys.readouterr().err
+    assert "mp/notes" in err and "nope" in err
+
+
+def test_prose_bound_to_nothing(home: Path) -> None:
+    skill(home / "mp" / "pre-commit")
+    skill(home / "mp" / "grilling")
+    two_sources(home, "/grilling\n```\npre-commit run\n```\n")
+    configure(["mp/tdd", "mp/pre-commit"], mp="~/mp", own="~/own")
+    with_binds('"mp/pre-commit" = false')
+
+    hull = resolved()
+
+    assert prose_edges(hull) == set() and hull.suggestions == {}
+    assert hull.warnings == []
 
 
 def vendored_dir(home: Path) -> Path:

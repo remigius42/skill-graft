@@ -64,6 +64,17 @@ def test_tree_of_two_entries(home: Path, capsys: Capsys) -> None:
     assert capsys.readouterr().out == "own/a\n└── own/b (/b) (*)\nown/b\n"
 
 
+def test_tree_leaves_out_prose_not_rewritten(home: Path, capsys: Capsys) -> None:
+    skill(home / "own" / "a", "/b, then `b` and `c`\n")
+    skill(home / "own" / "b")
+    skill(home / "own" / "c")
+    configure(["own/a", "own/c"], own="~/own")
+
+    assert main(["resolve"]) == 0
+
+    assert capsys.readouterr().out == "own/a\n└── own/b (/b)\nown/c\n"
+
+
 def test_resolution_error(home: Path, capsys: Capsys) -> None:
     skill(home / "own" / "tdd", "/notes\n")
     skill(home / "own" / "notes")

@@ -15,7 +15,7 @@ from skill_graft.errors import SkillGraftError
 class Edge:
     source: SkillId
     target: SkillId
-    kind: str  # "slash" or "skill-tool"
+    kind: str  # "slash", "skill-tool" or "prose"
     bind: bool  # a bind decided the target
     text: str  # the reference as written
 
@@ -26,6 +26,10 @@ class Hull:
     entries: list[SkillId]
     edges: list[Edge]
     warnings: list[str]
+    # Every reference in a skill resolved to a hull skill, self-references included.
+    occurrences: dict[SkillId, list[tuple[references.Reference, SkillId]]]
+    # Skills outside the hull that prose mentions, and the skills mentioning them.
+    suggestions: dict[SkillId, set[SkillId]]
 
 
 def walk(config: Config, indexes: dict[str, discovery.Index]) -> Hull:
@@ -35,6 +39,8 @@ def walk(config: Config, indexes: dict[str, discovery.Index]) -> Hull:
     }
     edges: list[Edge] = []
     warnings: list[str] = []
+    occurrences: dict[SkillId, list[tuple[references.Reference, SkillId]]] = {}
+    prose: list[tuple[SkillId, references.Reference, SkillId, bool, SkillId]] = []
     unmatched: set[tuple[SkillId, str]] = set()  # warned once per skill and name
     used: set[SkillId] = set()  # bind keys some reference used
     queue = deque(skills)
@@ -44,14 +50,16 @@ def walk(config: Config, indexes: dict[str, discovery.Index]) -> Hull:
         found, file_warnings = references.scan(skills[current])
         warnings += file_warnings
         for ref in found:
-            if ref.kind == "prose":  # never extends the hull
-                continue
             key = SkillId(current.alias, ref.name)
             bound = key in config.binds
             if bound:
                 used.add(key)
                 target = config.binds[key]
                 if target is None:  # bound to nothing: not a reference
+                    continue
+            elif ref.kind == "prose":
+                target = _prose_target(current, ref, indexes[current.alias])
+                if target is None:  # matches nothing: not a reference
                     continue
             else:
                 target = _target(current, ref, indexes)
@@ -64,6 +72,10 @@ def walk(config: Config, indexes: dict[str, discovery.Index]) -> Hull:
                             "false)"
                         )
                     continue
+            if ref.kind == "prose":  # never extends the hull: sorted out below
+                prose.append((current, ref, target, bound, key))
+                continue
+            occurrences.setdefault(current, []).append((ref, target))
             if target == current:
                 continue
             edges.append(Edge(current, target, ref.kind, bound, ref.text))
@@ -75,13 +87,35 @@ def walk(config: Config, indexes: dict[str, discovery.Index]) -> Hull:
                 )
                 skills[target] = discovery.find(indexes[target.alias], target, who)
                 queue.append(target)
+    suggestions: dict[SkillId, set[SkillId]] = {}
+    for current, ref, target, bound, key in prose:
+        if target in skills:
+            occurrences.setdefault(current, []).append((ref, target))
+            if target != current:
+                edges.append(Edge(current, target, "prose", bound, ref.text))
+        else:
+            if bound:  # a bound target must exist, whatever the form
+                discovery.find(indexes[target.alias], target, f'[bind] "{key}"')
+            suggestions.setdefault(target, set()).add(current)
     warnings += [
         f'[bind] "{key}" binds no reference: no skill in the hull from '
         f"{key.alias!r} calls {key.name!r}"
         for key in config.binds
         if key not in used
     ]
-    return Hull(skills, list(config.entries), edges, warnings)
+    return Hull(skills, list(config.entries), edges, warnings, occurrences, suggestions)
+
+
+def _prose_target(
+    current: SkillId, ref: references.Reference, own: discovery.Index
+) -> SkillId | None:
+    """The one skill of that name in the own source; prose never looks further.
+
+    Never raises: an ambiguous or unreadable match is no reference.
+    """
+    if len(own.folders.get(ref.name, [])) == 1 and ref.name not in own.unreadable:
+        return SkillId(current.alias, ref.name)
+    return None
 
 
 def _target(

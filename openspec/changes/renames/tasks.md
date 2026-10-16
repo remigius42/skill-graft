@@ -15,7 +15,7 @@ that honors them in full, so no commit accepts intent it ignores.
 
 ## 2. Hull
 
-- [ ] 2.1 `hull.walk`: prose candidates (**Bind**, else exactly one readable own folder and no unreadable one),
+- [x] 2.1 `hull.walk`: prose candidates (**Bind**, else exactly one readable own folder and no unreadable one),
   classified after the BFS into `prose` edges or suggestions; prose use marks a **Bind** used; `occurrences` per
   **Skill**, self-**References** included. Verify: inside-the-hull, outside-the-hull, only-another-source-has-it,
   ambiguous-in-its-own-source, matches-nothing, bound-prose, bound-prose-outside-the-hull, prose-bound-to-nothing,

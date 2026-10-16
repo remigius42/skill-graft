@@ -56,6 +56,8 @@ def tree(hull: Hull) -> str:
     """
     children: dict[SkillId, dict[tuple[SkillId, str, bool], Edge]] = {}
     for edge in hull.edges:  # in scan order; one line per target, kind and bind
+        if edge.kind == "prose":  # never pulls a skill in; nothing to explain
+            continue
         key = (edge.target, edge.kind, edge.bind)
         children.setdefault(edge.source, {}).setdefault(key, edge)
     expanded: set[SkillId] = set()
