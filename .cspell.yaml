@@ -4,9 +4,9 @@ words:
   - autouse
   - backticked
   - blocklist
+  - cacheinfo
   - cacheprovider
   - capfd
-  - cacheinfo
   - capsys
   - commitlint
   - conftest
