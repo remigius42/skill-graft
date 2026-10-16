@@ -66,9 +66,9 @@ path = "~/Documents/sync/2_areas/software/chisel_skill"
 
 - A skill is its whole folder. Everything in it is vendored; nothing outside it is.
 - References are found in every Markdown file of a skill, code blocks included, in three forms: `/name` as
-  its own token (never part of a path or URL), the Skill tool's call form `Skill(name)` (quoted or not, as
-  `skill=` or `skill:`, further arguments allowed), and prose. Prose counts only when the name cannot be an
-  ordinary word: hyphenated, or in backticks. Names match case-sensitively.
+  its own token (never part of a path, URL, link target or attribute), the Skill tool's call form
+  `Skill(name)` (quoted or not, as `skill=` or `skill:`, further arguments allowed), and prose. Prose counts
+  only when the name cannot be an ordinary word: hyphenated, or in backticks. Names match case-sensitively.
 - Slash and Skill tool references extend the hull. They resolve in their own source first, else in exactly
   one other source; several other sources is an error until a bind settles it. One that matches no skill in
   any declared source is a warning: "`mp/tdd` calls `/foo`: no declared source has a skill `foo`", naming the

@@ -25,7 +25,8 @@ order, warnings); every error before any write.
 - **Scan**: only after `_check_symlinks` passed for that **Skill**, so no link to `/dev/zero` or a FIFO is ever
   opened. Every `*.md` (case-insensitive) under the folder, `.git` skipped, files in sorted relative-path order
   with `SKILL.md` first; references in text order. Not UTF-8 → warning, file skipped. Slash regex, roughly
-  `(?<![\w./:~\\<-])/([A-Za-z0-9][A-Za-z0-9._-]*+)(?!/|:\w)`: the possessive `*+` (Python 3.11) keeps the run
+  `(?<![\w./:~\\<@-])(?<!\]\()(?<!=["'])/([A-Za-z0-9][A-Za-z0-9._-]*+)(?!/|:\w)` (no link targets,
+  attributes or `@/` aliases): the possessive `*+` (Python 3.11) keeps the run
   whole, so `/my-dir/file` never yields `my`; trailing dots are dropped after matching. Skill tool:
   `\bSkill\(\s*(?:skill\s*[:=]\s*)?(["']?)(NAME)\1\s*[,)]`, so further arguments are allowed. Names match
   case-sensitively. A file that cannot be opened (dangling link) raises `SkillGraftError` naming it. Each reference

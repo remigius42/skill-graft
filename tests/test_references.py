@@ -40,6 +40,10 @@ def test_standalone_token(tmp_path: Path, text: str) -> None:
         "cd /tmp.d/x",
         "and/or",
         "1/2",
+        "see [docs](/docs)",
+        '<a href="/about">',
+        "<a href='/about'>",
+        'from "@/utils"',
     ],
 )
 def test_paths_and_urls(tmp_path: Path, text: str) -> None:

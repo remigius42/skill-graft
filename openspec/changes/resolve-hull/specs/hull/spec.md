@@ -11,7 +11,8 @@ Finds the slash and Skill tool **References** in each **Skill**, resolves them t
 
 A slash **Reference** SHALL be `/` then a name, the longest run of `[A-Za-z0-9._-]` starting with a letter or
 digit, trailing `.` dropped, standing as its own token: not preceded by a letter, digit, `/`, `.`, `-`, `~`, `:`,
-`\` or `<`, and not followed by `/`, or `:` and a letter or digit. It SHALL count anywhere, code blocks included.
+`\`, `<`, `@`, `](`, `="` or `='`, and not followed by `/`, or `:` and a letter or digit. It SHALL count anywhere,
+code blocks included.
 
 #### Scenario: Standalone token
 
@@ -21,7 +22,7 @@ digit, trailing `.` dropped, standing as its own token: not preceded by a letter
 #### Scenario: Paths and URLs
 
 - **WHEN** it holds `/usr/bin`, `src/grilling`, `https://x.org/grilling`, `~/grilling`, `</grilling>`,
-  `/plugin:grilling`, `/my-dir/file` or `/tmp.d/x`
+  `/plugin:grilling`, `/my-dir/file`, `/tmp.d/x`, `[docs](/docs)`, `href="/about"` or `"@/utils"`
 - **THEN** none is a **Reference**, nor is any prefix of a name in them
 
 ### Requirement: Skill tool references
