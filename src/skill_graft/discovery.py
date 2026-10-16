@@ -119,23 +119,26 @@ def index(source: Path, confined: bool = False) -> Index:
     return skills
 
 
-def find(skills: Index, skill_id: SkillId) -> Path:
-    """The folder of the one skill named `skill_id.name`."""
+def find(skills: Index, skill_id: SkillId, who: str | None = None) -> Path:
+    """The folder of the one skill named `skill_id.name`.
+
+    Errors name `who` asked: by default the entry `skill_id`.
+    """
+    who = who or f"entry '{skill_id}'"
     matches = skills.folders.get(skill_id.name, [])
     if unreadable := skills.unreadable.get(skill_id.name):
         if matches:
             # The unreadable skill may be named this too: never pick silently.
             raise SkillGraftError(
-                f"entry '{skill_id}' is ambiguous: it matches {matches[0]}, "
-                f"but {unreadable[0]}"
+                f"{who} is ambiguous: it matches {matches[0]}, but {unreadable[0]}"
             )
         raise unreadable[0]
     # An invalid name is known not to be this one, so it only explains a miss.
     if (invalid := skills.invalid.get(skill_id.name)) and not matches:
         raise invalid[0]
     if not matches:
-        raise SkillGraftError(f"entry '{skill_id}': no skill {skill_id.name!r} found")
+        raise SkillGraftError(f"{who}: no skill {skill_id.name!r} found")
     if len(matches) > 1:
         folders = ", ".join(str(m) for m in matches)
-        raise SkillGraftError(f"entry '{skill_id}': several skills match: {folders}")
+        raise SkillGraftError(f"{who}: several skills match: {folders}")
     return matches[0]
