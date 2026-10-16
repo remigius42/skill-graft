@@ -131,7 +131,7 @@ def test_output(tmp_path: Path, capsys: Capsys) -> None:
     code, out, _ = update(capsys)
 
     assert code == 0
-    assert out.splitlines() == [f"a {new}", f"b {same} (unchanged)"]
+    assert out.splitlines()[:2] == [f"a {new}", f"b {same} (unchanged)"]
 
 
 def test_path_sources_are_skipped(
@@ -143,7 +143,7 @@ def test_path_sources_are_skipped(
 
     code, out, _ = update(capsys)
 
-    assert code == 0 and out.splitlines() == [f"mp {sha}"]
+    assert code == 0 and out.splitlines()[:1] == [f"mp {sha}"]
 
 
 def test_config_warnings_are_shown(
@@ -487,6 +487,111 @@ def test_dry_run_leaves_the_lock(upstream: Upstream, capsys: Capsys) -> None:
     assert code == 0
     assert "dry run: skill-graft.toml and skill-graft.lock not written" in out
     assert lock_file().read_bytes() == before
+
+
+LEGEND = "hull (+ added, - removed, ~ changed):"
+
+
+def diff_lines(out: str) -> list[str]:
+    """What `update` printed after its per-source lines."""
+    lines = out.splitlines()
+    return lines[lines.index(LEGEND) :] if LEGEND in lines else lines[1:]
+
+
+def test_skill_added_upstream(upstream: Upstream, capsys: Capsys) -> None:
+    old = upstream.commit({"tdd/SKILL.md": "1\n", "grilling/SKILL.md": "g\n"})
+    upstream.commit({"tdd/SKILL.md": "/grilling\n"})
+    write_config(
+        'entries = ["mp/tdd"]\n' + git_source("mp", upstream, f'ref = "{old}"\n')
+    )
+    main(["build", "--no-install"])  # caches the old ref
+
+    code, out, _ = update(capsys)
+
+    assert code == 0
+    assert diff_lines(out) == [LEGEND, "+ mp/grilling", "~ mp/tdd"]
+
+
+def test_skill_dropped_upstream(upstream: Upstream, capsys: Capsys) -> None:
+    old = upstream.commit({"tdd/SKILL.md": "/grilling\n", "grilling/SKILL.md": "g\n"})
+    upstream.commit({"tdd/SKILL.md": "1\n"})
+    write_config(
+        'entries = ["mp/tdd"]\n' + git_source("mp", upstream, f'ref = "{old}"\n')
+    )
+    main(["build", "--no-install"])
+
+    code, out, _ = update(capsys)
+
+    assert code == 0 and "- mp/grilling" in diff_lines(out)
+
+
+def test_nothing_changed(upstream: Upstream, capsys: Capsys) -> None:
+    old = upstream.commit({"tdd/SKILL.md": "1\n"})
+    upstream.commit({"other.txt": "x\n"})
+    write_config(
+        'entries = ["mp/tdd"]\n' + git_source("mp", upstream, f'ref = "{old}"\n')
+    )
+    main(["build", "--no-install"])
+
+    code, out, _ = update(capsys)
+
+    assert code == 0 and diff_lines(out) == ["hull unchanged"]
+
+
+def test_old_refs_unresolvable(upstream: Upstream, capsys: Capsys) -> None:
+    upstream.commit({"tdd/SKILL.md": "1\n"})
+    write_config('entries = ["mp/tdd"]\n' + git_source("mp", upstream))
+
+    code, out, _ = update(capsys)
+
+    assert code == 0 and "no previous hull to compare" in out
+
+
+def test_old_ref_not_cached(upstream: Upstream, capsys: Capsys) -> None:
+    tip = upstream.commit({"tdd/SKILL.md": "1\n"})
+    write_config(
+        'entries = ["mp/tdd"]\n' + git_source("mp", upstream, f'ref = "{tip}"\n')
+    )
+    main(["build", "--no-install"])  # caches the tip
+    missing = "0" * 40  # a ref no cache holds
+    write_config(
+        'entries = ["mp/tdd"]\n' + git_source("mp", upstream, f'ref = "{missing}"\n')
+    )
+    repos = paths.cache() / "repos"
+    before = snapshot(repos)
+
+    code, out, _ = update(capsys)
+
+    assert code == 0
+    assert "no previous hull to compare" in out and "not cached" in out
+    assert snapshot(repos) == before  # nothing fetched
+
+
+def test_warnings_once(upstream: Upstream, capsys: Capsys) -> None:
+    old = upstream.commit({"tdd/SKILL.md": "/foo\n"})
+    upstream.commit({"tdd/SKILL.md": "/foo again\n"})
+    write_config(
+        'entries = ["mp/tdd"]\n' + git_source("mp", upstream, f'ref = "{old}"\n')
+    )
+    main(["build", "--no-install"])
+    capsys.readouterr()
+
+    code, _, err = update(capsys)
+
+    assert code == 0 and err.count("calls `/foo`") == 1
+
+
+def test_dry_run_prints_the_diff(upstream: Upstream, capsys: Capsys) -> None:
+    old = upstream.commit({"tdd/SKILL.md": "1\n", "grilling/SKILL.md": "g\n"})
+    upstream.commit({"tdd/SKILL.md": "/grilling\n"})
+    write_config(
+        'entries = ["mp/tdd"]\n' + git_source("mp", upstream, f'ref = "{old}"\n')
+    )
+    main(["build", "--no-install"])
+
+    code, out, _ = update(capsys, "--dry-run")
+
+    assert code == 0 and "+ mp/grilling" in out
 
 
 def test_reference_turns_ambiguous_upstream(

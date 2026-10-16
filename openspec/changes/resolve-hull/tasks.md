@@ -56,7 +56,7 @@ Apply with the `tdd` skill: each task red-green-refactor (failing test first, th
   ref moved (neither on `--dry-run`, whose message names both). Verify: reference-turns-ambiguous-upstream,
   lock-follows-the-TOML,
   lock-written-though-no-ref-moved, dry-run (lock unchanged), and every existing update test.
-- [ ] 6.2 Hull diff: resolve at the old refs, only if all cached (never fetch), warnings dropped, print the legend and
+- [x] 6.2 Hull diff: resolve at the old refs, only if all cached (never fetch), warnings dropped, print the legend and
   `+`/`-`/`~` lines
   sorted, `hull unchanged`, or the no-previous-hull note. Verify: skill-added-upstream, skill-dropped-upstream,
   legend, nothing-changed, old-refs-unresolvable, old-ref-not-cached, warnings-once, and the dry run prints the same.

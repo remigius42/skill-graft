@@ -14,6 +14,7 @@ from skill_graft import git, lock, paths, resolve
 from skill_graft.cache import Cache
 from skill_graft.config import Config, GitSource
 from skill_graft.errors import SkillGraftError
+from skill_graft.hull import Hull
 
 
 def update(loaded: Config, aliases: list[str], dry_run: bool = False) -> None:
@@ -54,11 +55,50 @@ def _update(loaded: Config, aliases: list[str], git_cache: Cache, write: bool) -
     hull = resolve.resolve(loaded, resolve.folders(loaded, git_cache, tips))
     for warning in hull.warnings:
         print(f"skill-graft: warning: {warning}", file=sys.stderr)
+    _print_diff(_previous(loaded, selected, git_cache), hull)
     moved = {alias: tip for alias, tip in tips.items() if tip != selected[alias].ref}
     if write:
         if moved:
             _write_refs(moved)
         lock.write(lock.render(loaded, tips, hull))  # a path source may have changed
+
+
+def _previous(
+    loaded: Config, selected: dict[str, GitSource], git_cache: Cache
+) -> Hull | str:
+    """The hull at the current refs, or why there is none to compare.
+
+    Never fetches: the diff is not worth a remote call or a cache write.
+    """
+    for alias, source in selected.items():
+        if source.ref is None:
+            return f"{alias!r} had no ref"
+        if not git_cache.has_commit(source.url, source.ref):
+            return f"{alias!r} ref {source.ref} not cached"
+    try:
+        return resolve.resolve(loaded, resolve.folders(loaded, git_cache, {}))
+    except SkillGraftError as error:
+        return str(error)
+
+
+def _print_diff(previous: Hull | str, hull: Hull) -> None:
+    """`+`, `-` or `~` per skill added, removed or changed, by skill ID."""
+    if isinstance(previous, str):
+        print(f"no previous hull to compare: {previous}")
+        return
+    old = {skill: lock.folder_hash(f) for skill, f in previous.skills.items()}
+    new = {skill: lock.folder_hash(f) for skill, f in hull.skills.items()}
+    lines = [
+        f"{mark} {skill}"
+        for skill in sorted(old.keys() | new.keys())
+        for mark in ["+" if skill not in old else "-" if skill not in new else "~"]
+        if old.get(skill) != new.get(skill)
+    ]
+    print(
+        "\n".join(["hull (+ added, - removed, ~ changed):", *lines])
+        if lines
+        else "hull unchanged"
+    )
 
 
 def _write_refs(refs: dict[str, str]) -> None:
