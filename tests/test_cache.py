@@ -3,6 +3,7 @@
 import os
 import shutil
 import subprocess
+import threading
 from pathlib import Path
 
 import pytest
@@ -79,6 +80,11 @@ def test_fetch_once_per_url_per_command(tmp_path: Path) -> None:
     assert later.has_commit(upstream.url, newer)
 
 
+def unlocked(folder: Path) -> list[str]:
+    """The names in `folder` but lock files, which stay, as `flock` needs."""
+    return sorted(p.name for p in folder.iterdir() if p.suffix != ".lock")
+
+
 def leftover_of(final: Path) -> Path:
     """A killed run's temporary folder for `final`: the name the cache gives it."""
     folder = cache._temporary(final)
@@ -99,6 +105,21 @@ def test_interrupted_clone_does_not_block(tmp_path: Path) -> None:
     assert (leftover / "junk").exists()  # perhaps another run's clone in progress
 
 
+def test_fetch_waits_for_another_run(tmp_path: Path) -> None:
+    upstream = Upstream(tmp_path / "up")
+    sha = upstream.commit({"a/SKILL.md": "# a\n"})
+    git_cache = cache.Cache(paths.cache())
+    fetching = threading.Thread(target=git_cache.fetch, args=("mp", upstream.url))
+
+    with cache.lock(git_cache.repository(upstream.url)):  # the other run
+        fetching.start()
+        fetching.join(0.5)
+        assert fetching.is_alive()
+    fetching.join(10)
+
+    assert not fetching.is_alive() and git_cache.has_commit(upstream.url, sha)
+
+
 def test_another_run_cloning_the_same_url(tmp_path: Path) -> None:
     upstream = Upstream(tmp_path / "up")
     sha = upstream.commit({"a/SKILL.md": "# a\n"})
@@ -109,7 +130,7 @@ def test_another_run_cloning_the_same_url(tmp_path: Path) -> None:
     second._clone(upstream.url, repo, "mp")
 
     assert second.has_commit(upstream.url, sha)
-    assert sorted(p.name for p in repo.parent.iterdir()) == [repo.name]
+    assert unlocked(repo.parent) == [repo.name]
 
 
 def test_sha256_remote(tmp_path: Path) -> None:
@@ -148,7 +169,7 @@ def test_unreachable_remote(tmp_path: Path) -> None:
 
     assert "'mp'" in str(error.value) and url in str(error.value)
     assert "`git clone` failed" in str(error.value)
-    assert list((paths.cache() / "repos").iterdir()) == []
+    assert unlocked(paths.cache() / "repos") == []
 
 
 def test_git_missing(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:

@@ -12,6 +12,7 @@ words:
   - conftest
   - copytree
   - delenv
+  - fcntl
   - followlinks
   - frontmatter
   - kiro

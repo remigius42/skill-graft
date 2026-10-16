@@ -1,11 +1,13 @@
 """The cache of git sources: one bare repository per URL, one export per commit."""
 
+import fcntl
 import hashlib
 import os
 import re
 import shutil
 import tempfile
-from collections.abc import Callable
+from collections.abc import Callable, Iterator
+from contextlib import contextmanager
 from pathlib import Path
 
 from skill_graft import git
@@ -43,20 +45,21 @@ class Cache:
             return
         context = f"source {alias!r} ({url})"
         repo = self.repository(url)
-        if repo.exists():
-            git.run(
-                *git.FSCK,
-                "fetch",
-                "-q",
-                "--prune",
-                "--no-tags",
-                "origin",
-                "+refs/heads/*:refs/heads/*",
-                repo=repo,
-                context=context,
-            )
-        else:
-            self._clone(url, repo, context)
+        with lock(repo):
+            if repo.exists():
+                git.run(
+                    *git.FSCK,
+                    "fetch",
+                    "-q",
+                    "--prune",
+                    "--no-tags",
+                    "origin",
+                    "+refs/heads/*:refs/heads/*",
+                    repo=repo,
+                    context=context,
+                )
+            else:
+                self._clone(url, repo, context)
         self._fetched.add(url)
 
     def checkout(self, alias: str, url: str, ref: str) -> Path:
@@ -117,6 +120,18 @@ class Cache:
                 context=context,
             ),
         )
+
+
+@contextmanager
+def lock(repo: Path) -> Iterator[None]:
+    """Holds `repo`'s lock, waiting for any other run that holds it.
+
+    Two fetches into one repository would fail on git's own ref locks.
+    """
+    repo.parent.mkdir(parents=True, exist_ok=True)
+    with open(repo.with_name(f"{repo.name}.lock"), "a") as file:
+        fcntl.flock(file, fcntl.LOCK_EX)
+        yield
 
 
 def _build(final: Path, make: Callable[[Path], object]) -> None:

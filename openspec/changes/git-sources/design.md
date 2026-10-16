@@ -57,7 +57,9 @@ beyond what git does itself.
   A killed clone leaves only garbage, never blocking the next run nor mistaken for a repository. Clone, unlike
   `init`, takes the remote's hash format (SHA-1 or SHA-256) from the protocol. Fetch:
   `git fetch --prune --no-tags origin +refs/heads/*:refs/heads/*`, all branches since the **Ref** may be on any.
-  A `Cache` fetches each URL at most once per command, however many aliases name it. "Has commit" is
+  A `Cache` fetches each URL at most once per command, however many aliases name it. A clone or fetch holds
+  `repos/<key>.git.lock` (`fcntl.flock`, POSIX like the rest), so a concurrent run waits rather than failing on
+  git's ref locks; lock files stay, as `flock` needs. "Has commit" is
   `git cat-file -e <sha>^{commit}`.
 
 - **Export at the ref**: `checkout(source, ref) -> Path`. If `trees/<key>/<sha>/` exists, reuse it: it only
