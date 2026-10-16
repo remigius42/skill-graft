@@ -2,6 +2,7 @@
 
 import os
 import shutil
+import sys
 import tempfile
 from collections.abc import MutableMapping
 from pathlib import Path
@@ -9,7 +10,7 @@ from typing import Any, cast
 
 import tomlkit
 
-from skill_graft import git, paths, resolve
+from skill_graft import git, lock, paths, resolve
 from skill_graft.cache import Cache
 from skill_graft.config import Config, GitSource
 from skill_graft.errors import SkillGraftError
@@ -30,7 +31,7 @@ def update(loaded: Config, aliases: list[str], dry_run: bool = False) -> None:
             git_cache = Cache(Path(tmp), Cache(paths.cache()))
             _update(loaded, aliases, git_cache, write=False)
     finally:
-        print("dry run: skill-graft.toml not written")
+        print("dry run: skill-graft.toml and skill-graft.lock not written")
 
 
 def _update(loaded: Config, aliases: list[str], git_cache: Cache, write: bool) -> None:
@@ -50,10 +51,14 @@ def _update(loaded: Config, aliases: list[str], git_cache: Cache, write: bool) -
             git_cache.fetch(alias, source.url)
         unchanged = " (unchanged)" if tips[alias] == source.ref else ""
         print(f"{alias} {tips[alias]}{unchanged}")
-    resolve.resolve(loaded, resolve.folders(loaded, git_cache, tips))
+    hull = resolve.resolve(loaded, resolve.folders(loaded, git_cache, tips))
+    for warning in hull.warnings:
+        print(f"skill-graft: warning: {warning}", file=sys.stderr)
     moved = {alias: tip for alias, tip in tips.items() if tip != selected[alias].ref}
-    if moved and write:
-        _write_refs(moved)
+    if write:
+        if moved:
+            _write_refs(moved)
+        lock.write(lock.render(loaded, tips, hull))  # a path source may have changed
 
 
 def _write_refs(refs: dict[str, str]) -> None:

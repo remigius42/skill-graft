@@ -436,3 +436,75 @@ def test_dry_run_with_an_unreachable_unselected_source(
 
     assert update(capsys, "a", "--dry-run")[0] == 0
     assert update(capsys, "a")[0] == 0
+
+
+def lock_file() -> Path:
+    return paths.package() / "skill-graft.lock"
+
+
+def test_lock_follows_the_toml(upstream: Upstream, capsys: Capsys) -> None:
+    old = upstream.commit({"tdd/SKILL.md": "1\n"})
+    new = upstream.commit({"tdd/SKILL.md": "2\n"})
+    write_config(
+        'entries = ["mp/tdd"]\n' + git_source("mp", upstream, f'ref = "{old}"\n')
+    )
+
+    assert update(capsys)[0] == 0
+
+    assert f'ref = "{new}"' in lock_file().read_text()
+
+
+def test_lock_written_though_no_ref_moved(
+    home: Path, upstream: Upstream, capsys: Capsys
+) -> None:
+    sha = upstream.commit({"tdd/SKILL.md": "1\n"})
+    notes = skill(home / "own" / "notes")
+    file = write_config(
+        'entries = ["mp/tdd", "own/notes"]\n'
+        + git_source("mp", upstream, f'ref = "{sha}"\n')
+        + '[sources.own]\npath = "~/own"\n'
+    )
+    assert update(capsys)[0] == 0
+    before, toml = lock_file().read_text(), file.read_bytes()
+    (notes / "SKILL.md").write_text("changed\n")
+
+    assert update(capsys)[0] == 0
+
+    assert lock_file().read_text() != before and file.read_bytes() == toml
+
+
+def test_dry_run_leaves_the_lock(upstream: Upstream, capsys: Capsys) -> None:
+    old = upstream.commit({"tdd/SKILL.md": "1\n"})
+    write_config(
+        'entries = ["mp/tdd"]\n' + git_source("mp", upstream, f'ref = "{old}"\n')
+    )
+    assert main(["build", "--no-install"]) == 0
+    upstream.commit({"tdd/SKILL.md": "2\n"})
+    before = lock_file().read_bytes()
+
+    code, out, _ = update(capsys, "--dry-run")
+
+    assert code == 0
+    assert "dry run: skill-graft.toml and skill-graft.lock not written" in out
+    assert lock_file().read_bytes() == before
+
+
+def test_reference_turns_ambiguous_upstream(
+    home: Path, tmp_path: Path, capsys: Capsys
+) -> None:
+    x = Upstream(tmp_path / "x")
+    x_ref = x.commit({"other/SKILL.md": "1\n"})
+    skill(home / "mp" / "tdd", "/notes\n")
+    skill(home / "own" / "notes")
+    file = write_config(
+        'entries = ["mp/tdd"]\n[sources.mp]\npath = "~/mp"\n'
+        '[sources.own]\npath = "~/own"\n' + git_source("x", x, f'ref = "{x_ref}"\n')
+    )
+    assert update(capsys)[0] == 0
+    before, toml = lock_file().read_bytes(), file.read_bytes()
+    x.commit({"notes/SKILL.md": "x\n"})
+
+    code, _, err = update(capsys)
+
+    assert code == 1 and "/notes" in err and "own/notes" in err and "x/notes" in err
+    assert lock_file().read_bytes() == before and file.read_bytes() == toml

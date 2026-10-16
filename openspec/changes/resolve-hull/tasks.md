@@ -52,7 +52,7 @@ Apply with the `tdd` skill: each task red-green-refactor (failing test first, th
 
 ## 6. Update
 
-- [ ] 6.1 `update` resolves the hull at the new tips; on success writes the lock always and the TOML when a
+- [x] 6.1 `update` resolves the hull at the new tips; on success writes the lock always and the TOML when a
   ref moved (neither on `--dry-run`, whose message names both). Verify: reference-turns-ambiguous-upstream,
   lock-follows-the-TOML,
   lock-written-though-no-ref-moved, dry-run (lock unchanged), and every existing update test.
