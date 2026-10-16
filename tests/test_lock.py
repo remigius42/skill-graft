@@ -10,6 +10,7 @@ from conftest import configure, skill, write_config
 
 from skill_graft import config, lock, paths, resolve
 from skill_graft.cache import Cache
+from skill_graft.cli import main
 
 
 def render() -> str:
@@ -93,6 +94,75 @@ def test_exec_bit_changes_the_hash(home: Path) -> None:
     (tdd / "run.sh").chmod(0o755)
 
     assert parsed()["skills"][0]["hash"] != before
+
+
+def renaming(renames: str) -> None:
+    """Entry `mp/tdd` calling `/grilling`, mentioning `` `grilling` ``, renamed so."""
+    write_config(
+        f'entries = ["mp/tdd"]\n[sources.mp]\npath = "~/mp"\n[rename]\n{renames}\n'
+    )
+
+
+def test_renamed_skill(home: Path) -> None:
+    skill(home / "mp" / "tdd", "/grilling\n")
+    skill(home / "mp" / "grilling")
+    renaming('"mp/grilling" = "mp-grilling"')
+
+    assert [
+        {k: v for k, v in s.items() if k != "hash"} for s in parsed()["skills"]
+    ] == [
+        {"id": "mp/grilling", "entry": False, "deployed": "mp-grilling"},
+        {"id": "mp/tdd", "entry": True},
+    ]
+
+
+def test_prose_edge(home: Path) -> None:
+    skill(home / "mp" / "tdd", "/grilling and `grilling`\n")
+    skill(home / "mp" / "grilling")
+    configure(["mp/tdd"], mp="~/mp")
+
+    assert edges() == [
+        {"from": "mp/tdd", "to": "mp/grilling", "kind": "prose"},
+        {"from": "mp/tdd", "to": "mp/grilling", "kind": "slash"},
+    ]
+
+
+def test_suggestion_recorded(home: Path) -> None:
+    skill(home / "mp" / "tdd", "/grilling, then diagnosing-bugs\n")
+    skill(home / "mp" / "grilling", "see `diagnosing-bugs`\n")
+    skill(home / "mp" / "diagnosing-bugs")
+    configure(["mp/tdd"], mp="~/mp")
+
+    assert parsed()["suggestions"] == [
+        {"id": "mp/diagnosing-bugs", "from": ["mp/grilling", "mp/tdd"]}
+    ]
+
+
+def test_rename_changes_the_hash(home: Path) -> None:
+    skill(home / "mp" / "tdd", "/grilling\n")
+    skill(home / "mp" / "grilling")
+    renaming("")
+    before = {s["id"]: s["hash"] for s in parsed()["skills"]}
+    renaming('"mp/grilling" = "mp-grilling"')
+
+    after = {s["id"]: s["hash"] for s in parsed()["skills"]}
+
+    assert before["mp/tdd"] != after["mp/tdd"]
+    assert before["mp/grilling"] != after["mp/grilling"]
+
+
+def test_resolve_and_build_agree_with_renames(home: Path) -> None:
+    skill(home / "mp" / "tdd", "/grilling and diagnosing-bugs\n")
+    skill(home / "mp" / "grilling")
+    skill(home / "mp" / "diagnosing-bugs")
+    renaming('"mp/tdd" = "mp-tdd"\n"mp/grilling" = "mp-grilling"')
+    lock = paths.package() / "skill-graft.lock"
+
+    assert main(["resolve"]) == 0
+    resolved = lock.read_bytes()
+    assert main(["build", "--no-install"]) == 0
+
+    assert lock.read_bytes() == resolved
 
 
 def test_same_input(home: Path) -> None:

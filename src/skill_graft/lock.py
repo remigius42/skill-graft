@@ -39,15 +39,13 @@ def render(
     document["sources"] = sources
     skills = tomlkit.aot()
     for skill_id in sorted(hull.skills):
-        skills.append(
-            tomlkit.item(
-                {
-                    "id": str(skill_id),
-                    "entry": skill_id in hull.entries,
-                    "hash": hashes[skill_id],
-                }
-            )
-        )
+        item: dict[str, object] = {
+            "id": str(skill_id),
+            "entry": skill_id in hull.entries,
+        }
+        if (deployed := hull.deployed[skill_id]) != skill_id.name:
+            item["deployed"] = deployed
+        skills.append(tomlkit.item(item | {"hash": hashes[skill_id]}))
     document["skills"] = skills
     edges = tomlkit.aot()
     for edge in sorted({(e.source, e.target, e.kind, e.bind) for e in hull.edges}):
@@ -55,6 +53,11 @@ def render(
         item = {"from": str(source_id), "to": str(target), "kind": kind}
         edges.append(tomlkit.item(item | ({"bind": True} if bind else {})))
     document["edges"] = edges
+    suggestions = tomlkit.aot()
+    for skill_id in sorted(hull.suggestions):
+        mentions = sorted(str(s) for s in hull.suggestions[skill_id])
+        suggestions.append(tomlkit.item({"id": str(skill_id), "from": mentions}))
+    document["suggestions"] = suggestions
     return tomlkit.dumps(document)
 
 

@@ -51,7 +51,7 @@ that honors them in full, so no commit accepts intent it ignores.
 
 ## 5. Lock and resolve output
 
-- [ ] 5.1 `lock.py`: `deployed` on renamed **Skills**, `prose` edges, `[[suggestions]]`. Verify: renamed-skill,
+- [x] 5.1 `lock.py`: `deployed` on renamed **Skills**, `prose` edges, `[[suggestions]]`. Verify: renamed-skill,
   suggestion-recorded, prose-edge, rename-changes-the-hash, resolve-and-build-agree, same-input.
 - [ ] 5.2 Tree marks `as <deployed>` and shows rewritten `prose` edges; `resolve` prints suggestions after the tree,
   `build` does not. Verify: tree, renames-marked, bound-prose-shown, suggestion-printed, no-suggestions.
