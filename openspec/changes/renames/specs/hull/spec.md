@@ -6,9 +6,10 @@
 
 A prose **Reference** SHALL be a code span whose whole content is a name (`` `grilling` ``), or a bare hyphenated
 token `[a-z0-9]+(-[a-z0-9]+)+` standing as its own token: not preceded by a letter, digit, `_`, `/`, `.`, `-`,
-`~`, `:`, `\`, `<`, `@`, `#`, `=`, `?`, `&`, `$` or `](`, and not followed by a letter, digit, `_`, `/`, `-`, or
-`.` or `:` and a letter or digit. It SHALL count anywhere, code blocks included, except the value of `SKILL.md`'s
-front matter `name:`, and never inside a slash or Skill tool **Reference**.
+`~`, `:`, `\`, `<`, `@`, `#`, `=`, `?`, `&`, `$` or `](`, and not followed by a letter, digit, `_`, `/`, `-`,
+`%`, `+`, or `.` or `:` and a letter or digit; nor a YAML key, first on its line (past indent or a list dash) and
+followed by `:`. It SHALL count anywhere, code blocks included, except the value of `SKILL.md`'s front matter
+`name:`, and never inside a slash or Skill tool **Reference**, whose arguments on that line belong to it.
 
 #### Scenario: Backticked and hyphenated
 
@@ -20,7 +21,7 @@ front matter `name:`, and never inside a slash or Skill tool **Reference**.
 
 - **WHEN** it holds `grilling` unquoted, `` `grilling --fast` ``, `` `mp/grilling` ``, `--dry-run`,
   `refs/red-green.md`, `x-ray.png`, `[see](my-skill)`, `[x](#my-skill)`, `id="my-skill"`, `foo_my-skill`,
-  `?q=my-skill` or `https://x.org/my-skill`
+  `?q=my-skill`, `my-skill%20x`, `allowed-tools: Bash` or `https://x.org/my-skill`
 - **THEN** none is a prose **Reference**
 
 #### Scenario: Own name line
@@ -31,7 +32,7 @@ front matter `name:`, and never inside a slash or Skill tool **Reference**.
 
 #### Scenario: Slash form wins
 
-- **WHEN** it holds `` `/grilling` `` or `Skill(diagnosing-bugs)`
+- **WHEN** it holds `` `/grilling` ``, `Skill(diagnosing-bugs)` or `Skill(skill: "grilling", args: "x-y")`
 - **THEN** each is one slash or Skill tool **Reference**, and no prose **Reference**
 
 ### Requirement: Prose resolves in its own source only

@@ -18,10 +18,10 @@ REFERENCE = re.compile(
     r"(?<![\w./:~\\<@-])(?<!\]\()(?<!=[\"'])"
     r"/(?P<slash>[A-Za-z0-9][A-Za-z0-9._-]*+)(?!/|:\w)"
     r"|\bSkill\(\s*(?:skill\s*[:=]\s*)?(?P<q>[\"']?)"
-    r"(?P<tool>[A-Za-z0-9][A-Za-z0-9._-]*+)(?P=q)\s*[,)]"
+    r"(?P<tool>[A-Za-z0-9][A-Za-z0-9._-]*+)(?P=q)\s*(?:\)|,[^)\n]*+\)?)"
     r"|(?<!`)`(?P<code>[A-Za-z0-9][A-Za-z0-9._-]*+)`(?!`)"
     r"|(?<![\w./:~\\<@#=?&$-])(?<!\]\()(?<!=[\"'])"
-    r"(?P<prose>[a-z0-9]++(?:-[a-z0-9]++)++)(?![\w/-]|[.:]\w)"
+    r"(?P<prose>[a-z0-9]++(?:-[a-z0-9]++)++)(?![\w/%+-]|[.:]\w)"
 )
 
 # Each named group of REFERENCE: the kind it gives, and how it is written.
@@ -62,6 +62,8 @@ def scan(folder: Path) -> tuple[list[Reference], list[str]]:
             if skip and skip[0] <= match.start() < skip[1]:
                 continue  # the skill's own name, never a reference
             group = next(g for g in FORMS if match[g])
+            if group == "prose" and _yaml_key(text, match):
+                continue
             name = match[group].rstrip(".") if group == "slash" else match[group]
             start = match.start(group)
             kind, text_form = FORMS[group]
@@ -71,6 +73,12 @@ def scan(folder: Path) -> tuple[list[Reference], list[str]]:
                 )
             )
     return found, warnings
+
+
+def _yaml_key(text: str, match: re.Match[str]) -> bool:
+    """Whether the match opens its line, past indent or `- `, followed by `:`."""
+    before = text[text.rfind("\n", 0, match.start()) + 1 : match.start()]
+    return text[match.end() : match.end() + 1] == ":" and before.strip() in ("", "-")
 
 
 def front_matter(text: str) -> tuple[int, tuple[int, int] | None] | None:

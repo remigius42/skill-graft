@@ -164,6 +164,10 @@ def test_prose(tmp_path: Path, text: str, written: str) -> None:
         "x=my-skill",
         "a&b=my-skill",
         "$my-skill",
+        "allowed-tools: Bash",
+        "  argument-hint: x",
+        "my-skill%20x",
+        "my-skill+x",
         "My-Skill",
         "https://x.org/my-skill",
     ],
@@ -179,6 +183,8 @@ def test_not_prose(tmp_path: Path, text: str) -> None:
     [
         ("`/grilling`", "/grilling"),
         ("Skill(diagnosing-bugs)", "Skill(diagnosing-bugs)"),
+        ('Skill(skill: "grilling", args: "diagnosing-bugs")', "Skill(grilling)"),
+        ("Skill(grilling, `notes` and x-y)", "Skill(grilling)"),
     ],
 )
 def test_slash_form_wins(tmp_path: Path, text: str, written: str) -> None:
