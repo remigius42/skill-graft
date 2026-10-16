@@ -87,3 +87,11 @@ def fake_apm(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> FakeApm:
     script.chmod(0o755)
     monkeypatch.setenv("PATH", str(folder))
     return FakeApm(folder)
+
+
+def write_config(text: str) -> Path:
+    """Writes ~/.apm/skill-graft/skill-graft.toml and returns it."""
+    path = Path.home() / ".apm" / "skill-graft" / "skill-graft.toml"
+    path.parent.mkdir(parents=True, exist_ok=True)
+    path.write_text(text)
+    return path
