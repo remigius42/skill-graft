@@ -52,5 +52,5 @@ Each task: failing test first, then code, one commit, `pre-commit run --all-file
 - [x] 6.1 Real-APM test: `init`, add a fixture path source and entry, `build`; assert exit 0, `~/.apm/apm.yml`
   lists the package, the skill is deployed under the temp `HOME`. Skipped without `apm` on `PATH`. Verify:
   passes under `uv run pytest`.
-- [ ] 6.2 Update `README.md` status and `docs/design.md` "Measured APM behavior" with what design.md recorded;
+- [x] 6.2 Update `README.md` status and `docs/design.md` "Measured APM behavior" with what design.md recorded;
   add new words to `.cspell.yaml`. Verify: `pre-commit run --all-files` green.

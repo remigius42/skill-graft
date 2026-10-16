@@ -10,7 +10,8 @@ Renames are the reason it exists: a skill named like a harness built-in (`code-r
 `prototype`) shadows it or is shadowed by it, and renaming one skill by hand misses the other skills that call
 it by name.
 
-Status: design. Nothing is built yet.
+Status: walking skeleton. `skill-graft init` and `skill-graft build` vendor entries from local folders and
+deploy them through APM; git sources, references, renames and patches are not built yet.
 
 ## Development
 

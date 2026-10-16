@@ -46,7 +46,6 @@ path = "~/Documents/sync/2_areas/software/chisel_skill"
 
 - `init`: creates `~/.apm/skill-graft/` with a commented `skill-graft.toml` and the two-line `apm.yml`, then
   registers it with `apm install -g <absolute path of ~/.apm/skill-graft>`. Refuses if the folder exists.
-  (Verify that APM writes the dependency into `~/.apm/apm.yml` before relying on it.)
 - `add <skill-id>`, `rename <skill-id> <name>`: edit the TOML, then resolve.
 - `resolve`: computes the hull from the TOML, writes the lock, prints the tree, warnings and suggestions.
   Never fetches beyond the pinned `ref`.
@@ -113,3 +112,7 @@ APM 0.33.0, `apm install -g -t claude`, with `HOME` pointed at a scratch directo
   `-v` the output still ends in "No changes -- install state already up to date". `~/.apm/skill-graft` and
   absolute paths work.
 - Removing a skill and reinstalling prunes it from `~/.claude/skills/` ("3 stale files cleaned").
+- `apm install -g <absolute path>` creates `~/.apm/apm.yml` if missing and lists the package under
+  `dependencies.apm` as an absolute path, never with `~`. Repeating it changes nothing ("updated ref in
+  apm.yml") and redeploys. A package of just the two-line `apm.yml`, with no skills yet, registers too.
+- Without `-t` and without `targets:` in `~/.apm/apm.yml`, skills deploy to `~/.agents/skills/`.
