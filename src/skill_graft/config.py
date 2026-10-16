@@ -25,6 +25,7 @@ class SkillId(NamedTuple):
 class Config:
     sources: dict[str, Path]
     entries: list[SkillId]
+    warnings: list[str]
 
 
 def load() -> Config:
@@ -38,7 +39,8 @@ def load() -> Config:
     if unknown := sorted(data.keys() - {"sources", "entries"}):
         raise SkillGraftError(f"{unknown[0]!r} is unsupported in skill-graft.toml")
     sources = _sources(data.get("sources", {}), file.parent)
-    return Config(sources, _entries(data.get("entries", []), sources))
+    entries = _entries(data.get("entries", []), sources)
+    return Config(sources, entries, _overlap_warnings(sources))
 
 
 def _sources(raw: object, base: Path) -> dict[str, Path]:
@@ -66,7 +68,20 @@ def _source_folder(alias: str, raw: str, base: Path) -> Path:
     folder = (base / Path(raw).expanduser()).resolve()
     if not folder.is_dir():
         raise SkillGraftError(f"source {alias!r}: {raw} is not a folder")
+    if paths.overlap(folder, paths.package().resolve()):
+        raise SkillGraftError(
+            f"source {alias!r}: {raw} overlaps {paths.package()}, which build rewrites"
+        )
     return folder
+
+
+def _overlap_warnings(sources: dict[str, Path]) -> list[str]:
+    return [
+        f"source {alias!r} overlaps {deploy}, where APM deploys skills"
+        for alias, folder in sources.items()
+        for deploy in paths.deploy_folders()
+        if paths.overlap(folder, deploy.resolve())
+    ]
 
 
 def _entries(raw: object, sources: dict[str, Path]) -> list[SkillId]:

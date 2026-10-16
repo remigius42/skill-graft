@@ -9,9 +9,11 @@ words:
   - copytree
   - followlinks
   - frontmatter
+  - kiro
   - mattpocock
   - monkeypatched
   - mypy
+  - openclaw
   - opencode
   - openspec
   - opsx

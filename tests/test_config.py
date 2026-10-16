@@ -114,6 +114,29 @@ def test_bad_alias(home: Path, alias: str) -> None:
 
 
 def test_repeated_entry(home: Path) -> None:
-    write_config('entries = ["own/a", "own/a"]\n[sources.own]\npath = "~"\n')
+    (home / "s").mkdir()
+    write_config('entries = ["own/a", "own/a"]\n[sources.own]\npath = "~/s"\n')
     with pytest.raises(SkillGraftError, match=r"'own/a'.*repeated"):
         load()
+
+
+@pytest.mark.parametrize("path", [".", "~/.apm", "~", ".apm/skills"])
+def test_source_overlapping_the_package(home: Path, path: str) -> None:
+    (home / ".apm" / "skill-graft" / ".apm" / "skills").mkdir(parents=True)
+    write_config(f'[sources.own]\npath = "{path}"\n')
+    with pytest.raises(SkillGraftError, match=r"source 'own'.*skill-graft"):
+        load()
+
+
+@pytest.mark.parametrize(
+    "path", ["~/.agents/skills", "~/.claude", "~/.config/opencode/skills/x"]
+)
+def test_source_overlapping_a_deploy_folder_warns(home: Path, path: str) -> None:
+    folder = Path(path.replace("~", str(home)))
+    folder.mkdir(parents=True)
+    write_config(f'[sources.own]\npath = "{path}"\n')
+    config = load()
+    assert config.sources == {"own": folder.resolve()}
+    assert len(config.warnings) == 1
+    assert "'own'" in config.warnings[0]
+    assert "skills" in config.warnings[0]

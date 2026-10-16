@@ -20,7 +20,7 @@ Each task: failing test first, then code, one commit, `pre-commit run --all-file
   git source, `[rename]`, and not-initialized scenarios pass.
 - [x] 2.3 Validate value types, aliases as one path segment, and repeated entries. Verify: entries-as-string,
   empty source, path-not-a-string, bad alias and repeated-entry scenario tests pass.
-- [ ] 2.4 Error on sources inside or containing `~/.apm/skill-graft/`; warn on deploy-folder overlap. Verify:
+- [x] 2.4 Error on sources inside or containing `~/.apm/skill-graft/`; warn on deploy-folder overlap. Verify:
   source-is-the-package and source-is-a-deploy-folder scenario tests pass.
 
 ## 3. Skill discovery
