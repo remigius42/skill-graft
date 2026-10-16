@@ -90,7 +90,20 @@ def test_interrupted_clone_does_not_block(tmp_path: Path) -> None:
     git_cache.fetch("mp", upstream.url)
 
     assert git_cache.has_commit(upstream.url, sha)
-    assert not leftover.exists()
+    assert (leftover / "junk").exists()  # perhaps another run's clone in progress
+
+
+def test_another_run_cloning_the_same_url(tmp_path: Path) -> None:
+    upstream = Upstream(tmp_path / "up")
+    sha = upstream.commit({"a/SKILL.md": "# a\n"})
+    first, second = cache.Cache(paths.cache()), cache.Cache(paths.cache())
+    first.fetch("mp", upstream.url)
+    repo = first.repository(upstream.url)
+    # As if `second` started cloning before `first` finished.
+    second._clone(upstream.url, repo, "mp")
+
+    assert second.has_commit(upstream.url, sha)
+    assert sorted(p.name for p in repo.parent.iterdir()) == [repo.name]
 
 
 def test_sha256_remote(tmp_path: Path) -> None:
@@ -194,7 +207,28 @@ def test_interrupted_checkout_is_redone(tmp_path: Path) -> None:
     tree = cache.Cache(paths.cache()).checkout("mp", upstream.url, sha)
 
     assert (tree / "tdd" / "b.md").read_text() == "b\n"
-    assert not partial.exists()
+    # It may be another run's work in progress, so it is left alone.
+    assert (partial / "tdd" / "SKILL.md").exists()
+
+
+def test_another_run_exporting_the_same_ref(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    upstream = Upstream(tmp_path / "up")
+    sha = upstream.commit({"tdd/SKILL.md": "# tdd\n"})
+    tree = paths.cache() / "trees" / cache.key(upstream.url) / sha
+    export = cache._export
+
+    def racing(repo: Path, ref: str, folder: Path, context: str) -> None:
+        export(repo, ref, folder, context)
+        export(repo, ref, tree, context)  # the other run renames first
+
+    monkeypatch.setattr(cache, "_export", racing)
+
+    result = cache.Cache(paths.cache()).checkout("mp", upstream.url, sha)
+
+    assert result == tree and (tree / "tdd" / "SKILL.md").exists()
+    assert sorted(p.name for p in tree.parent.iterdir()) == [sha]
 
 
 def test_checkout_ignores_attributes_and_filters(tmp_path: Path) -> None:

@@ -33,7 +33,12 @@ again. An interrupted clone or checkout SHALL never be mistaken for a complete o
 #### Scenario: Interrupted checkout
 
 - **WHEN** a previous run left a partial checkout of the `ref` behind
-- **THEN** the next `build` discards it, checks the `ref` out again, and vendors every file
+- **THEN** the next `build` ignores it, checks the `ref` out again, and vendors every file
+
+#### Scenario: Concurrent runs
+
+- **WHEN** two commands export the same `ref`, or clone the same URL, at the same time
+- **THEN** both succeed, and the cache holds one export or repository
 
 #### Scenario: Interrupted clone
 

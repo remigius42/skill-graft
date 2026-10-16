@@ -4,6 +4,7 @@ import hashlib
 import os
 import re
 import shutil
+import tempfile
 from pathlib import Path
 
 from skill_graft import git
@@ -72,12 +73,9 @@ class Cache:
                 raise SkillGraftError(
                     f"source {alias!r}: ref {ref} is on no branch of {url}"
                 )
-        tmp = tree.with_name(f"{ref}.tmp")
-        if tmp.exists():
-            shutil.rmtree(tmp)
-        tmp.mkdir(parents=True)
+        tmp = _temporary(tree)
         _export(repo, ref, tmp, f"source {alias!r} ({url})")
-        tmp.rename(tree)
+        _place(tmp, tree)
         return tree
 
     def has_commit(self, url: str, sha: str) -> bool:
@@ -99,10 +97,7 @@ class Cache:
         Clone, unlike `init`, takes the remote's hash format, SHA-1 or SHA-256.
         Objects the reference cache already has are borrowed, not downloaded.
         """
-        tmp = repo.with_name(repo.name + ".tmp")
-        if tmp.exists():
-            shutil.rmtree(tmp)
-        tmp.parent.mkdir(parents=True, exist_ok=True)
+        tmp = _temporary(repo)
         borrow = (
             ["--reference-if-able", str(self.reference.repository(url))]
             if self.reference
@@ -120,7 +115,29 @@ class Cache:
             str(tmp),
             context=context,
         )
-        tmp.rename(repo)
+        _place(tmp, repo)
+
+
+def _temporary(final: Path) -> Path:
+    """A new empty folder beside `final`, unique to this run.
+
+    A fixed name could be another run's work in progress; a killed run's
+    leftover is only garbage, never mistaken for `final`.
+    """
+    final.parent.mkdir(parents=True, exist_ok=True)
+    return Path(
+        tempfile.mkdtemp(prefix=f"{final.name}.", suffix=".tmp", dir=final.parent)
+    )
+
+
+def _place(tmp: Path, final: Path) -> None:
+    """Renames `tmp` to `final`, or drops it if another run got there first."""
+    try:
+        tmp.rename(final)
+    except OSError:
+        if not final.exists():
+            raise
+        shutil.rmtree(tmp)
 
 
 def _has_commit(repo: Path, sha: str) -> bool:

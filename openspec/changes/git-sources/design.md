@@ -52,22 +52,25 @@ beyond what git does itself.
   are exported. `FileNotFoundError` → "git is not installed"; non-zero exit → `SkillGraftError` with alias, URL
   and git's stderr.
 
-- **Repository**: any leftover `<key>.git.tmp` is deleted, then a bare clone
-  (`clone --bare --no-tags -- <url> <key>.git.tmp`) and a rename into place, so a killed first clone never
-  blocks the next run. Clone, unlike `init`, takes the remote's hash format (SHA-1 or SHA-256) from the protocol. Fetch:
+- **Repository**: a bare clone (`clone --bare --no-tags -- <url> <tmp>`) into a folder unique to this run
+  (`mkdtemp` beside the final name), then a rename into place; if another run got there first, ours is dropped.
+  A killed clone leaves only garbage, never blocking the next run nor mistaken for a repository. Clone, unlike
+  `init`, takes the remote's hash format (SHA-1 or SHA-256) from the protocol. Fetch:
   `git fetch --prune --no-tags origin +refs/heads/*:refs/heads/*`, all branches since the **Ref** may be on any.
   A `Cache` fetches each URL at most once per command, however many aliases name it. "Has commit" is
   `git cat-file -e <sha>^{commit}`.
 
 - **Export at the ref**: `checkout(source, ref) -> Path`. If `trees/<key>/<sha>/` exists, reuse it: it only
   ever appears complete. Otherwise ensure the commit (fetch only if missing; still missing → "ref not found"
-  error), delete any leftover `<sha>.tmp/`, and write the tree there from `git ls-tree -r -z --full-tree <sha>`
+  error), and write the tree into a folder unique to this run from `git ls-tree -r -z --full-tree <sha>`
   and one `git cat-file --batch` process: mode `100644` a file, `100755` a file with its exec bit, `120000` a
   symlink whose target is the blob, `160000` (submodule) skipped. A path with an empty, `.` or `..` part, or a
-  `.git` part in any case, is refused: a clone of a local path skips fsck. Then rename `<sha>.tmp/` to `<sha>/`. These
-  are the committed bytes exactly: no `.gitattributes` conversion, no filter drivers from the user's config, no
-  `export-ignore` dropping (as `git archive` would), and no worktree or index state to go stale. A cached commit
-  is used without asking the remote whether it still exists.
+  `.git` part in any case, is refused: a clone of a local path skips fsck. Symlinks are written last, and no
+  file lands where a resolved parent leaves the folder or a path already exists. Then rename it to `<sha>/`, or
+  drop it if another run got there first. These are the committed bytes exactly: no `.gitattributes`
+  conversion, no filter drivers from the user's config, no `export-ignore` dropping (as `git archive` would),
+  and no worktree or index state to go stale. A cached commit is used without asking the remote whether it
+  still exists.
 
 - **Resolution step shared by build and update**: split `vendor.vendor()` into
   `resolve(config, folders)`, returning each **Entry**'s folder (deployed names, `find`, symlink checks), and the
