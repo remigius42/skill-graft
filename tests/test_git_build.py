@@ -31,7 +31,9 @@ def test_skill_from_git(home: Path, tmp_path: Path, capsys: Capsys) -> None:
     assert (tdd / "refs" / "x.md").read_text() == "x\n"
     assert not (tdd / ".git").exists()
     assert (home / ".cache" / "skill-graft" / "repos").is_dir()
-    assert package_files(home) == before
+    assert package_files(home) == before | {
+        home / ".apm" / "skill-graft" / "skill-graft.lock"
+    }
 
 
 def test_skill_from_a_sha256_remote(tmp_path: Path, capsys: Capsys) -> None:

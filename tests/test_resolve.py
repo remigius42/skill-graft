@@ -1,0 +1,155 @@
+"""The `resolve` spec: the command, the lock it writes, and the tree it prints."""
+
+import tomllib
+from pathlib import Path
+from typing import TypeAlias
+
+import pytest
+from conftest import Upstream, configure, skill, write_config
+
+from skill_graft.cli import main
+
+Capsys: TypeAlias = pytest.CaptureFixture[str]
+
+
+def lock_file(home: Path) -> Path:
+    return home / ".apm" / "skill-graft" / "skill-graft.lock"
+
+
+def test_resolve_succeeds(home: Path, capsys: Capsys) -> None:
+    skill(home / "own" / "tdd", "/grilling\n")
+    skill(home / "own" / "grilling")
+    configure(["own/tdd"], own="~/own")
+    config = home / ".apm" / "skill-graft" / "skill-graft.toml"
+    before = config.read_bytes()
+
+    assert main(["resolve"]) == 0
+
+    skills = tomllib.loads(lock_file(home).read_text())["skills"]
+    assert [s["id"] for s in skills] == ["own/grilling", "own/tdd"]
+    assert config.read_bytes() == before
+    assert not (home / ".apm" / "skill-graft" / ".apm").exists()
+
+
+def test_tree(home: Path, capsys: Capsys) -> None:
+    skill(home / "mp" / "tdd", "/grilling, /notes and Skill(x)\n")
+    skill(home / "mp" / "grilling", "/notes and /tdd\n")
+    skill(home / "mp" / "notes")
+    skill(home / "own" / "x")
+    write_config(
+        'entries = ["mp/tdd"]\n[sources.mp]\npath = "~/mp"\n'
+        '[sources.own]\npath = "~/own"\n[bind]\n"mp/x" = "own/x"\n'
+    )
+
+    assert main(["resolve"]) == 0
+
+    assert capsys.readouterr().out == (
+        "mp/tdd\n"
+        "├── mp/grilling (/grilling)\n"
+        "│   ├── mp/notes (/notes)\n"
+        "│   └── mp/tdd (/tdd) (*)\n"
+        "├── mp/notes (/notes) (*)\n"
+        "└── own/x (Skill(x), bind)\n"
+    )
+
+
+def test_tree_of_two_entries(home: Path, capsys: Capsys) -> None:
+    skill(home / "own" / "a", "/b\n")
+    skill(home / "own" / "b")
+    configure(["own/a", "own/b"], own="~/own")
+
+    assert main(["resolve"]) == 0
+
+    assert capsys.readouterr().out == "own/a\n└── own/b (/b) (*)\nown/b\n"
+
+
+def test_resolution_error(home: Path, capsys: Capsys) -> None:
+    skill(home / "own" / "tdd", "/notes\n")
+    skill(home / "own" / "notes")
+    configure(["own/tdd"], own="~/own")
+    main(["resolve"])
+    before = lock_file(home).read_bytes()
+    skill(home / "own" / "tdd", "/missing-entry\n")
+    configure(["own/tdd", "own/nope"], own="~/own")
+
+    assert main(["resolve"]) == 1
+
+    assert lock_file(home).read_bytes() == before
+
+
+def test_git_source_without_ref(tmp_path: Path, capsys: Capsys) -> None:
+    write_config('[sources.mp]\ngit = "/srv/s"\n')
+
+    assert main(["resolve"]) == 1
+
+    assert "skill-graft update mp" in capsys.readouterr().err
+
+
+def test_upstream_moved_on(home: Path, tmp_path: Path) -> None:
+    upstream = Upstream(tmp_path / "up")
+    a = upstream.commit({"tdd/SKILL.md": "a\n"})
+    write_config(
+        f'entries = ["mp/tdd"]\n[sources.mp]\ngit = "{upstream.url}"\nref = "{a}"\n'
+    )
+    main(["resolve"])
+    upstream.commit({"tdd/SKILL.md": "b\n"})
+    upstream.path.rename(tmp_path / "gone")  # contacting the remote would fail
+
+    assert main(["resolve"]) == 0
+
+    assert tomllib.loads(lock_file(home).read_text())["sources"]["mp"]["ref"] == a
+
+
+def test_symlinked_config(home: Path, tmp_path: Path) -> None:
+    skill(home / "own" / "tdd")
+    configure(["own/tdd"], own="~/own")
+    config = home / ".apm" / "skill-graft" / "skill-graft.toml"
+    elsewhere = tmp_path / "dotfiles"
+    elsewhere.mkdir()
+    config.rename(elsewhere / "skill-graft.toml")
+    config.symlink_to(elsewhere / "skill-graft.toml")
+
+    assert main(["resolve"]) == 0
+
+    assert lock_file(home).is_file()
+    assert [p.name for p in elsewhere.iterdir()] == ["skill-graft.toml"]
+
+
+def test_build_writes_the_lock(home: Path) -> None:
+    skill(home / "own" / "tdd", "/grilling\n")
+    skill(home / "own" / "grilling")
+    configure(["own/tdd"], own="~/own")
+
+    assert main(["build", "--no-install"]) == 0
+
+    skills = tomllib.loads(lock_file(home).read_text())["skills"]
+    assert [s["id"] for s in skills] == ["own/grilling", "own/tdd"]
+
+
+def test_vendoring_fails(home: Path) -> None:
+    tdd = skill(home / "own" / "tdd")
+    configure(["own/tdd"], own="~/own")
+    main(["build", "--no-install"])
+    before = lock_file(home).read_bytes()
+    (tdd / "dangling").symlink_to("missing")
+
+    assert main(["build", "--no-install"]) == 1
+
+    assert lock_file(home).read_bytes() == before
+
+
+def test_lock_edited_by_hand(home: Path, tmp_path: Path) -> None:
+    upstream = Upstream(tmp_path / "up")
+    a = upstream.commit({"tdd/SKILL.md": "a\n"})
+    b = upstream.commit({"tdd/SKILL.md": "b\n"})
+    write_config(
+        f'entries = ["mp/tdd"]\n[sources.mp]\ngit = "{upstream.url}"\nref = "{a}"\n'
+    )
+    main(["build", "--no-install"])
+    lock_file(home).write_text(lock_file(home).read_text().replace(a, b))
+
+    assert main(["build", "--no-install"]) == 0
+
+    vendored = home / ".apm" / "skill-graft" / ".apm" / "skills" / "tdd" / "SKILL.md"
+    assert vendored.read_text() == "a\n"
+    assert tomllib.loads(lock_file(home).read_text())["sources"]["mp"]["ref"] == a

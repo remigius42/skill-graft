@@ -46,7 +46,7 @@ Apply with the `tdd` skill: each task red-green-refactor (failing test first, th
   edges unique on from, to, kind and bind), sorted, written atomically to `~/.apm/skill-graft/skill-graft.lock`. Verify:
   edges-with-kinds,
   bound-and-default-edge-to-one-skill, symlinked-config, hash-follows-content, same-input tests.
-- [ ] 5.2 `skill-graft resolve`: write the lock, print the tree (stdout) and warnings (stderr); `build` writes
+- [x] 5.2 `skill-graft resolve`: write the lock, print the tree (stdout) and warnings (stderr); `build` writes
   the lock after vendoring, before APM; errors leave it unchanged. Verify: resolve-succeeds, resolution-error,
   upstream-moved-on (remote not contacted), tree, lock-written, vendoring-fails, lock-edited-by-hand.
 

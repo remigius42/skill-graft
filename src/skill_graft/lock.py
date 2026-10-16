@@ -9,8 +9,8 @@ from pathlib import Path
 import tomlkit
 
 from skill_graft import paths
-from skill_graft.config import Config, GitSource
-from skill_graft.hull import Hull
+from skill_graft.config import Config, GitSource, SkillId
+from skill_graft.hull import Edge, Hull
 
 
 def render(config: Config, refs: dict[str, str], hull: Hull) -> str:
@@ -48,6 +48,36 @@ def render(config: Config, refs: dict[str, str], hull: Hull) -> str:
         edges.append(tomlkit.item(item | ({"bind": True} if bind else {})))
     document["edges"] = edges
     return tomlkit.dumps(document)
+
+
+def tree(hull: Hull) -> str:
+    """The hull as `cargo tree` prints: one line per edge, repeats marked `(*)`.
+
+    Each entry expands at the top level; any other skill at its first line.
+    """
+    children: dict[SkillId, dict[tuple[SkillId, str, bool], Edge]] = {}
+    for edge in hull.edges:  # in scan order; one line per target, kind and bind
+        key = (edge.target, edge.kind, edge.bind)
+        children.setdefault(edge.source, {}).setdefault(key, edge)
+    expanded: set[SkillId] = set()
+    lines: list[str] = []
+
+    def expand(skill_id: SkillId, prefix: str) -> None:
+        expanded.add(skill_id)
+        edges = list(children.get(skill_id, {}).values())
+        for i, edge in enumerate(edges):
+            last = i == len(edges) - 1
+            label = f"{edge.text}, bind" if edge.bind else edge.text
+            repeat = edge.target in expanded or edge.target in hull.entries
+            line = f"{prefix}{'└── ' if last else '├── '}{edge.target} ({label})"
+            lines.append(line + (" (*)" if repeat else ""))
+            if not repeat:
+                expand(edge.target, prefix + ("    " if last else "│   "))
+
+    for entry in hull.entries:
+        lines.append(str(entry))
+        expand(entry, "")
+    return "".join(f"{line}\n" for line in lines)
 
 
 def folder_hash(folder: Path) -> str:
