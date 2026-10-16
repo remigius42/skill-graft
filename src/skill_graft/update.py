@@ -3,11 +3,11 @@
 import os
 import shutil
 import tempfile
+from collections.abc import MutableMapping
 from pathlib import Path
+from typing import Any, cast
 
 import tomlkit
-from tomlkit.container import Container
-from tomlkit.items import InlineTable, Table
 
 from skill_graft import config, git, paths, resolve
 from skill_graft.cache import Cache
@@ -63,12 +63,11 @@ def _write_refs(refs: dict[str, str]) -> None:
     """
     file = paths.config_file().resolve()
     document = tomlkit.parse(file.read_text())
-    sources = document["sources"]
-    assert isinstance(sources, Container | Table)
+    # A table, inline table, or proxy over split tables, by how the user wrote
+    # it; config.load already checked that each is a table.
+    sources = cast(MutableMapping[str, Any], document["sources"])
     for alias, ref in refs.items():
-        table = sources[alias]
-        assert isinstance(table, Table | InlineTable)
-        table["ref"] = ref
+        cast(MutableMapping[str, Any], sources[alias])["ref"] = ref
     with tempfile.NamedTemporaryFile(
         "w", dir=file.parent, prefix=f".{file.name}.", delete=False
     ) as tmp:

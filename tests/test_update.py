@@ -257,6 +257,22 @@ def test_ref_added_to_an_inline_table(upstream: Upstream, capsys: Capsys) -> Non
     assert ref("mp") == sha and file.read_text().endswith("  # inline\n")
 
 
+@pytest.mark.parametrize(
+    "layout",
+    [
+        'sources = {{ a = {{ git = "{url}" }}, b = {{ git = "{url}" }} }}\n',
+        '[sources.b]\ngit = "{url}"\n[sources]\n[sources.a]\ngit = "{url}"\n',
+    ],
+)
+def test_other_layouts(upstream: Upstream, capsys: Capsys, layout: str) -> None:
+    sha = upstream.commit({"tdd/SKILL.md": "1\n"})
+    write_config(layout.format(url=upstream.url))
+
+    assert update(capsys)[0] == 0
+
+    assert ref("a") == ref("b") == sha
+
+
 def test_symlinked_config(tmp_path: Path, upstream: Upstream, capsys: Capsys) -> None:
     sha = upstream.commit({"tdd/SKILL.md": "1\n"})
     real = tmp_path / "dotfiles" / "skill-graft.toml"
