@@ -287,5 +287,13 @@ def test_bound_self_reference(home: Path, capsys: Capsys) -> None:
     assert "deployed name" in err
 
 
+def test_prose_never_extends_the_hull(home: Path, capsys: Capsys) -> None:
+    skill(home / "mp" / "diagnosing-bugs")
+    two_sources(home, "Then diagnosing-bugs, or `foo`.\n")
+
+    assert build(capsys) == (0, "")
+    assert vendored() == {"tdd"}
+
+
 def vendored_dir(home: Path) -> Path:
     return home / ".apm" / "skill-graft" / ".apm" / "skills"

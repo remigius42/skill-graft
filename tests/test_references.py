@@ -126,3 +126,89 @@ def test_dangling_link_is_an_error(tmp_path: Path) -> None:
 
     with pytest.raises(SkillGraftError, match="notes.md"):
         references.scan(folder)
+
+
+@pytest.mark.parametrize(
+    ("text", "written"),
+    [
+        ("use `grilling` now", "`grilling`"),
+        ("then diagnosing-bugs.", "diagnosing-bugs"),
+        ("```bash\npre-commit run\n```", "pre-commit"),
+    ],
+)
+def test_prose(tmp_path: Path, text: str, written: str) -> None:
+    folder = skill(tmp_path / "tdd", f"{text}\n")
+
+    refs, _ = references.scan(folder)
+
+    assert [(r.name, r.kind, r.text) for r in refs] == [
+        (written.strip("`"), "prose", written)
+    ]
+
+
+@pytest.mark.parametrize(
+    "text",
+    [
+        "grilling",
+        "`grilling --fast`",
+        "`mp/grilling`",
+        "--dry-run",
+        "refs/red-green.md",
+        "x-ray.png",
+        "[see](my-skill)",
+        "[x](#my-skill)",
+        "[x](other.md#my-skill)",
+        '<a id="my-skill">',
+        "foo_my-skill",
+        "My-Skill",
+        "https://x.org/my-skill",
+    ],
+)
+def test_not_prose(tmp_path: Path, text: str) -> None:
+    folder = skill(tmp_path / "tdd", f"{text}\n")
+
+    assert found(folder) == []
+
+
+@pytest.mark.parametrize(
+    ("text", "written"),
+    [
+        ("`/grilling`", "/grilling"),
+        ("Skill(diagnosing-bugs)", "Skill(diagnosing-bugs)"),
+    ],
+)
+def test_slash_form_wins(tmp_path: Path, text: str, written: str) -> None:
+    folder = skill(tmp_path / "tdd", f"{text}\n")
+
+    assert found(folder) == [written]
+
+
+def test_span_is_the_name_alone(tmp_path: Path) -> None:
+    text = "Run /grilling. Then Skill('notes', x) and `tdd`, or diagnosing-bugs...\n"
+    folder = skill(tmp_path / "tdd", text)
+
+    refs, _ = references.scan(folder)
+
+    assert [text[slice(*r.span)] for r in refs] == [
+        "grilling",
+        "notes",
+        "tdd",
+        "diagnosing-bugs",
+    ]
+
+
+@pytest.mark.parametrize("line", ["name: code-review", 'name: "code-review" # x'])
+def test_own_name_line(tmp_path: Path, line: str) -> None:
+    folder = skill(
+        tmp_path / "code-review",
+        f"---\n{line}\ndescription: before code-review\n---\nsee code-review\n",
+    )
+    (folder / "notes.md").write_text(f"---\n{line}\n---\n")
+
+    refs, _ = references.scan(folder)
+
+    assert [(r.file.name, r.span[0]) for r in refs] == [
+        ("SKILL.md", len(f"---\n{line}\ndescription: before ")),
+        ("SKILL.md", len(f"---\n{line}\ndescription: before code-review\n---\nsee ")),
+        ("notes.md", 4 + line.index("code-review")),
+    ]

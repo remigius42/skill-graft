@@ -11,21 +11,34 @@ from skill_graft.errors import SkillGraftError
 # target (`](/x)`), an attribute (`="/x"`) or an alias (`@/x`). The possessive `*+`
 # keeps the name whole, so `/my-dir/file` never yields `my`. Or the Skill tool's
 # call form, `Skill(name)`, the name quoted or not, as `skill=` or `skill:`, and
-# perhaps followed by further arguments.
+# perhaps followed by further arguments. Or prose: a code span holding just a
+# name, or a bare hyphenated name, bounded as a slash name is and not an anchor.
 REFERENCE = re.compile(
     r"(?<![\w./:~\\<@-])(?<!\]\()(?<!=[\"'])"
     r"/(?P<slash>[A-Za-z0-9][A-Za-z0-9._-]*+)(?!/|:\w)"
     r"|\bSkill\(\s*(?:skill\s*[:=]\s*)?(?P<q>[\"']?)"
     r"(?P<tool>[A-Za-z0-9][A-Za-z0-9._-]*+)(?P=q)\s*[,)]"
+    r"|(?<!`)`(?P<code>[A-Za-z0-9][A-Za-z0-9._-]*+)`(?!`)"
+    r"|(?<![\w./:~\\<@#-])(?<!\]\()(?<!=[\"'])"
+    r"(?P<prose>[a-z0-9]++(?:-[a-z0-9]++)++)(?![\w/-]|[.:]\w)"
 )
+
+# Each named group of REFERENCE: the kind it gives, and how it is written.
+FORMS = {
+    "slash": ("slash", "/{}"),
+    "tool": ("skill-tool", "Skill({})"),
+    "code": ("prose", "`{}`"),
+    "prose": ("prose", "{}"),
+}
 
 
 @dataclass(frozen=True)
 class Reference:
     name: str
-    kind: str  # "slash" or "skill-tool"
-    text: str  # as written: `/name` or `Skill(name)`
+    kind: str  # "slash", "skill-tool" or "prose"
+    text: str  # as written: `/name`, `Skill(name)`, `` `name` `` or `name`
     file: Path
+    span: tuple[int, int]  # the name's offsets in the file's decoded text
 
 
 def scan(folder: Path) -> tuple[list[Reference], list[str]]:
@@ -43,14 +56,36 @@ def scan(folder: Path) -> tuple[list[Reference], list[str]]:
             continue
         except OSError as error:
             raise SkillGraftError(f"{file} cannot be read: {error}") from None
+        skip = name_line(text) if file == folder / "SKILL.md" else None
         for match in REFERENCE.finditer(text):
-            if match["slash"]:
-                name = match["slash"].rstrip(".")
-                found.append(Reference(name, "slash", f"/{name}", file))
-            else:
-                name = match["tool"]
-                found.append(Reference(name, "skill-tool", f"Skill({name})", file))
+            if skip and skip[0] <= match.start() < skip[1]:
+                continue  # the skill's own name, never a reference
+            group = next(g for g in FORMS if match[g])
+            name = match[group].rstrip(".") if group == "slash" else match[group]
+            start = match.start(group)
+            kind, text_form = FORMS[group]
+            found.append(
+                Reference(
+                    name, kind, text_form.format(name), file, (start, start + len(name))
+                )
+            )
     return found, warnings
+
+
+def name_line(text: str) -> tuple[int, int] | None:
+    """The offsets of the front matter's `name:` line, as `read_name` finds it."""
+    lines = text.splitlines(keepends=True)
+    if not lines or lines[0].lstrip("\ufeff").rstrip() != "---":
+        return None
+    start = len(lines[0])
+    found = None
+    for line in lines[1:]:
+        if line.rstrip() == "---":
+            return found
+        if found is None and line.startswith("name:"):
+            found = (start, start + len(line))
+        start += len(line)
+    return None  # no closing fence: no front matter
 
 
 def _markdown_files(folder: Path) -> list[Path]:

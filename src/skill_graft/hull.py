@@ -44,6 +44,8 @@ def walk(config: Config, indexes: dict[str, discovery.Index]) -> Hull:
         found, file_warnings = references.scan(skills[current])
         warnings += file_warnings
         for ref in found:
+            if ref.kind == "prose":  # never extends the hull
+                continue
             key = SkillId(current.alias, ref.name)
             bound = key in config.binds
             if bound:

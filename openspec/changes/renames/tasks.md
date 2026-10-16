@@ -7,7 +7,7 @@ that honors them in full, so no commit accepts intent it ignores.
 
 ## 1. References
 
-- [ ] 1.1 `references.py`: prose alternatives (backticked name, bare hyphenated token, boundaries as the hull spec
+- [x] 1.1 `references.py`: prose alternatives (backticked name, bare hyphenated token, boundaries as the hull spec
   lists) in the one regex, `kind = "prose"`, a `span` on every **Reference** (the name alone, trailing dots
   excluded), and `SKILL.md`'s front matter `name:` value skipped. Verify: backticked-and-hyphenated, not-prose (`#`
   anchors included), own-name-line (scan level), slash-form-wins, the span of `/grilling.`, and every existing

@@ -20,6 +20,7 @@ words:
   - fsencode
   - geteuid
   - gitdir
+  - keepends
   - kiro
   - mattpocock
   - mkfifo
@@ -45,6 +46,7 @@ words:
   - testpaths
   - tomlkit
   - tomllib
+  - ufeff
   - unrenamed
   - unsets
   - venv
