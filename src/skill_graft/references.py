@@ -73,20 +73,29 @@ def scan(folder: Path) -> tuple[list[Reference], list[str]]:
     return found, warnings
 
 
-def name_line(text: str) -> tuple[int, int] | None:
-    """The offsets of the front matter's `name:` line, as `read_name` finds it."""
+def front_matter(text: str) -> tuple[int, tuple[int, int] | None] | None:
+    """Where the front matter opens, as `read_name` finds it: the offset just past
+    its opening `---` line, and the offsets of its `name:` line if any. None when
+    `text` has no front matter: no opening fence, or none closing it.
+    """
     lines = text.splitlines(keepends=True)
     if not lines or lines[0].lstrip("\ufeff").rstrip() != "---":
         return None
-    start = len(lines[0])
+    start = opened = len(lines[0])
     found = None
     for line in lines[1:]:
         if line.rstrip() == "---":
-            return found
+            return opened, found
         if found is None and line.startswith("name:"):
             found = (start, start + len(line))
         start += len(line)
-    return None  # no closing fence: no front matter
+    return None
+
+
+def name_line(text: str) -> tuple[int, int] | None:
+    """The offsets of the front matter's `name:` line, as `read_name` finds it."""
+    found = front_matter(text)
+    return found[1] if found else None
 
 
 def _markdown_files(folder: Path) -> list[Path]:

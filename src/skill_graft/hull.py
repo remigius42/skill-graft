@@ -3,11 +3,11 @@
 import os
 import stat
 from collections import deque
-from dataclasses import dataclass, field
+from dataclasses import dataclass
 from pathlib import Path
 
 from skill_graft import discovery, files, references
-from skill_graft.config import Config, SkillId
+from skill_graft.config import Config, SkillId, deployed
 from skill_graft.errors import SkillGraftError
 
 
@@ -18,6 +18,7 @@ class Edge:
     kind: str  # "slash", "skill-tool" or "prose"
     bind: bool  # a bind decided the target
     text: str  # the reference as written
+    name: str  # the name as written
 
 
 @dataclass(frozen=True)
@@ -30,8 +31,8 @@ class Hull:
     occurrences: dict[SkillId, list[tuple[references.Reference, SkillId]]]
     # Skills outside the hull that prose mentions, and the skills mentioning them.
     suggestions: dict[SkillId, set[SkillId]]
-    # Each skill's deployed name, set once the hull is complete.
-    deployed: dict[SkillId, str] = field(default_factory=dict)
+    # Each skill's deployed name.
+    deployed: dict[SkillId, str]
 
 
 def walk(config: Config, indexes: dict[str, discovery.Index]) -> Hull:
@@ -80,7 +81,7 @@ def walk(config: Config, indexes: dict[str, discovery.Index]) -> Hull:
             occurrences.setdefault(current, []).append((ref, target))
             if target == current:
                 continue
-            edges.append(Edge(current, target, ref.kind, bound, ref.text))
+            edges.append(Edge(current, target, ref.kind, bound, ref.text, ref.name))
             if target not in skills:
                 who = (
                     f'[bind] "{key}" = "{target}"'
@@ -94,7 +95,7 @@ def walk(config: Config, indexes: dict[str, discovery.Index]) -> Hull:
         if target in skills:
             occurrences.setdefault(current, []).append((ref, target))
             if target != current:
-                edges.append(Edge(current, target, "prose", bound, ref.text))
+                edges.append(Edge(current, target, "prose", bound, ref.text, ref.name))
         else:
             if bound:  # a bound target must exist, whatever the form
                 discovery.find(indexes[target.alias], target, f'[bind] "{key}"')
@@ -105,7 +106,10 @@ def walk(config: Config, indexes: dict[str, discovery.Index]) -> Hull:
         for key in config.binds
         if key not in used
     ]
-    return Hull(skills, list(config.entries), edges, warnings, occurrences, suggestions)
+    names = {skill: deployed(config, skill) for skill in skills}
+    return Hull(
+        skills, list(config.entries), edges, warnings, occurrences, suggestions, names
+    )
 
 
 def _prose_target(

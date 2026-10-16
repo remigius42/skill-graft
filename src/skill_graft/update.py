@@ -11,7 +11,6 @@ from skill_graft import files, git, lock, paths, resolve
 from skill_graft.cache import Cache
 from skill_graft.config import Config, GitSource, SkillId
 from skill_graft.errors import SkillGraftError, warn
-from skill_graft.hull import Hull
 
 
 def update(loaded: Config, aliases: list[str], dry_run: bool = False) -> None:
@@ -51,10 +50,11 @@ def _update(loaded: Config, aliases: list[str], git_cache: Cache, write: bool) -
         print(f"{alias} {tips[alias]}{unchanged}")
     hull = resolve.resolve(loaded, resolve.folders(loaded, git_cache, tips))
     warn(hull.warnings)
-    _print_diff(_previous(loaded, selected, git_cache), hull)
+    hashes = lock.skill_hashes(hull)
+    _print_diff(_previous(loaded, selected, git_cache), hashes)
     moved = {alias: tip for alias, tip in tips.items() if tip != selected[alias].ref}
     if write:
-        text = lock.render(loaded, tips, hull)  # before writing anything: may fail
+        text = lock.render(loaded, tips, hull, hashes)  # may fail: before any write
         if moved:
             _write_refs(moved)
         lock.write(text)  # even if no ref moved: a path source may have changed
@@ -80,12 +80,11 @@ def _previous(
         return f"the current refs do not resolve: {error}"
 
 
-def _print_diff(old: dict[SkillId, str] | str, hull: Hull) -> None:
+def _print_diff(old: dict[SkillId, str] | str, new: dict[SkillId, str]) -> None:
     """`+`, `-` or `~` per skill added, removed or changed, by skill ID."""
     if isinstance(old, str):
         print(f"no previous hull to compare ({old})")
         return
-    new = lock.skill_hashes(hull)
     lines = [
         f"{mark} {skill}"
         for skill in sorted(old.keys() | new.keys())

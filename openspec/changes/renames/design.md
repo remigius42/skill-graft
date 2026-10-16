@@ -43,9 +43,11 @@ awareness beyond the regex); YAML beyond the `name:` line.
 
 - **`rename.py`** owns names:
 
-  - `deployed(config, skills) → dict[SkillId, str]`; unused `[rename]` keys → warnings.
-  - `check(config, deployed)`: uniqueness ignoring case (error naming both and `[rename] "<id>" = "<alias>-<name>"`
-    for the later one), the user's `reserved` (error), `SHIPPED` (warning; suggestion only when not renamed).
+  - `unused(config, skills)`: a warning per `[rename]` key naming no hull skill. (`config.deployed(config, skill)`
+    gives a skill's name, so `hull.walk` fills `Hull.deployed` without importing `rename`.)
+  - `check_unique` and `check_reserved`: uniqueness ignoring case, the user's `reserved` (error), `SHIPPED`
+    (warning; suggestion only when not renamed). A hint never adds a second key: it names an unrenamed skill, or
+    says which `[rename]` value to change.
     Called once, on the **Hull** after the walk, replacing `resolve._check_deployed_names`; before the walk only
     the uniqueness error runs on the **Entries** (cheap early clash, no warnings, so none is wrong or doubled).
   - `rewrites(hull, deployed) → dict[SkillId, dict[Path, bytes]]`: per **Skill**, the relative paths whose bytes
@@ -60,7 +62,7 @@ awareness beyond the regex); YAML beyond the `name:` line.
     `model`, `resume`, `review`, `schedule`, `security-review`, `simplify`, …) and Codex's (`diff`, `status`, …).
     Matched by `casefold`.
 
-- **Hull carries names**: `Hull` gains `deployed`, `occurrences` and `suggestions`, filled by `resolve.resolve`.
+- **Hull carries names**: `Hull` gains `deployed`, `occurrences` and `suggestions`, filled by `hull.walk`.
   `rename.rewrites(hull)` is a function, called where bytes are needed (vendor, lock hash, update diff), not stored:
   `update` resolves twice, and its previous **Hull** needs only hashes.
 

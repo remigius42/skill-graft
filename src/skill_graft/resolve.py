@@ -6,7 +6,7 @@ from pathlib import Path
 
 from skill_graft import discovery, hull, rename
 from skill_graft.cache import Cache
-from skill_graft.config import Config, GitSource
+from skill_graft.config import Config, GitSource, deployed
 from skill_graft.errors import SkillGraftError
 from skill_graft.hull import Hull
 
@@ -43,13 +43,15 @@ def resolve(config: Config, folders: dict[str, Path]) -> Hull:
 
     Clashing entries are reported before anything is searched.
     """
-    rename.check_unique(config, rename.deployed(config, config.entries)[0])
+    rename.check_unique(
+        config, {entry: deployed(config, entry) for entry in config.entries}
+    )
     indexes = {
         alias: discovery.index(folder, isinstance(config.sources[alias], GitSource))
         for alias, folder in folders.items()
     }
     result = hull.walk(config, indexes)
-    names, warnings = rename.deployed(config, list(result.skills))
-    rename.check_unique(config, names)
-    warnings += rename.check_reserved(config, names)
-    return replace(result, deployed=names, warnings=result.warnings + warnings)
+    rename.check_unique(config, result.deployed)
+    warnings = rename.unused(config, result.skills)
+    warnings += rename.check_reserved(config, result.deployed)
+    return replace(result, warnings=result.warnings + warnings)

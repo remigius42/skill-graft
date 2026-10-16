@@ -39,17 +39,13 @@ PLAIN = re.compile(r"[a-z][a-z0-9-]*")
 YAML_WORDS = {"y", "n", "yes", "no", "on", "off", "true", "false", "null"}
 
 
-def deployed(
-    config: Config, skills: list[SkillId]
-) -> tuple[dict[SkillId, str], list[str]]:
-    """Each skill's deployed name: its rename, else its name; and warnings."""
-    names = {skill: config.renames.get(skill, skill.name) for skill in skills}
-    warnings = [
+def unused(config: Config, skills: dict[SkillId, Path]) -> list[str]:
+    """A warning per `[rename]` key naming no hull skill."""
+    return [
         f'[rename] "{key}" renames no skill in the hull'
         for key in config.renames
-        if key not in names
+        if key not in skills
     ]
-    return names, warnings
 
 
 def _hint(config: Config, skill: SkillId) -> str:
@@ -142,20 +138,16 @@ def set_name(text: str, name: str) -> str:
     front matter. Line endings and a BOM are kept.
     """
     value = name if PLAIN.fullmatch(name) and name not in YAML_WORDS else f'"{name}"'
-    if span := references.name_line(text):
-        line = text[span[0] : span[1]]
-        ending = line[len(line.rstrip("\r\n")) :]
-        return f"{text[: span[0]]}name: {value}{ending}{text[span[1] :]}"
-    bom = "﻿" if text.startswith("﻿") else ""
-    body = text.removeprefix(bom)
-    if _has_front_matter(body):
-        first = body.splitlines(keepends=True)[0]
-        ending = first[len(first.rstrip("\r\n")) :]
-        return f"{bom}{first}name: {value}{ending}{body[len(first) :]}"
-    return f"{bom}---\nname: {value}\n---\n{body}"
+    found = references.front_matter(text)
+    if found is None:
+        bom = "\ufeff" if text.startswith("\ufeff") else ""
+        return f"{bom}---\nname: {value}\n---\n{text.removeprefix(bom)}"
+    opened, line = found
+    start, end = line or (opened, opened)
+    ending = _ending(text[start:end] if line else text[:opened])
+    return f"{text[:start]}name: {value}{ending}{text[end:]}"
 
 
-def _has_front_matter(text: str) -> bool:
-    """Whether `text` opens with a `---` fence that a later one closes."""
-    fences = [i for i, line in enumerate(text.splitlines()) if line.rstrip() == "---"]
-    return fences[:1] == [0] and len(fences) > 1
+def _ending(line: str) -> str:
+    """The line break `line` ends with."""
+    return line[len(line.rstrip("\r\n")) :]

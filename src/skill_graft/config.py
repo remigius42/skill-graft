@@ -57,6 +57,11 @@ class Config:
     reserved: list[str]
 
 
+def deployed(config: Config, skill: SkillId) -> str:
+    """The name `skill` deploys as: its rename, else its name."""
+    return config.renames.get(skill, skill.name)
+
+
 def load() -> Config:
     file = paths.config_file()
     try:

@@ -70,7 +70,7 @@ def tree(hull: Hull) -> str:
     """
     children: dict[SkillId, dict[tuple[SkillId, str, bool], Edge]] = {}
     for edge in hull.edges:  # in scan order; one line per target, kind and bind
-        if edge.kind == "prose" and hull.deployed[edge.target] == edge.text.strip("`"):
+        if edge.kind == "prose" and hull.deployed[edge.target] == edge.name:
             continue
         key = (edge.target, edge.kind, edge.bind)
         children.setdefault(edge.source, {}).setdefault(key, edge)
