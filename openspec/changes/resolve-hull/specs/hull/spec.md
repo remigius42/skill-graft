@@ -49,7 +49,8 @@ A **Reference** name SHALL match a **Skill** name, and a **Bind** key, case-sens
 ### Requirement: Every Markdown file
 
 **References** SHALL be read from every file ending in `.md` (any case) in the **Skill**'s folder, at any depth,
-`.git` excepted, once the **Skill**'s symlinks are checked. A Markdown file that is not UTF-8 SHALL be skipped
+`.git` excepted, once the **Skill**'s symlinks are checked and any file that is not a regular file, folder or
+symlink (a FIFO, socket or device) is refused as an error naming it. A Markdown file that is not UTF-8 SHALL be skipped
 with a warning naming it; it is still vendored. One that cannot be read at all, a dangling link included, SHALL be
 an error naming it. A **Reference** that resolves, **Binds** applied, to the referencing **Skill** SHALL be
 ignored.
@@ -73,6 +74,11 @@ ignored.
 
 - **WHEN** a **Hull** **Skill** holds `notes.md` as a symlink to a missing `gone.md` inside it
 - **THEN** the command exits non-zero naming `notes.md`, without a traceback, and writes nothing
+
+#### Scenario: Special file
+
+- **WHEN** a **Hull** **Skill** holds a FIFO named `pipe`
+- **THEN** `resolve` and `build` exit non-zero naming `pipe` as not a regular file, without reading it
 
 #### Scenario: Self-reference
 

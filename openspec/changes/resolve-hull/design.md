@@ -22,7 +22,7 @@ order, warnings); every error before any write.
   `folders`, now over every declared **Source**, and its `resolve()` returns a `Hull`: ordered skills
   (`SkillId → Path`), entries, edges `(from, to, kind, bind, reference)`, warnings. `vendor` takes `Hull.skills`.
 
-- **Scan**: only after `_check_symlinks` passed for that **Skill**, so no link to `/dev/zero` or a FIFO is ever
+- **Scan**: only after `check_files` passed for that **Skill** (links stay inside, no FIFO or device), so none is ever
   opened. Every `*.md` (case-insensitive) under the folder, `.git` skipped, files in sorted relative-path order
   with `SKILL.md` first; references in text order. Not UTF-8 → warning, file skipped. Slash regex, roughly
   `(?<![\w./:~\\<@-])(?<!\]\()(?<!=["'])/([A-Za-z0-9][A-Za-z0-9._-]*+)(?!/|:\w)` (no link targets,

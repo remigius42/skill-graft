@@ -1,10 +1,13 @@
 """The `hull` spec, through `skill-graft build --no-install`."""
 
+import os
 from pathlib import Path
 from typing import TypeAlias
 
 import pytest
 from conftest import build, configure, skill, vendored
+
+from skill_graft.cli import main
 
 Capsys: TypeAlias = pytest.CaptureFixture[str]
 
@@ -163,6 +166,18 @@ def test_symlink_to_a_device(home: Path, capsys: Capsys) -> None:
     code, err = build(capsys)
 
     assert code == 1 and "x.md" in err and "outside" in err
+
+
+@pytest.mark.parametrize("command", ["resolve", "build"])
+def test_fifo_is_an_error(home: Path, capsys: Capsys, command: str) -> None:
+    skill(home / "mp" / "grilling")
+    os.mkfifo(home / "mp" / "grilling" / "pipe")
+    two_sources(home, "/grilling\n")
+
+    assert main([command, "--no-install"] if command == "build" else [command]) == 1
+
+    err = capsys.readouterr().err
+    assert "pipe" in err and "not a regular file" in err
 
 
 def test_dangling_link(home: Path, capsys: Capsys) -> None:

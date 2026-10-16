@@ -18,6 +18,7 @@ words:
   - fsencode
   - kiro
   - mattpocock
+  - mkfifo
   - mktree
   - monkeypatched
   - mypy
