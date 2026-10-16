@@ -56,9 +56,10 @@ def _update(loaded: Config, aliases: list[str], git_cache: Cache, write: bool) -
     _print_diff(_previous(loaded, selected, git_cache), hull)
     moved = {alias: tip for alias, tip in tips.items() if tip != selected[alias].ref}
     if write:
+        text = lock.render(loaded, tips, hull)  # before writing anything: may fail
         if moved:
             _write_refs(moved)
-        lock.write(lock.render(loaded, tips, hull))  # a path source may have changed
+        lock.write(text)  # even if no ref moved: a path source may have changed
 
 
 def _previous(

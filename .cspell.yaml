@@ -16,6 +16,7 @@ words:
   - followlinks
   - frontmatter
   - fsencode
+  - geteuid
   - kiro
   - mattpocock
   - mkfifo

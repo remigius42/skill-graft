@@ -613,3 +613,27 @@ def test_reference_turns_ambiguous_upstream(
 
     assert code == 1 and "/notes" in err and "own/notes" in err and "x/notes" in err
     assert lock_file().read_bytes() == before and file.read_bytes() == toml
+
+
+@pytest.mark.skipif(os.geteuid() == 0, reason="root reads any file")
+def test_failed_lock_leaves_the_toml(
+    home: Path, upstream: Upstream, capsys: Capsys
+) -> None:
+    upstream.commit({"tdd/SKILL.md": "1\n"})
+    notes = skill(home / "own" / "notes")
+    secret = notes / "data.bin"
+    secret.write_text("x")
+    secret.chmod(0)
+    file = write_config(
+        'entries = ["mp/tdd", "own/notes"]\n'
+        + git_source("mp", upstream)
+        + '[sources.own]\npath = "~/own"\n'
+    )
+    before = file.read_bytes()
+
+    try:
+        code, _, _ = update(capsys)
+    finally:
+        secret.chmod(0o644)
+
+    assert code == 1 and file.read_bytes() == before and not lock_file().exists()
