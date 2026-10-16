@@ -34,6 +34,19 @@ def test_skill_from_git(home: Path, tmp_path: Path, capsys: Capsys) -> None:
     assert package_files(home) == before
 
 
+def test_skill_from_a_sha256_remote(tmp_path: Path, capsys: Capsys) -> None:
+    upstream = Upstream(tmp_path / "up", sha256=True)
+    sha = upstream.commit({"tdd/SKILL.md": "# tdd\n"})
+    config = write_config(
+        f'entries = ["mp/tdd"]\n[sources.mp]\ngit = "{upstream.url}"\nref = "{sha}"\n'
+    )
+
+    assert len(sha) == 64 and build(capsys) == (0, "")
+
+    skills = config.parent / ".apm" / "skills"
+    assert (skills / "tdd" / "SKILL.md").read_text() == "# tdd\n"
+
+
 def test_build_reads_the_ref_not_the_tip(tmp_path: Path, capsys: Capsys) -> None:
     upstream = Upstream(tmp_path / "up")
     sha = upstream.commit({"tdd/SKILL.md": "old\n"})
