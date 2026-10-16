@@ -3,7 +3,7 @@
 import os
 import stat
 from collections import deque
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from pathlib import Path
 
 from skill_graft import discovery, files, references
@@ -30,6 +30,8 @@ class Hull:
     occurrences: dict[SkillId, list[tuple[references.Reference, SkillId]]]
     # Skills outside the hull that prose mentions, and the skills mentioning them.
     suggestions: dict[SkillId, set[SkillId]]
+    # Each skill's deployed name, set once the hull is complete.
+    deployed: dict[SkillId, str] = field(default_factory=dict)
 
 
 def walk(config: Config, indexes: dict[str, discovery.Index]) -> Hull:

@@ -1,6 +1,7 @@
 """Resolves the hull from the config: the step `build`, `resolve` and `update` share."""
 
 from collections.abc import Iterable
+from dataclasses import replace
 from pathlib import Path
 
 from skill_graft import discovery, hull
@@ -49,7 +50,7 @@ def resolve(config: Config, folders: dict[str, Path]) -> Hull:
     }
     result = hull.walk(config, indexes)
     _check_deployed_names(list(result.skills))
-    return result
+    return replace(result, deployed={skill: skill.name for skill in result.skills})
 
 
 def _check_deployed_names(skills: list[SkillId]) -> None:

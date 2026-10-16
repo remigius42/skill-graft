@@ -23,7 +23,7 @@ that honors them in full, so no commit accepts intent it ignores.
 
 ## 3. Rewrites
 
-- [ ] 3.1 `rename.py`: `set_name` (quoting a name YAML would misread) and `rewrites(hull)` (span replacement per
+- [x] 3.1 `rename.py`: `set_name` (quoting a name YAML would misread) and `rewrites(hull)` (span replacement per
   UTF-8 Markdown file, BOM and line endings kept), computed on demand; `Hull` carries `deployed` (names only, until
   4.1). Verify: unit tests for name-line-replaced, name-YAML-would-misread, front-matter-without-a-name,
   no-front-matter, and rewrites for slash (sentence-end-kept), Skill tool (quotes and arguments kept), backticked
