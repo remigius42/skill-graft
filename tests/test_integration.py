@@ -4,7 +4,7 @@ import shutil
 from pathlib import Path
 
 import pytest
-from conftest import skill
+from conftest import Upstream, skill
 
 from skill_graft.cli import main
 
@@ -24,3 +24,17 @@ def test_init_then_build_deploys_the_entry(home: Path) -> None:
     assert f"- {package}" in (home / ".apm" / "apm.yml").read_text()
     # No `targets:` in ~/.apm/apm.yml, so APM 0.33.0 deploys to ~/.agents/skills.
     assert (home / ".agents" / "skills" / "chisel" / "SKILL.md").exists()
+
+
+def test_init_update_build_deploys_a_git_entry(home: Path, tmp_path: Path) -> None:
+    upstream = Upstream(tmp_path / "up")
+    upstream.commit({"skills/tdd/SKILL.md": "---\nname: tdd\ndescription: d\n---\n"})
+
+    assert main(["init"]) == 0
+    (home / ".apm" / "skill-graft" / "skill-graft.toml").write_text(
+        f'entries = ["mp/tdd"]\n[sources.mp]\ngit = "{upstream.url}"\n'
+    )
+    assert main(["update"]) == 0
+    assert main(["build"]) == 0
+
+    assert (home / ".agents" / "skills" / "tdd" / "SKILL.md").exists()

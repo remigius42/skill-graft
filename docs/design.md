@@ -18,6 +18,9 @@ All under `~/.apm/skill-graft/`:
 `resolve` never rewrites `skill-graft.toml`. Commands that edit it on purpose use `tomlkit`, so comments and
 formatting survive. The lock is output only: never an input that overrides the TOML.
 
+Git sources are cached outside the package, under `$XDG_CACHE_HOME/skill-graft/` (else `~/.cache/skill-graft/`):
+one bare repository per URL and one export per commit, the committed bytes exactly. Deleting it loses nothing.
+
 ## Config
 
 ```toml
@@ -48,11 +51,12 @@ path = "~/Documents/sync/2_areas/software/chisel_skill"
   registers it with `apm install -g <absolute path of ~/.apm/skill-graft>`. Refuses if the folder exists.
 - `add <skill-id>`, `rename <skill-id> <name>`: edit the TOML, then resolve.
 - `resolve`: computes the hull from the TOML, writes the lock, prints the tree, warnings and suggestions.
-  Never fetches beyond the pinned `ref`.
+  Reads each git source at its `ref`, fetching only when that commit is not cached.
 - `build`: resolves, writes `.apm/skills/`, runs the same `apm install -g` as `init`. `--no-install` stops
   before APM. Fails unless `apm` exits 0 and `~/.apm/apm.yml` lists `~/.apm/skill-graft`.
-- `update [source…]`: fetches, writes each branch tip's sha into `ref`, resolves, prints the hull diff and any
-  failing patch hunks. `--dry-run` does all of it in memory and writes nothing.
+- `update [source…]`: fetches, resolves at each branch tip, and only if that succeeds writes the tips' shas into
+  `ref`; prints the hull diff and any failing patch hunks. `--dry-run` does all of it without writing the TOML
+  or the cache.
 - `why <skill>`: the reverse paths from the entries.
 - `tree [--format mermaid]`: the hull as a tree, or as Mermaid for documentation.
 

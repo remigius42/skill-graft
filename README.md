@@ -10,8 +10,9 @@ Renames are the reason it exists: a skill named like a harness built-in (`code-r
 `prototype`) shadows it or is shadowed by it, and renaming one skill by hand misses the other skills that call
 it by name.
 
-Status: walking skeleton. `skill-graft init` and `skill-graft build` vendor entries from local folders and
-deploy them through APM; git sources, references, renames and patches are not built yet.
+Status: early. `skill-graft init` and `skill-graft build` vendor entries from local folders and from git
+repositories, read at the commit `ref` names, and deploy them through APM; `skill-graft update` moves each
+git source's `ref` to its branch tip. References, renames and patches are not built yet.
 
 ## Development
 
