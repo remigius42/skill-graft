@@ -30,7 +30,7 @@ Apply with the `tdd` skill: each task red-green-refactor (failing test first, th
   it. Verify: own-source-wins, one-other-source, invalid-name-does-not-count, several-other-sources,
   no-such-skill, skill-tool-form-named, symlink-to-a-device, self-reference, two-hops, cycle, ambiguous-target,
   source-with-no-entry, clash-through-a-reference.
-- [ ] 3.3 Binds in resolution: override, settle ambiguity, missing target error naming the bind, `false`
+- [x] 3.3 Binds in resolution: override, settle ambiguity, missing target error naming the bind, `false`
   drops the name, unused bind warning, unmatched warning names the `false` line; bound edges flagged `bind`. Verify:
   bind-across-sources, bind-settles-ambiguity, bind-to-a-missing-skill, path-in-a-code-block, unwanted-match,
   typo-in-a-bind, no-such-skill, bound-self-reference.

@@ -15,6 +15,7 @@ class Edge:
     source: SkillId
     target: SkillId
     kind: str  # "slash" or "skill-tool"
+    bind: bool  # a bind decided the target
     text: str  # the reference as written
 
 
@@ -34,6 +35,7 @@ def walk(config: Config, indexes: dict[str, discovery.Index]) -> Hull:
     edges: list[Edge] = []
     warnings: list[str] = []
     unmatched: set[tuple[SkillId, str]] = set()  # warned once per skill and name
+    used: set[SkillId] = set()  # bind keys some reference used
     queue = deque(skills)
     while queue:
         current = queue.popleft()
@@ -41,24 +43,41 @@ def walk(config: Config, indexes: dict[str, discovery.Index]) -> Hull:
         found, file_warnings = references.scan(skills[current])
         warnings += file_warnings
         for ref in found:
-            target = _target(current, ref, indexes)
-            if target is None:
-                warning = (
-                    f"`{current}` calls `{ref.text}`: no declared source has a skill "
-                    f'`{ref.name}` (to ignore it: [bind] "{current.alias}/{ref.name}" '
-                    "= false)"
-                )
-                if (current, ref.name) not in unmatched:
-                    unmatched.add((current, ref.name))
-                    warnings.append(warning)
-                continue
+            key = SkillId(current.alias, ref.name)
+            bound = key in config.binds
+            if bound:
+                used.add(key)
+                target = config.binds[key]
+                if target is None:  # bound to nothing: not a reference
+                    continue
+            else:
+                target = _target(current, ref, indexes)
+                if target is None:
+                    if (current, ref.name) not in unmatched:
+                        unmatched.add((current, ref.name))
+                        warnings.append(
+                            f"`{current}` calls `{ref.text}`: no declared source has "
+                            f'a skill `{ref.name}` (to ignore it: [bind] "{key}" = '
+                            "false)"
+                        )
+                    continue
             if target == current:
                 continue
-            edges.append(Edge(current, target, ref.kind, ref.text))
+            edges.append(Edge(current, target, ref.kind, bound, ref.text))
             if target not in skills:
-                who = f"'{current}' calls {ref.text}"
+                who = (
+                    f'[bind] "{key}" = "{target}"'
+                    if bound
+                    else f"'{current}' calls {ref.text}"
+                )
                 skills[target] = discovery.find(indexes[target.alias], target, who)
                 queue.append(target)
+    warnings += [
+        f'[bind] "{key}" binds no reference: no skill in the hull from '
+        f"{key.alias!r} calls {key.name!r}"
+        for key in config.binds
+        if key not in used
+    ]
     return Hull(skills, list(config.entries), edges, warnings)
 
 

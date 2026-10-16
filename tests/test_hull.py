@@ -176,5 +176,77 @@ def test_dangling_link(home: Path, capsys: Capsys) -> None:
     assert vendored() == set()
 
 
+def with_binds(binds: str) -> None:
+    """Appends a [bind] table to the config."""
+    file = Path.home() / ".apm" / "skill-graft" / "skill-graft.toml"
+    file.write_text(file.read_text() + f"[bind]\n{binds}\n")
+
+
+def test_bind_across_sources(home: Path, capsys: Capsys) -> None:
+    skill(home / "mp" / "grilling")
+    skill(home / "own" / "grill")
+    two_sources(home, "/grilling\n")
+    with_binds('"mp/grilling" = "own/grill"')
+
+    assert build(capsys) == (0, "")
+    assert vendored() == {"tdd", "grill"}
+
+
+def test_bind_settles_ambiguity(home: Path, capsys: Capsys) -> None:
+    skill(home / "own" / "notes", "own\n")
+    skill(home / "x" / "notes", "x\n")
+    two_sources(home, "/notes\n", x="~/x")
+    with_binds('"mp/notes" = "x/notes"')
+
+    assert build(capsys) == (0, "")
+    assert (vendored_dir(home) / "notes" / "SKILL.md").read_text() == "x\n"
+
+
+def test_bind_to_a_missing_skill(home: Path, capsys: Capsys) -> None:
+    two_sources(home, "/grilling\n")
+    with_binds('"mp/grilling" = "own/nope"')
+
+    code, err = build(capsys)
+
+    assert code == 1 and "mp/grilling" in err and "own/nope" in err
+
+
+def test_path_in_a_code_block(home: Path, capsys: Capsys) -> None:
+    two_sources(home, "```sh\ncd /tmp\n```\n")
+    with_binds('"mp/tmp" = false')
+
+    assert build(capsys) == (0, "")
+
+
+def test_unwanted_match(home: Path, capsys: Capsys) -> None:
+    skill(home / "own" / "tmp")
+    two_sources(home, "cd /tmp\n")
+    with_binds('"mp/tmp" = false')
+
+    assert build(capsys) == (0, "")
+    assert vendored() == {"tdd"}
+
+
+def test_typo_in_a_bind(home: Path, capsys: Capsys) -> None:
+    skill(home / "own" / "grilling")
+    two_sources(home, "nothing\n")
+    with_binds('"mp/grill" = "own/grilling"')
+
+    code, err = build(capsys)
+
+    assert code == 0 and "mp/grill" in err and "binds no reference" in err
+
+
+def test_bound_self_reference(home: Path, capsys: Capsys) -> None:
+    skill(home / "own" / "tdd")
+    two_sources(home, "/tdd\n")
+    with_binds('"mp/tdd" = "own/tdd"')
+
+    code, err = build(capsys)
+
+    assert code == 1 and "mp/tdd" in err and "own/tdd" in err
+    assert "deployed name" in err
+
+
 def vendored_dir(home: Path) -> Path:
     return home / ".apm" / "skill-graft" / ".apm" / "skills"
