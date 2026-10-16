@@ -67,11 +67,11 @@ and a non-zero exit, never a traceback.
   what APM's pruning does there is unverified.
 
 - **Vendoring**: validate config, discovery and name clashes first. Then `copytree` each entry (ignoring
-  `.git`, symlinks dereferenced) into a fresh sibling `~/.apm/skill-graft/.apm/skills.new/`, and only when
-  every copy succeeded swap it in: rename the old folder aside, rename the new one into place, delete the old.
-  A failed copy deletes `skills.new/` and leaves `skills/` as it was. Every build first undoes a crashed run:
-  if `skills/` is missing, `skills.old/` is the previous build and is renamed back; then any stale
-  `skills.new/` or `skills.old/` is deleted.
+  `.git`; symlinks, already checked to lead to files inside the skill, copied as files) into a fresh sibling
+  `~/.apm/skill-graft/.apm/skills.new/`, and only when every copy succeeded swap it in: rename the old folder
+  aside, rename the new one into place, delete the old. A failed copy deletes `skills.new/` and leaves
+  `skills/` as it was. Every build first undoes a crashed run: if `skills/` is missing, `skills.old/` is the
+  previous build and is renamed back; then any stale `skills.new/` or `skills.old/` is deleted.
 
 - **Config value types**: `sources` must be a table of tables, each with a string `path`; `entries` a list of
   strings. A wrong type or an empty source table is an error naming the key; a repeated entry is an error
@@ -106,7 +106,8 @@ and a non-zero exit, never a traceback.
   missed "not registered" error. A false failure needs APM to write a form the check does not know, which the
   integration test would catch.
 - [A skill uses a symlink to share files from outside its folder] → an error naming the link, since a skill is
-  its whole folder; links within the folder are copied as files, and links back up it are an error too.
+  its whole folder. Links to files inside are copied as files; links to any folder are an error too, since two
+  folder links can form a cycle a check would have to chase.
 - [Front matter parsing is a subset of YAML] → unsupported forms fail loudly naming the file.
 - \[`init` fails after creating the folder; re-running `init` then refuses\] → the error prints the
   `apm install -g` retry command; `build` also re-registers.

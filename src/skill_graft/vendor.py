@@ -47,18 +47,24 @@ def vendor(config: Config) -> None:
 
 
 def _check_symlinks(folder: Path) -> None:
-    """A skill is its whole folder: a symlink may not lead out of it, or back up."""
+    """A skill is its whole folder: a symlink may only lead to a file inside it.
+
+    A link to a folder, even one inside, is refused: it can form a cycle.
+    """
     root = folder.resolve()
     for dirpath, dirnames, filenames in os.walk(folder):
+        dirnames[:] = [name for name in dirnames if name != ".git"]  # never copied
         for name in dirnames + filenames:
             link = Path(dirpath) / name
             if not link.is_symlink():
                 continue
-            target = link.resolve()
+            target = Path(os.path.realpath(link))
             if not target.is_relative_to(root):
                 raise SkillGraftError(f"{link} points outside the skill, to {target}")
-            if link.parent.resolve().is_relative_to(target):
-                raise SkillGraftError(f"{link} points back up the skill, to {target}")
+            if target.is_dir():
+                raise SkillGraftError(
+                    f"{link} points to a folder; only file links work"
+                )
 
 
 def _recover(skills: Path, new: Path, old: Path) -> None:
@@ -67,7 +73,10 @@ def _recover(skills: Path, new: Path, old: Path) -> None:
         old.rename(skills)
     for stale in (new, old):
         if stale.exists():
-            shutil.rmtree(stale)
+            try:
+                shutil.rmtree(stale)
+            except OSError as error:
+                raise SkillGraftError(f"cannot delete stale {stale}: {error}") from None
 
 
 def _check_deployed_names(entries: list[SkillId]) -> None:

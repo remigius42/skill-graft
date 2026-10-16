@@ -135,8 +135,13 @@ def test_clash_across_sources(home: Path, capsys: pytest.CaptureFixture[str]) ->
 
 @pytest.mark.parametrize(
     ("link", "target"),
-    [("refs", "../../shared"), ("notes.md", "../../shared/notes.md"), ("self", ".")],
-    ids=["folder outside", "file outside", "cycle"],
+    [
+        ("ext", "../../shared"),
+        ("notes.md", "../../shared/notes.md"),
+        ("self", "."),
+        ("inner", "refs"),
+    ],
+    ids=["folder outside", "file outside", "cycle", "folder inside"],
 )
 def test_symlink_leaving_the_skill_writes_nothing(
     home: Path, capsys: pytest.CaptureFixture[str], link: str, target: str
@@ -144,6 +149,7 @@ def test_symlink_leaving_the_skill_writes_nothing(
     (home / "shared").mkdir()
     (home / "shared" / "notes.md").write_text("outside\n")
     chisel = skill(home / "src" / "chisel")
+    (chisel / "refs").mkdir()
     (chisel / link).symlink_to(target)
     write_config('entries = ["own/chisel"]\n[sources.own]\npath = "~/src"\n')
 
@@ -151,6 +157,31 @@ def test_symlink_leaving_the_skill_writes_nothing(
 
     assert f"chisel/{link}" in capsys.readouterr().err
     assert not skills_dir(home).parent.exists()
+
+
+def test_symlink_in_git_metadata_is_ignored(home: Path) -> None:
+    chisel = skill(home / "chisel")
+    (chisel / ".git").mkdir()
+    (chisel / ".git" / "hook").symlink_to(home)
+    write_config('entries = ["own/chisel"]\n[sources.own]\npath = "~/chisel"\n')
+
+    assert main(["build", "--no-install"]) == 0
+
+    assert sorted(p.name for p in (skills_dir(home) / "chisel").iterdir()) == [
+        "SKILL.md"
+    ]
+
+
+def test_symlink_loop_is_an_error(
+    home: Path, capsys: pytest.CaptureFixture[str]
+) -> None:
+    chisel = skill(home / "src" / "chisel")
+    (chisel / "loop").symlink_to("loop")
+    write_config('entries = ["own/chisel"]\n[sources.own]\npath = "~/src"\n')
+
+    assert main(["build", "--no-install"]) == 1
+
+    assert "chisel/loop" in capsys.readouterr().err
 
 
 def test_symlink_inside_the_skill_is_copied(home: Path) -> None:

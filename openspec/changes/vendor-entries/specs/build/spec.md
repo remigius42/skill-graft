@@ -32,15 +32,20 @@ replaced only once every copy succeeded; a failed copy SHALL leave it as it was.
 
 ### Requirement: Symlinks stay within the skill
 
-A symlink in an **Entry**'s folder that leads outside the folder, or to the folder holding the link or one
-above it, SHALL be an error naming the link, and `build` SHALL then write nothing. A symlink within the folder
-SHALL be vendored as a copy of its target.
+A symlink in an **Entry**'s folder SHALL lead to a file inside that folder, and SHALL be vendored as a copy of
+that file. A symlink leading outside the folder, or to any folder (which could form a cycle), SHALL be an error
+naming the link, and `build` SHALL then write nothing. Symlinks under `.git`, which is never vendored, are not
+checked.
 
 #### Scenario: Symlink leaving the skill
 
-- **WHEN** an **Entry**'s folder holds a symlink to a file or folder outside it, or to the folder itself or
-  one above the link
+- **WHEN** an **Entry**'s folder holds a symlink to a file or folder outside it, or to a folder inside it
 - **THEN** `build` exits non-zero naming the symlink and writes nothing
+
+#### Scenario: Symlink loop
+
+- **WHEN** an **Entry**'s folder holds a symlink that points to itself
+- **THEN** `build` exits non-zero naming the symlink, on every supported Python version
 
 #### Scenario: Symlink within the skill
 

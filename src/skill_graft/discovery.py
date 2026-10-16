@@ -86,45 +86,49 @@ def _scalar(raw: str) -> str | None:
 class Index:
     """A source's skills by name, walked once.
 
-    A skill whose name cannot be read, or is not one path segment, is filed under
-    its folder name as a problem: an error when an entry names it, else ignored.
+    A skill whose name cannot be read (`unreadable`), or is read but is not one
+    path segment (`invalid`), is filed under its folder name: an entry naming that
+    folder gets the error, other entries never see it.
     """
 
     folders: dict[str, list[Path]]
-    problems: dict[str, list[SkillGraftError]]
+    unreadable: dict[str, list[SkillGraftError]]
+    invalid: dict[str, list[SkillGraftError]]
 
 
 def index(source: Path) -> Index:
-    folders: dict[str, list[Path]] = {}
-    problems: dict[str, list[SkillGraftError]] = {}
+    skills = Index({}, {}, {})
     for folder in skill_folders(source):
         try:
             name = read_name(folder)
         except SkillGraftError as error:
-            problems.setdefault(folder.name, []).append(error)
+            skills.unreadable.setdefault(folder.name, []).append(error)
             continue
         if NAME.fullmatch(name):
-            folders.setdefault(name, []).append(folder)
+            skills.folders.setdefault(name, []).append(folder)
         else:
-            problems.setdefault(folder.name, []).append(
+            skills.invalid.setdefault(folder.name, []).append(
                 SkillGraftError(
                     f"{folder / 'SKILL.md'}: name {name!r} is not one path segment"
                 )
             )
-    return Index(folders, problems)
+    return skills
 
 
 def find(skills: Index, skill_id: SkillId) -> Path:
     """The folder of the one skill named `skill_id.name`."""
     matches = skills.folders.get(skill_id.name, [])
-    if problems := skills.problems.get(skill_id.name):
+    if unreadable := skills.unreadable.get(skill_id.name):
         if matches:
             # The unreadable skill may be named this too: never pick silently.
             raise SkillGraftError(
                 f"entry '{skill_id}' is ambiguous: it matches {matches[0]}, "
-                f"but {problems[0]}"
+                f"but {unreadable[0]}"
             )
-        raise problems[0]
+        raise unreadable[0]
+    # An invalid name is known not to be this one, so it only explains a miss.
+    if (invalid := skills.invalid.get(skill_id.name)) and not matches:
+        raise invalid[0]
     if not matches:
         raise SkillGraftError(f"entry '{skill_id}': no skill {skill_id.name!r} found")
     if len(matches) > 1:

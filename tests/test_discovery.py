@@ -228,6 +228,17 @@ def test_unreadable_skill_with_the_entry_folder_name_is_ambiguous(
     assert "ambiguous" in err and "old/tdd/SKILL.md" in err and "tdd-v2" in err
 
 
+def test_invalid_name_in_a_folder_with_the_entry_name_does_not_block(
+    home: Path, capsys: Capsys
+) -> None:
+    skill(home / "src" / "tdd-v2", "---\nname: tdd\n---\n")
+    skill(home / "src" / "other" / "tdd", "---\nname: tdd extra\n---\n")
+    configure(["mp/tdd"], mp="~/src")
+
+    assert build(capsys) == (0, "")
+    assert vendored() == {"tdd"}
+
+
 def unreadable_skill(folder: Path, how: str) -> None:
     folder.mkdir(parents=True)
     if how == "not utf-8":
