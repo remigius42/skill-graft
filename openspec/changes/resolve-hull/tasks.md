@@ -5,7 +5,7 @@ Apply with the `tdd` skill: each task red-green-refactor (failing test first, th
 
 ## 1. Config
 
-- [ ] 1.1 `[bind]`: `Config.binds: dict[SkillId, SkillId | None]` (`None` from `false`); key and value
+- [x] 1.1 `[bind]`: `Config.binds: dict[SkillId, SkillId | None]` (`None` from `false`); key and value
   `<alias>/<name>`, aliases declared; `bind` no longer unsupported. Verify: valid-bind, undeclared-alias,
   bind-to-nothing, value-neither-a-skill-ID-nor-false and rename-table scenarios; existing config tests pass.
 

@@ -184,3 +184,52 @@ def test_uppercase_ref_is_rejected(capsys: Capsys) -> None:
     code, err = build(capsys)
 
     assert code == 1 and "'sources.mp.ref'" in err
+
+
+def test_valid_bind_loads(home: Path) -> None:
+    (home / "a").mkdir()
+    (home / "b").mkdir()
+    write_config(
+        '[sources.mp]\npath = "~/a"\n[sources.own]\npath = "~/b"\n'
+        '[bind]\n"mp/grilling" = "own/grill"\n"mp/tmp" = false\n'
+    )
+
+    assert config.load().binds == {
+        config.SkillId("mp", "grilling"): config.SkillId("own", "grill"),
+        config.SkillId("mp", "tmp"): None,
+    }
+
+
+@pytest.mark.parametrize(
+    ("bind", "expected"),
+    [
+        ('"mp/grilling" = "nope/grill"', ['bind."mp/grilling"', "'nope'"]),
+        ('"nope/grilling" = "own/grill"', ['bind."nope/grilling"', "'nope'"]),
+        ('"mp/grilling" = 1', ['bind."mp/grilling"']),
+        ('"mp/grilling" = true', ['bind."mp/grilling"']),
+        ('"mp/grilling" = "own"', ['bind."mp/grilling"']),
+        ('"mp/grilling" = "own/../x"', ['bind."mp/grilling"']),
+        ('"grilling" = "own/grill"', ['bind."grilling"']),
+        ('"mp/a b" = "own/grill"', ['bind."mp/a b"']),
+    ],
+)
+def test_bad_bind(home: Path, capsys: Capsys, bind: str, expected: list[str]) -> None:
+    (home / "a").mkdir()
+    (home / "b").mkdir()
+    write_config(
+        f'[sources.mp]\npath = "~/a"\n[sources.own]\npath = "~/b"\n[bind]\n{bind}\n'
+    )
+
+    code, err = build(capsys)
+
+    assert code == 1
+    for text in expected:
+        assert text in err
+
+
+def test_bind_not_a_table(capsys: Capsys) -> None:
+    write_config('bind = "x"\n')
+
+    code, err = build(capsys)
+
+    assert code == 1 and "'bind'" in err
