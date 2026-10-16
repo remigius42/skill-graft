@@ -1,0 +1,21 @@
+version: "0.2"
+language: "en-US"
+words:
+  - commitlint
+  - frontmatter
+  - mattpocock
+  - mypy
+  - opencode
+  - openspec
+  - opsx
+  - pocock
+  - pycache
+  - pyproject
+  - pytest
+  - testpaths
+  - tomlkit
+  - tomllib
+  - venv
+ignorePaths:
+  - .git
+  - .claude

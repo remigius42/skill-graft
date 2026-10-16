@@ -1,0 +1,11 @@
+# Tool configuration only. The [project] table arrives with the first code.
+
+[tool.ruff]
+target-version = "py311"
+
+[tool.mypy]
+python_version = "3.11"
+strict = true
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]

@@ -1,0 +1,34 @@
+# Personal scratchpad
+/TODO.md
+
+### Linux ###
+*~
+.fuse_hidden*
+.directory
+.Trash-*
+.nfs*
+
+### Vim ###
+[._]*.s[a-v][a-z]
+!*.svg
+[._]*.sw[a-p]
+Session.vim
+tags
+
+### VisualStudioCode ###
+.vscode/*
+!.vscode/settings.json
+!.vscode/extensions.json
+.history/
+
+### Python ###
+__pycache__/
+*.py[cod]
+.mypy_cache/
+.pytest_cache/
+.ruff_cache/
+.venv/
+venv/
+
+### Claude Code ###
+.claude/settings.local.json
