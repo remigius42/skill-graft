@@ -3,6 +3,7 @@
 import os
 import shutil
 import tempfile
+from pathlib import Path
 
 import tomlkit
 from tomlkit.container import Container
@@ -14,19 +15,30 @@ from skill_graft.config import Config, GitSource
 from skill_graft.errors import SkillGraftError
 
 
-def update(aliases: list[str]) -> None:
+def update(aliases: list[str], dry_run: bool = False) -> None:
     """Moves the selected git sources to their tips, if every entry resolves there.
 
     Prints one line per source first, so a resolution error still shows the shas
-    it would have written.
+    it would have written. A dry run writes only to a temporary folder, reading
+    the real cache.
     """
+    if not dry_run:
+        _update(aliases, Cache(paths.cache()), write=True)
+        return
+    try:
+        with tempfile.TemporaryDirectory(prefix="skill-graft-") as tmp:
+            _update(aliases, Cache(Path(tmp), Cache(paths.cache())), write=False)
+    finally:
+        print("dry run: skill-graft.toml not written")
+
+
+def _update(aliases: list[str], git_cache: Cache, write: bool) -> None:
     loaded = config.load()
     selected = _select(loaded, aliases)
     resolve.check_refs(loaded, selected)
     for alias, source in selected.items():
         if source.branch is not None:
             _check_branch(alias, source.branch)
-    git_cache = Cache(paths.cache())
     places: dict[tuple[str, str | None], str] = {}
     tips = {}
     for alias, source in selected.items():
@@ -40,7 +52,7 @@ def update(aliases: list[str]) -> None:
         print(f"{alias} {tips[alias]}{unchanged}")
     resolve.resolve(loaded, resolve.folders(loaded, git_cache, tips))
     moved = {alias: tip for alias, tip in tips.items() if tip != selected[alias].ref}
-    if moved:
+    if moved and write:
         _write_refs(moved)
 
 

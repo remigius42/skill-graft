@@ -280,3 +280,79 @@ def test_nothing_new(upstream: Upstream, capsys: Capsys) -> None:
     assert update(capsys)[0] == 0
 
     assert file.read_bytes() == before and file.stat().st_mtime == 1_000_000
+
+
+def snapshot(folder: Path) -> dict[str, tuple[bool, bytes, int]]:
+    """Every path under `folder`: whether a link, its content, its mtime."""
+    if not folder.exists():
+        return {}
+    result = {}
+    for path in sorted(folder.rglob("*")):
+        content = (
+            os.readlink(path).encode()
+            if path.is_symlink()
+            else path.read_bytes()
+            if path.is_file()
+            else b""
+        )
+        mtime = path.lstat().st_mtime_ns if not path.is_dir() else 0
+        result[str(path.relative_to(folder))] = (path.is_symlink(), content, mtime)
+    return result
+
+
+def test_dry_run(upstream: Upstream, capsys: Capsys) -> None:
+    old = upstream.commit({"tdd/SKILL.md": "1\n"})
+    file = write_config(
+        'entries = ["mp/tdd"]\n' + git_source("mp", upstream, f'ref = "{old}"\n')
+    )
+    assert main(["build", "--no-install"]) == 0
+    new = upstream.commit({"tdd/SKILL.md": "2\n"})
+    before, cached = file.read_bytes(), snapshot(paths.cache())
+
+    code, out, _ = update(capsys, "--dry-run")
+
+    assert code == 0
+    assert out.splitlines()[0] == f"mp {new}" and "not written" in out
+    assert file.read_bytes() == before and snapshot(paths.cache()) == cached
+
+
+def test_dry_run_with_an_empty_cache(upstream: Upstream, capsys: Capsys) -> None:
+    sha = upstream.commit({"tdd/SKILL.md": "1\n"})
+    write_config('entries = ["mp/tdd"]\n' + git_source("mp", upstream))
+
+    code, out, _ = update(capsys, "--dry-run")
+
+    assert code == 0 and f"mp {sha}" in out
+    assert not paths.cache().exists()
+
+
+def test_dry_run_with_a_failing_entry(upstream: Upstream, capsys: Capsys) -> None:
+    old = upstream.commit({"tdd/SKILL.md": "# tdd\n"})
+    upstream.git("rm", "-q", "-r", "tdd")
+    upstream.commit({"other/SKILL.md": "# other\n"})
+    write_config(
+        'entries = ["mp/tdd"]\n' + git_source("mp", upstream, f'ref = "{old}"\n')
+    )
+
+    code, _, err = update(capsys, "--dry-run")
+
+    assert code == 1 and "mp/tdd" in err
+
+
+def test_dry_run_with_an_unreachable_unselected_source(
+    tmp_path: Path, capsys: Capsys
+) -> None:
+    a, b = Upstream(tmp_path / "a"), Upstream(tmp_path / "b")
+    a.commit({"x/SKILL.md": "1\n"})
+    b_ref = b.commit({"y/SKILL.md": "1\n"})
+    write_config(
+        'entries = ["a/x", "b/y"]\n'
+        + git_source("a", a)
+        + git_source("b", b, f'ref = "{b_ref}"\n')
+    )
+    assert update(capsys, "a")[0] == 0
+    b.path.rename(tmp_path / "gone")
+    a.commit({"x/SKILL.md": "2\n"})
+
+    assert update(capsys, "a", "--dry-run")[0] == 0
+    assert update(capsys, "a")[0] == 0

@@ -27,12 +27,15 @@ def main(argv: list[str] | None = None) -> int:
     update_parser.add_argument(
         "aliases", nargs="*", metavar="source", help="default: every git source"
     )
+    update_parser.add_argument(
+        "--dry-run", action="store_true", help="show the new shas, write nothing"
+    )
     args = parser.parse_args(argv)
     try:
         if args.command == "init":
             init.init()
         elif args.command == "update":
-            update.update(args.aliases)
+            update.update(args.aliases, args.dry_run)
         elif args.command == "build":
             loaded = config.load()
             for warning in loaded.warnings:

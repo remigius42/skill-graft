@@ -52,7 +52,7 @@ Apply with the `tdd` skill: each task red-green-refactor (failing test first, th
   atomic replace, skipped when unchanged). Verify: new-commit, named-branch, default-branch-renamed,
   source-without-a-ref, only-named, entry-gone, no-deploy, comments-survive, symlinked-config and nothing-new
   scenarios.
-- [ ] 5.3 `--dry-run`: temporary `Cache` reading the real one (existing export, else export from the real
+- [x] 5.3 `--dry-run`: temporary `Cache` reading the real one (existing export, else export from the real
   repository, else clone with `--reference-if-able` and fetch, all into the temporary folder); "not written"
   message. Verify: the three dry-run scenarios, asserting TOML bytes and a recursive snapshot of the cache
   folder are unchanged.

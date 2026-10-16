@@ -21,10 +21,15 @@ def key(url: str) -> str:
 
 
 class Cache:
-    """The cache under `root`, fetching each URL at most once in its lifetime."""
+    """The cache under `root`, fetching each URL at most once in its lifetime.
 
-    def __init__(self, root: Path) -> None:
+    With a `reference`, it reads what that cache holds but writes only under its
+    own `root`: what `update --dry-run` needs to leave the real cache untouched.
+    """
+
+    def __init__(self, root: Path, reference: "Cache | None" = None) -> None:
         self.root = root
+        self.reference = reference
         self._fetched: set[str] = set()
 
     def repository(self, url: str) -> Path:
@@ -54,12 +59,16 @@ class Cache:
 
     def checkout(self, alias: str, url: str, ref: str) -> Path:
         """The tree of commit `ref`, as committed; fetches only if `ref` is missing."""
-        tree = self.root / "trees" / key(url) / ref
+        tree = self._tree(url, ref)
         if tree.exists():  # renamed into place only once complete
             return tree
-        if not self.has_commit(url, ref):
+        if self.reference and (shared := self.reference._tree(url, ref)).exists():
+            return shared
+        repo = self._repository_with(url, ref)
+        if repo is None:
             self.fetch(alias, url)
-            if not self.has_commit(url, ref):
+            repo = self._repository_with(url, ref)
+            if repo is None:
                 raise SkillGraftError(
                     f"source {alias!r}: ref {ref} is on no branch of {url}"
                 )
@@ -67,42 +76,59 @@ class Cache:
         if tmp.exists():
             shutil.rmtree(tmp)
         tmp.mkdir(parents=True)
-        _export(self.repository(url), ref, tmp, f"source {alias!r} ({url})")
+        _export(repo, ref, tmp, f"source {alias!r} ({url})")
         tmp.rename(tree)
         return tree
 
     def has_commit(self, url: str, sha: str) -> bool:
-        repo = self.repository(url)
-        if not repo.exists():
-            return False
-        try:
-            git.run("cat-file", "-e", f"{sha}^{{commit}}", repo=repo, context=url)
-        except SkillGraftError:
-            return False
-        return True
+        return self._repository_with(url, sha) is not None
 
-    @staticmethod
-    def _clone(url: str, repo: Path, context: str) -> None:
+    def _tree(self, url: str, ref: str) -> Path:
+        return self.root / "trees" / key(url) / ref
+
+    def _repository_with(self, url: str, sha: str) -> Path | None:
+        """This cache's repository for `url` if it has commit `sha`, else the reference's."""
+        repo = self.repository(url)
+        if repo.exists() and _has_commit(repo, sha):
+            return repo
+        return self.reference._repository_with(url, sha) if self.reference else None
+
+    def _clone(self, url: str, repo: Path, context: str) -> None:
         """Clones into a temporary name, so a killed clone never looks complete.
 
         Clone, unlike `init`, takes the remote's hash format, SHA-1 or SHA-256.
+        Objects the reference cache already has are borrowed, not downloaded.
         """
         tmp = repo.with_name(repo.name + ".tmp")
         if tmp.exists():
             shutil.rmtree(tmp)
         tmp.parent.mkdir(parents=True, exist_ok=True)
+        borrow = (
+            ["--reference-if-able", str(self.reference.repository(url))]
+            if self.reference
+            else []
+        )
         git.run(
             *git.FSCK,
             "clone",
             "-q",
             "--bare",
             "--no-tags",
+            *borrow,
             "--",
             url,
             str(tmp),
             context=context,
         )
         tmp.rename(repo)
+
+
+def _has_commit(repo: Path, sha: str) -> bool:
+    try:
+        git.run("cat-file", "-e", f"{sha}^{{commit}}", repo=repo, context=str(repo))
+    except SkillGraftError:
+        return False
+    return True
 
 
 def _export(repo: Path, ref: str, folder: Path, context: str) -> None:
