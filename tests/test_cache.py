@@ -375,6 +375,21 @@ def test_symlink_under_a_symlinked_folder_is_refused(tmp_path: Path) -> None:
     assert list(outside.iterdir()) == []
 
 
+def test_missing_object_is_reported(tmp_path: Path) -> None:
+    upstream = Upstream(tmp_path / "up")
+    sha = upstream.commit({"a/SKILL.md": "# a\n"})
+    git_cache = cache.Cache(paths.cache())
+    git_cache.fetch("mp", upstream.url)
+    blob = upstream.git("rev-parse", f"{sha}:a/SKILL.md")
+    loose = git_cache.repository(upstream.url) / "objects" / blob[:2] / blob[2:]
+    loose.unlink()
+
+    with pytest.raises(SkillGraftError) as error:
+        git_cache.checkout("mp", upstream.url, sha)
+
+    assert "'mp'" in str(error.value) and blob in str(error.value)
+
+
 def test_checkout_keeps_modes_and_skips_submodules(tmp_path: Path) -> None:
     upstream = Upstream(tmp_path / "up")
     script = upstream.path / "a" / "run.sh"

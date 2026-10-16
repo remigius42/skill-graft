@@ -239,9 +239,15 @@ def _read_blobs(repo: Path, oids: list[bytes], context: str) -> list[bytes]:
         input=b"\n".join(oids) + b"\n",
     )
     blobs, at = [], 0
-    for _ in oids:
+    for oid in oids:
         header_end = output.index(b"\n", at)
-        size = int(output[at:header_end].split(b" ")[2])
+        header = output[at:header_end].split(b" ")
+        if len(header) != 3:  # `<oid> missing`, or worse
+            raise SkillGraftError(
+                f"{context}: object {oid.decode()} is missing from {repo}; "
+                "delete that folder and run again"
+            )
+        size = int(header[2])
         start = header_end + 1
         blobs.append(output[start : start + size])
         at = start + size + 1  # the newline after each object
