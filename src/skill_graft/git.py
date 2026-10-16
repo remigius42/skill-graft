@@ -39,5 +39,13 @@ def run(
         raise SkillGraftError(f"cannot run `git`: {error}") from None
     if result.returncode != 0:
         stderr = result.stderr.decode(errors="replace").strip()
-        raise SkillGraftError(f"{context}: `git {args[0]}` failed: {stderr}")
+        raise SkillGraftError(f"{context}: `git {_subcommand(args)}` failed: {stderr}")
     return result.stdout
+
+
+def _subcommand(args: tuple[str, ...]) -> str:
+    """The subcommand in `args`, past any leading `-c name=value` pairs."""
+    at = 0
+    while args[at : at + 1] == ("-c",):
+        at += 2
+    return args[at]

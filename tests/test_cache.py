@@ -128,6 +128,7 @@ def test_unreachable_remote(tmp_path: Path) -> None:
         cache.Cache(paths.cache()).fetch("mp", url)
 
     assert "'mp'" in str(error.value) and url in str(error.value)
+    assert "`git clone` failed" in str(error.value)
 
 
 def test_git_missing(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
