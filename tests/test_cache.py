@@ -148,6 +148,7 @@ def test_unreachable_remote(tmp_path: Path) -> None:
 
     assert "'mp'" in str(error.value) and url in str(error.value)
     assert "`git clone` failed" in str(error.value)
+    assert list((paths.cache() / "repos").iterdir()) == []
 
 
 def test_git_missing(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
@@ -279,7 +280,7 @@ def test_hostile_tree_path_is_refused(tmp_path: Path, name: str) -> None:
 
     with pytest.raises(SkillGraftError, match="refusing the tree path"):
         cache.Cache(paths.cache()).checkout("mp", upstream.url, sha)
-    assert not (paths.cache() / "trees" / cache.key(upstream.url) / "config").exists()
+    assert list((paths.cache() / "trees" / cache.key(upstream.url)).iterdir()) == []
 
 
 def write_object(upstream: Upstream, kind: str, data: bytes) -> str:

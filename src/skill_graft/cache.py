@@ -5,6 +5,7 @@ import os
 import re
 import shutil
 import tempfile
+from collections.abc import Callable
 from pathlib import Path
 
 from skill_graft import git
@@ -73,9 +74,8 @@ class Cache:
                 raise SkillGraftError(
                     f"source {alias!r}: ref {ref} is on no branch of {url}"
                 )
-        tmp = _temporary(tree)
-        _export(repo, ref, tmp, f"source {alias!r} ({url})")
-        _place(tmp, tree)
+        context = f"source {alias!r} ({url})"
+        _build(tree, lambda tmp: _export(repo, ref, tmp, context))
         return tree
 
     def has_commit(self, url: str, sha: str) -> bool:
@@ -97,25 +97,40 @@ class Cache:
         Clone, unlike `init`, takes the remote's hash format, SHA-1 or SHA-256.
         Objects the reference cache already has are borrowed, not downloaded.
         """
-        tmp = _temporary(repo)
         borrow = (
             ["--reference-if-able", str(self.reference.repository(url))]
             if self.reference
             else []
         )
-        git.run(
-            *git.FSCK,
-            "clone",
-            "-q",
-            "--bare",
-            "--no-tags",
-            *borrow,
-            "--",
-            url,
-            str(tmp),
-            context=context,
+        _build(
+            repo,
+            lambda tmp: git.run(
+                *git.FSCK,
+                "clone",
+                "-q",
+                "--bare",
+                "--no-tags",
+                *borrow,
+                "--",
+                url,
+                str(tmp),
+                context=context,
+            ),
         )
-        _place(tmp, repo)
+
+
+def _build(final: Path, make: Callable[[Path], object]) -> None:
+    """Has `make` fill a temporary folder, then puts it at `final`.
+
+    A failure removes the temporary folder; only a killed run leaves one.
+    """
+    tmp = _temporary(final)
+    try:
+        make(tmp)
+    except BaseException:
+        shutil.rmtree(tmp, ignore_errors=True)
+        raise
+    _place(tmp, final)
 
 
 def _temporary(final: Path) -> Path:
