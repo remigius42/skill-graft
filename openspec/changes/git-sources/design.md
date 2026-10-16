@@ -120,6 +120,8 @@ beyond what git does itself.
   clone loudly, never silently with the wrong format; the SHA-256 test covers local clones.
 - [Without prompt overrides, a non-interactive run (cron, CI) can wait on a prompt] → skill-graft is an
   interactive command; such users set `GIT_TERMINAL_PROMPT=0` or `BatchMode` themselves, which git honors.
+- [The export reads every blob of the commit into memory at once, about twice the tree's size] → acceptable
+  for skill repositories, which are small; streaming `cat-file --batch` through a pipe is the fix if one is not.
 - [The export reimplements a small part of checkout] → modes are only four; a test covers each, plus CRLF
   attributes and a filter driver that must not apply.
 
