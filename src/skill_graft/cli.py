@@ -3,7 +3,7 @@
 import argparse
 import sys
 
-from skill_graft import apm, config, vendor
+from skill_graft import apm, config, init, vendor
 from skill_graft.errors import SkillGraftError
 
 
@@ -22,6 +22,8 @@ def main(argv: list[str] | None = None) -> int:
     )
     args = parser.parse_args(argv)
     try:
+        if args.command == "init":
+            init.init()
         if args.command == "build":
             loaded = config.load()
             for warning in loaded.warnings:

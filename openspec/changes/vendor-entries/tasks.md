@@ -43,7 +43,7 @@ Each task: failing test first, then code, one commit, `pre-commit run --all-file
 
 ## 5. Init
 
-- [ ] 5.1 `init`: refuse an existing folder, write the commented TOML and two-line `apm.yml`, run
+- [x] 5.1 `init`: refuse an existing folder, write the commented TOML and two-line `apm.yml`, run
   `apm install -g <abs path>`, check registration, print the retry command on failure. Verify: every `init`
   scenario passes with the fake `apm`.
 
