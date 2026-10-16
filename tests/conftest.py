@@ -1,4 +1,7 @@
 import json
+import os
+import shutil
+import subprocess
 import sys
 from pathlib import Path
 
@@ -75,6 +78,20 @@ def home(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> Path:
     home = tmp_path / "home"
     home.mkdir()
     monkeypatch.setenv("HOME", str(home))
+    # No developer git config (signing, insteadOf, default branch) reaches a test,
+    # and no GIT_DIR or GIT_INDEX_FILE from a git hook running pytest: with those,
+    # a test's git commands would write to this repository.
+    for name in [name for name in os.environ if name.startswith("GIT_")]:
+        monkeypatch.delenv(name)
+    monkeypatch.delenv("XDG_CACHE_HOME", raising=False)
+    monkeypatch.delenv("XDG_CONFIG_HOME", raising=False)
+    gitconfig = tmp_path / "gitconfig"
+    gitconfig.write_text("")
+    monkeypatch.setenv("GIT_CONFIG_GLOBAL", str(gitconfig))
+    monkeypatch.setenv("GIT_CONFIG_NOSYSTEM", "1")
+    for role in ("AUTHOR", "COMMITTER"):
+        monkeypatch.setenv(f"GIT_{role}_NAME", "Test")
+        monkeypatch.setenv(f"GIT_{role}_EMAIL", "test@example.com")
     return home
 
 
@@ -88,8 +105,37 @@ def fake_apm(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> FakeApm:
         f'#!/bin/sh\nexec "{sys.executable}" "{folder}/fake_apm.py" "$@"\n'
     )
     script.chmod(0o755)
+    git = shutil.which("git")
+    if git:
+        (folder / "git").symlink_to(git)
     monkeypatch.setenv("PATH", str(folder))
     return FakeApm(folder)
+
+
+class Upstream:
+    """A synthetic upstream repository on branch `main`; its URL is its path."""
+
+    def __init__(self, path: Path, sha256: bool = False) -> None:
+        self.path = path
+        self.url = str(path)
+        path.mkdir(parents=True)
+        object_format = ["--object-format=sha256"] if sha256 else []
+        self.git("init", "-q", "-b", "main", *object_format)
+
+    def git(self, *args: str) -> str:
+        return subprocess.run(
+            ["git", "-C", self.url, *args], capture_output=True, text=True, check=True
+        ).stdout.strip()
+
+    def commit(self, files: dict[str, str]) -> str:
+        """Writes `files` (relative path to text) and commits; returns the sha."""
+        for name, text in files.items():
+            file = self.path / name
+            file.parent.mkdir(parents=True, exist_ok=True)
+            file.write_text(text)
+        self.git("add", "-A")
+        self.git("commit", "-q", "--allow-empty", "-m", "commit")
+        return self.git("rev-parse", "HEAD")
 
 
 def write_config(text: str) -> Path:

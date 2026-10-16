@@ -10,6 +10,7 @@ words:
   - commitlint
   - conftest
   - copytree
+  - delenv
   - followlinks
   - frontmatter
   - kiro

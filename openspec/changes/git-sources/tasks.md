@@ -5,7 +5,7 @@ Apply with the `tdd` skill: each task red-green-refactor (failing test first, th
 
 ## 1. Test support
 
-- [ ] 1.1 `conftest`: unset `XDG_CACHE_HOME` and `XDG_CONFIG_HOME`, point `GIT_CONFIG_GLOBAL` at an empty file,
+- [x] 1.1 `conftest`: unset `XDG_CACHE_HOME` and `XDG_CONFIG_HOME`, point `GIT_CONFIG_GLOBAL` at an empty file,
   set `GIT_CONFIG_NOSYSTEM=1` and `GIT_AUTHOR_*`/`GIT_COMMITTER_*`; add an `upstream` helper (`git init -b main`,
   optional SHA-256, commit fixture skills, return shas; URL = its absolute path); make `fake_apm` link the real
   `git` beside the fake `apm`. Verify: a test commits twice and reads both shas, a SHA-256 upstream gives
