@@ -81,7 +81,9 @@ def test_fetch_once_per_url_per_command(tmp_path: Path) -> None:
 
 
 def unlocked(folder: Path) -> list[str]:
-    """The names in `folder` but lock files, which stay, as `flock` needs."""
+    """The names in `folder`, if any, but lock files, which stay, as `flock` needs."""
+    if not folder.exists():
+        return []
     return sorted(p.name for p in folder.iterdir() if p.suffix != ".lock")
 
 
@@ -273,7 +275,7 @@ def test_checkout_ignores_attributes_and_filters(tmp_path: Path) -> None:
     assert (tree / "a" / "SKILL.md").read_bytes() == b"a\nb\n"
 
 
-@pytest.mark.parametrize("name", ["..", ".GIT"])
+@pytest.mark.parametrize("name", ["..", ".GIT", "GIT~1"])
 def test_hostile_tree_path_is_refused(tmp_path: Path, name: str) -> None:
     upstream = Upstream(tmp_path / "up")
     upstream.commit({})
@@ -299,9 +301,10 @@ def test_hostile_tree_path_is_refused(tmp_path: Path, name: str) -> None:
     sha = upstream.git("commit-tree", root, "-m", "evil")
     upstream.git("update-ref", "refs/heads/main", sha)
 
-    with pytest.raises(SkillGraftError, match="refusing the tree path"):
+    # git's fsck refuses it on clone; the export's own check is the fallback.
+    with pytest.raises(SkillGraftError):
         cache.Cache(paths.cache()).checkout("mp", upstream.url, sha)
-    assert list((paths.cache() / "trees" / cache.key(upstream.url)).iterdir()) == []
+    assert unlocked(paths.cache() / "trees" / cache.key(upstream.url)) == []
 
 
 def write_object(upstream: Upstream, kind: str, data: bytes) -> str:
@@ -349,7 +352,7 @@ def test_file_under_a_symlinked_folder_is_refused(tmp_path: Path) -> None:
     sha = upstream.git("commit-tree", root, "-m", "evil")
     upstream.git("update-ref", "refs/heads/main", sha)
 
-    with pytest.raises(SkillGraftError, match="'a"):
+    with pytest.raises(SkillGraftError):
         cache.Cache(paths.cache()).checkout("mp", upstream.url, sha)
     assert not (outside / "x").exists()
 
@@ -370,7 +373,7 @@ def test_symlink_under_a_symlinked_folder_is_refused(tmp_path: Path) -> None:
     sha = upstream.git("commit-tree", root, "-m", "evil")
     upstream.git("update-ref", "refs/heads/main", sha)
 
-    with pytest.raises(SkillGraftError, match="refusing the tree path"):
+    with pytest.raises(SkillGraftError):
         cache.Cache(paths.cache()).checkout("mp", upstream.url, sha)
     assert list(outside.iterdir()) == []
 
@@ -380,9 +383,19 @@ def test_missing_object_is_reported(tmp_path: Path) -> None:
     sha = upstream.commit({"a/SKILL.md": "# a\n"})
     git_cache = cache.Cache(paths.cache())
     git_cache.fetch("mp", upstream.url)
+    repo = git_cache.repository(upstream.url)
+    # Unpack the clone's pack into loose objects, so one can be deleted.
+    for pack in (repo / "objects" / "pack").glob("*.pack"):
+        moved = pack.rename(tmp_path / pack.name)
+        pack.with_suffix(".idx").unlink()
+        with moved.open("rb") as stdin:
+            subprocess.run(
+                ["git", "--git-dir", str(repo), "unpack-objects", "-q"],
+                stdin=stdin,
+                check=True,
+            )
     blob = upstream.git("rev-parse", f"{sha}:a/SKILL.md")
-    loose = git_cache.repository(upstream.url) / "objects" / blob[:2] / blob[2:]
-    loose.unlink()
+    (repo / "objects" / blob[:2] / blob[2:]).unlink()
 
     with pytest.raises(SkillGraftError) as error:
         git_cache.checkout("mp", upstream.url, sha)

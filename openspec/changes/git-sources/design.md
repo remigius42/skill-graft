@@ -67,7 +67,8 @@ beyond what git does itself.
   error), and write the tree into a folder unique to this run from `git ls-tree -r -z --full-tree <sha>`
   and one `git cat-file --batch` process: mode `100644` a file, `100755` a file with its exec bit, `120000` a
   symlink whose target is the blob, `160000` (submodule) skipped. A path with an empty, `.` or `..` part, or a
-  `.git` part in any case, is refused: a clone of a local path skips fsck. Symlinks are written last, and no
+  `.git` part in any case, is refused, as a second guard behind fsck (clones use `--no-local`, so fsck checks
+  local paths too). Symlinks are written last, and no
   file lands where a resolved parent leaves the folder or a path already exists. Then rename it to `<sha>/`, or
   drop it if another run got there first. These are the committed bytes exactly: no `.gitattributes`
   conversion, no filter drivers from the user's config, no `export-ignore` dropping (as `git archive` would),

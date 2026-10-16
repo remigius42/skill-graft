@@ -99,6 +99,8 @@ class Cache:
 
         Clone, unlike `init`, takes the remote's hash format, SHA-1 or SHA-256.
         Objects the reference cache already has are borrowed, not downloaded.
+        `--no-local` sends a local path through git's transport too, so that
+        fsck checks its objects, as it does a remote's.
         """
         borrow = (
             ["--reference-if-able", str(self.reference.repository(url))]
@@ -112,6 +114,7 @@ class Cache:
                 "clone",
                 "-q",
                 "--bare",
+                "--no-local",
                 "--no-tags",
                 *borrow,
                 "--",
@@ -219,7 +222,7 @@ def _export(repo: Path, ref: str, folder: Path, context: str) -> None:
 def _safe(path: str, context: str) -> str:
     """A tree path, refused if it could leave the folder or write into `.git`.
 
-    git's fsck refuses these on fetch, but a local clone skips that check.
+    git's fsck already refuses these on clone and fetch; this is a second guard.
     """
     parts = path.split("/")
     if any(part in ("", ".", "..") or part.lower() == ".git" for part in parts):
