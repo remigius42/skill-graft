@@ -16,7 +16,7 @@ Each task: failing test first, then code, one commit, `pre-commit run --all-file
 
 - [x] 2.1 Load `skill-graft.toml`: path sources (`~` and relative resolution, missing folder) and entries
   (malformed, undeclared alias). Verify: tests for each `config` scenario pass.
-- [ ] 2.2 Reject unsupported keys (top-level and per source) and a missing or invalid file. Verify: tests for
+- [x] 2.2 Reject unsupported keys (top-level and per source) and a missing or invalid file. Verify: tests for
   git source, `[rename]`, and not-initialized scenarios pass.
 - [ ] 2.3 Validate value types, aliases as one path segment, and repeated entries. Verify: entries-as-string,
   empty source, path-not-a-string, bad alias and repeated-entry scenario tests pass.

@@ -50,3 +50,26 @@ def test_malformed_entry(entry: str) -> None:
     write_config(f'entries = ["{entry}"]\n')
     with pytest.raises(SkillGraftError, match=f"'{entry}'"):
         load()
+
+
+def test_git_source_is_unsupported() -> None:
+    write_config('[sources.mp]\ngit = "https://example.com/skills.git"\n')
+    with pytest.raises(SkillGraftError, match=r"sources\.mp\.git.*unsupported"):
+        load()
+
+
+def test_rename_table_is_unsupported() -> None:
+    write_config('[rename]\n"mp/code-review" = "mp-code-review"\n')
+    with pytest.raises(SkillGraftError, match=r"'rename'.*unsupported"):
+        load()
+
+
+def test_not_initialized() -> None:
+    with pytest.raises(SkillGraftError, match=r"skill-graft\.toml.*skill-graft init"):
+        load()
+
+
+def test_invalid_toml() -> None:
+    write_config("entries = [\n")
+    with pytest.raises(SkillGraftError, match=r"skill-graft\.toml"):
+        load()
