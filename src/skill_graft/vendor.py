@@ -5,7 +5,7 @@ import shutil
 from pathlib import Path
 
 from skill_graft import discovery, paths
-from skill_graft.config import Config, SkillId
+from skill_graft.config import Config, PathSource, SkillId
 from skill_graft.errors import SkillGraftError
 
 
@@ -21,7 +21,7 @@ def vendor(config: Config) -> None:
     _recover(skills, new, old)
     _check_deployed_names(config.entries)
     indexes = {
-        alias: discovery.index(config.sources[alias])
+        alias: discovery.index(_folder(config, alias))
         for alias in {entry.alias for entry in config.entries}
     }
     folders = {
@@ -44,6 +44,13 @@ def vendor(config: Config) -> None:
     new.rename(skills)
     if old.exists():
         shutil.rmtree(old)
+
+
+def _folder(config: Config, alias: str) -> Path:
+    source = config.sources[alias]
+    if not isinstance(source, PathSource):
+        raise SkillGraftError(f"source {alias!r}: git sources cannot be built yet")
+    return source.folder
 
 
 def _check_symlinks(folder: Path) -> None:

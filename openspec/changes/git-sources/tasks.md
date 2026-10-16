@@ -13,7 +13,7 @@ Apply with the `tdd` skill: each task red-green-refactor (failing test first, th
 
 ## 2. Config
 
-- [ ] 2.1 `Source = PathSource | GitSource`; exactly one of `path`/`git`; `branch`/`ref` only with `git`;
+- [x] 2.1 `Source = PathSource | GitSource`; exactly one of `path`/`git`; `branch`/`ref` only with `git`;
   string types; `git` an allowed-scheme URL, scp-like or absolute path (relative, `~`, leading `-`, other schemes,
   `<transport>::` rejected);
   `ref` 40 or 64 lowercase hex; `branch` not empty, `refs/…` or `-…`; `tag` and other keys still unsupported.

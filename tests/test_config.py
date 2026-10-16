@@ -6,6 +6,8 @@ from typing import TypeAlias
 import pytest
 from conftest import build, configure, skill, vendored, write_config
 
+from skill_graft import config
+
 Capsys: TypeAlias = pytest.CaptureFixture[str]
 
 
@@ -58,14 +60,36 @@ def test_not_initialized(capsys: Capsys) -> None:
         ('entries = ["/tdd"]\n', ["'/tdd'"]),
         ('entries = ["mp/"]\n', ["'mp/'"]),
         ('entries = ["mp/a/b"]\n', ["'mp/a/b'"]),
-        ('[sources.mp]\ngit = "https://x/s.git"\n', ["sources.mp.git", "unsupported"]),
+        (
+            '[sources.mp]\ngit = "/srv/s"\ntag = "v1"\n',
+            ["sources.mp.tag", "unsupported"],
+        ),
+        ('[sources.mp]\npath = "~/src"\ngit = "/srv/s"\n', ["'sources.mp'", "both"]),
+        (
+            '[sources.own]\npath = "~/src"\nref = "a"\n',
+            ["sources.own.ref", "unsupported"],
+        ),
+        ('[sources.mp]\ngit = "../skills"\n', ["'sources.mp.git'"]),
+        ('[sources.mp]\ngit = "~/skills"\n', ["'sources.mp.git'"]),
+        ('[sources.mp]\ngit = "--upload-pack=touch x"\n', ["'sources.mp.git'"]),
+        ('[sources.mp]\ngit = "ext::sh -c touch% x"\n', ["'sources.mp.git'"]),
+        ('[sources.mp]\ngit = "foo://x"\n', ["'sources.mp.git'"]),
+        ("[sources.mp]\ngit = 1\n", ["'sources.mp.git'"]),
+        ('[sources.mp]\ngit = "/srv/s"\nref = "abc1234"\n', ["'sources.mp.ref'", "40"]),
+        ('[sources.mp]\ngit = "/srv/s"\nref = 1\n', ["'sources.mp.ref'"]),
+        (
+            '[sources.mp]\ngit = "/srv/s"\nbranch = "refs/heads/main"\n',
+            ["'sources.mp.branch'"],
+        ),
+        ('[sources.mp]\ngit = "/srv/s"\nbranch = ""\n', ["'sources.mp.branch'"]),
+        ('[sources.mp]\ngit = "/srv/s"\nbranch = "-x"\n', ["'sources.mp.branch'"]),
         ('[rename]\n"mp/a" = "b"\n', ["'rename'", "unsupported"]),
         ("entries = [\n", ["skill-graft.toml"]),
         ('entries = "own/chisel"\n', ["'entries'", "list"]),
         ("entries = [1]\n", ["'entries'", "list of strings"]),
         ('sources = "x"\n', ["'sources'"]),
         ("sources = {own = 1}\n", ["'sources.own'"]),
-        ("[sources.own]\n", ["'sources.own.path'", "missing"]),
+        ("[sources.own]\n", ["'sources.own'", "'path' or 'git'"]),
         ("[sources.own]\npath = 1\n", ["'sources.own.path'"]),
         ('[sources."a/b"]\npath = "~/src"\n', ["alias 'a/b'"]),
         ('[sources.".."]\npath = "~/src"\n', ["alias '..'"]),
@@ -117,3 +141,46 @@ def test_source_overlapping_a_deploy_folder_warns(
     assert err.count("warning:") == 1
     assert "'own'" in err and str(home / deploy) in err
     assert vendored() == {"chisel"}
+
+
+SHA1 = "a" * 40
+SHA256 = "b" * 64
+
+
+@pytest.mark.parametrize(
+    "url",
+    [
+        "https://example.com/s.git",
+        "http://example.com/s.git",
+        "ssh://git@example.com/s.git",
+        "git://example.com/s.git",
+        "file:///srv/s",
+        "git@example.com:me/s.git",
+        "example.com:me/s.git",
+        "/srv/skills",
+    ],
+)
+def test_git_source_forms_load(url: str) -> None:
+    write_config(f'[sources.mp]\ngit = "{url}"\n')
+
+    assert config.load().sources == {"mp": config.GitSource(url, None, None)}
+
+
+def test_git_source_with_branch_and_ref_loads() -> None:
+    write_config(
+        f'[sources.a]\ngit = "/srv/a"\nbranch = "dev"\nref = "{SHA1}"\n'
+        f'[sources.b]\ngit = "/srv/b"\nref = "{SHA256}"\n'
+    )
+
+    assert config.load().sources == {
+        "a": config.GitSource("/srv/a", "dev", SHA1),
+        "b": config.GitSource("/srv/b", None, SHA256),
+    }
+
+
+def test_uppercase_ref_is_rejected(capsys: Capsys) -> None:
+    write_config(f'[sources.mp]\ngit = "/srv/s"\nref = "{SHA1.upper()}"\n')
+
+    code, err = build(capsys)
+
+    assert code == 1 and "'sources.mp.ref'" in err
