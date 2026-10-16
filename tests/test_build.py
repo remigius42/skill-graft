@@ -40,12 +40,13 @@ def test_copy_fails(home: Path, capsys: pytest.CaptureFixture[str]) -> None:
     broken = skill(home / "src" / "tdd")
     write_config('entries = ["own/chisel"]\n[sources.own]\npath = "~/src"\n')
     main(["build", "--no-install"])
-    (broken / "dangling").symlink_to(home / "nowhere")
+    (broken / "dangling").symlink_to("missing.md")
     write_config('entries = ["own/tdd"]\n[sources.own]\npath = "~/src"\n')
 
     assert main(["build", "--no-install"]) == 1
 
-    assert "dangling" in capsys.readouterr().err
+    err = capsys.readouterr().err
+    assert "copying" in err and "dangling" in err
     assert sorted(p.name for p in skills_dir(home).iterdir()) == ["chisel"]
     assert not (skills_dir(home).parent / "skills.new").exists()
 
@@ -60,7 +61,7 @@ def test_crash_between_the_renames_keeps_the_previous_build(
     # A run killed after moving skills/ aside and before moving skills.new/ in.
     skills_dir(home).rename(skills_dir(home).with_name("skills.old"))
     skill(skills_dir(home).with_name("skills.new") / "half")
-    (broken / "dangling").symlink_to(home / "nowhere")
+    (broken / "dangling").symlink_to("missing.md")
     write_config('entries = ["own/tdd"]\n[sources.own]\npath = "~/src"\n')
 
     assert main(["build", "--no-install"]) == 1
@@ -110,6 +111,7 @@ def test_clash_ignores_case(home: Path, capsys: pytest.CaptureFixture[str]) -> N
 
     err = capsys.readouterr().err
     assert "mp/tdd" in err and "own/TDD" in err
+    assert "'TDD'" in err and "'tdd'" in err
 
 
 def test_clash_across_sources(home: Path, capsys: pytest.CaptureFixture[str]) -> None:
@@ -129,6 +131,39 @@ def test_clash_across_sources(home: Path, capsys: pytest.CaptureFixture[str]) ->
     assert "mp/tdd" in err and "own/tdd" in err
     assert sorted(p.name for p in skills_dir(home).parent.iterdir()) == ["skills"]
     assert sorted(p.name for p in skills_dir(home).iterdir()) == ["chisel"]
+
+
+@pytest.mark.parametrize(
+    ("link", "target"),
+    [("refs", "../../shared"), ("notes.md", "../../shared/notes.md"), ("self", ".")],
+    ids=["folder outside", "file outside", "cycle"],
+)
+def test_symlink_leaving_the_skill_writes_nothing(
+    home: Path, capsys: pytest.CaptureFixture[str], link: str, target: str
+) -> None:
+    (home / "shared").mkdir()
+    (home / "shared" / "notes.md").write_text("outside\n")
+    chisel = skill(home / "src" / "chisel")
+    (chisel / link).symlink_to(target)
+    write_config('entries = ["own/chisel"]\n[sources.own]\npath = "~/src"\n')
+
+    assert main(["build", "--no-install"]) == 1
+
+    assert f"chisel/{link}" in capsys.readouterr().err
+    assert not skills_dir(home).parent.exists()
+
+
+def test_symlink_inside_the_skill_is_copied(home: Path) -> None:
+    chisel = skill(home / "src" / "chisel")
+    (chisel / "refs").mkdir()
+    (chisel / "refs" / "notes.md").write_text("inside\n")
+    (chisel / "notes.md").symlink_to("refs/notes.md")
+    write_config('entries = ["own/chisel"]\n[sources.own]\npath = "~/src"\n')
+
+    assert main(["build", "--no-install"]) == 0
+
+    copied = skills_dir(home) / "chisel" / "notes.md"
+    assert not copied.is_symlink() and copied.read_text() == "inside\n"
 
 
 def test_git_metadata_is_not_vendored(home: Path) -> None:

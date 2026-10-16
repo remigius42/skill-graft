@@ -24,7 +24,7 @@ def main(argv: list[str] | None = None) -> int:
     try:
         if args.command == "init":
             init.init()
-        if args.command == "build":
+        elif args.command == "build":
             loaded = config.load()
             for warning in loaded.warnings:
                 print(f"skill-graft: warning: {warning}", file=sys.stderr)

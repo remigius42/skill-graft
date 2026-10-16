@@ -5,6 +5,7 @@ import re
 from dataclasses import dataclass
 from pathlib import Path
 
+from skill_graft import paths
 from skill_graft.config import NAME, SkillId
 from skill_graft.errors import SkillGraftError
 
@@ -15,9 +16,11 @@ COMMENT = re.compile(r"\s+#.*$")
 def skill_folders(source: Path) -> list[Path]:
     """Every folder under `source` holding a `SKILL.md`, not looking inside one.
 
-    Follows symlinked folders, visiting each resolved folder once, and skips `.git`.
+    Follows symlinked folders, visiting each resolved folder once, and skips `.git`
+    and the package, so build never reads its own output.
     """
     found = []
+    package = paths.package().resolve()
     visited = {source.resolve()}
     for dirpath, dirnames, filenames in os.walk(source, followlinks=True):
         if "SKILL.md" in filenames:
@@ -27,7 +30,11 @@ def skill_folders(source: Path) -> list[Path]:
         keep = []
         for name in sorted(dirnames):
             real = (Path(dirpath) / name).resolve()
-            if name != ".git" and real not in visited:
+            if (
+                name != ".git"
+                and real not in visited
+                and not real.is_relative_to(package)
+            ):
                 visited.add(real)
                 keep.append(name)
         dirnames[:] = keep
@@ -109,9 +116,15 @@ def index(source: Path) -> Index:
 
 def find(skills: Index, skill_id: SkillId) -> Path:
     """The folder of the one skill named `skill_id.name`."""
-    if problems := skills.problems.get(skill_id.name):
-        raise problems[0]
     matches = skills.folders.get(skill_id.name, [])
+    if problems := skills.problems.get(skill_id.name):
+        if matches:
+            # The unreadable skill may be named this too: never pick silently.
+            raise SkillGraftError(
+                f"entry '{skill_id}' is ambiguous: it matches {matches[0]}, "
+                f"but {problems[0]}"
+            )
+        raise problems[0]
     if not matches:
         raise SkillGraftError(f"entry '{skill_id}': no skill {skill_id.name!r} found")
     if len(matches) > 1:

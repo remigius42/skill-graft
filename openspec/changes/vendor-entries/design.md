@@ -104,7 +104,8 @@ and a non-zero exit, never a traceback.
 - [Line-scan check is fooled by the path appearing in a comment or another key] → acceptable: worst case a
   missed "not registered" error. A false failure needs APM to write a form the check does not know, which the
   integration test would catch.
-- [Symlinks inside a skill pointing outside it get dereferenced and vendored] → rare; revisit with git sources.
+- [A skill uses a symlink to share files from outside its folder] → an error naming the link, since a skill is
+  its whole folder; links within the folder are copied as files, and links back up it are an error too.
 - [Front matter parsing is a subset of YAML] → unsupported forms fail loudly naming the file.
 - \[`init` fails after creating the folder; re-running `init` then refuses\] → the error prints the
   `apm install -g` retry command; `build` also re-registers.

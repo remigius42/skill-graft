@@ -59,6 +59,16 @@ def test_symlink_cycle_finds_each_skill_once(home: Path, capsys: Capsys) -> None
     assert vendored() == {"a"}
 
 
+def test_symlink_into_the_package_is_skipped(home: Path, capsys: Capsys) -> None:
+    skill(home / "src" / "chisel")
+    (home / "src" / "apm").symlink_to(home / ".apm")
+    configure(["own/chisel"], own="~/src")
+    build(capsys)
+
+    assert build(capsys) == (0, "")
+    assert vendored() == {"chisel"}
+
+
 def test_git_metadata_is_skipped(home: Path, capsys: Capsys) -> None:
     skill(home / "src" / ".git" / "x")
     configure(["own/x"], own="~/src")
@@ -203,6 +213,19 @@ def test_name_continued_on_the_next_line(
 
     assert build(capsys)[0] == 1
     assert vendored() == set()
+
+
+def test_unreadable_skill_with_the_entry_folder_name_is_ambiguous(
+    home: Path, capsys: Capsys
+) -> None:
+    skill(home / "src" / "tdd-v2", "---\nname: tdd\n---\n")
+    skill(home / "src" / "old" / "tdd", "---\nname: >-\n  tdd\n---\n")
+    configure(["mp/tdd"], mp="~/src")
+
+    code, err = build(capsys)
+
+    assert code == 1
+    assert "ambiguous" in err and "old/tdd/SKILL.md" in err and "tdd-v2" in err
 
 
 def unreadable_skill(folder: Path, how: str) -> None:
