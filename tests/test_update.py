@@ -138,6 +138,20 @@ def test_path_sources_are_skipped(
     assert code == 0 and out.splitlines() == [f"mp {sha}"]
 
 
+def test_config_warnings_are_shown(
+    home: Path, upstream: Upstream, capsys: Capsys
+) -> None:
+    upstream.commit({"tdd/SKILL.md": "# tdd\n"})
+    skill(home / ".agents" / "skills" / "chisel")
+    write_config(
+        '[sources.own]\npath = "~/.agents/skills"\n' + git_source("mp", upstream)
+    )
+
+    code, _, err = update(capsys)
+
+    assert code == 0 and "warning:" in err and "'own'" in err
+
+
 def test_tip_already_cached(upstream: Upstream, capsys: Capsys) -> None:
     sha = upstream.commit({"tdd/SKILL.md": "# tdd\n"})
     write_config(git_source("mp", upstream, f'ref = "{sha}"\n'))

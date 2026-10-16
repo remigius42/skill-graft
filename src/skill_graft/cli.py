@@ -35,11 +35,9 @@ def main(argv: list[str] | None = None) -> int:
         if args.command == "init":
             init.init()
         elif args.command == "update":
-            update.update(args.aliases, args.dry_run)
+            update.update(_load(), args.aliases, args.dry_run)
         elif args.command == "build":
-            loaded = config.load()
-            for warning in loaded.warnings:
-                print(f"skill-graft: warning: {warning}", file=sys.stderr)
+            loaded = _load()
             folders = resolve.folders(loaded, Cache(paths.cache()), {})
             vendor.vendor(resolve.resolve(loaded, folders))
             if not args.no_install:
@@ -48,6 +46,14 @@ def main(argv: list[str] | None = None) -> int:
         print(f"skill-graft: {error}", file=sys.stderr)
         return 1
     return 0
+
+
+def _load() -> config.Config:
+    """The config, its warnings printed."""
+    loaded = config.load()
+    for warning in loaded.warnings:
+        print(f"skill-graft: warning: {warning}", file=sys.stderr)
+    return loaded
 
 
 if __name__ == "__main__":

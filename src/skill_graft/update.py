@@ -9,13 +9,13 @@ from typing import Any, cast
 
 import tomlkit
 
-from skill_graft import config, git, paths, resolve
+from skill_graft import git, paths, resolve
 from skill_graft.cache import Cache
 from skill_graft.config import Config, GitSource
 from skill_graft.errors import SkillGraftError
 
 
-def update(aliases: list[str], dry_run: bool = False) -> None:
+def update(loaded: Config, aliases: list[str], dry_run: bool = False) -> None:
     """Moves the selected git sources to their tips, if every entry resolves there.
 
     Prints one line per source first, so a resolution error still shows the shas
@@ -23,17 +23,17 @@ def update(aliases: list[str], dry_run: bool = False) -> None:
     the real cache.
     """
     if not dry_run:
-        _update(aliases, Cache(paths.cache()), write=True)
+        _update(loaded, aliases, Cache(paths.cache()), write=True)
         return
     try:
         with tempfile.TemporaryDirectory(prefix="skill-graft-") as tmp:
-            _update(aliases, Cache(Path(tmp), Cache(paths.cache())), write=False)
+            git_cache = Cache(Path(tmp), Cache(paths.cache()))
+            _update(loaded, aliases, git_cache, write=False)
     finally:
         print("dry run: skill-graft.toml not written")
 
 
-def _update(aliases: list[str], git_cache: Cache, write: bool) -> None:
-    loaded = config.load()
+def _update(loaded: Config, aliases: list[str], git_cache: Cache, write: bool) -> None:
     selected = _select(loaded, aliases)
     resolve.check_refs(loaded, selected)
     for alias, source in selected.items():
