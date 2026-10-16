@@ -10,7 +10,7 @@ All under `~/.apm/skill-graft/`:
 | File                  | Written by                          | Holds                                                       |
 | --------------------- | ----------------------------------- | ----------------------------------------------------------- |
 | `skill-graft.toml`    | the user; `add`, `rename`, `update` | intent: sources, entries, renames, binds, patches, reserved |
-| `skill-graft.lock`    | `resolve`                           | provenance: resolved shas, the hull and its edges, hashes   |
+| `skill-graft.lock`    | `resolve`, `build`, `update`        | provenance: resolved shas, the hull and its edges, hashes   |
 | `patches/`            | the user                            | unified diffs for content changes                           |
 | `apm.yml`             | `init`                              | `name` and `version`, nothing else                          |
 | `.apm/skills/<name>/` | `build`                             | the vendored, patched, renamed skills                       |
@@ -40,6 +40,7 @@ path = "~/Documents/sync/2_areas/software/chisel_skill"
 
 [bind]
 "mp/grilling" = "own/grilling"
+"mp/tmp" = false  # `/tmp` from `mp` is not a reference
 
 [patches]
 "mp/implement" = ["patches/implement-no-pr.patch"]
@@ -51,27 +52,31 @@ path = "~/Documents/sync/2_areas/software/chisel_skill"
   registers it with `apm install -g <absolute path of ~/.apm/skill-graft>`. Refuses if the folder exists.
 - `add <skill-id>`, `rename <skill-id> <name>`: edit the TOML, then resolve.
 - `resolve`: computes the hull from the TOML, writes the lock, prints the tree, warnings and suggestions.
-  Reads each git source at its `ref`, fetching only when that commit is not cached.
-- `build`: resolves, writes `.apm/skills/`, runs the same `apm install -g` as `init`. `--no-install` stops
-  before APM. Fails unless `apm` exits 0 and `~/.apm/apm.yml` lists `~/.apm/skill-graft`.
-- `update [source…]`: fetches, resolves at each branch tip, and only if that succeeds writes the tips' shas into
-  `ref`; prints the hull diff and any failing patch hunks. `--dry-run` does all of it without writing the TOML
-  or the cache.
+  Reads every declared source, each git one at its `ref`, fetching only when that commit is not cached.
+- `build`: resolves, writes `.apm/skills/`, then the lock, then runs the same `apm install -g` as `init`.
+  `--no-install` stops before APM. Fails unless `apm` exits 0 and `~/.apm/apm.yml` lists `~/.apm/skill-graft`.
+- `update [source…]`: fetches, resolves at each branch tip, and only if that succeeds writes the lock, and the
+  tips' shas into `ref` when one moved; prints the hull diff (`+` added, `-` removed, `~` changed, against the
+  hull at the current refs if those are cached, never fetching for it) and any failing patch hunks. `--dry-run`
+  does all of it without writing the TOML, the lock or the cache.
 - `why <skill>`: the reverse paths from the entries.
 - `tree [--format mermaid]`: the hull as a tree, or as Mermaid for documentation.
 
 ## Resolution
 
 - A skill is its whole folder. Everything in it is vendored; nothing outside it is.
-- References are found in every Markdown file of a skill, in three forms: `/name`, the Skill tool form, and
-  prose. Prose counts only when the name cannot be an ordinary word: hyphenated, or in backticks.
+- References are found in every Markdown file of a skill, code blocks included, in three forms: `/name` as
+  its own token (never part of a path or URL), the Skill tool's call form `Skill(name)` (quoted or not, as
+  `skill=` or `skill:`, further arguments allowed), and prose. Prose counts only when the name cannot be an
+  ordinary word: hyphenated, or in backticks. Names match case-sensitively.
 - Slash and Skill tool references extend the hull. They resolve in their own source first, else in exactly
   one other source; several other sources is an error until a bind settles it. One that matches no skill in
-  any declared source is a warning: "`mp/tdd` calls `/foo`: no declared source has a skill `foo`".
+  any declared source is a warning: "`mp/tdd` calls `/foo`: no declared source has a skill `foo`", naming the
+  `"mp/foo" = false` bind that silences it. A bind no reference uses is a warning too.
 - Prose references resolve only in their own source, and never extend the hull. One inside the hull is
   renamed; one outside it is suggested, with the `add` command to accept it; one that matches nothing is not a
   reference.
-- A bind overrides all of this, for every form.
+- A bind overrides all of this, for every form. A bind to `false` makes the name no reference at all.
 
 ## Names
 
@@ -92,10 +97,12 @@ deployed file as `modified` drift.
 
 ## Feedback
 
-The lock records each edge with its kind (slash, Skill tool, prose, bind), so the explanation is a view of it:
+The lock (TOML, sorted, never read back) records each source's `ref` or folder, each hull skill with a SHA-256
+of its folder as vendored, and each edge with its kind (`slash`, `skill-tool`, later prose) plus `bind = true`
+when a bind decided it, so the explanation is a view of it:
 
-- `resolve` ends with a tree in the style of `cargo tree`: one line per pulled-in skill naming what pulled it
-  in, renames marked, warnings and prose suggestions listed.
+- `resolve` prints a tree in the style of `cargo tree`: one line per edge naming the reference, each skill
+  expanded once and later lines marked `(*)`, renames marked, then warnings and prose suggestions.
 - `why` and `tree` read the lock.
 
 ## Stack

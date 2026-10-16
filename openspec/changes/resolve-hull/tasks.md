@@ -63,6 +63,6 @@ Apply with the `tdd` skill: each task red-green-refactor (failing test first, th
 
 ## 7. Docs
 
-- [ ] 7.1 `docs/design.md`: the Skill tool form (call form only), code blocks counting, `false` **Binds**, the
+- [x] 7.1 `docs/design.md`: the Skill tool form (call form only), code blocks counting, `false` **Binds**, the
   lock format (edge kind plus `bind` flag), `build` and `update` writing the lock, the `cargo tree` output.
   Verify: `pre-commit run --all-files` green.
