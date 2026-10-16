@@ -9,7 +9,7 @@ Each task: failing test first, then code, one commit, `pre-commit run --all-file
   drop `requirements-dev.txt`; update `docs/development.md` to `uv sync`/`uv run`; add the local pytest hook
   and `pytest` to mypy's additional dependencies; set `mypy_path = "src"`. Verify: a test running
   `skill-graft --help` passes under `uv run pytest`.
-- [ ] 1.2 Add a `HOME`-to-`tmp_path` autouse fixture and the fake `apm` fixture in `tests/conftest.py`. Verify:
+- [x] 1.2 Add a `HOME`-to-`tmp_path` autouse fixture and the fake `apm` fixture in `tests/conftest.py`. Verify:
   a test asserts `Path.home()` is under `tmp_path` and the fake records argv and exit code.
 
 ## 2. Config
