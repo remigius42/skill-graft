@@ -43,13 +43,13 @@ def resolve(config: Config, folders: dict[str, Path]) -> Hull:
 
     Clashing entries are reported before anything is searched.
     """
-    rename.check_unique(rename.deployed(config, config.entries)[0])
+    rename.check_unique(config, rename.deployed(config, config.entries)[0])
     indexes = {
         alias: discovery.index(folder, isinstance(config.sources[alias], GitSource))
         for alias, folder in folders.items()
     }
     result = hull.walk(config, indexes)
     names, warnings = rename.deployed(config, list(result.skills))
-    rename.check_unique(names)
+    rename.check_unique(config, names)
     warnings += rename.check_reserved(config, names)
     return replace(result, deployed=names, warnings=result.warnings + warnings)

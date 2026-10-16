@@ -52,10 +52,18 @@ def deployed(
     return names, warnings
 
 
-def check_unique(names: dict[SkillId, str]) -> None:
+def _hint(config: Config, skill: SkillId) -> str:
+    """The `[rename]` line to write, or to change: never a second key."""
+    if skill in config.renames:
+        return f'change [rename] "{skill}" = "{config.renames[skill]}"'
+    return f'[rename] "{skill}" = "{skill.alias}-{skill.name}"'
+
+
+def check_unique(config: Config, names: dict[SkillId, str]) -> None:
     """No two skills share a deployed name.
 
     Compared ignoring case: on a case-insensitive file system the folders collide.
+    The hint names a skill not yet renamed, if one is.
     """
     by_name: dict[str, list[SkillId]] = {}
     for skill, name in names.items():
@@ -64,10 +72,11 @@ def check_unique(names: dict[SkillId, str]) -> None:
         if len(clashing) > 1:
             taken = " / ".join(sorted({repr(names[skill]) for skill in clashing}))
             ids = ", ".join(str(skill) for skill in clashing)
-            last = clashing[-1]
+            unrenamed = [skill for skill in clashing if skill not in config.renames]
+            hint = _hint(config, (unrenamed or clashing)[-1])
             raise SkillGraftError(
-                f"deployed name {taken} is taken by several skills: {ids}; rename "
-                f'one: [rename] "{last}" = "{last.alias}-{last.name}"'
+                f"deployed name {taken} is taken by several skills: {ids}; "
+                f"rename one: {hint}"
             )
 
 
@@ -81,16 +90,15 @@ def check_reserved(config: Config, names: dict[SkillId, str]) -> list[str]:
     shipped = {name.casefold() for name in SHIPPED}
     warnings = []
     for skill, name in names.items():
-        hint = f'[rename] "{skill}" = "{skill.alias}-{skill.name}"'
         if name.casefold() in mine:
             raise SkillGraftError(
                 f"`{skill}` deploys as `{name}`, which `reserved` lists; "
-                f"rename it: {hint}"
+                f"rename it: {_hint(config, skill)}"
             )
         if name.casefold() in shipped:
             warnings.append(
                 f"`{skill}` deploys as `{name}`, a name the harness already uses"
-                + ("" if skill in config.renames else f" (to avoid it: {hint})")
+                + ("" if skill in config.renames else f"; {_hint(config, skill)}")
             )
     return warnings
 

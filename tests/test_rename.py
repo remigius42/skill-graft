@@ -337,7 +337,7 @@ def test_shipped_clash(home: Path, capsys: pytest.CaptureFixture[str]) -> None:
 
     err = capsys.readouterr().err
     assert err.count("mp/code-review") == 2  # one warning, its rename line
-    assert '[rename] "mp/code-review" = "mp-code-review"' in err
+    assert err.rstrip().endswith('[rename] "mp/code-review" = "mp-code-review"')
 
 
 def test_renamed_onto_a_shipped_name(
@@ -372,3 +372,31 @@ def test_rename_onto_another_skills_name(
 
     err = capsys.readouterr().err
     assert "mp/grilling" in err and "own/notes" in err
+    assert '[rename] "own/notes" = "own-notes"' in err  # never a second key
+
+
+def test_clash_of_two_renames(home: Path, capsys: pytest.CaptureFixture[str]) -> None:
+    skill(home / "mp" / "a")
+    skill(home / "own" / "b")
+    with_renames(home, ["mp/a", "own/b"], '"mp/a" = "x"\n"own/b" = "x"')
+
+    assert main(["resolve"]) == 1
+
+    err = capsys.readouterr().err
+    assert 'change [rename] "own/b" = "x"' in err
+    assert '"own/b" = "own-b"' not in err
+
+
+def test_renamed_onto_a_reserved_name(
+    home: Path, capsys: pytest.CaptureFixture[str]
+) -> None:
+    skill(home / "mp" / "check")
+    with_renames(home, ["mp/check"], '"mp/check" = "review"')
+    file = package() / "skill-graft.toml"
+    file.write_text('reserved = ["review"]\n' + file.read_text())
+
+    assert main(["resolve"]) == 1
+
+    err = capsys.readouterr().err
+    assert 'change [rename] "mp/check" = "review"' in err
+    assert "mp-check" not in err

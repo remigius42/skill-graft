@@ -103,7 +103,8 @@ A `[rename]` key naming no **Hull** **Skill** SHALL be a warning naming the key,
 ### Requirement: Deployed names are unique
 
 Two **Hull** **Skills** with the same **Deployed name**, compared ignoring case, SHALL be an error naming both
-and a `[rename]` line that would separate them, and the command SHALL then write nothing.
+and a `[rename]` line that would separate them, and the command SHALL then write nothing. A hint SHALL never add
+a second key for a **Skill** already renamed: it names an unrenamed one, else says which value to change.
 
 #### Scenario: Clash across sources
 
@@ -123,7 +124,13 @@ and a `[rename]` line that would separate them, and the command SHALL then write
 #### Scenario: Rename onto another skill's name
 
 - **WHEN** `[rename]` has `"mp/grilling" = "Notes"`, and `own/notes` is in the **Hull**
-- **THEN** the command exits non-zero naming `mp/grilling` and `own/notes`
+- **THEN** the command exits non-zero naming `mp/grilling` and `own/notes`, and suggests
+  `"own/notes" = "own-notes"`
+
+#### Scenario: Clash of two renames
+
+- **WHEN** `[rename]` has `"mp/a" = "x"` and `"own/b" = "x"`
+- **THEN** the command exits non-zero saying to change `[rename] "own/b" = "x"`
 
 ### Requirement: The user's reserved names are errors
 
