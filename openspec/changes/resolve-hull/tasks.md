@@ -22,7 +22,7 @@ Apply with the `tdd` skill: each task red-green-refactor (failing test first, th
 
 - [x] 3.1 `discovery.find` takes a label so errors name an entry, a reference or a bind. Verify: existing
   discovery tests pass with unchanged messages for entries.
-- [ ] 3.2 `resolve.folders` covers every declared source; `hull.py` resolves references (own source, one
+- [x] 3.2 `resolve.folders` covers every declared source; `hull.py` resolves references (own source, one
   other, several → error with `[bind]` hint, none → warning once per skill and name quoting the form written;
   "has" ignores invalid names) and walks the hull BFS, checking each skill's symlinks before scanning it,
   dropping edges that resolve, binds applied, to their source; `resolve.resolve` returns the `Hull`, checking deployed

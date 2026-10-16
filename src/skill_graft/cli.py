@@ -39,7 +39,9 @@ def main(argv: list[str] | None = None) -> int:
         elif args.command == "build":
             loaded = _load()
             folders = resolve.folders(loaded, Cache(paths.cache()), {})
-            vendor.vendor(resolve.resolve(loaded, folders))
+            resolved = resolve.resolve(loaded, folders)
+            _warn(resolved.warnings)
+            vendor.vendor(resolved.skills)
             if not args.no_install:
                 apm.install()
     except (SkillGraftError, OSError) as error:
@@ -51,9 +53,13 @@ def main(argv: list[str] | None = None) -> int:
 def _load() -> config.Config:
     """The config, its warnings printed."""
     loaded = config.load()
-    for warning in loaded.warnings:
-        print(f"skill-graft: warning: {warning}", file=sys.stderr)
+    _warn(loaded.warnings)
     return loaded
+
+
+def _warn(warnings: list[str]) -> None:
+    for warning in warnings:
+        print(f"skill-graft: warning: {warning}", file=sys.stderr)
 
 
 if __name__ == "__main__":

@@ -29,6 +29,7 @@ words:
   - opsx
   - pathlib
   - pocock
+  - popleft
   - pycache
   - pyproject
   - pytest
