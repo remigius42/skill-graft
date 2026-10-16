@@ -1,7 +1,5 @@
 """Moves each git source's ref to the tip of its branch."""
 
-import os
-import shutil
 import sys
 import tempfile
 from collections.abc import MutableMapping
@@ -10,7 +8,7 @@ from typing import Any, cast
 
 import tomlkit
 
-from skill_graft import git, lock, paths, resolve
+from skill_graft import files, git, lock, paths, resolve
 from skill_graft.cache import Cache
 from skill_graft.config import Config, GitSource
 from skill_graft.errors import SkillGraftError
@@ -114,17 +112,7 @@ def _write_refs(refs: dict[str, str]) -> None:
     sources = cast(MutableMapping[str, Any], document["sources"])
     for alias, ref in refs.items():
         cast(MutableMapping[str, Any], sources[alias])["ref"] = ref
-    with tempfile.NamedTemporaryFile(
-        "wb", dir=file.parent, prefix=f".{file.name}.", delete=False
-    ) as tmp:
-        try:
-            tmp.write(tomlkit.dumps(document).encode())
-            tmp.close()
-            shutil.copymode(file, tmp.name)
-            os.replace(tmp.name, file)
-        except BaseException:
-            os.unlink(tmp.name)
-            raise
+    files.atomic_write(file, tomlkit.dumps(document).encode())
 
 
 def _select(loaded: Config, aliases: list[str]) -> dict[str, GitSource]:

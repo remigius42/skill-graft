@@ -3,12 +3,11 @@
 import hashlib
 import os
 import stat
-import tempfile
 from pathlib import Path
 
 import tomlkit
 
-from skill_graft import paths
+from skill_graft import files, paths
 from skill_graft.config import Config, GitSource, SkillId
 from skill_graft.hull import Edge, Hull
 
@@ -103,14 +102,4 @@ def folder_hash(folder: Path) -> str:
 
 def write(text: str) -> None:
     """Replaces the lock in the package folder atomically."""
-    file = paths.package() / "skill-graft.lock"
-    with tempfile.NamedTemporaryFile(
-        "wb", dir=file.parent, prefix=f".{file.name}.", delete=False
-    ) as tmp:
-        try:
-            tmp.write(text.encode())
-            tmp.close()
-            os.replace(tmp.name, file)
-        except BaseException:
-            os.unlink(tmp.name)
-            raise
+    files.atomic_write(paths.package() / "skill-graft.lock", text.encode())

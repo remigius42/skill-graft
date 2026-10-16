@@ -1,5 +1,7 @@
 """The lock's content (the `resolve` spec): sources, skills, edges, hashes."""
 
+import os
+import stat
 import tomllib
 from pathlib import Path
 from typing import Any
@@ -99,6 +101,29 @@ def test_same_input(home: Path) -> None:
     configure(["own/tdd"], own="~/own")
 
     assert render() == render()
+
+
+def test_new_lock_follows_the_umask(home: Path) -> None:
+    configure([])
+    old = os.umask(0o022)
+    try:
+        lock.write("one\n")
+    finally:
+        os.umask(old)
+
+    file = home / ".apm" / "skill-graft" / "skill-graft.lock"
+    assert stat.S_IMODE(file.stat().st_mode) == 0o644
+
+
+def test_lock_keeps_its_mode(home: Path) -> None:
+    configure([])
+    lock.write("one\n")
+    file = home / ".apm" / "skill-graft" / "skill-graft.lock"
+    file.chmod(0o640)
+
+    lock.write("two\n")
+
+    assert stat.S_IMODE(file.stat().st_mode) == 0o640
 
 
 def test_write_replaces_the_lock(home: Path) -> None:
