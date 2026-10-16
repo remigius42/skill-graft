@@ -82,7 +82,7 @@ def _yaml_key(text: str, match: re.Match[str]) -> bool:
 
 
 def front_matter(text: str) -> tuple[int, tuple[int, int] | None] | None:
-    """Where the front matter opens, as `read_name` finds it: the offset just past
+    """Where the front matter opens, for `read_name` too: the offset just past
     its opening `---` line, and the offsets of its `name:` line if any. None when
     `text` has no front matter: no opening fence, or none closing it.
     """
@@ -101,7 +101,7 @@ def front_matter(text: str) -> tuple[int, tuple[int, int] | None] | None:
 
 
 def name_line(text: str) -> tuple[int, int] | None:
-    """The offsets of the front matter's `name:` line, as `read_name` finds it."""
+    """The offsets of the front matter's first `name:` line, if any."""
     found = front_matter(text)
     return found[1] if found else None
 

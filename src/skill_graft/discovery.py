@@ -5,7 +5,7 @@ import re
 from dataclasses import dataclass
 from pathlib import Path
 
-from skill_graft import paths
+from skill_graft import paths, references
 from skill_graft.config import NAME, SkillId
 from skill_graft.errors import SkillGraftError
 
@@ -53,22 +53,18 @@ def read_name(folder: Path) -> str:
     """
     skill_md = folder / "SKILL.md"
     try:
-        lines = skill_md.read_text(encoding="utf-8-sig").splitlines()
+        text = skill_md.read_text(encoding="utf-8-sig")
     except (OSError, UnicodeDecodeError) as error:
         raise SkillGraftError(f"{skill_md}: cannot be read: {error}") from None
-    fences = [i for i, line in enumerate(lines) if line.rstrip() == "---"][:2]
-    if fences[:1] != [0] or len(fences) < 2:
+    found = references.name_line(text)
+    if found is None:
         return folder.name
-    front_matter = lines[1 : fences[1]]
-    for i, line in enumerate(front_matter):
-        if line.startswith("name:"):
-            following = front_matter[i + 1 : i + 2]
-            continued = bool(following) and following[0][:1].isspace()
-            value = _scalar(line.removeprefix("name:"))
-            if value is None or continued:
-                raise SkillGraftError(f"{skill_md}: unsupported form of `name:`")
-            return value
-    return folder.name
+    following = text[found[1] :].splitlines()[:1]
+    continued = bool(following) and following[0][:1].isspace()
+    value = _scalar(text[found[0] : found[1]].rstrip("\r\n").removeprefix("name:"))
+    if value is None or continued:
+        raise SkillGraftError(f"{skill_md}: unsupported form of `name:`")
+    return value
 
 
 def _scalar(raw: str) -> str | None:

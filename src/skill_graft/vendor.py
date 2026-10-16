@@ -22,9 +22,7 @@ def vendor(hull: Hull) -> None:
     _recover(skills, new, old)
     new.mkdir(parents=True)
     for skill, folder in hull.skills.items():
-        written = {
-            folder / path: data for path, data in rewrites.get(skill, {}).items()
-        }
+        written = rewrites.get(skill, {})  # by path relative to `folder`
 
         def copy(source: str, target: str) -> str:
             """Copies a file, or writes its rewritten bytes; then its mode and times.
@@ -32,7 +30,7 @@ def vendor(hull: Hull) -> None:
             Written as the copy is made, before `copytree` sets the folders' modes,
             so a read-only upstream file or folder never blocks a rewrite.
             """
-            if (data := written.get(Path(source))) is None:
+            if (data := written.get(Path(source).relative_to(folder))) is None:
                 return str(shutil.copy2(source, target))
             Path(target).write_bytes(data)
             shutil.copystat(source, target)
