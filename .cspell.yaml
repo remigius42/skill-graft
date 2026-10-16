@@ -1,11 +1,15 @@
 version: "0.2"
 language: "en-US"
 words:
+  - autouse
   - backticked
   - blocklist
   - commitlint
+  - conftest
+  - copytree
   - frontmatter
   - mattpocock
+  - monkeypatched
   - mypy
   - opencode
   - openspec
@@ -14,6 +18,7 @@ words:
   - pycache
   - pyproject
   - pytest
+  - stdlib
   - testpaths
   - tomlkit
   - tomllib
