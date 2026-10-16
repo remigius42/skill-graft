@@ -6,7 +6,7 @@ from dataclasses import replace
 
 from skill_graft import apm, config, init, lock, paths, resolve, update, vendor
 from skill_graft.cache import Cache
-from skill_graft.errors import SkillGraftError
+from skill_graft.errors import SkillGraftError, warn
 from skill_graft.hull import Hull
 
 
@@ -45,10 +45,10 @@ def main(argv: list[str] | None = None) -> int:
             loaded, resolved = _resolve()
             lock.write(lock.render(loaded, {}, resolved))
             print(lock.tree(resolved), end="")
-            _warn(resolved.warnings)
+            warn(resolved.warnings)
         elif args.command == "build":
             loaded, resolved = _resolve()
-            _warn(resolved.warnings)
+            warn(resolved.warnings)
             vendor.vendor(resolved.skills)
             # Hashes the vendored copies, so the lock holds exactly what was vendored.
             copies = {skill: paths.skills() / skill.name for skill in resolved.skills}
@@ -64,7 +64,7 @@ def main(argv: list[str] | None = None) -> int:
 def _load() -> config.Config:
     """The config, its warnings printed."""
     loaded = config.load()
-    _warn(loaded.warnings)
+    warn(loaded.warnings)
     return loaded
 
 
@@ -73,11 +73,6 @@ def _resolve() -> tuple[config.Config, Hull]:
     loaded = _load()
     folders = resolve.folders(loaded, Cache(paths.cache()), {})
     return loaded, resolve.resolve(loaded, folders)
-
-
-def _warn(warnings: list[str]) -> None:
-    for warning in warnings:
-        print(f"skill-graft: warning: {warning}", file=sys.stderr)
 
 
 if __name__ == "__main__":

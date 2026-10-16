@@ -1,6 +1,5 @@
 """Moves each git source's ref to the tip of its branch."""
 
-import sys
 import tempfile
 from collections.abc import MutableMapping
 from pathlib import Path
@@ -11,7 +10,7 @@ import tomlkit
 from skill_graft import files, git, lock, paths, resolve
 from skill_graft.cache import Cache
 from skill_graft.config import Config, GitSource
-from skill_graft.errors import SkillGraftError
+from skill_graft.errors import SkillGraftError, warn
 from skill_graft.hull import Hull
 
 
@@ -51,8 +50,7 @@ def _update(loaded: Config, aliases: list[str], git_cache: Cache, write: bool) -
         unchanged = " (unchanged)" if tips[alias] == source.ref else ""
         print(f"{alias} {tips[alias]}{unchanged}")
     hull = resolve.resolve(loaded, resolve.folders(loaded, git_cache, tips))
-    for warning in hull.warnings:
-        print(f"skill-graft: warning: {warning}", file=sys.stderr)
+    warn(hull.warnings)
     _print_diff(_previous(loaded, selected, git_cache), hull)
     moved = {alias: tip for alias, tip in tips.items() if tip != selected[alias].ref}
     if write:
