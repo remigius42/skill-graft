@@ -37,7 +37,7 @@ Apply with the `tdd` skill: each task red-green-refactor (failing test first, th
 
 ## 4. Build
 
-- [ ] 4.1 `build` vendors the hull and prints warnings (no lock yet). Verify: referenced-skill-vendored,
+- [x] 4.1 `build` vendors the hull and prints warnings (no lock yet). Verify: referenced-skill-vendored,
   removed-entry, warning-does-not-stop-build, and every existing build and git-build test.
 
 ## 5. Lock and resolve command

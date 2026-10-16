@@ -35,6 +35,52 @@ def test_removed_entry(home: Path) -> None:
     assert sorted(p.name for p in skills_dir(home).iterdir()) == ["tdd"]
 
 
+def test_referenced_skill_vendored(home: Path) -> None:
+    skill(home / "src" / "tdd", "Run /grilling.\n")
+    skill(home / "src" / "grilling")
+    write_config('entries = ["own/tdd"]\n[sources.own]\npath = "~/src"\n')
+
+    assert main(["build", "--no-install"]) == 0
+
+    assert sorted(p.name for p in skills_dir(home).iterdir()) == ["grilling", "tdd"]
+
+
+def test_skill_no_longer_referenced_is_removed(home: Path) -> None:
+    tdd = skill(home / "src" / "tdd", "Run /grilling.\n")
+    skill(home / "src" / "grilling")
+    write_config('entries = ["own/tdd"]\n[sources.own]\npath = "~/src"\n')
+    main(["build", "--no-install"])
+    (tdd / "SKILL.md").write_text("Nothing.\n")
+
+    assert main(["build", "--no-install"]) == 0
+
+    assert sorted(p.name for p in skills_dir(home).iterdir()) == ["tdd"]
+
+
+def test_warning_does_not_stop_build(
+    home: Path, capsys: pytest.CaptureFixture[str]
+) -> None:
+    skill(home / "src" / "tdd", "Run /foo.\n")
+    write_config('entries = ["own/tdd"]\n[sources.own]\npath = "~/src"\n')
+
+    assert main(["build", "--no-install"]) == 0
+
+    assert "skill-graft: warning: `own/tdd` calls `/foo`" in capsys.readouterr().err
+
+
+def test_symlink_in_a_referenced_skill(
+    home: Path, capsys: pytest.CaptureFixture[str]
+) -> None:
+    skill(home / "src" / "tdd", "Run /grilling.\n")
+    grilling = skill(home / "src" / "grilling")
+    (grilling / "out").symlink_to(home / "secret")
+    write_config('entries = ["own/tdd"]\n[sources.own]\npath = "~/src"\n')
+
+    assert main(["build", "--no-install"]) == 1
+
+    assert "out" in capsys.readouterr().err and not skills_dir(home).exists()
+
+
 def test_copy_fails(home: Path, capsys: pytest.CaptureFixture[str]) -> None:
     skill(home / "src" / "chisel")
     broken = skill(home / "src" / "tdd")
