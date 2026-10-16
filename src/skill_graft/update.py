@@ -77,13 +77,13 @@ def _previous(
         hull = resolve.resolve(loaded, resolve.folders(loaded, git_cache, {}))
         return {skill: lock.folder_hash(f) for skill, f in hull.skills.items()}
     except (SkillGraftError, OSError) as error:  # the update itself is still fine
-        return str(error)
+        return f"the current refs do not resolve: {error}"
 
 
 def _print_diff(old: dict[SkillId, str] | str, hull: Hull) -> None:
     """`+`, `-` or `~` per skill added, removed or changed, by skill ID."""
     if isinstance(old, str):
-        print(f"no previous hull to compare: {old}")
+        print(f"no previous hull to compare ({old})")
         return
     new = {skill: lock.folder_hash(f) for skill, f in hull.skills.items()}
     lines = [

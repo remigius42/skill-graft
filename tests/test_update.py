@@ -654,4 +654,5 @@ def test_broken_old_ref_only_skips_the_diff(upstream: Upstream, capsys: Capsys) 
     code, out, _ = update(capsys)
 
     assert code == 0 and ref("mp") == new
-    assert "no previous hull to compare" in out and "data.txt" in out
+    assert "no previous hull to compare (the current refs do not resolve:" in out
+    assert "data.txt" in out
