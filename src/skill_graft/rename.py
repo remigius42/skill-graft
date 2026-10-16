@@ -108,10 +108,10 @@ def rewrites(hull: Hull) -> dict[SkillId, dict[Path, bytes]]:
     """
     result: dict[SkillId, dict[Path, bytes]] = {}
     for skill, folder in hull.skills.items():
-        by_file: dict[Path, list[tuple[tuple[int, int], str]]] = {}
+        by_file: dict[Path, list[tuple[tuple[int, int], str, str]]] = {}
         for ref, target in hull.occurrences.get(skill, []):
             if (new := hull.deployed[target]) != ref.name:
-                by_file.setdefault(ref.file, []).append((ref.span, new))
+                by_file.setdefault(ref.file, []).append((ref.span, ref.name, new))
         renamed = hull.deployed[skill] != skill.name
         if renamed:
             by_file.setdefault(folder / "SKILL.md", [])
@@ -121,7 +121,9 @@ def rewrites(hull: Hull) -> dict[SkillId, dict[Path, bytes]]:
                 text = file.read_bytes().decode("utf-8")
             except (OSError, UnicodeDecodeError) as error:  # changed since the scan
                 raise SkillGraftError(f"{file} cannot be rewritten: {error}") from None
-            for (start, end), new in sorted(spans, reverse=True):  # back to front
+            for (start, end), old, new in sorted(spans, reverse=True):  # back to front
+                if text[start:end] != old:  # edited since the scan: offsets are stale
+                    raise SkillGraftError(f"{file} changed while building; run again")
                 text = f"{text[:start]}{new}{text[end:]}"
             if renamed and file == folder / "SKILL.md":
                 text = set_name(text, hull.deployed[skill])

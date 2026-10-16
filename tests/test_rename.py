@@ -147,7 +147,7 @@ def test_own_name_line_not_rewritten(home: Path) -> None:
     assert rewritten(resolved()) == {}
 
 
-@pytest.mark.parametrize("change", ["not UTF-8", "deleted"])
+@pytest.mark.parametrize("change", ["not UTF-8", "deleted", "edited"])
 def test_file_changed_before_vendoring(home: Path, change: str) -> None:
     tdd = skill(home / "mp" / "tdd", "/grilling\n")
     skill(home / "mp" / "grilling")
@@ -155,6 +155,8 @@ def test_file_changed_before_vendoring(home: Path, change: str) -> None:
     hull = resolved(mp__grilling="mp-grilling")
     if change == "deleted":
         (tdd / "SKILL.md").unlink()
+    elif change == "edited":
+        (tdd / "SKILL.md").write_text("A new first line\n/grilling\n")
     else:
         (tdd / "SKILL.md").write_bytes(b"/grilling \xff\n")
 
