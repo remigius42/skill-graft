@@ -17,6 +17,7 @@ state = json.loads(state_file.read_text())
 state["calls"].append(sys.argv[1:])
 state_file.write_text(json.dumps(state))
 args = sys.argv[1:]
+print("fake apm: " + " ".join(args))
 if state["register"] and args[:2] == ["install", "-g"] and len(args) > 2:
     manifest = Path.home() / ".apm" / "apm.yml"
     manifest.parent.mkdir(parents=True, exist_ok=True)

@@ -194,12 +194,15 @@ def build_one_skill(home: Path) -> None:
     write_config('entries = ["own/chisel"]\n[sources.own]\npath = "~/src"\n')
 
 
-def test_apm_succeeds(home: Path, fake_apm: FakeApm) -> None:
+def test_apm_succeeds(
+    home: Path, fake_apm: FakeApm, capfd: pytest.CaptureFixture[str]
+) -> None:
     build_one_skill(home)
 
     assert main(["build"]) == 0
 
     assert fake_apm.calls == [["install", "-g", str(home / ".apm" / "skill-graft")]]
+    assert "fake apm: install -g" in capfd.readouterr().out
 
 
 def test_apm_exits_non_zero(
