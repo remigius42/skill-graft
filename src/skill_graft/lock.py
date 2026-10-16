@@ -7,13 +7,22 @@ from pathlib import Path
 
 import tomlkit
 
-from skill_graft import files, paths
+from skill_graft import files, paths, rename
 from skill_graft.config import Config, GitSource, SkillId
 from skill_graft.hull import Edge, Hull
 
 
-def render(config: Config, refs: dict[str, str], hull: Hull) -> str:
-    """The lock's text: git sources at `refs`, else their ref; all sorted."""
+def render(
+    config: Config,
+    refs: dict[str, str],
+    hull: Hull,
+    hashes: dict[SkillId, str] | None = None,
+) -> str:
+    """The lock's text: git sources at `refs`, else their ref; all sorted.
+
+    Hashes each skill as `hashes` gives, else as it would be vendored.
+    """
+    hashes = skill_hashes(hull) if hashes is None else hashes
     document = tomlkit.document()
     document.add(tomlkit.comment("Written by skill-graft; never read. Do not edit."))
     document["version"] = 1
@@ -35,7 +44,7 @@ def render(config: Config, refs: dict[str, str], hull: Hull) -> str:
                 {
                     "id": str(skill_id),
                     "entry": skill_id in hull.entries,
-                    "hash": folder_hash(hull.skills[skill_id]),
+                    "hash": hashes[skill_id],
                 }
             )
         )
@@ -81,18 +90,31 @@ def tree(hull: Hull) -> str:
     return "".join(f"{line}\n" for line in lines)
 
 
-def folder_hash(folder: Path) -> str:
+def skill_hashes(hull: Hull) -> dict[SkillId, str]:
+    """Each hull skill's hash as it would be vendored: rewrites applied."""
+    rewrites = rename.rewrites(hull)
+    return {
+        skill: folder_hash(folder, rewrites.get(skill, {}))
+        for skill, folder in hull.skills.items()
+    }
+
+
+def folder_hash(folder: Path, overrides: dict[Path, bytes] | None = None) -> str:
     """SHA-256 of the folder as vendored: each file's path, exec bit and bytes.
 
     Symlinks are followed, as the copy does; `.git` is skipped, as it is not copied.
+    A file in `overrides`, by path relative to `folder`, is hashed with its bytes.
     """
+    overrides = overrides or {}
     digest = hashlib.sha256()
     for relative, file in sorted(
         (b"/".join(os.fsencode(part) for part in f.relative_to(folder).parts), f)
         for f in files.skill_entries(folder)
         if not f.is_dir()
     ):
-        content = file.read_bytes()
+        content = overrides.get(file.relative_to(folder))
+        if content is None:
+            content = file.read_bytes()
         executable = b"1" if file.stat().st_mode & stat.S_IXUSR else b"0"
         digest.update(b"\0".join([relative, executable, b"%d" % len(content), b""]))
         digest.update(content)

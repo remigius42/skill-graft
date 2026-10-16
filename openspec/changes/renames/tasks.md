@@ -29,8 +29,8 @@ that honors them in full, so no commit accepts intent it ignores.
   no-front-matter, and rewrites for slash (sentence-end-kept), Skill tool (quotes and arguments kept), backticked
   and hyphenated prose, self-reference, sibling file, own-name-line, unresolved-names-untouched, non-UTF-8 file
   untouched.
-- [ ] 3.2 `vendor` copies through a `copy_function` writing the rewritten bytes; `lock.render` hashes with the
-  rewrites, so `resolve`, `build` and `update` (lock and hull diff) agree; `build` stops hashing its copies. Bound
+- [x] 3.2 `vendor` copies through a `copy_function` writing the rewritten bytes; `lock.render` hashes with the
+  rewrites, so `resolve`, `build` and `update` (lock and hull diff) agree; `build` hashes its copies by deployed name. Bound
   **References** are now rewritten end to end. Verify: bound-to-another-name (build), a read-only upstream file and
   folder rewritten, bound-self-reference, copy-fails, resolve-and-build-agree for a bind, an `update` lock equal to
   the `resolve` lock, and every existing build and git-build test.

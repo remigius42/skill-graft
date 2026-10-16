@@ -71,10 +71,11 @@ awareness beyond the regex); YAML beyond the `name:` line.
   Alternative, writing over the copy afterwards: fails on read-only copies.
 
 - **Hash**: `lock.folder_hash(folder, overrides)` hashes `overrides[path]` instead of the file's bytes where
-  given, and `lock.render` passes each **Skill**'s rewrites itself, so `resolve`, `build` and `update` (lock and
-  hull diff) hash alike. `build` stops hashing its vendored copies (`cli.py`'s `copies`, keyed by `skill.name`,
-  would miss a renamed folder): same bytes by construction, and a test pins `resolve` lock == `build` lock.
-  Alternative, hashing upstream bytes: a changed rename would not show in the lock.
+  given; `lock.skill_hashes(hull)` applies each **Skill**'s rewrites, and `lock.render` uses it unless given
+  hashes, so `resolve` and `update` (lock and hull diff) hash alike. `build` keeps hashing its vendored copies, as
+  resolve-hull pinned (the lock holds exactly what was vendored), now found by **Deployed name**; the bytes match by
+  construction, and a test pins `resolve` lock == `build` lock. Alternative, hashing upstream bytes: a changed
+  rename would not show in the lock.
 
 - **Lock**: `[[skills]]` gains `deployed` only when renamed; edges gain kind `prose`; new `[[suggestions]]` with
   `id` and sorted `from` list, sorted by `id`. Still `version = 1`: the lock is output only.

@@ -1,13 +1,15 @@
 """Deployed names carried into `name:` and every reference (the `renames` spec)."""
 
+import os
 from dataclasses import replace
 from pathlib import Path
 
 import pytest
-from conftest import configure, skill, write_config
+from conftest import Upstream, configure, skill, write_config
 
 from skill_graft import config, paths, rename, resolve
 from skill_graft.cache import Cache
+from skill_graft.cli import main
 from skill_graft.config import SkillId
 from skill_graft.hull import Hull
 
@@ -159,3 +161,74 @@ def test_unresolved_names_untouched(home: Path) -> None:
     assert rewritten(hull)["mp/tdd"] == {
         "SKILL.md": "/foo, /mp-grilling\n```\npre-commit run\n```\n"
     }
+
+
+def package() -> Path:
+    return Path.home() / ".apm" / "skill-graft"
+
+
+def bound_grill(home: Path, tdd: str = "Run /grilling.\n") -> Path:
+    """Entry `mp/tdd` holding `tdd`, `/grilling` bound to `own/grill`."""
+    skill(home / "own" / "grill")
+    folder = skill(home / "mp" / "tdd", tdd)
+    write_config(
+        'entries = ["mp/tdd"]\n[sources.mp]\npath = "~/mp"\n'
+        '[sources.own]\npath = "~/own"\n[bind]\n"mp/grilling" = "own/grill"\n'
+    )
+    return folder
+
+
+def test_bound_reference_rewritten_on_build(home: Path) -> None:
+    bound_grill(home)
+
+    assert main(["build", "--no-install"]) == 0
+
+    vendored = package() / ".apm" / "skills"
+    assert (vendored / "tdd" / "SKILL.md").read_text() == "Run /grill.\n"
+    assert (vendored / "grill" / "SKILL.md").read_text() == "# skill\n"
+
+
+def test_read_only_upstream_rewritten(home: Path) -> None:
+    folder = bound_grill(home)
+    (folder / "refs").mkdir()
+    (folder / "refs" / "loop.md").write_text("/grilling\n")
+    for path, mode in [(folder / "refs" / "loop.md", 0o444), (folder / "refs", 0o555)]:
+        path.chmod(mode)
+    try:
+        assert main(["build", "--no-install"]) == 0
+
+        copy = package() / ".apm" / "skills" / "tdd" / "refs"
+        assert (copy / "loop.md").read_text() == "/grill\n"
+        assert (copy / "loop.md").stat().st_mode & 0o777 == 0o444
+    finally:
+        for root in [folder, package()]:
+            for dirpath, _, _ in os.walk(root):
+                Path(dirpath).chmod(0o755)
+
+
+def test_resolve_and_build_agree(home: Path) -> None:
+    bound_grill(home)
+    lock = package() / "skill-graft.lock"
+
+    assert main(["resolve"]) == 0
+    resolved_lock = lock.read_bytes()
+    assert main(["build", "--no-install"]) == 0
+
+    assert lock.read_bytes() == resolved_lock
+
+
+def test_update_and_resolve_agree(home: Path, tmp_path: Path) -> None:
+    upstream = Upstream(tmp_path / "up")
+    upstream.commit({"tdd/SKILL.md": "Run /grilling.\n"})
+    skill(home / "own" / "grill")
+    write_config(
+        f'entries = ["mp/tdd"]\n[sources.mp]\ngit = "{upstream.url}"\n'
+        '[sources.own]\npath = "~/own"\n[bind]\n"mp/grilling" = "own/grill"\n'
+    )
+    lock = package() / "skill-graft.lock"
+
+    assert main(["update"]) == 0
+    updated_lock = lock.read_bytes()
+    assert main(["resolve"]) == 0
+
+    assert lock.read_bytes() == updated_lock

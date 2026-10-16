@@ -75,7 +75,7 @@ def _previous(
             return f"{alias!r} ref {source.ref} not cached"
     try:
         hull = resolve.resolve(loaded, resolve.folders(loaded, git_cache, {}))
-        return {skill: lock.folder_hash(f) for skill, f in hull.skills.items()}
+        return lock.skill_hashes(hull)
     except (SkillGraftError, OSError) as error:  # the update itself is still fine
         return f"the current refs do not resolve: {error}"
 
@@ -85,7 +85,7 @@ def _print_diff(old: dict[SkillId, str] | str, hull: Hull) -> None:
     if isinstance(old, str):
         print(f"no previous hull to compare ({old})")
         return
-    new = {skill: lock.folder_hash(f) for skill, f in hull.skills.items()}
+    new = lock.skill_hashes(hull)
     lines = [
         f"{mark} {skill}"
         for skill in sorted(old.keys() | new.keys())

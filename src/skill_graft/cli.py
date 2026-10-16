@@ -2,7 +2,6 @@
 
 import argparse
 import sys
-from dataclasses import replace
 
 from skill_graft import apm, config, init, lock, paths, resolve, update, vendor
 from skill_graft.cache import Cache
@@ -49,10 +48,13 @@ def main(argv: list[str] | None = None) -> int:
         elif args.command == "build":
             loaded, resolved = _resolve()
             warn(resolved.warnings)
-            vendor.vendor(resolved.skills)
+            vendor.vendor(resolved)
             # Hashes the vendored copies, so the lock holds exactly what was vendored.
-            copies = {skill: paths.skills() / skill.name for skill in resolved.skills}
-            lock.write(lock.render(loaded, {}, replace(resolved, skills=copies)))
+            copies = {
+                s: lock.folder_hash(paths.skills() / resolved.deployed[s])
+                for s in resolved.skills
+            }
+            lock.write(lock.render(loaded, {}, resolved, copies))
             if not args.no_install:
                 apm.install()
     except (SkillGraftError, OSError) as error:
