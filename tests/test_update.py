@@ -637,3 +637,21 @@ def test_failed_lock_leaves_the_toml(
         secret.chmod(0o644)
 
     assert code == 1 and file.read_bytes() == before and not lock_file().exists()
+
+
+def test_broken_old_ref_only_skips_the_diff(upstream: Upstream, capsys: Capsys) -> None:
+    upstream.commit({"tdd/SKILL.md": "1\n"})
+    (upstream.path / "tdd" / "data.txt").symlink_to("gone.txt")
+    old = upstream.commit({})
+    (upstream.path / "tdd" / "data.txt").unlink()
+    new = upstream.commit({})
+    write_config(
+        'entries = ["mp/tdd"]\n' + git_source("mp", upstream, f'ref = "{old}"\n')
+    )
+    assert main(["build", "--no-install"]) == 1  # the link is broken; old is cached
+    capsys.readouterr()
+
+    code, out, _ = update(capsys)
+
+    assert code == 0 and ref("mp") == new
+    assert "no previous hull to compare" in out and "data.txt" in out

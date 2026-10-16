@@ -9,7 +9,7 @@ import tomlkit
 
 from skill_graft import files, git, lock, paths, resolve
 from skill_graft.cache import Cache
-from skill_graft.config import Config, GitSource
+from skill_graft.config import Config, GitSource, SkillId
 from skill_graft.errors import SkillGraftError, warn
 from skill_graft.hull import Hull
 
@@ -62,8 +62,8 @@ def _update(loaded: Config, aliases: list[str], git_cache: Cache, write: bool) -
 
 def _previous(
     loaded: Config, selected: dict[str, GitSource], git_cache: Cache
-) -> Hull | str:
-    """The hull at the current refs, or why there is none to compare.
+) -> dict[SkillId, str] | str:
+    """The hull at the current refs, each skill's hash, or why there is none.
 
     Never fetches: the diff is not worth a remote call. A cached commit whose tree
     was never exported is exported, as any command reading that ref would.
@@ -74,17 +74,17 @@ def _previous(
         if not git_cache.has_commit(source.url, source.ref):
             return f"{alias!r} ref {source.ref} not cached"
     try:
-        return resolve.resolve(loaded, resolve.folders(loaded, git_cache, {}))
-    except SkillGraftError as error:
+        hull = resolve.resolve(loaded, resolve.folders(loaded, git_cache, {}))
+        return {skill: lock.folder_hash(f) for skill, f in hull.skills.items()}
+    except (SkillGraftError, OSError) as error:  # the update itself is still fine
         return str(error)
 
 
-def _print_diff(previous: Hull | str, hull: Hull) -> None:
+def _print_diff(old: dict[SkillId, str] | str, hull: Hull) -> None:
     """`+`, `-` or `~` per skill added, removed or changed, by skill ID."""
-    if isinstance(previous, str):
-        print(f"no previous hull to compare: {previous}")
+    if isinstance(old, str):
+        print(f"no previous hull to compare: {old}")
         return
-    old = {skill: lock.folder_hash(f) for skill, f in previous.skills.items()}
     new = {skill: lock.folder_hash(f) for skill, f in hull.skills.items()}
     lines = [
         f"{mark} {skill}"
