@@ -31,7 +31,7 @@ def main(argv: list[str] | None = None) -> int:
             vendor.vendor(loaded)
             if not args.no_install:
                 apm.install()
-    except SkillGraftError as error:
+    except (SkillGraftError, OSError) as error:
         print(f"skill-graft: {error}", file=sys.stderr)
         return 1
     return 0

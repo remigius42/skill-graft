@@ -31,10 +31,10 @@ class Config:
 def load() -> Config:
     file = paths.config_file()
     try:
-        data = tomllib.loads(file.read_text())
+        data = tomllib.loads(file.read_bytes().decode())
     except FileNotFoundError:
         raise SkillGraftError(f"{file} not found: run `skill-graft init`") from None
-    except tomllib.TOMLDecodeError as error:
+    except (tomllib.TOMLDecodeError, UnicodeDecodeError) as error:
         raise SkillGraftError(f"{file}: {error}") from None
     if unknown := sorted(data.keys() - {"sources", "entries"}):
         raise SkillGraftError(f"{unknown[0]!r} is unsupported in skill-graft.toml")

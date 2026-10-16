@@ -34,6 +34,14 @@ def test_empty_config_builds_nothing(capsys: Capsys) -> None:
     assert vendored() == set()
 
 
+def test_config_not_utf8(capsys: Capsys) -> None:
+    write_config("").write_bytes(b'entries = ["\xff"]\n')
+
+    code, err = build(capsys)
+
+    assert code == 1 and "skill-graft.toml" in err
+
+
 def test_not_initialized(capsys: Capsys) -> None:
     code, err = build(capsys)
 

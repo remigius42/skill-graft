@@ -183,3 +183,53 @@ def test_other_skills_problems_do_not_block(home: Path, capsys: Capsys) -> None:
 
     assert build(capsys) == (0, "")
     assert vendored() == {"tdd"}
+
+
+def test_hash_inside_quotes_is_not_a_comment(home: Path, capsys: Capsys) -> None:
+    skill(home / "src" / "x", '---\nname: "a #b" # comment\n---\n')
+    configure(["own/x"], own="~/src")
+
+    code, err = build(capsys)
+
+    assert code == 1 and "'a #b'" in err
+
+
+@pytest.mark.parametrize("entry", ["own/foo", "own/x"])
+def test_name_continued_on_the_next_line(
+    home: Path, capsys: Capsys, entry: str
+) -> None:
+    skill(home / "src" / "x", "---\nname: foo\n  bar\n---\n")
+    configure([entry], own="~/src")
+
+    assert build(capsys)[0] == 1
+    assert vendored() == set()
+
+
+def unreadable_skill(folder: Path, how: str) -> None:
+    folder.mkdir(parents=True)
+    if how == "not utf-8":
+        (folder / "SKILL.md").write_bytes(b"---\nname: \xff\n---\n")
+    else:
+        (folder / "SKILL.md").symlink_to(folder / "nowhere")
+
+
+@pytest.mark.parametrize("how", ["not utf-8", "dangling symlink"])
+def test_unreadable_skill_elsewhere_does_not_block(
+    home: Path, capsys: Capsys, how: str
+) -> None:
+    skill(home / "src" / "chisel")
+    unreadable_skill(home / "src" / "other", how)
+    configure(["own/chisel"], own="~/src")
+
+    assert build(capsys) == (0, "")
+    assert vendored() == {"chisel"}
+
+
+@pytest.mark.parametrize("how", ["not utf-8", "dangling symlink"])
+def test_unreadable_named_skill(home: Path, capsys: Capsys, how: str) -> None:
+    unreadable_skill(home / "src" / "other", how)
+    configure(["own/other"], own="~/src")
+
+    code, err = build(capsys)
+
+    assert code == 1 and "other/SKILL.md" in err

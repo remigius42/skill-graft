@@ -50,6 +50,68 @@ def test_copy_fails(home: Path, capsys: pytest.CaptureFixture[str]) -> None:
     assert not (skills_dir(home).parent / "skills.new").exists()
 
 
+def test_crash_between_the_renames_keeps_the_previous_build(
+    home: Path, capsys: pytest.CaptureFixture[str]
+) -> None:
+    skill(home / "src" / "chisel")
+    broken = skill(home / "src" / "tdd")
+    write_config('entries = ["own/chisel"]\n[sources.own]\npath = "~/src"\n')
+    main(["build", "--no-install"])
+    # A run killed after moving skills/ aside and before moving skills.new/ in.
+    skills_dir(home).rename(skills_dir(home).with_name("skills.old"))
+    skill(skills_dir(home).with_name("skills.new") / "half")
+    (broken / "dangling").symlink_to(home / "nowhere")
+    write_config('entries = ["own/tdd"]\n[sources.own]\npath = "~/src"\n')
+
+    assert main(["build", "--no-install"]) == 1
+
+    assert sorted(p.name for p in skills_dir(home).parent.iterdir()) == ["skills"]
+    assert sorted(p.name for p in skills_dir(home).iterdir()) == ["chisel"]
+
+
+def test_undeletable_stale_folder(
+    home: Path, capsys: pytest.CaptureFixture[str]
+) -> None:
+    build_one_skill(home)
+    locked = skill(skills_dir(home).with_name("skills.new") / "half")
+    locked.chmod(0o500)
+    try:
+        assert main(["build", "--no-install"]) == 1
+    finally:
+        locked.chmod(0o700)
+
+    assert "skills.new" in capsys.readouterr().err
+
+
+def test_clash_is_reported_before_searching(
+    home: Path, capsys: pytest.CaptureFixture[str]
+) -> None:
+    (home / "mp").mkdir()
+    skill(home / "own" / "tdd")
+    write_config(
+        'entries = ["mp/tdd", "own/tdd"]\n'
+        '[sources.mp]\npath = "~/mp"\n[sources.own]\npath = "~/own"\n'
+    )
+
+    assert main(["build", "--no-install"]) == 1
+
+    assert "deployed name 'tdd'" in capsys.readouterr().err
+
+
+def test_clash_ignores_case(home: Path, capsys: pytest.CaptureFixture[str]) -> None:
+    skill(home / "mp" / "tdd")
+    skill(home / "own" / "TDD")
+    write_config(
+        'entries = ["mp/tdd", "own/TDD"]\n'
+        '[sources.mp]\npath = "~/mp"\n[sources.own]\npath = "~/own"\n'
+    )
+
+    assert main(["build", "--no-install"]) == 1
+
+    err = capsys.readouterr().err
+    assert "mp/tdd" in err and "own/TDD" in err
+
+
 def test_clash_across_sources(home: Path, capsys: pytest.CaptureFixture[str]) -> None:
     skill(home / "mp" / "tdd")
     skill(home / "own" / "tdd")
@@ -129,6 +191,22 @@ def test_apm_missing(
 
     assert "APM is not installed" in capsys.readouterr().err
     assert (skills_dir(home) / "chisel").exists()
+
+
+def test_apm_not_executable(
+    home: Path,
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+    capsys: pytest.CaptureFixture[str],
+) -> None:
+    build_one_skill(home)
+    (tmp_path / "bin").mkdir()
+    (tmp_path / "bin" / "apm").write_text("#!/bin/sh\n")
+    monkeypatch.setenv("PATH", str(tmp_path / "bin"))
+
+    assert main(["build"]) == 1
+
+    assert "skill-graft: " in capsys.readouterr().err
 
 
 @pytest.mark.parametrize("manifest", [None, "dependencies:\n  apm:\n    - /other\n"])
