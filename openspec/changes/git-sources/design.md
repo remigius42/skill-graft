@@ -62,7 +62,7 @@ beyond what git does itself.
   git's ref locks; lock files stay, as `flock` needs. "Has commit" is
   `git cat-file -e <sha>^{commit}`.
 
-- **Export at the ref**: `checkout(source, ref) -> Path`. If `trees/<key>/<sha>/` exists, reuse it: it only
+- **Export at the ref**: `Cache.checkout(alias, url, ref) -> Path`. If `trees/<key>/<sha>/` exists, reuse it: it only
   ever appears complete. Otherwise ensure the commit (fetch only if missing; still missing → "ref not found"
   error), and write the tree into a folder unique to this run from `git ls-tree -r -z --full-tree <sha>`
   and one `git cat-file --batch` process: mode `100644` a file, `100755` a file with its exec bit, `120000` a

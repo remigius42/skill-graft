@@ -40,9 +40,10 @@ failing-patch output of `update`, cache pruning, submodules and LFS.
 
 ## Impact
 
-- New: `src/skill_graft/git.py`, `src/skill_graft/update.py`, tests for both.
-- Changed: `config.py` (source kinds), `paths.py` (cache), `vendor.py` (source folder from the cache),
-  `cli.py` (`update`), `init.py` (template), `tests/conftest.py` (`XDG_CACHE_HOME` unset, git repo helpers).
-- `pyproject.toml` and `uv.lock` gain `tomlkit`.
+- New: `src/skill_graft/git.py`, `cache.py`, `resolve.py` and `update.py`, with tests.
+- Changed: `config.py` (source kinds), `paths.py` (cache), `vendor.py` (copy and swap only), `discovery.py`
+  (confined to a git source's tree), `cli.py` (`update`), `init.py` (template), `tests/conftest.py` (git
+  isolation, upstream helper).
+- `pyproject.toml` and `uv.lock` gain `tomlkit`, as does the mypy hook in `.pre-commit-config.yaml`.
 - `docs/design.md`: `update` writes only when resolution succeeds, which overrides "writes, then resolves".
 - Network: `build` fetches only a missing **Ref**; `update` fetches. Tests use local repositories only.
