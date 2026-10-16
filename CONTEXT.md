@@ -9,6 +9,10 @@ skill those reach, renamed and patched as the user declares.
 A repository or local folder that skills are taken from, known by the alias the user gives it.
 _Avoid_: Pack, repo, upstream
 
+**Ref**:
+The commit a git **Source** is read at. Only `update` moves it.
+_Avoid_: Pin, version, revision
+
 **Skill**:
 A folder holding a `SKILL.md`, found anywhere in a **Source**.
 _Avoid_: Command, plugin

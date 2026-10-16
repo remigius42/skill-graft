@@ -16,6 +16,7 @@ words:
   - mattpocock
   - monkeypatched
   - mypy
+  - nosystem
   - openclaw
   - opencode
   - openspec
@@ -28,10 +29,14 @@ words:
   - pytestmark
   - shutil
   - stdlib
+  - symref
   - testpaths
   - tomlkit
   - tomllib
+  - unsets
   - venv
+  - worktree
+  - worktrees
 ignorePaths:
   - .git
   - .claude
