@@ -22,7 +22,7 @@ Apply with the `tdd` skill: each task red-green-refactor (failing test first, th
 
 ## 3. Cache and checkout
 
-- [ ] 3.1 `paths.cache()` (`XDG_CACHE_HOME` if absolute, else `~/.cache/skill-graft`) and the URL key
+- [x] 3.1 `paths.cache()` (`XDG_CACHE_HOME` if absolute, else `~/.cache/skill-graft`) and the URL key
   (trailing `/` and `.git` stripped, `repo` if empty). Verify: default-location, shared-URL and key unit tests.
 - [ ] 3.2 `git.py`: runner (no prompt overrides, stdin inherited, `transfer.fsckObjects`, error wrapping, `--`
   before URLs), repository by `clone --bare` into a temporary name (leftover deleted first) then renamed, fetch

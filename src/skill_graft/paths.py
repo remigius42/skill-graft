@@ -1,5 +1,6 @@
 """Where skill-graft and APM keep their files, all derived from `HOME`."""
 
+import os
 from pathlib import Path
 
 
@@ -9,6 +10,13 @@ def package() -> Path:
 
 def config_file() -> Path:
     return package() / "skill-graft.toml"
+
+
+def cache() -> Path:
+    """Where git sources are cached: `$XDG_CACHE_HOME`, if absolute, else `~/.cache`."""
+    xdg = os.environ.get("XDG_CACHE_HOME", "")
+    root = Path(xdg) if os.path.isabs(xdg) else Path.home() / ".cache"
+    return root / "skill-graft"
 
 
 # Where APM 0.33.0 deploys skills at user scope, one folder per group of targets.
