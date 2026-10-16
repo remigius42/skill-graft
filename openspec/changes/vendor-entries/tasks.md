@@ -4,7 +4,7 @@ Each task: failing test first, then code, one commit, `pre-commit run --all-file
 
 ## 1. Packaging
 
-- [ ] 1.1 Add `[project]` (Python >=3.11, no runtime deps, `uv_build`, script `skill-graft`), dev group
+- [x] 1.1 Add `[project]` (Python >=3.11, no runtime deps, `uv_build`, script `skill-graft`), dev group
   (`pytest`, `pre-commit`, `apm-cli==0.33.0`), `src/skill_graft/cli.py` with `init`/`build` stubs, `uv.lock`;
   drop `requirements-dev.txt`; update `docs/development.md` to `uv sync`/`uv run`; add the local pytest hook
   and `pytest` to mypy's additional dependencies; set `mypy_path = "src"`. Verify: a test running

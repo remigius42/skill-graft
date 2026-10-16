@@ -51,6 +51,18 @@ repos:
       - id: mypy
         # The hook's default args turn off checks; the strictness lives in pyproject.toml.
         args: []
+        # The hook's environment lacks the dev group; pytest is enough for the tests to type-check.
+        additional_dependencies:
+          - pytest
+
+  - repo: local
+    hooks:
+      - id: pytest
+        name: pytest
+        entry: uv run pytest -q
+        language: system
+        pass_filenames: false
+        types: [python]
 
   - repo: https://github.com/gitleaks/gitleaks
     rev: v8.30.0

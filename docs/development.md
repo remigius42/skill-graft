@@ -3,10 +3,9 @@
 ## Setup
 
 ```sh
-python3 -m venv .venv
-.venv/bin/pip install -r requirements-dev.txt
-.venv/bin/pre-commit install --install-hooks
-.venv/bin/pre-commit install --hook-type commit-msg
+uv sync
+uv run pre-commit install --install-hooks
+uv run pre-commit install --hook-type commit-msg
 ```
 
 The `commit-msg` hook is a separate install. Without it, commitlint never runs.
@@ -14,10 +13,13 @@ The `commit-msg` hook is a separate install. Without it, commitlint never runs.
 ## Checks
 
 ```sh
-.venv/bin/pre-commit run --all-files
+uv run pre-commit run --all-files
+uv run pytest
 ```
 
 Hooks in use: `mdformat` and `markdownlint` for Markdown, `cspell` for spelling, `ruff` and `mypy` for Python,
-`check-yaml` and `check-toml` for configuration, `gitleaks` for secrets, and `commitlint` for commit messages.
+`pytest` for the tests, `check-yaml` and `check-toml` for configuration, `gitleaks` for secrets, and
+`commitlint` for commit messages.
 
-A `pytest` hook joins them with the first test.
+The tests point `HOME` at a temporary directory. The APM integration test runs the `apm` from the dev group
+and is skipped when `apm` is not on `PATH`.
