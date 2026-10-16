@@ -59,7 +59,7 @@ Apply with the `tdd` skill: each task red-green-refactor (failing test first, th
 
 ## 6. Init and docs
 
-- [ ] 6.1 `init` template documents `git`, `branch`, `ref` and `skill-graft update`. Verify: the
+- [x] 6.1 `init` template documents `git`, `branch`, `ref` and `skill-graft update`. Verify: the
   template-shows-a-git-source scenario and fresh-home still pass.
 - [ ] 6.2 Real-APM integration test with a git source (`init`, `update`, `build`), skipped without `apm`;
   update `docs/design.md` (`update` writes only after resolution succeeds; cache location), `README.md`

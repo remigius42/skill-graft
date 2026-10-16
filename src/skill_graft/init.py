@@ -6,10 +6,15 @@ from skill_graft.errors import SkillGraftError
 CONFIG_TEMPLATE = """\
 # skill-graft.toml: the skills you want and where they come from.
 #
-# entries = ["own/chisel"]   # Skill IDs: <source alias>/<skill name>
+# entries = ["own/chisel", "mp/tdd"]   # Skill IDs: <source alias>/<skill name>
 #
 # [sources.own]
 # path = "~/skills"          # a folder; skills are found at any depth
+#
+# [sources.mp]
+# git = "https://example.com/skills.git"   # a URL, user@host:path, or an absolute path
+# branch = "main"            # optional; defaults to the remote's default branch
+# ref = "<sha>"              # the commit build reads; `skill-graft update` sets it
 """
 
 APM_YML = "name: skill-graft\nversion: 0.1.0\n"

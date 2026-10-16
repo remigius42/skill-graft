@@ -19,6 +19,14 @@ def test_fresh_home(home: Path, fake_apm: FakeApm) -> None:
     assert f"- {package}" in (home / ".apm" / "apm.yml").read_text()
 
 
+def test_template_shows_a_git_source(home: Path, fake_apm: FakeApm) -> None:
+    assert main(["init"]) == 0
+
+    text = (home / ".apm" / "skill-graft" / "skill-graft.toml").read_text()
+    for word in ("git =", "branch =", "ref =", "skill-graft update"):
+        assert word in text
+
+
 def test_folder_exists(
     home: Path, fake_apm: FakeApm, capsys: pytest.CaptureFixture[str]
 ) -> None:
