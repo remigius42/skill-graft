@@ -36,7 +36,7 @@ Apply with the `tdd` skill: each task red-green-refactor (failing test first, th
 
 ## 4. Build
 
-- [ ] 4.1 Split `vendor` into `resolve` and copy-and-swap; add `folders(config, cache, refs)`; `build` fails
+- [x] 4.1 Split `vendor` into `resolve` and copy-and-swap; add `folders(config, cache, refs)`; `build` fails
   on any git source without `ref` before writing. Verify: skill-from-git, new-git-source and every existing
   build test pass.
 

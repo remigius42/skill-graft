@@ -1,36 +1,25 @@
 """Writes the entries into the package's `.apm/skills/`."""
 
-import os
 import shutil
 from pathlib import Path
 
-from skill_graft import discovery, paths
-from skill_graft.config import Config, PathSource, SkillId
+from skill_graft import paths
+from skill_graft.config import SkillId
 from skill_graft.errors import SkillGraftError
 
 
-def vendor(config: Config) -> None:
+def vendor(resolved: dict[SkillId, Path]) -> None:
     """Replaces `.apm/skills/` with one copy per entry, swapped in when complete.
 
-    Every entry is resolved and checked first, so a failure writes nothing beyond
-    undoing a run killed mid-swap.
+    The entries are resolved and checked before, so a failure writes nothing
+    beyond undoing a run killed mid-swap.
     """
     skills = paths.skills()
     new = skills.with_name("skills.new")
     old = skills.with_name("skills.old")
     _recover(skills, new, old)
-    _check_deployed_names(config.entries)
-    indexes = {
-        alias: discovery.index(_folder(config, alias))
-        for alias in {entry.alias for entry in config.entries}
-    }
-    folders = {
-        entry: discovery.find(indexes[entry.alias], entry) for entry in config.entries
-    }
-    for folder in folders.values():
-        _check_symlinks(folder)
     new.mkdir(parents=True)
-    for entry, folder in folders.items():
+    for entry, folder in resolved.items():
         try:
             shutil.copytree(
                 folder, new / entry.name, ignore=shutil.ignore_patterns(".git")
@@ -46,34 +35,6 @@ def vendor(config: Config) -> None:
         shutil.rmtree(old)
 
 
-def _folder(config: Config, alias: str) -> Path:
-    source = config.sources[alias]
-    if not isinstance(source, PathSource):
-        raise SkillGraftError(f"source {alias!r}: git sources cannot be built yet")
-    return source.folder
-
-
-def _check_symlinks(folder: Path) -> None:
-    """A skill is its whole folder: a symlink may only lead to a file inside it.
-
-    A link to a folder, even one inside, is refused: it can form a cycle.
-    """
-    root = folder.resolve()
-    for dirpath, dirnames, filenames in os.walk(folder):
-        dirnames[:] = [name for name in dirnames if name != ".git"]  # never copied
-        for name in dirnames + filenames:
-            link = Path(dirpath) / name
-            if not link.is_symlink():
-                continue
-            target = Path(os.path.realpath(link))
-            if not target.is_relative_to(root):
-                raise SkillGraftError(f"{link} points outside the skill, to {target}")
-            if target.is_dir():
-                raise SkillGraftError(
-                    f"{link} points to a folder; only file links work"
-                )
-
-
 def _recover(skills: Path, new: Path, old: Path) -> None:
     """Undoes a run killed mid-swap: `skills.old/` is then the previous build."""
     if old.exists() and not skills.exists():
@@ -84,20 +45,3 @@ def _recover(skills: Path, new: Path, old: Path) -> None:
                 shutil.rmtree(stale)
             except OSError as error:
                 raise SkillGraftError(f"cannot delete stale {stale}: {error}") from None
-
-
-def _check_deployed_names(entries: list[SkillId]) -> None:
-    """Without renames, an entry's deployed name is its name.
-
-    Compared ignoring case: on a case-insensitive file system the folders collide.
-    """
-    by_name: dict[str, list[SkillId]] = {}
-    for entry in entries:
-        by_name.setdefault(entry.name.casefold(), []).append(entry)
-    for clashing in by_name.values():
-        if len(clashing) > 1:
-            names = " / ".join(sorted({repr(entry.name) for entry in clashing}))
-            ids = ", ".join(str(entry) for entry in clashing)
-            raise SkillGraftError(
-                f"deployed name {names} is taken by several entries: {ids}"
-            )

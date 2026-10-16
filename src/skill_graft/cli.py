@@ -3,7 +3,8 @@
 import argparse
 import sys
 
-from skill_graft import apm, config, init, vendor
+from skill_graft import apm, config, init, paths, resolve, vendor
+from skill_graft.cache import Cache
 from skill_graft.errors import SkillGraftError
 
 
@@ -28,7 +29,8 @@ def main(argv: list[str] | None = None) -> int:
             loaded = config.load()
             for warning in loaded.warnings:
                 print(f"skill-graft: warning: {warning}", file=sys.stderr)
-            vendor.vendor(loaded)
+            folders = resolve.folders(loaded, Cache(paths.cache()), {})
+            vendor.vendor(resolve.resolve(loaded, folders))
             if not args.no_install:
                 apm.install()
     except (SkillGraftError, OSError) as error:
