@@ -72,9 +72,14 @@ def _write_refs(refs: dict[str, str]) -> None:
     with tempfile.NamedTemporaryFile(
         "wb", dir=file.parent, prefix=f".{file.name}.", delete=False
     ) as tmp:
-        tmp.write(tomlkit.dumps(document).encode())
-    shutil.copymode(file, tmp.name)
-    os.replace(tmp.name, file)
+        try:
+            tmp.write(tomlkit.dumps(document).encode())
+            tmp.close()
+            shutil.copymode(file, tmp.name)
+            os.replace(tmp.name, file)
+        except BaseException:
+            os.unlink(tmp.name)
+            raise
 
 
 def _select(loaded: Config, aliases: list[str]) -> dict[str, GitSource]:

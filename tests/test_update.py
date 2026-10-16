@@ -268,6 +268,25 @@ def test_ref_added_to_an_inline_table(upstream: Upstream, capsys: Capsys) -> Non
     assert ref("mp") == sha and file.read_text().endswith("  # inline\n")
 
 
+def test_failed_write_leaves_no_temporary_file(
+    upstream: Upstream, capsys: Capsys, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    upstream.commit({"tdd/SKILL.md": "1\n"})
+    file = write_config(git_source("mp", upstream))
+    before = file.read_bytes()
+
+    def fail(*args: object) -> None:
+        raise OSError("disk full")
+
+    monkeypatch.setattr(os, "replace", fail)
+
+    code, _, err = update(capsys)
+
+    assert code == 1 and "disk full" in err
+    assert file.read_bytes() == before
+    assert sorted(p.name for p in file.parent.iterdir()) == ["skill-graft.toml"]
+
+
 def test_line_endings_and_encoding_survive(upstream: Upstream, capsys: Capsys) -> None:
     old = upstream.commit({"tdd/SKILL.md": "1\n"})
     new = upstream.commit({"tdd/SKILL.md": "2\n"})
