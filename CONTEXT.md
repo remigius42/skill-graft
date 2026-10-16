@@ -31,7 +31,7 @@ _Avoid_: Dependency, link, import
 
 **Bind**:
 A user rule that fixes where **References** of every form to one name from one **Source** resolve, overriding
-the default.
+the default, or that they resolve nowhere: such a name is then not a **Reference** at all.
 _Avoid_: Alias, override, pin
 
 **Entry**:
