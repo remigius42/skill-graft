@@ -1,142 +1,111 @@
+"""The `config` spec, through `skill-graft build --no-install`."""
+
 from pathlib import Path
+from typing import TypeAlias
 
 import pytest
-from conftest import write_config
+from conftest import build, configure, skill, vendored, write_config
 
-from skill_graft.config import SkillId, load
-from skill_graft.errors import SkillGraftError
-
-
-def test_home_relative_path(home: Path) -> None:
-    (home / "skills").mkdir()
-    write_config('[sources.own]\npath = "~/skills"\n')
-    assert load().sources == {"own": (home / "skills").resolve()}
+Capsys: TypeAlias = pytest.CaptureFixture[str]
 
 
-def test_relative_path_is_taken_from_the_config_folder(home: Path) -> None:
-    config = write_config('[sources.own]\npath = "../../mine"\n')
-    (home / "mine").mkdir()
-    assert load().sources == {"own": (config.parent / "../../mine").resolve()}
+def test_home_relative_path(home: Path, capsys: Capsys) -> None:
+    skill(home / "skills" / "chisel")
+    configure(["own/chisel"], own="~/skills")
+
+    assert build(capsys) == (0, "")
+    assert vendored() == {"chisel"}
 
 
-def test_missing_folder() -> None:
-    write_config('[sources.own]\npath = "~/nowhere"\n')
-    with pytest.raises(SkillGraftError, match=r"own.*~/nowhere"):
-        load()
+def test_relative_path_is_taken_from_the_config_folder(
+    home: Path, capsys: Capsys
+) -> None:
+    skill(home / "mine" / "chisel")
+    configure(["own/chisel"], own="../../mine")
+
+    assert build(capsys) == (0, "")
+    assert vendored() == {"chisel"}
 
 
-def test_entries(home: Path) -> None:
-    (home / "skills").mkdir()
-    write_config('entries = ["own/chisel"]\n[sources.own]\npath = "~/skills"\n')
-    assert load().entries == [SkillId("own", "chisel")]
-    assert str(load().entries[0]) == "own/chisel"
-
-
-def test_empty_config_builds_nothing() -> None:
+def test_empty_config_builds_nothing(capsys: Capsys) -> None:
     write_config("")
-    config = load()
-    assert config.sources == {}
-    assert config.entries == []
+
+    assert build(capsys) == (0, "")
+    assert vendored() == set()
 
 
-def test_entry_with_an_undeclared_alias() -> None:
-    write_config('entries = ["mp/tdd"]\n')
-    with pytest.raises(SkillGraftError, match=r"mp/tdd.*'mp'"):
-        load()
+def test_not_initialized(capsys: Capsys) -> None:
+    code, err = build(capsys)
 
-
-@pytest.mark.parametrize("entry", ["tdd", "/tdd", "mp/", "mp/a/b"])
-def test_malformed_entry(entry: str) -> None:
-    write_config(f'entries = ["{entry}"]\n')
-    with pytest.raises(SkillGraftError, match=f"'{entry}'"):
-        load()
-
-
-def test_git_source_is_unsupported() -> None:
-    write_config('[sources.mp]\ngit = "https://example.com/skills.git"\n')
-    with pytest.raises(SkillGraftError, match=r"sources\.mp\.git.*unsupported"):
-        load()
-
-
-def test_rename_table_is_unsupported() -> None:
-    write_config('[rename]\n"mp/code-review" = "mp-code-review"\n')
-    with pytest.raises(SkillGraftError, match=r"'rename'.*unsupported"):
-        load()
-
-
-def test_not_initialized() -> None:
-    with pytest.raises(SkillGraftError, match=r"skill-graft\.toml.*skill-graft init"):
-        load()
-
-
-def test_invalid_toml() -> None:
-    write_config("entries = [\n")
-    with pytest.raises(SkillGraftError, match=r"skill-graft\.toml"):
-        load()
-
-
-def test_entries_as_a_string() -> None:
-    write_config('entries = "own/chisel"\n')
-    with pytest.raises(SkillGraftError, match=r"'entries'.*list"):
-        load()
-
-
-def test_entry_not_a_string() -> None:
-    write_config("entries = [1]\n")
-    with pytest.raises(SkillGraftError, match=r"'entries'.*list of strings"):
-        load()
-
-
-@pytest.mark.parametrize("sources", ['sources = "x"', "sources = {own = 1}"])
-def test_sources_not_tables(sources: str) -> None:
-    write_config(sources + "\n")
-    with pytest.raises(SkillGraftError, match=r"'sources"):
-        load()
-
-
-def test_empty_source() -> None:
-    write_config("[sources.own]\n")
-    with pytest.raises(SkillGraftError, match=r"'sources\.own\.path'.*missing"):
-        load()
-
-
-def test_path_not_a_string() -> None:
-    write_config("[sources.own]\npath = 1\n")
-    with pytest.raises(SkillGraftError, match=r"'sources\.own\.path'"):
-        load()
-
-
-@pytest.mark.parametrize("alias", ["a/b", "..", "-x", ""])
-def test_bad_alias(home: Path, alias: str) -> None:
-    write_config(f'[sources."{alias}"]\npath = "~"\n')
-    with pytest.raises(SkillGraftError, match=f"alias '{alias}'"):
-        load()
-
-
-def test_repeated_entry(home: Path) -> None:
-    (home / "s").mkdir()
-    write_config('entries = ["own/a", "own/a"]\n[sources.own]\npath = "~/s"\n')
-    with pytest.raises(SkillGraftError, match=r"'own/a'.*repeated"):
-        load()
-
-
-@pytest.mark.parametrize("path", [".", "~/.apm", "~", ".apm/skills"])
-def test_source_overlapping_the_package(home: Path, path: str) -> None:
-    (home / ".apm" / "skill-graft" / ".apm" / "skills").mkdir(parents=True)
-    write_config(f'[sources.own]\npath = "{path}"\n')
-    with pytest.raises(SkillGraftError, match=r"source 'own'.*skill-graft"):
-        load()
+    assert code == 1
+    assert "skill-graft.toml" in err and "skill-graft init" in err
 
 
 @pytest.mark.parametrize(
-    "path", ["~/.agents/skills", "~/.claude", "~/.config/opencode/skills/x"]
+    ("toml", "expected"),
+    [
+        ('[sources.own]\npath = "~/nowhere"\n', ["'own'", "~/nowhere"]),
+        ('entries = ["mp/tdd"]\n', ["mp/tdd", "'mp'"]),
+        ('entries = ["tdd"]\n', ["'tdd'"]),
+        ('entries = ["/tdd"]\n', ["'/tdd'"]),
+        ('entries = ["mp/"]\n', ["'mp/'"]),
+        ('entries = ["mp/a/b"]\n', ["'mp/a/b'"]),
+        ('[sources.mp]\ngit = "https://x/s.git"\n', ["sources.mp.git", "unsupported"]),
+        ('[rename]\n"mp/a" = "b"\n', ["'rename'", "unsupported"]),
+        ("entries = [\n", ["skill-graft.toml"]),
+        ('entries = "own/chisel"\n', ["'entries'", "list"]),
+        ("entries = [1]\n", ["'entries'", "list of strings"]),
+        ('sources = "x"\n', ["'sources'"]),
+        ("sources = {own = 1}\n", ["'sources.own'"]),
+        ("[sources.own]\n", ["'sources.own.path'", "missing"]),
+        ("[sources.own]\npath = 1\n", ["'sources.own.path'"]),
+        ('[sources."a/b"]\npath = "~/src"\n', ["alias 'a/b'"]),
+        ('[sources.".."]\npath = "~/src"\n', ["alias '..'"]),
+        ('[sources."-x"]\npath = "~/src"\n', ["alias '-x'"]),
+        ('[sources.""]\npath = "~/src"\n', ["alias ''"]),
+        (
+            'entries = ["own/chisel", "own/chisel"]\n[sources.own]\npath = "~/src"\n',
+            ["'own/chisel'", "repeated"],
+        ),
+        ('[sources.own]\npath = "."\n', ["source 'own'", "skill-graft"]),
+        ('[sources.own]\npath = ".apm/skills"\n', ["source 'own'", "skill-graft"]),
+        ('[sources.own]\npath = "~/.apm"\n', ["source 'own'", "skill-graft"]),
+        ('[sources.own]\npath = "~"\n', ["source 'own'", "skill-graft"]),
+    ],
 )
-def test_source_overlapping_a_deploy_folder_warns(home: Path, path: str) -> None:
-    folder = Path(path.replace("~", str(home)))
-    folder.mkdir(parents=True)
-    write_config(f'[sources.own]\npath = "{path}"\n')
-    config = load()
-    assert config.sources == {"own": folder.resolve()}
-    assert len(config.warnings) == 1
-    assert "'own'" in config.warnings[0]
-    assert "skills" in config.warnings[0]
+def test_config_error_writes_nothing(
+    home: Path, capsys: Capsys, toml: str, expected: list[str]
+) -> None:
+    skill(home / "src" / "chisel")
+    configure(["own/chisel"], own="~/src")
+    build(capsys)
+    write_config(toml)
+
+    code, err = build(capsys)
+
+    assert code == 1
+    for text in expected:
+        assert text in err
+    assert vendored() == {"chisel"}
+
+
+@pytest.mark.parametrize(
+    ("path", "deploy"),
+    [
+        ("~/.agents/skills", ".agents/skills"),
+        ("~/.claude", ".claude/skills"),
+        ("~/.config/opencode/skills/x", ".config/opencode/skills"),
+    ],
+)
+def test_source_overlapping_a_deploy_folder_warns(
+    home: Path, capsys: Capsys, path: str, deploy: str
+) -> None:
+    skill(Path(path.replace("~", str(home))) / "chisel")
+    configure(["own/chisel"], own=path)
+
+    code, err = build(capsys)
+
+    assert code == 0
+    assert err.count("warning:") == 1
+    assert "'own'" in err and str(home / deploy) in err
+    assert vendored() == {"chisel"}

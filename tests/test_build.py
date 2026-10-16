@@ -82,17 +82,6 @@ def test_git_metadata_is_not_vendored(home: Path) -> None:
     ]
 
 
-def test_deploy_folder_warning_is_printed(
-    home: Path, capsys: pytest.CaptureFixture[str]
-) -> None:
-    skill(home / ".agents" / "skills" / "chisel")
-    write_config('entries = ["own/chisel"]\n[sources.own]\npath = "~/.agents/skills"\n')
-
-    assert main(["build", "--no-install"]) == 0
-
-    assert "warning: source 'own'" in capsys.readouterr().err
-
-
 def test_no_install_does_not_run_apm(home: Path, fake_apm: FakeApm) -> None:
     skill(home / "src" / "chisel")
     write_config('entries = ["own/chisel"]\n[sources.own]\npath = "~/src"\n')

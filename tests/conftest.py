@@ -4,6 +4,8 @@ from pathlib import Path
 
 import pytest
 
+from skill_graft.cli import main
+
 # Stands in for `apm`: logs its argv, and for `install -g <path>` adds the path to
 # ~/.apm/apm.yml the way APM 0.33.0 does, unless told not to.
 FAKE_APM = """\
@@ -102,3 +104,23 @@ def skill(folder: Path, text: str = "# skill\n") -> Path:
     folder.mkdir(parents=True, exist_ok=True)
     (folder / "SKILL.md").write_text(text)
     return folder
+
+
+def configure(entries: list[str], **sources: str) -> None:
+    """Writes a config with these entries and `alias = path` sources."""
+    text = f"entries = {json.dumps(entries)}\n"
+    for alias, path in sources.items():
+        text += f'[sources.{alias}]\npath = "{path}"\n'
+    write_config(text)
+
+
+def build(capsys: pytest.CaptureFixture[str]) -> tuple[int, str]:
+    """Runs `skill-graft build --no-install`; returns its exit code and stderr."""
+    code = main(["build", "--no-install"])
+    return code, capsys.readouterr().err
+
+
+def vendored() -> set[str]:
+    """The skill folders the last build left in `.apm/skills/`."""
+    skills = Path.home() / ".apm" / "skill-graft" / ".apm" / "skills"
+    return {p.name for p in skills.iterdir()} if skills.exists() else set()
