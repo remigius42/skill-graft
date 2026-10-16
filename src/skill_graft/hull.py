@@ -6,7 +6,7 @@ from collections import deque
 from dataclasses import dataclass
 from pathlib import Path
 
-from skill_graft import discovery, references
+from skill_graft import discovery, files, references
 from skill_graft.config import Config, SkillId
 from skill_graft.errors import SkillGraftError
 
@@ -117,19 +117,14 @@ def check_files(folder: Path) -> None:
     a FIFO, socket or device, which reading would block on or never finish.
     """
     root = folder.resolve()
-    for dirpath, dirnames, filenames in os.walk(folder):
-        dirnames[:] = [name for name in dirnames if name != ".git"]  # never copied
-        for name in dirnames + filenames:
-            link = Path(dirpath) / name
-            if not link.is_symlink():
-                mode = link.lstat().st_mode
-                if not (stat.S_ISREG(mode) or stat.S_ISDIR(mode)):
-                    raise SkillGraftError(f"{link} is not a regular file")
-                continue
-            target = Path(os.path.realpath(link))
-            if not target.is_relative_to(root):
-                raise SkillGraftError(f"{link} points outside the skill, to {target}")
-            if target.is_dir():
-                raise SkillGraftError(
-                    f"{link} points to a folder; only file links work"
-                )
+    for link in files.skill_entries(folder):
+        if not link.is_symlink():
+            mode = link.lstat().st_mode
+            if not (stat.S_ISREG(mode) or stat.S_ISDIR(mode)):
+                raise SkillGraftError(f"{link} is not a regular file")
+            continue
+        target = Path(os.path.realpath(link))
+        if not target.is_relative_to(root):
+            raise SkillGraftError(f"{link} points outside the skill, to {target}")
+        if target.is_dir():
+            raise SkillGraftError(f"{link} points to a folder; only file links work")

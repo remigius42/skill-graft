@@ -17,6 +17,7 @@ words:
   - frontmatter
   - fsencode
   - geteuid
+  - gitdir
   - kiro
   - mattpocock
   - mkfifo

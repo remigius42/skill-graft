@@ -85,13 +85,10 @@ def folder_hash(folder: Path) -> str:
     Symlinks are followed, as the copy does; `.git` is skipped, as it is not copied.
     """
     digest = hashlib.sha256()
-    files = []
-    for dirpath, dirnames, filenames in os.walk(folder):
-        dirnames[:] = [name for name in dirnames if name != ".git"]
-        files += [Path(dirpath) / name for name in filenames]
     for relative, file in sorted(
         (b"/".join(os.fsencode(part) for part in f.relative_to(folder).parts), f)
-        for f in files
+        for f in files.skill_entries(folder)
+        if not f.is_dir()
     ):
         content = file.read_bytes()
         executable = b"1" if file.stat().st_mode & stat.S_IXUSR else b"0"

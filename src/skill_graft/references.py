@@ -1,10 +1,10 @@
 """Finds the slash and Skill tool references in a skill's Markdown files."""
 
-import os
 import re
 from dataclasses import dataclass
 from pathlib import Path
 
+from skill_graft import files
 from skill_graft.errors import SkillGraftError
 
 # `/name` as its own token: not inside a path, URL or tag, nor a Markdown link
@@ -55,10 +55,11 @@ def scan(folder: Path) -> tuple[list[Reference], list[str]]:
 
 def _markdown_files(folder: Path) -> list[Path]:
     """Every `*.md` under `folder`, `.git` skipped: `SKILL.md`, then by path."""
-    files = []
-    for dirpath, dirnames, filenames in os.walk(folder):
-        dirnames[:] = [name for name in dirnames if name != ".git"]
-        files += [Path(dirpath) / f for f in filenames if f.lower().endswith(".md")]
+    markdown = [
+        f
+        for f in files.skill_entries(folder)
+        if f.name.lower().endswith(".md") and not f.is_dir()
+    ]
     return sorted(
-        files, key=lambda f: (f != folder / "SKILL.md", f.relative_to(folder).parts)
+        markdown, key=lambda f: (f != folder / "SKILL.md", f.relative_to(folder).parts)
     )

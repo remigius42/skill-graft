@@ -147,6 +147,22 @@ def test_lock_hashes_what_was_vendored(
     assert locked == lock.folder_hash(vendored)
 
 
+def test_git_file_is_not_hashed(home: Path) -> None:
+    tdd = skill(home / "own" / "tdd")
+    (tdd / ".git").write_text("gitdir: ../.git/modules/tdd\n")  # a submodule
+    configure(["own/tdd"], own="~/own")
+
+    def locked() -> str:
+        hash_: str = tomllib.loads(lock_file(home).read_text())["skills"][0]["hash"]
+        return hash_
+
+    assert main(["resolve"]) == 0
+    resolved = locked()
+    assert main(["build", "--no-install"]) == 0
+
+    assert locked() == resolved
+
+
 def test_vendoring_fails(home: Path) -> None:
     tdd = skill(home / "own" / "tdd")
     configure(["own/tdd"], own="~/own")
