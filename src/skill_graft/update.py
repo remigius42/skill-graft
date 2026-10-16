@@ -62,16 +62,17 @@ def _write_refs(refs: dict[str, str]) -> None:
     Replaces the file a symlinked `skill-graft.toml` points to, not the link.
     """
     file = paths.config_file().resolve()
-    document = tomlkit.parse(file.read_text())
+    # Bytes, as config.load reads them: no newline translation, no locale encoding.
+    document = tomlkit.parse(file.read_bytes().decode())
     # A table, inline table, or proxy over split tables, by how the user wrote
     # it; config.load already checked that each is a table.
     sources = cast(MutableMapping[str, Any], document["sources"])
     for alias, ref in refs.items():
         cast(MutableMapping[str, Any], sources[alias])["ref"] = ref
     with tempfile.NamedTemporaryFile(
-        "w", dir=file.parent, prefix=f".{file.name}.", delete=False
+        "wb", dir=file.parent, prefix=f".{file.name}.", delete=False
     ) as tmp:
-        tmp.write(tomlkit.dumps(document))
+        tmp.write(tomlkit.dumps(document).encode())
     shutil.copymode(file, tmp.name)
     os.replace(tmp.name, file)
 

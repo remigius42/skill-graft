@@ -257,6 +257,18 @@ def test_ref_added_to_an_inline_table(upstream: Upstream, capsys: Capsys) -> Non
     assert ref("mp") == sha and file.read_text().endswith("  # inline\n")
 
 
+def test_line_endings_and_encoding_survive(upstream: Upstream, capsys: Capsys) -> None:
+    old = upstream.commit({"tdd/SKILL.md": "1\n"})
+    new = upstream.commit({"tdd/SKILL.md": "2\n"})
+    text = f'# 5 € → ✓\r\n[sources.mp]\r\ngit = "{upstream.url}"\r\nref = "{old}"\r\n'
+    file = write_config("")
+    file.write_bytes(text.encode())
+
+    assert update(capsys)[0] == 0
+
+    assert file.read_bytes() == text.replace(old, new).encode()
+
+
 @pytest.mark.parametrize(
     "layout",
     [
