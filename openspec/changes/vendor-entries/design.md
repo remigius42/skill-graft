@@ -69,8 +69,9 @@ and a non-zero exit, never a traceback.
 - **Vendoring**: validate config, discovery and name clashes first. Then `copytree` each entry (ignoring
   `.git`, symlinks dereferenced) into a fresh sibling `~/.apm/skill-graft/.apm/skills.new/`, and only when
   every copy succeeded swap it in: rename the old folder aside, rename the new one into place, delete the old.
-  A failed copy deletes `skills.new/` and leaves `skills/` as it was. A stale `skills.new/` or `skills.old/`
-  from a crashed run is deleted first.
+  A failed copy deletes `skills.new/` and leaves `skills/` as it was. Every build first undoes a crashed run:
+  if `skills/` is missing, `skills.old/` is the previous build and is renamed back; then any stale
+  `skills.new/` or `skills.old/` is deleted.
 
 - **Config value types**: `sources` must be a table of tables, each with a string `path`; `entries` a list of
   strings. A wrong type or an empty source table is an error naming the key; a repeated entry is an error

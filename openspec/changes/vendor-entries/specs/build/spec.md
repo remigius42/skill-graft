@@ -26,8 +26,26 @@ replaced only once every copy succeeded; a failed copy SHALL leave it as it was.
 
 #### Scenario: Copy fails
 
-- **WHEN** a previous build vendored `chisel`, and an **Entry**'s folder holds a dangling symlink
+- **WHEN** a previous build vendored `chisel`, and an **Entry**'s folder holds a symlink to a missing file
+  inside it
 - **THEN** `build` exits non-zero naming the file, and `.apm/skills/` still holds the previous `chisel`
+
+### Requirement: Symlinks stay within the skill
+
+A symlink in an **Entry**'s folder that leads outside the folder, or to the folder holding the link or one
+above it, SHALL be an error naming the link, and `build` SHALL then write nothing. A symlink within the folder
+SHALL be vendored as a copy of its target.
+
+#### Scenario: Symlink leaving the skill
+
+- **WHEN** an **Entry**'s folder holds a symlink to a file or folder outside it, or to the folder itself or
+  one above the link
+- **THEN** `build` exits non-zero naming the symlink and writes nothing
+
+#### Scenario: Symlink within the skill
+
+- **WHEN** an **Entry**'s folder holds a symlink to a file inside it
+- **THEN** the vendored copy holds that file's content as a regular file
 
 ### Requirement: Deployed names are unique
 

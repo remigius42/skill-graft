@@ -10,8 +10,8 @@ Finds the **Skills** in a **Source** and gives each its **Skill ID**, so **Entri
 
 Every folder under a **Source** that holds a file named `SKILL.md` SHALL be a **Skill**, at any depth,
 including inside hidden folders other than `.git` and through symlinked folders, each resolved folder visited
-once. A **Skill** is its whole folder, so discovery SHALL NOT look
-for further **Skills** inside one.
+once. A **Skill** is its whole folder, so discovery SHALL NOT look for further **Skills** inside one. Discovery
+SHALL NOT enter a folder that resolves into `~/.apm/skill-graft/`, so a build never reads its own output.
 
 #### Scenario: Nested layout
 
@@ -37,6 +37,11 @@ for further **Skills** inside one.
 
 - **WHEN** a source holds `.git/x/SKILL.md`
 - **THEN** `x` is not a **Skill**
+
+#### Scenario: Symlink into the package
+
+- **WHEN** a source holds a symlink to `~/.apm`, and a previous build vendored skills there
+- **THEN** discovery does not look inside `~/.apm/skill-graft/`, so the vendored copies are not **Skills**
 
 ### Requirement: Skill name
 
