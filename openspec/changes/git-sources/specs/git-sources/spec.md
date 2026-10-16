@@ -102,6 +102,11 @@ and LFS objects SHALL NOT be fetched (their pointer files are vendored as commit
   defines `filter.f.smudge`, and `SKILL.md` was committed with LF line endings
 - **THEN** the vendored `SKILL.md` equals the committed blob byte for byte
 
+#### Scenario: Hostile tree
+
+- **WHEN** commit A holds two entries named `a`, a symlink to a folder outside and a folder holding `x`
+- **THEN** the command exits non-zero naming `a`, and nothing is written outside the cache
+
 #### Scenario: Modes kept
 
 - **WHEN** commit A holds an executable `scripts/run.sh` and a symlink `refs/a.md` → `b.md` inside a skill

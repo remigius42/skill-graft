@@ -241,6 +241,77 @@ def test_hostile_tree_path_is_refused(tmp_path: Path, name: str) -> None:
     assert not (paths.cache() / "trees" / cache.key(upstream.url) / "config").exists()
 
 
+def write_object(upstream: Upstream, kind: str, data: bytes) -> str:
+    """Writes a raw object, unchecked, as a hostile upstream could."""
+    return (
+        subprocess.run(
+            [
+                "git",
+                "-C",
+                upstream.url,
+                "hash-object",
+                "-w",
+                "--literally",
+                "-t",
+                kind,
+                "--stdin",
+            ],
+            input=data,
+            capture_output=True,
+            check=True,
+        )
+        .stdout.decode()
+        .strip()
+    )
+
+
+def tree_entry(mode: str, name: str, oid: str) -> bytes:
+    return f"{mode} {name}".encode() + b"\0" + bytes.fromhex(oid)
+
+
+def test_file_under_a_symlinked_folder_is_refused(tmp_path: Path) -> None:
+    upstream = Upstream(tmp_path / "up")
+    upstream.commit({})
+    outside = tmp_path / "outside"
+    outside.mkdir()
+    link = write_object(upstream, "blob", str(outside).encode())
+    blob = write_object(upstream, "blob", b"pwned\n")
+    inner = write_object(upstream, "tree", tree_entry("100644", "x", blob))
+    # Two entries named `a`: a symlink out, then a folder holding `x`.
+    root = write_object(
+        upstream,
+        "tree",
+        tree_entry("120000", "a", link) + tree_entry("40000", "a", inner),
+    )
+    sha = upstream.git("commit-tree", root, "-m", "evil")
+    upstream.git("update-ref", "refs/heads/main", sha)
+
+    with pytest.raises(SkillGraftError, match="'a"):
+        cache.Cache(paths.cache()).checkout("mp", upstream.url, sha)
+    assert not (outside / "x").exists()
+
+
+def test_symlink_under_a_symlinked_folder_is_refused(tmp_path: Path) -> None:
+    upstream = Upstream(tmp_path / "up")
+    upstream.commit({})
+    outside = tmp_path / "outside"
+    outside.mkdir()
+    out = write_object(upstream, "blob", str(outside).encode())
+    deep = write_object(upstream, "tree", tree_entry("120000", "c", out))
+    middle = write_object(upstream, "tree", tree_entry("40000", "b", deep))
+    root = write_object(
+        upstream,
+        "tree",
+        tree_entry("120000", "a", out) + tree_entry("40000", "a", middle),
+    )
+    sha = upstream.git("commit-tree", root, "-m", "evil")
+    upstream.git("update-ref", "refs/heads/main", sha)
+
+    with pytest.raises(SkillGraftError, match="refusing the tree path"):
+        cache.Cache(paths.cache()).checkout("mp", upstream.url, sha)
+    assert list(outside.iterdir()) == []
+
+
 def test_checkout_keeps_modes_and_skips_submodules(tmp_path: Path) -> None:
     upstream = Upstream(tmp_path / "up")
     script = upstream.path / "a" / "run.sh"

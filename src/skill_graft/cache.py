@@ -150,8 +150,16 @@ def _export(repo: Path, ref: str, folder: Path, context: str) -> None:
         if kind == b"blob":
             entries.append((mode, oid, _safe(os.fsdecode(name), context)))
     blobs = _read_blobs(repo, [oid for _, oid, _ in entries], context)
-    for (mode, _, path), content in zip(entries, blobs, strict=True):
+    written = list(zip(entries, blobs, strict=True))
+    # Symlinks last, so no file is written through one; and every write must
+    # land in a new path whose real parent is inside `folder`, which a tree with
+    # duplicate names (or names equal but for case) would otherwise defeat.
+    written.sort(key=lambda item: item[0][0] == b"120000")
+    root = folder.resolve()
+    for (mode, _, path), content in written:
         target = folder / path
+        if not target.parent.resolve().is_relative_to(root) or os.path.lexists(target):
+            raise SkillGraftError(f"{context}: refusing the tree path {path!r}")
         target.parent.mkdir(parents=True, exist_ok=True)
         if mode == b"120000":
             target.symlink_to(os.fsdecode(content))
