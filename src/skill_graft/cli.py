@@ -3,7 +3,7 @@
 import argparse
 import sys
 
-from skill_graft import apm, config, init, paths, resolve, vendor
+from skill_graft import apm, config, init, paths, resolve, update, vendor
 from skill_graft.cache import Cache
 from skill_graft.errors import SkillGraftError
 
@@ -21,10 +21,19 @@ def main(argv: list[str] | None = None) -> int:
     build.add_argument(
         "--no-install", action="store_true", help="stop before running APM"
     )
+    update_parser = commands.add_parser(
+        "update", help="move git sources' refs to their branch tips"
+    )
+    update_parser.add_argument(
+        "aliases", nargs="*", metavar="source", help="default: every git source"
+    )
     args = parser.parse_args(argv)
     try:
         if args.command == "init":
             init.init()
+        elif args.command == "update":
+            for line in update.update(args.aliases):
+                print(line)
         elif args.command == "build":
             loaded = config.load()
             for warning in loaded.warnings:

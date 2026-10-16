@@ -42,8 +42,8 @@ Apply with the `tdd` skill: each task red-green-refactor (failing test first, th
 
 ## 5. Update
 
-- [ ] 5.1 Add `tomlkit`; `update [alias…]` CLI: selection errors (path source, unknown alias, unselected
-  source without `ref`, `check-ref-format --branch`) before any remote is contacted; tip from one `ls-remote`
+- [x] 5.1 Add `tomlkit`; `update [alias…]` CLI: selection errors (path source, unknown alias, unselected
+  source without `ref`, `check-ref-format refs/heads/<b>`) before any remote is contacted; tip from one `ls-remote`
   per URL and branch (`--symref HEAD` without `branch`; no sha line → no-default-branch error); fetch only when
   the tip is not cached; print lines. No TOML write yet. Verify: path-source-named, unknown-alias,
   other-source-without-a-ref, revision-syntax-as-branch, missing-branch, branch-deleted-upstream,

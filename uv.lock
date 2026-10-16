@@ -1629,6 +1629,9 @@ wheels = [
 name = "skill-graft"
 version = "0.1.0"
 source = { editable = "." }
+dependencies = [
+    { name = "tomlkit" },
+]
 
 [package.dev-dependencies]
 dev = [
@@ -1638,6 +1641,7 @@ dev = [
 ]
 
 [package.metadata]
+requires-dist = [{ name = "tomlkit", specifier = ">=0.15.2" }]
 
 [package.metadata.requires-dev]
 dev = [

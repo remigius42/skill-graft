@@ -27,8 +27,9 @@ beyond what git does itself.
   `GitSource(url, branch, ref)`, `branch` and `ref` optional. `load()` validates the kind and types; it does not
   require `ref` (so `update` can load a source without one). Loading runs no git, so a `branch` is rejected there
   only when empty or starting with `refs/` or `-`; `update` checks it fully with
-  `git check-ref-format --branch` before contacting the remote, so revision syntax (`main~3`, `main@{1}`) never
-  resolves to another commit.
+  `git check-ref-format refs/heads/<branch>` before contacting the remote, so revision syntax (`main~3`,
+  `main@{1}`) never resolves to another commit. Not `--branch`, which expands `@{-1}` in whatever repository the
+  user runs skill-graft from.
 
 - **`git` value**: `https://`, `http://`, `ssh://`, `git://` or `file://`; the scp-like form
   (`[user@]host:path`, no `/` before the `:`); or an absolute local path. Anything else is an error: a relative

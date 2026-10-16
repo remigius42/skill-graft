@@ -1,6 +1,7 @@
 """Resolves the entries to skill folders: the step `build` and `update` share."""
 
 import os
+from collections.abc import Iterable
 from pathlib import Path
 
 from skill_graft import discovery
@@ -9,10 +10,11 @@ from skill_graft.config import Config, GitSource, SkillId
 from skill_graft.errors import SkillGraftError
 
 
-def check_refs(config: Config, refs: dict[str, str]) -> None:
-    """Every git source needs a ref, its own or one in `refs`, used or not."""
+def check_refs(config: Config, given: Iterable[str]) -> None:
+    """Every git source needs a ref, its own or a `given` one, used or not."""
+    given = set(given)
     for alias, source in config.sources.items():
-        if isinstance(source, GitSource) and not (refs.get(alias) or source.ref):
+        if isinstance(source, GitSource) and not (alias in given or source.ref):
             raise SkillGraftError(
                 f"source {alias!r} has no ref: run `skill-graft update {alias}`"
             )
@@ -20,7 +22,7 @@ def check_refs(config: Config, refs: dict[str, str]) -> None:
 
 def folders(config: Config, cache: Cache, refs: dict[str, str]) -> dict[str, Path]:
     """The folder of each source an entry uses: git ones at `refs`, else their ref."""
-    check_refs(config, refs)
+    check_refs(config, refs.keys())
     result = {}
     for alias in dict.fromkeys(entry.alias for entry in config.entries):
         source = config.sources[alias]
