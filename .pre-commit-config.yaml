@@ -63,6 +63,13 @@ repos:
         language: system
         pass_filenames: false
         types: [python]
+      # The oldest supported Python: 3.11 and 3.12 differ from newer ones in pathlib and shutil.
+      - id: pytest-py311
+        name: pytest (Python 3.11)
+        entry: uv run --isolated --python 3.11 --group dev pytest -q -p no:cacheprovider
+        language: system
+        pass_filenames: false
+        types: [python]
 
   - repo: https://github.com/gitleaks/gitleaks
     rev: v8.30.0

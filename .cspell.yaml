@@ -4,6 +4,7 @@ words:
   - autouse
   - backticked
   - blocklist
+  - cacheprovider
   - capfd
   - capsys
   - commitlint
@@ -19,11 +20,13 @@ words:
   - opencode
   - openspec
   - opsx
+  - pathlib
   - pocock
   - pycache
   - pyproject
   - pytest
   - pytestmark
+  - shutil
   - stdlib
   - testpaths
   - tomlkit
