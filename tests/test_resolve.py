@@ -7,8 +7,9 @@ from typing import TypeAlias
 import pytest
 from conftest import Upstream, configure, skill, write_config
 
-from skill_graft import config, lock, vendor
+from skill_graft import lock, vendor
 from skill_graft.cli import main
+from skill_graft.hull import Hull
 
 Capsys: TypeAlias = pytest.CaptureFixture[str]
 
@@ -62,6 +63,76 @@ def test_tree_of_two_entries(home: Path, capsys: Capsys) -> None:
     assert main(["resolve"]) == 0
 
     assert capsys.readouterr().out == "own/a\n└── own/b (/b) (*)\nown/b\n"
+
+
+def test_renames_marked(home: Path, capsys: Capsys) -> None:
+    skill(home / "mp" / "tdd", "/grilling, `grilling` and `notes`\n")
+    skill(home / "mp" / "grilling")
+    skill(home / "mp" / "notes")
+    write_config(
+        'entries = ["mp/tdd", "mp/notes"]\n[sources.mp]\npath = "~/mp"\n'
+        '[rename]\n"mp/tdd" = "mp-tdd"\n"mp/grilling" = "mp-grilling"\n'
+    )
+
+    assert main(["resolve"]) == 0
+
+    assert capsys.readouterr().out == (
+        "mp/tdd as mp-tdd\n"
+        "├── mp/grilling as mp-grilling (/grilling)\n"
+        "└── mp/grilling as mp-grilling (`grilling`, prose) (*)\n"
+        "mp/notes\n"
+    )
+
+
+def test_bound_prose_shown(home: Path, capsys: Capsys) -> None:
+    skill(home / "mp" / "tdd", "/notes and `notes`, then notes-x\n")
+    skill(home / "own" / "grill")
+    skill(home / "own" / "g-x")
+    write_config(
+        'entries = ["mp/tdd", "own/g-x"]\n[sources.mp]\npath = "~/mp"\n'
+        '[sources.own]\npath = "~/own"\n'
+        '[bind]\n"mp/notes" = "own/grill"\n"mp/notes-x" = "own/g-x"\n'
+    )
+
+    assert main(["resolve"]) == 0
+
+    assert capsys.readouterr().out == (
+        "mp/tdd\n"
+        "├── own/grill (/notes, bind)\n"
+        "├── own/grill (`notes`, prose, bind) (*)\n"
+        "└── own/g-x (notes-x, prose, bind) (*)\n"
+        "own/g-x\n"
+    )
+
+
+def test_suggestion_printed(home: Path, capsys: Capsys) -> None:
+    skill(home / "mp" / "tdd", "/grilling, then diagnosing-bugs and `notes`\n")
+    skill(home / "mp" / "grilling", "see diagnosing-bugs\n")
+    skill(home / "mp" / "diagnosing-bugs")
+    skill(home / "mp" / "notes")
+    configure(["mp/tdd"], mp="~/mp")
+
+    assert main(["resolve"]) == 0
+
+    assert capsys.readouterr().out == (
+        "mp/tdd\n"
+        "└── mp/grilling (/grilling)\n"
+        "\n"
+        "mentioned in prose, not in the hull (add to entries to include):\n"
+        "  mp/diagnosing-bugs, by mp/grilling, mp/tdd\n"
+        "  mp/notes, by mp/tdd\n"
+    )
+
+
+def test_build_prints_no_suggestions(home: Path, capsys: Capsys) -> None:
+    skill(home / "mp" / "tdd", "then diagnosing-bugs\n")
+    skill(home / "mp" / "diagnosing-bugs")
+    configure(["mp/tdd"], mp="~/mp")
+
+    assert main(["build", "--no-install"]) == 0
+
+    out, err = capsys.readouterr()
+    assert "diagnosing-bugs" not in out + err
 
 
 def test_tree_leaves_out_prose_not_rewritten(home: Path, capsys: Capsys) -> None:
@@ -145,8 +216,8 @@ def test_lock_hashes_what_was_vendored(
     configure(["own/tdd"], own="~/own")
     copy = vendor.vendor
 
-    def copy_then_edit(skills: dict[config.SkillId, Path]) -> None:
-        copy(skills)
+    def copy_then_edit(hull: Hull) -> None:
+        copy(hull)
         (tdd / "SKILL.md").write_text("edited during the build\n")
 
     monkeypatch.setattr(vendor, "vendor", copy_then_edit)

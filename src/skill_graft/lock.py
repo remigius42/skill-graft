@@ -64,33 +64,59 @@ def render(
 def tree(hull: Hull) -> str:
     """The hull as `cargo tree` prints: one line per edge, repeats marked `(*)`.
 
-    Each entry expands at the top level; any other skill at its first line.
+    Each entry expands at the top level; any other skill at its first line. A
+    renamed skill shows its deployed name. A prose edge shows only when the build
+    rewrites it; it pulls nothing in, so its target expands elsewhere: `(*)`.
     """
     children: dict[SkillId, dict[tuple[SkillId, str, bool], Edge]] = {}
     for edge in hull.edges:  # in scan order; one line per target, kind and bind
-        if edge.kind == "prose":  # never pulls a skill in; nothing to explain
+        if edge.kind == "prose" and hull.deployed[edge.target] == edge.text.strip("`"):
             continue
         key = (edge.target, edge.kind, edge.bind)
         children.setdefault(edge.source, {}).setdefault(key, edge)
     expanded: set[SkillId] = set()
     lines: list[str] = []
 
+    def node(skill_id: SkillId) -> str:
+        deployed = hull.deployed[skill_id]
+        return str(skill_id) + ("" if deployed == skill_id.name else f" as {deployed}")
+
     def expand(skill_id: SkillId, prefix: str) -> None:
         expanded.add(skill_id)
         edges = list(children.get(skill_id, {}).values())
         for i, edge in enumerate(edges):
             last = i == len(edges) - 1
-            label = f"{edge.text}, bind" if edge.bind else edge.text
-            repeat = edge.target in expanded or edge.target in hull.entries
-            line = f"{prefix}{'└── ' if last else '├── '}{edge.target} ({label})"
+            label = ", ".join(
+                [edge.text]
+                + (["prose"] if edge.kind == "prose" else [])
+                + (["bind"] if edge.bind else [])
+            )
+            repeat = (
+                edge.kind == "prose"
+                or edge.target in expanded
+                or edge.target in hull.entries
+            )
+            line = f"{prefix}{'└── ' if last else '├── '}{node(edge.target)} ({label})"
             lines.append(line + (" (*)" if repeat else ""))
             if not repeat:
                 expand(edge.target, prefix + ("    " if last else "│   "))
 
     for entry in hull.entries:
-        lines.append(str(entry))
+        lines.append(node(entry))
         expand(entry, "")
     return "".join(f"{line}\n" for line in lines)
+
+
+def suggestions(hull: Hull) -> str:
+    """The skills prose mentions outside the hull, and who mentions them."""
+    if not hull.suggestions:
+        return ""
+    lines = [
+        f"  {skill}, by {', '.join(sorted(str(s) for s in hull.suggestions[skill]))}"
+        for skill in sorted(hull.suggestions)
+    ]
+    header = "mentioned in prose, not in the hull (add to entries to include):"
+    return "".join(f"{line}\n" for line in ["", header, *lines])
 
 
 def skill_hashes(hull: Hull) -> dict[SkillId, str]:

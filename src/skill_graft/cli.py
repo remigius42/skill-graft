@@ -43,7 +43,7 @@ def main(argv: list[str] | None = None) -> int:
         elif args.command == "resolve":
             loaded, resolved = _resolve()
             lock.write(lock.render(loaded, {}, resolved))
-            print(lock.tree(resolved), end="")
+            print(lock.tree(resolved) + lock.suggestions(resolved), end="")
             warn(resolved.warnings)
         elif args.command == "build":
             loaded, resolved = _resolve()
