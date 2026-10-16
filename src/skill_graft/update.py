@@ -114,10 +114,17 @@ def _tip(alias: str, source: GitSource) -> str:
         output = git.run(
             "ls-remote", "--symref", "--", source.url, "HEAD", context=context
         )
+        # A default branch needs both lines: `ref: refs/heads/<b>` and its sha. A
+        # detached HEAD has only the sha, of a commit perhaps on no branch.
+        branch, sha = False, None
         for line in output.decode().splitlines():
-            sha, _, name = line.partition("\t")
-            if name == "HEAD" and not sha.startswith("ref:"):
-                return sha
+            value, _, name = line.partition("\t")
+            if name == "HEAD" and value.startswith("ref: refs/heads/"):
+                branch = True
+            elif name == "HEAD":
+                sha = value
+        if branch and sha:
+            return sha
         raise SkillGraftError(
             f"{context}: the remote names no default branch; "
             'set `branch = "…"` in its [sources] table'

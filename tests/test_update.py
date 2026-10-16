@@ -100,6 +100,17 @@ def test_no_default_branch(upstream: Upstream, capsys: Capsys) -> None:
     assert code == 1 and "'mp'" in err and "branch = " in err
 
 
+def test_detached_head_is_no_default_branch(upstream: Upstream, capsys: Capsys) -> None:
+    upstream.commit({"tdd/SKILL.md": "# tdd\n"})
+    upstream.git("checkout", "-q", "--detach")
+    upstream.commit({"tdd/SKILL.md": "on no branch\n"})
+    write_config(git_source("mp", upstream))
+
+    code, _, err = update(capsys, "mp")
+
+    assert code == 1 and "'mp'" in err and "branch = " in err
+
+
 def test_output(tmp_path: Path, capsys: Capsys) -> None:
     a, b = Upstream(tmp_path / "a"), Upstream(tmp_path / "b")
     old = a.commit({"x/SKILL.md": "1\n"})
