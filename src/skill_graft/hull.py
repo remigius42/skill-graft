@@ -126,5 +126,9 @@ def check_files(folder: Path) -> None:
         target = Path(os.path.realpath(link))
         if not target.is_relative_to(root):
             raise SkillGraftError(f"{link} points outside the skill, to {target}")
+        if not target.exists():
+            raise SkillGraftError(f"{link} points to {target}, which is missing")
         if target.is_dir():
             raise SkillGraftError(f"{link} points to a folder; only file links work")
+        if not target.is_file():
+            raise SkillGraftError(f"{link} points to {target}: not a regular file")

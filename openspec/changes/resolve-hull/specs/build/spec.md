@@ -49,16 +49,16 @@ replaced only once every copy succeeded; a failed copy SHALL leave it as it was.
 
 #### Scenario: Copy fails
 
-- **WHEN** a previous build vendored `chisel`, and a **Hull** **Skill**'s folder holds a symlink to a missing
-  file inside it
+- **WHEN** a previous build vendored `chisel`, and a **Hull** **Skill**'s folder holds a file the user cannot
+  read
 - **THEN** `build` exits non-zero naming the file, and `.apm/skills/` still holds the previous `chisel`
 
 ### Requirement: Symlinks stay within the skill
 
-A symlink in a **Hull** **Skill**'s folder SHALL lead to a file inside that folder, and SHALL be vendored as a
-copy of that file. A symlink leading outside the folder, or to any folder (which could form a cycle), SHALL be an
-error naming the link, and `build` SHALL then write nothing. Symlinks under `.git`, which is never vendored, are
-not checked.
+A symlink in a **Hull** **Skill**'s folder SHALL lead to an existing regular file inside that folder, and SHALL be
+vendored as a copy of that file. A symlink leading outside the folder, to a missing file, to a FIFO or device, or
+to any folder (which could form a cycle), SHALL be an error naming the link, and `build` SHALL then write nothing.
+Symlinks under `.git`, which is never vendored, are not checked.
 
 #### Scenario: Symlink leaving the skill
 

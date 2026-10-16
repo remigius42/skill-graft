@@ -1,3 +1,4 @@
+import os
 from pathlib import Path
 
 import pytest
@@ -81,22 +82,30 @@ def test_symlink_in_a_referenced_skill(
     assert "out" in capsys.readouterr().err and not skills_dir(home).exists()
 
 
+def unreadable(folder: Path) -> None:
+    """A file the copy cannot read, though resolution accepts it."""
+    (folder / "secret").write_text("x")
+    (folder / "secret").chmod(0)
+
+
+@pytest.mark.skipif(os.geteuid() == 0, reason="root reads any file")
 def test_copy_fails(home: Path, capsys: pytest.CaptureFixture[str]) -> None:
     skill(home / "src" / "chisel")
     broken = skill(home / "src" / "tdd")
     write_config('entries = ["own/chisel"]\n[sources.own]\npath = "~/src"\n')
     main(["build", "--no-install"])
-    (broken / "dangling").symlink_to("missing.md")
+    unreadable(broken)
     write_config('entries = ["own/tdd"]\n[sources.own]\npath = "~/src"\n')
 
     assert main(["build", "--no-install"]) == 1
 
     err = capsys.readouterr().err
-    assert "copying" in err and "dangling" in err
+    assert "copying" in err and "secret" in err
     assert sorted(p.name for p in skills_dir(home).iterdir()) == ["chisel"]
     assert not (skills_dir(home).parent / "skills.new").exists()
 
 
+@pytest.mark.skipif(os.geteuid() == 0, reason="root reads any file")
 def test_crash_between_the_renames_keeps_the_previous_build(
     home: Path, capsys: pytest.CaptureFixture[str]
 ) -> None:
@@ -107,7 +116,7 @@ def test_crash_between_the_renames_keeps_the_previous_build(
     # A run killed after moving skills/ aside and before moving skills.new/ in.
     skills_dir(home).rename(skills_dir(home).with_name("skills.old"))
     skill(skills_dir(home).with_name("skills.new") / "half")
-    (broken / "dangling").symlink_to("missing.md")
+    unreadable(broken)
     write_config('entries = ["own/tdd"]\n[sources.own]\npath = "~/src"\n')
 
     assert main(["build", "--no-install"]) == 1

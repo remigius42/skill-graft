@@ -180,6 +180,30 @@ def test_fifo_is_an_error(home: Path, capsys: Capsys, command: str) -> None:
     assert "pipe" in err and "not a regular file" in err
 
 
+def test_link_to_a_fifo_is_an_error(home: Path, capsys: Capsys) -> None:
+    grilling = skill(home / "mp" / "grilling")
+    (grilling / ".git").mkdir()
+    os.mkfifo(grilling / ".git" / "pipe")
+    (grilling / "x.md").symlink_to(".git/pipe")
+    two_sources(home, "/grilling\n")
+
+    assert main(["resolve"]) == 1
+
+    err = capsys.readouterr().err
+    assert "x.md" in err and "not a regular file" in err
+
+
+def test_dangling_link_is_caught_before_copying(home: Path, capsys: Capsys) -> None:
+    skill(home / "mp" / "grilling")
+    (home / "mp" / "grilling" / "data.txt").symlink_to("gone.txt")
+    two_sources(home, "/grilling\n")
+
+    assert main(["resolve"]) == 1
+
+    err = capsys.readouterr().err
+    assert "data.txt" in err and "missing" in err
+
+
 def test_dangling_link(home: Path, capsys: Capsys) -> None:
     skill(home / "mp" / "grilling")
     (home / "mp" / "grilling" / "notes.md").symlink_to("gone.md")
