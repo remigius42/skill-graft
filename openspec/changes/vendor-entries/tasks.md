@@ -29,7 +29,7 @@ Each task: failing test first, then code, one commit, `pre-commit run --all-file
   skill. Verify: nested, skill-in-skill, symlinked-folder, symlink-cycle and `.git` scenario tests pass.
 - [x] 3.2 Name from front matter `name:` (BOM, fence whitespace, quotes, trailing comment handled; unsupported
   forms an error) else folder. Verify: name, comment-and-quotes and unsupported-form scenario tests pass.
-- [ ] 3.3 Resolve entries: unknown, duplicate and non-segment names are errors only for the skill an entry
+- [x] 3.3 Resolve entries: unknown, duplicate and non-segment names are errors only for the skill an entry
   names. Verify: duplicate, not-found and traversal scenario tests pass.
 
 ## 4. Build

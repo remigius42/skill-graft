@@ -2,7 +2,8 @@ from pathlib import Path
 
 import pytest
 
-from skill_graft.discovery import read_name, skill_folders
+from skill_graft.config import SkillId
+from skill_graft.discovery import find, read_name, skill_folders
 from skill_graft.errors import SkillGraftError
 
 
@@ -89,3 +90,42 @@ def test_unsupported_yaml_form(tmp_path: Path, value: str) -> None:
     folder = skill(tmp_path / "x", f"---\nname: {value}\n  tdd\n---\n")
     with pytest.raises(SkillGraftError, match=r"x/SKILL\.md"):
         read_name(folder)
+
+
+def test_find_by_front_matter_name(tmp_path: Path) -> None:
+    folder = skill(tmp_path / "skills" / "tdd-v2", "---\nname: tdd\n---\n")
+    assert find(tmp_path, SkillId("mp", "tdd")) == folder
+
+
+def test_duplicate_name(tmp_path: Path) -> None:
+    skill(tmp_path / "a" / "tdd")
+    skill(tmp_path / "b" / "tdd")
+    with pytest.raises(SkillGraftError, match=r"mp/tdd.*a/tdd.*b/tdd"):
+        find(tmp_path, SkillId("mp", "tdd"))
+
+
+def test_entry_not_found(tmp_path: Path) -> None:
+    skill(tmp_path / "tdd")
+    with pytest.raises(SkillGraftError, match=r"mp/nope"):
+        find(tmp_path, SkillId("mp", "nope"))
+
+
+def test_traversal_in_name(tmp_path: Path) -> None:
+    skill(tmp_path / "x", "---\nname: ../../x\n---\n")
+    with pytest.raises(SkillGraftError, match=r"x/SKILL\.md"):
+        find(tmp_path, SkillId("mp", "x"))
+
+
+def test_unsupported_form_of_the_named_skill(tmp_path: Path) -> None:
+    skill(tmp_path / "x", "---\nname: >-\n  x\n---\n")
+    with pytest.raises(SkillGraftError, match=r"x/SKILL\.md"):
+        find(tmp_path, SkillId("mp", "x"))
+
+
+def test_other_skills_problems_do_not_block(tmp_path: Path) -> None:
+    folder = skill(tmp_path / "tdd")
+    skill(tmp_path / "a" / "dup")
+    skill(tmp_path / "b" / "dup")
+    skill(tmp_path / "bad", "---\nname: ../bad\n---\n")
+    skill(tmp_path / "odd", "---\nname: |\n  odd\n---\n")
+    assert find(tmp_path, SkillId("mp", "tdd")) == folder

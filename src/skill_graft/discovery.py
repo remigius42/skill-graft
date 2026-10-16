@@ -4,6 +4,7 @@ import os
 import re
 from pathlib import Path
 
+from skill_graft.config import NAME, SkillId
 from skill_graft.errors import SkillGraftError
 
 # A comment: `#` after whitespace, to the end of the line.
@@ -52,3 +53,32 @@ def read_name(folder: Path) -> str:
                 raise SkillGraftError(f"{skill_md}: unsupported form of `name:`")
             return value
     return folder.name
+
+
+def find(source: Path, skill_id: SkillId) -> Path:
+    """The folder of the one skill in `source` named `skill_id.name`.
+
+    A skill whose name cannot be read, or is not one path segment, matches by its
+    folder name, and is then an error; elsewhere in the source it blocks nothing.
+    """
+    matches: list[Path] = []
+    for folder in skill_folders(source):
+        try:
+            name = read_name(folder)
+        except SkillGraftError:
+            if folder.name == skill_id.name:
+                raise
+            continue
+        if NAME.fullmatch(name):
+            if name == skill_id.name:
+                matches.append(folder)
+        elif folder.name == skill_id.name:
+            raise SkillGraftError(
+                f"{folder / 'SKILL.md'}: name {name!r} is not one path segment"
+            )
+    if not matches:
+        raise SkillGraftError(f"entry '{skill_id}': no skill {skill_id.name!r} found")
+    if len(matches) > 1:
+        folders = ", ".join(str(m) for m in matches)
+        raise SkillGraftError(f"entry '{skill_id}': several skills match: {folders}")
+    return matches[0]
