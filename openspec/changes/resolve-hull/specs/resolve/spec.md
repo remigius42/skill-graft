@@ -38,13 +38,20 @@ missing from the cache.
 `skill-graft.lock`, a TOML file beside `skill-graft.toml`, SHALL record: each declared **Source**'s alias with
 its URL and `ref`, or its resolved folder; each **Hull** **Skill**'s **Skill ID**, whether it is an **Entry**,
 and a SHA-256 hash of its folder as vendored; and each edge: from, to, kind (`slash` or `skill-tool`), and
-`bind = true` when a **Bind** decided it. One edge per from, to and kind.
+`bind = true` when a **Bind** decided it. One edge per from, to, kind and `bind`.
 
 #### Scenario: Edges with kinds
 
 - **WHEN** `mp/tdd` calls `/grilling` and `Skill(notes)`, and `[bind]` has `"mp/notes" = "own/notes"`
 - **THEN** the lock holds edges `mp/tdd` → `mp/grilling` of kind `slash`, and `mp/tdd` → `own/notes` of kind
   `skill-tool` with `bind = true`
+
+#### Scenario: Bound and default edge to one skill
+
+- **WHEN** `mp/tdd` calls `/g`, bound by `"mp/g" = "own/notes"`, and `/notes`, resolved by default to
+  `own/notes`
+- **THEN** the lock holds two `slash` edges `mp/tdd` → `own/notes`, one with `bind = true`, and the tree shows
+  both
 
 #### Scenario: Hash follows content
 
@@ -53,8 +60,9 @@ and a SHA-256 hash of its folder as vendored; and each edge: from, to, kind (`sl
 
 ### Requirement: Lock is deterministic
 
-The same TOML and **Source** contents SHALL give a byte-identical lock, wherever and whenever it is written.
-The lock SHALL be replaced atomically.
+The same TOML, **Source** contents and **Source** folders SHALL give a byte-identical lock, whenever it is
+written: no timestamps, everything sorted. A path **Source**'s resolved folder is part of the input, so the lock
+differs across machines whose folders differ. The lock SHALL be replaced atomically.
 
 #### Scenario: Same input
 

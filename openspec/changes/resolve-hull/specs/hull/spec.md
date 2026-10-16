@@ -9,9 +9,9 @@ Finds the slash and Skill tool **References** in each **Skill**, resolves them t
 
 ### Requirement: Slash references
 
-A slash **Reference** SHALL be `/` then a name (`[A-Za-z0-9][A-Za-z0-9._-]*`, trailing `.` dropped) standing as
-its own token: not preceded by a letter, digit, `/`, `.`, `-`, `~`, `:`, `\` or `<`, and not followed by `/`, a
-letter, a digit, or `:` and a letter or digit. It SHALL count anywhere in the file, code blocks included.
+A slash **Reference** SHALL be `/` then a name, the longest run of `[A-Za-z0-9._-]` starting with a letter or
+digit, trailing `.` dropped, standing as its own token: not preceded by a letter, digit, `/`, `.`, `-`, `~`, `:`,
+`\` or `<`, and not followed by `/`, or `:` and a letter or digit. It SHALL count anywhere, code blocks included.
 
 #### Scenario: Standalone token
 
@@ -20,9 +20,9 @@ letter, a digit, or `:` and a letter or digit. It SHALL count anywhere in the fi
 
 #### Scenario: Paths and URLs
 
-- **WHEN** it holds `/usr/bin`, `src/grilling`, `https://x.org/grilling`, `~/grilling`, `</grilling>` or
-  `/plugin:grilling`
-- **THEN** none is a **Reference**
+- **WHEN** it holds `/usr/bin`, `src/grilling`, `https://x.org/grilling`, `~/grilling`, `</grilling>`,
+  `/plugin:grilling`, `/my-dir/file` or `/tmp.d/x`
+- **THEN** none is a **Reference**, nor is any prefix of a name in them
 
 ### Requirement: Skill tool references
 
@@ -37,8 +37,8 @@ optionally given as `skill=<name>` or `skill: <name>`, with optional whitespace 
 ### Requirement: Every Markdown file
 
 **References** SHALL be read from every file ending in `.md` (any case) in the **Skill**'s folder, at any depth,
-`.git` excepted. A Markdown file that is not UTF-8 SHALL be an error naming it. A **Skill**'s **Reference** to
-its own name SHALL be ignored.
+`.git` excepted, once the **Skill**'s symlinks are checked. A Markdown file that is not UTF-8 SHALL be skipped
+with a warning naming it; it is still vendored. A **Skill**'s **Reference** to its own name SHALL be ignored.
 
 #### Scenario: Reference in a sibling file
 
@@ -48,7 +48,12 @@ its own name SHALL be ignored.
 #### Scenario: Not UTF-8
 
 - **WHEN** a **Hull** **Skill**'s `notes.md` holds invalid UTF-8
-- **THEN** the command exits non-zero naming `notes.md`
+- **THEN** the command warns naming `notes.md`, finds no **References** in it, and succeeds
+
+#### Scenario: Symlink to a device
+
+- **WHEN** a **Skill** reached from an **Entry** holds `x.md` as a symlink to `/dev/zero`
+- **THEN** the command exits non-zero naming `x.md` as pointing outside the **Skill**, without reading it
 
 ### Requirement: Resolve in the own source first
 
@@ -64,12 +69,19 @@ a **Skill** of that name, whatever other **Sources** hold.
 
 When the own **Source** lacks the name, the **Reference** SHALL resolve in the one other declared **Source**
 having it. Several SHALL be an error naming the referencing **Skill**, the **Reference**, the matching **Skill
-IDs**, and the `[bind]` key that would settle it.
+IDs**, and the `[bind]` key that would settle it. A **Source** has a name when a **Skill** there is named so, or
+one whose name cannot be read sits in a folder so named; a name read but invalid never counts.
 
 #### Scenario: One other source
 
 - **WHEN** `mp/tdd` calls `/notes`, `mp` has no `notes`, and only `own` has one
 - **THEN** `own/notes` is in the **Hull**
+
+#### Scenario: Invalid name does not count
+
+- **WHEN** `mp/tdd` calls `/grilling`, `mp`'s folder `grilling/` has `name: "Grilling Tool"`, and `own` has
+  `grilling`
+- **THEN** `own/grilling` is in the **Hull**
 
 #### Scenario: Several other sources
 
@@ -80,14 +92,20 @@ IDs**, and the `[bind]` key that would settle it.
 ### Requirement: Unmatched references warn
 
 A slash or Skill tool **Reference** matching no **Skill** in any declared **Source**, and no **Bind**, SHALL be a
-warning `` `<skill id>` calls `/<name>`: no declared source has a skill `<name>` ``, ending with the `[bind]`
-line that would ignore it, once per referencing **Skill** and name, and the command SHALL proceed.
+warning `` `<skill id>` calls `<reference>`: no declared source has a skill `<name>` ``, the **Reference** as
+first written (`/<name>` or `Skill(<name>)`), ending with the `[bind]` line that would ignore it, once per
+referencing **Skill** and name, and the command SHALL proceed.
 
 #### Scenario: No such skill
 
 - **WHEN** `mp/tdd` calls `/foo` twice, and no **Source** has a **Skill** `foo`
 - **THEN** the command prints `` `mp/tdd` calls `/foo`: no declared source has a skill `foo` `` and
   `"mp/foo" = false` once, and succeeds
+
+#### Scenario: Skill tool form named
+
+- **WHEN** `mp/tdd` holds only `Skill(foo)`, and no **Source** has `foo`
+- **THEN** the warning says `` `mp/tdd` calls `Skill(foo)` ``
 
 ### Requirement: Binds to nothing
 

@@ -7,7 +7,12 @@
 After the per-**Source** lines, `update` SHALL print the **Hull** diff between the current `ref`s and the new
 tips: the legend `hull (+ added, - removed, ~ changed):`, then `+ <skill id>`, `- <skill id>` or `~ <skill id>`
 (hash changed) per **Skill**, sorted by **Skill ID**; or `hull unchanged`. When the current `ref`s do not
-resolve, it SHALL say so instead. `--dry-run` SHALL print the same.
+resolve, it SHALL say so instead. Warnings SHALL come from the new tips only. `--dry-run` SHALL print the same.
+
+#### Scenario: Warnings once
+
+- **WHEN** `mp/tdd` calls `/foo` at both the current `ref` and the new tip, and no **Source** has `foo`
+- **THEN** `update` prints the `/foo` warning once
 
 #### Scenario: Legend
 
@@ -39,7 +44,8 @@ resolve, it SHALL say so instead. `--dry-run` SHALL print the same.
 ### Requirement: Resolve before writing
 
 `update` SHALL resolve the **Hull** as `build` does, with each selected **Source** at its new tip and every other
-at its current `ref`, and SHALL write `skill-graft.toml` and `skill-graft.lock` only when that succeeds. On
+at its current `ref`. Only when that succeeds SHALL it write `skill-graft.lock`, always, and `skill-graft.toml`,
+when a `ref` moved. On
 failure it SHALL exit non-zero with the resolution error and the shas it would have written, leaving the TOML
 and the lock unchanged. `update` SHALL NOT vendor or run `apm`.
 
@@ -59,6 +65,11 @@ and the lock unchanged. `update` SHALL NOT vendor or run `apm`.
 
 - **WHEN** `update` moves `mp`'s `ref` to B
 - **THEN** `skill-graft.lock` records B
+
+#### Scenario: Lock written though no ref moved
+
+- **WHEN** no `ref` moves, but a path **Source**'s skill changed since the last lock
+- **THEN** `skill-graft.toml` keeps its bytes, and `skill-graft.lock` holds the new hash
 
 #### Scenario: No deploy
 

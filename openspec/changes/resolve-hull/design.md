@@ -22,10 +22,12 @@ order, warnings); every error before any write.
   `folders`, now over every declared **Source**, and its `resolve()` returns a `Hull`: ordered skills
   (`SkillId → Path`), entries, edges `(from, to, kind, reference)`, warnings. `vendor` takes `Hull.skills`.
 
-- **Scan**: every `*.md` (case-insensitive) under the folder, `.git` skipped, files in sorted relative-path
-  order with `SKILL.md` first; references in text order. Slash regex, roughly
-  `(?<![\w./:~\\<-])/([A-Za-z0-9][A-Za-z0-9._-]*)` with the name's trailing dots dropped and a lookahead
-  refusing `/`, a word char, or `:\w` after it. Skill tool: `\bSkill\(\s*(?:skill\s*[:=]\s*)?(["']?)(NAME)\1\s*\)`.
+- **Scan**: only after `_check_symlinks` passed for that **Skill**, so no link to `/dev/zero` or a FIFO is ever
+  opened. Every `*.md` (case-insensitive) under the folder, `.git` skipped, files in sorted relative-path order
+  with `SKILL.md` first; references in text order. Not UTF-8 → warning, file skipped. Slash regex, roughly
+  `(?<![\w./:~\\<-])/([A-Za-z0-9][A-Za-z0-9._-]*+)(?!/|:\w)`: the possessive `*+` (Python 3.11) keeps the run
+  whole, so `/my-dir/file` never yields `my`; trailing dots are dropped after matching. Skill tool:
+  `\bSkill\(\s*(?:skill\s*[:=]\s*)?(["']?)(NAME)\1\s*\)`. Each reference keeps its text as written for warnings.
   Code blocks count: a missed **Reference** is silent and only a **Patch** fixes it; a false one is loud (a
   warning or a tree line) and one `"<alias>/<name>" = false` **Bind** per **Source** silences it, so the
   warning names that line. Alternative, skipping fenced blocks: misses `/grilling` in example invocations.
@@ -33,8 +35,9 @@ order, warnings); every error before any write.
 - **Resolution** per reference from `a/x` to `name`: a **Bind** `a/name` wins (`false`: dropped, no edge, no
   warning, but it counts as used); else `a` has `name` → `a/name`;
   else exactly one other alias has it → that; several → error with the `[bind]` hint; none → warning. "Has"
-  means the **Source**'s `Index` holds the name in `folders`, `unreadable` or `invalid`, so an unreadable
-  **Skill** surfaces its error instead of being skipped. Then `find` (generalized with a `who` label, e.g.
+  means the **Source**'s `Index` holds the name in `folders` or `unreadable`, so an unreadable **Skill**
+  surfaces its error instead of being skipped. Not `invalid`: as `discovery.find` says, an invalid name is known
+  not to be this one. Then `find` (generalized with a `who` label, e.g.
   `entry 'mp/tdd'` or `'mp/tdd' calls /grilling`) gives the folder. BFS from the **Entries** in TOML order;
   each **Skill** scanned once; self-references dropped. Edge kind is the form, `slash` or
   `skill-tool`, plus a `bind` flag when a **Bind** decided it, so `why` can say both how it is called and what
@@ -74,10 +77,11 @@ order, warnings); every error before any write.
   bind = true
   ```
 
-  Sources sorted by alias, skills by ID, edges by (from, to, kind). Written to a temp file beside it, then
-  `os.replace`. Hash: SHA-256 over each file as vendored (`.git` skipped, symlinks followed), in sorted
-  relative-path order: `path NUL exec-bit NUL length NUL bytes`. That is what lands in `.apm/skills/`, so it
-  matches whatever APM sees.
+  Sources sorted by alias, skills by ID, edges by (from, to, kind, bind); an edge is unique on all four, so a
+  bound and a default **Reference** to one **Skill** are two edges. Written to a temp file beside it, then
+  `os.replace`. Hash: SHA-256 over each file as vendored (`.git` skipped, symlinks followed), in sorted order
+  of the relative path as `/`-separated `os.fsencode` bytes: `path NUL exec-bit NUL length NUL bytes`. That is
+  what lands in `.apm/skills/`, so it matches whatever APM sees.
 
 - **Tree**: `cargo tree` proper. DFS from each **Entry** over edges in scan order, one line per edge; a
   **Skill** expanded at its first line, later lines marked `(*)`; **Entries** marked `(*)` wherever nested, as
@@ -86,9 +90,11 @@ order, warnings); every error before any write.
   **Skill** under its first parent: shorter, but shows one reason per **Skill**, not all.
 
 - **Command wiring**: `resolve` = load → folders → resolve → write lock → print tree (stdout), warnings
-  (stderr, `skill-graft: warning:` like config warnings). `build` = same minus the tree, then vendor and APM.
-  `update` = resolve at new tips (errors as today) → if old `ref`s all exist, resolve again at them and diff
-  skill sets and hashes, else print "no previous hull to compare" → write TOML and lock (not on `--dry-run`).
+  (stderr, `skill-graft: warning:` like config warnings). `build` = same minus the tree, then vendor, then write
+  the lock, then APM: the lock describes what `.apm/skills/` holds. `update` = resolve at new tips (errors as
+  today) → if old `ref`s all exist, resolve again at them, its warnings dropped, and diff skill sets and hashes,
+  else print "no previous hull to compare" → write the lock always and the TOML when a `ref` moved (neither on
+  `--dry-run`): a path **Source** can change while no `ref` moves.
   Resolving the old `ref`s twice beats reading the lock, which would make it an input; those commits are almost
   always cached. An old resolution error only replaces the diff with that note.
 
@@ -99,7 +105,9 @@ order, warnings); every error before any write.
   missed\] → prose **References** (next changes) cover backticked names in the own **Source**.
 - \[Eager reading fetches unused git **Sources**\] → only when their `ref` is missing; they are declared intent.
 - \[`update` resolves twice\] → old commits are cached; a few hundred ms for skill repositories.
-- \[Path **Source** lock entries hold absolute home paths\] → the lock is local provenance, not shared.
+- \[Path **Source** lock entries hold absolute home paths\] → the lock is local provenance, not shared; its
+  determinism is per machine.
+- \[A non-UTF-8 Markdown file hides its **References**\] → a warning names it; the file is still vendored.
 
 ## Migration Plan
 

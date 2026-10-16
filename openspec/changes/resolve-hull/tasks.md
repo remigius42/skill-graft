@@ -12,18 +12,21 @@ Apply with the `tdd` skill: each task red-green-refactor (failing test first, th
 ## 2. References
 
 - [ ] 2.1 `references.py`: scan a skill folder's `*.md` files (sorted, `SKILL.md` first, `.git` skipped) for
-  slash and Skill tool references in text order; non-UTF-8 is an error naming the file. Verify: unit tests for
-  standalone-token, paths-and-URLs, call-forms, reference-in-a-sibling-file and not-UTF-8.
+  slash (longest name run, possessive) and Skill tool references in text order, each with its text as written;
+  non-UTF-8 is skipped with a warning naming the file. Verify: unit tests for standalone-token, paths-and-URLs
+  (`/my-dir/file`, `/tmp.d/x` included), call-forms, reference-in-a-sibling-file and not-UTF-8.
 
 ## 3. Hull
 
 - [ ] 3.1 `discovery.find` takes a label so errors name an entry, a reference or a bind. Verify: existing
   discovery tests pass with unchanged messages for entries.
 - [ ] 3.2 `resolve.folders` covers every declared source; `hull.py` resolves references (own source, one
-  other, several → error with `[bind]` hint, none → warning once per skill and name) and walks the hull BFS,
-  ignoring self-references; `resolve.resolve` returns the `Hull`, checking symlinks and deployed names
-  (ignoring case) across it. Verify: own-source-wins, one-other-source, several-other-sources, no-such-skill,
-  two-hops, cycle, ambiguous-target, source-with-no-entry, clash-through-a-reference.
+  other, several → error with `[bind]` hint, none → warning once per skill and name quoting the form written;
+  "has" ignores invalid names) and walks the hull BFS, checking each skill's symlinks before scanning it,
+  ignoring self-references; `resolve.resolve` returns the `Hull`, checking deployed names (ignoring case) across
+  it. Verify: own-source-wins, one-other-source, invalid-name-does-not-count, several-other-sources,
+  no-such-skill, skill-tool-form-named, symlink-to-a-device, two-hops, cycle, ambiguous-target,
+  source-with-no-entry, clash-through-a-reference.
 - [ ] 3.3 Binds in resolution: override, settle ambiguity, missing target error naming the bind, `false`
   drops the name, unused bind warning, unmatched warning names the `false` line; bound edges flagged `bind`. Verify:
   bind-across-sources, bind-settles-ambiguity, bind-to-a-missing-skill, path-in-a-code-block, unwanted-match,
@@ -36,19 +39,21 @@ Apply with the `tdd` skill: each task red-green-refactor (failing test first, th
 
 ## 5. Lock and resolve command
 
-- [ ] 5.1 `lock.py`: render TOML (sources, skills with entry flag and folder hash, edges with kind), sorted,
-  written atomically. Verify: edges-with-kinds, hash-follows-content, same-input unit tests.
+- [ ] 5.1 `lock.py`: render TOML (sources, skills with entry flag and folder hash over `fsencode`d `/` paths,
+  edges unique on from, to, kind and bind), sorted, written atomically. Verify: edges-with-kinds,
+  bound-and-default-edge-to-one-skill, hash-follows-content, same-input unit tests.
 - [ ] 5.2 `skill-graft resolve`: write the lock, print the tree (stdout) and warnings (stderr); `build` writes
-  the lock too; errors leave it unchanged. Verify: resolve-succeeds, resolution-error, upstream-moved-on (remote
-  not contacted), tree, lock-written, lock-edited-by-hand.
+  the lock after vendoring, before APM; errors leave it unchanged. Verify: resolve-succeeds, resolution-error,
+  upstream-moved-on (remote not contacted), tree, lock-written, vendoring-fails, lock-edited-by-hand.
 
 ## 6. Update
 
-- [ ] 6.1 `update` resolves the hull at the new tips, writes the lock with the TOML (not on `--dry-run`).
-  Verify: reference-turns-ambiguous-upstream, lock-follows-the-TOML, and every existing update test.
-- [ ] 6.2 Hull diff: resolve at the old refs, print the legend and `+`/`-`/`~` lines sorted, `hull unchanged`,
-  or the no-previous-hull note. Verify: skill-added-upstream, skill-dropped-upstream, legend, nothing-changed,
-  old-refs-unresolvable, and the dry run prints the same.
+- [ ] 6.1 `update` resolves the hull at the new tips; on success writes the lock always and the TOML when a
+  ref moved (neither on `--dry-run`). Verify: reference-turns-ambiguous-upstream, lock-follows-the-TOML,
+  lock-written-though-no-ref-moved, and every existing update test.
+- [ ] 6.2 Hull diff: resolve at the old refs with warnings dropped, print the legend and `+`/`-`/`~` lines
+  sorted, `hull unchanged`, or the no-previous-hull note. Verify: skill-added-upstream, skill-dropped-upstream,
+  legend, nothing-changed, old-refs-unresolvable, warnings-once, and the dry run prints the same.
 
 ## 7. Docs
 

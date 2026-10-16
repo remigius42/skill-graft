@@ -4,13 +4,19 @@
 
 ### Requirement: Build resolves first
 
-`build` SHALL resolve the **Hull** as `resolve` does, print its warnings, and write `skill-graft.lock` before
-vendoring. A resolution error SHALL leave `.apm/skills/` and the lock unchanged.
+`build` SHALL resolve the **Hull** as `resolve` does and print its warnings before vendoring, and write
+`skill-graft.lock` once vendoring succeeded, before running APM. A resolution or vendoring error SHALL leave the
+lock unchanged.
 
 #### Scenario: Lock written
 
 - **WHEN** the user runs `build --no-install`
 - **THEN** `skill-graft.lock` records the vendored **Hull**
+
+#### Scenario: Vendoring fails
+
+- **WHEN** a copy fails during `build`
+- **THEN** `skill-graft.lock` is unchanged
 
 #### Scenario: Warning does not stop build
 
