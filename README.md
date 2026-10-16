@@ -12,7 +12,9 @@ it by name.
 
 Status: early. `skill-graft init` and `skill-graft build` vendor entries from local folders and from git
 repositories, read at the commit `ref` names, and deploy them through APM; `skill-graft update` moves each
-git source's `ref` to its branch tip. References, renames and patches are not built yet.
+git source's `ref` to its branch tip. `build` follows slash, Skill tool and prose references to the whole hull,
+applies `[rename]` to folders, `name:` and every reference, and checks deployed names against reserved ones;
+`skill-graft resolve` shows the tree and writes the lock. Patches are not built yet.
 
 ## Development
 

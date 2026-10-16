@@ -58,6 +58,6 @@ that honors them in full, so no commit accepts intent it ignores.
 
 ## 6. Docs
 
-- [ ] 6.1 `docs/design.md` (prose detection rules, bound **References** rewritten, `SHIPPED` and its severity,
+- [x] 6.1 `docs/design.md` (prose detection rules, bound **References** rewritten, `SHIPPED` and its severity,
   lock `deployed` and `[[suggestions]]`, tree `as`), `README.md` (renames and prose built); at archive, the main
   hull spec's Purpose names prose **References**. Verify: `pre-commit run --all-files` green.

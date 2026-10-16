@@ -68,19 +68,29 @@ path = "~/Documents/sync/2_areas/software/chisel_skill"
 - References are found in every Markdown file of a skill, code blocks included, in three forms: `/name` as
   its own token (never part of a path, URL, link target or attribute), the Skill tool's call form
   `Skill(name)` (quoted or not, as `skill=` or `skill:`, further arguments allowed), and prose. Prose counts
-  only when the name cannot be an ordinary word: hyphenated, or in backticks. Names match case-sensitively.
+  only when the name cannot be an ordinary word: a code span holding just a name, or a bare lowercase hyphenated
+  token bounded as a slash name is (never in a path, URL, link target, attribute or `#` anchor). The `name:`
+  line of a skill's own `SKILL.md` is never a reference. Names match case-sensitively.
 - Slash and Skill tool references extend the hull. They resolve in their own source first, else in exactly
   one other source; several other sources is an error until a bind settles it. One that matches no skill in
   any declared source is a warning: "`mp/tdd` calls `/foo`: no declared source has a skill `foo`", naming the
   `"mp/foo" = false` bind that silences it. A bind no reference uses is a warning too.
-- Prose references resolve only in their own source, and never extend the hull. One inside the hull is
-  renamed; one outside it is suggested, with the `add` command to accept it; one that matches nothing is not a
-  reference.
-- A bind overrides all of this, for every form. A bind to `false` makes the name no reference at all.
+- Prose references resolve only in their own source, to the one skill of that name there, and never extend
+  the hull. One inside the hull is an edge of kind `prose` and is rewritten on rename; one outside it is
+  suggested (add it to `entries` to accept, until `add` exists); one that matches nothing, or several skills, is
+  not a reference and says nothing.
+- A bind overrides all of this, for every form. A bind to `false` makes the name no reference at all. A
+  reference bound to a skill of another name is rewritten to that skill's deployed name.
 
 ## Names
 
-Deployed names must be unique across the hull and avoid reserved names:
+A skill's deployed name is its `[rename]` value, else its name. `build` vendors it to
+`.apm/skills/<deployed name>/`, sets a renamed skill's `name:` (quoted when YAML would misread it plain), and
+rewrites every reference, in every UTF-8 Markdown file of every hull skill, whose target's deployed name differs
+from the name written. A rename that names no hull skill is a warning.
+
+Deployed names must be unique across the hull and avoid reserved names, both compared ignoring case. The shipped
+list is the built-in commands, bundled skills and aliases of Claude Code and Codex, taken from their docs:
 
 | Clash                                       | Severity                           |
 | ------------------------------------------- | ---------------------------------- |
@@ -98,11 +108,13 @@ deployed file as `modified` drift.
 ## Feedback
 
 The lock (TOML, sorted, never read back) records each source's `ref` or folder, each hull skill with a SHA-256
-of its folder as vendored, and each edge with its kind (`slash`, `skill-tool`, later prose) plus `bind = true`
-when a bind decided it, so the explanation is a view of it:
+of its folder as vendored (rewrites applied) and its `deployed` name when renamed, each edge with its kind
+(`slash`, `skill-tool`, `prose`) plus `bind = true` when a bind decided it, and each prose suggestion with the
+skills mentioning it, so the explanation is a view of it:
 
-- `resolve` prints a tree in the style of `cargo tree`: one line per edge naming the reference, each skill
-  expanded once and later lines marked `(*)`, renames marked, then warnings and prose suggestions.
+- `resolve` prints a tree in the style of `cargo tree`: one line per edge naming the reference as written
+  upstream, each skill expanded once and later lines marked `(*)`, a renamed skill as `<id> as <deployed name>`,
+  and a prose edge only when the build rewrites it; then the prose suggestions, and the warnings on stderr.
 - `why` and `tree` read the lock.
 
 ## Stack
