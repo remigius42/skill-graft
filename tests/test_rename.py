@@ -305,6 +305,62 @@ def test_rename_settles_a_clash(home: Path) -> None:
     assert {p.name for p in skills_dir().iterdir()} == {"tdd", "own-tdd"}
 
 
+def test_reserved_by_the_user(home: Path, capsys: pytest.CaptureFixture[str]) -> None:
+    skill(home / "mp" / "review")
+    with_renames(home, ["mp/review"], "")
+    file = package() / "skill-graft.toml"
+    file.write_text('reserved = ["Review"]\n' + file.read_text())
+
+    for args in [["resolve"], ["build", "--no-install"]]:
+        assert main(args) == 1
+        err = capsys.readouterr().err
+        assert "mp/review" in err and "reserved" in err
+        assert '[rename] "mp/review" = "mp-review"' in err
+    assert not skills_dir().exists()
+
+
+def test_renamed_out_of_the_way(home: Path, capsys: pytest.CaptureFixture[str]) -> None:
+    skill(home / "mp" / "review")
+    with_renames(home, ["mp/review"], '"mp/review" = "mp-review"')
+    file = package() / "skill-graft.toml"
+    file.write_text('reserved = ["review"]\n' + file.read_text())
+
+    assert main(["build", "--no-install"]) == 0
+    assert capsys.readouterr().err == ""
+
+
+def test_shipped_clash(home: Path, capsys: pytest.CaptureFixture[str]) -> None:
+    skill(home / "mp" / "code-review")
+    with_renames(home, ["mp/code-review"], "")
+
+    assert main(["build", "--no-install"]) == 0
+
+    err = capsys.readouterr().err
+    assert err.count("mp/code-review") == 2  # one warning, its rename line
+    assert '[rename] "mp/code-review" = "mp-code-review"' in err
+
+
+def test_renamed_onto_a_shipped_name(
+    home: Path, capsys: pytest.CaptureFixture[str]
+) -> None:
+    skill(home / "mp" / "check")
+    with_renames(home, ["mp/check"], '"mp/check" = "review"')
+
+    assert main(["build", "--no-install"]) == 0
+
+    err = capsys.readouterr().err
+    assert "mp/check" in err and "`review`" in err and "[rename]" not in err
+
+
+def test_both_lists(home: Path) -> None:
+    skill(home / "mp" / "code-review")
+    with_renames(home, ["mp/code-review"], "")
+    file = package() / "skill-graft.toml"
+    file.write_text('reserved = ["code-review"]\n' + file.read_text())
+
+    assert main(["build", "--no-install"]) == 1
+
+
 def test_rename_onto_another_skills_name(
     home: Path, capsys: pytest.CaptureFixture[str]
 ) -> None:

@@ -51,4 +51,5 @@ def resolve(config: Config, folders: dict[str, Path]) -> Hull:
     result = hull.walk(config, indexes)
     names, warnings = rename.deployed(config, list(result.skills))
     rename.check_unique(names)
+    warnings += rename.check_reserved(config, names)
     return replace(result, deployed=names, warnings=result.warnings + warnings)

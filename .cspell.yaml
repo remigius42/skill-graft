@@ -1,6 +1,7 @@
 version: "0.2"
 language: "en-US"
 words:
+  - autocompact
   - autouse
   - backticked
   - blocklist
@@ -13,6 +14,7 @@ words:
   - conftest
   - copymode
   - copytree
+  - dataviz
   - delenv
   - fcntl
   - followlinks
@@ -20,6 +22,7 @@ words:
   - fsencode
   - geteuid
   - gitdir
+  - heapdump
   - keepends
   - kiro
   - mattpocock
@@ -36,17 +39,21 @@ words:
   - pathlib
   - pocock
   - popleft
+  - powerup
   - pycache
   - pyproject
   - pytest
   - pytestmark
   - shutil
+  - statusline
   - stdlib
   - symref
   - testpaths
   - tomlkit
   - tomllib
   - ufeff
+  - ultraplan
+  - ultrareview
   - unrenamed
   - unsets
   - venv

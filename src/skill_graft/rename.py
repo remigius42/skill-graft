@@ -8,6 +8,31 @@ from skill_graft.config import Config, SkillId
 from skill_graft.errors import SkillGraftError
 from skill_graft.hull import Hull
 
+# Names the harnesses APM deploys to already use: Claude Code's built-in commands,
+# bundled skills and their aliases, and Codex's slash commands, from their docs.
+SHIPPED = (
+    "add-dir advisor agents allowed-tools android app approve apps archive"
+    " artifact-capabilities artifact-diagramming artifacts autocompact autofix-pr"
+    " auto-mode-setup background batch bg branch btw bug cd checkpoint checkup"
+    " chrome claude-api claude-in-chrome clean clear code-review color compact"
+    " config context continue copy cost cwd daemon dataviz debug debug-config"
+    " deep-research delete design design-login design-sync desktop diff doctor"
+    " effort exit experimental export fast feedback fewer-permission-prompts focus"
+    " fork goal heapdump help hooks ide import init insights install-github-app"
+    " install-slack-app ios keybindings keymap list-agents login logout loop mcp"
+    " memories memory mention mobile model new output-style passes permissions pet"
+    " pets plan plugin plugin-authoring plugins powerup pr-comments privacy-settings"
+    " proactive ps pwd quit radio rate-limit-options raw rc recap release-notes"
+    " reload-plugins reload-skills remote-control remote-env rename reset resume"
+    " review rewind routines run run-skill-generator sandbox schedule scroll-speed"
+    " security-review settings setup-bedrock setup-default-sandbox setup-vertex"
+    " share side simplify skill-doctor skills slides stats status statusline"
+    " stickers stop subagents subtask tasks team-onboarding teleport terminal-setup"
+    " theme title tui ultraplan ultrareview undo update-config upgrade usage"
+    " usage-credits verify vim voice warnings web-setup workflow-authoring workflows"
+    " worktree"
+).split()
+
 # A name YAML reads back as this very string when written plain.
 PLAIN = re.compile(r"[a-z][a-z0-9-]*")
 # Plain words YAML 1.1 reads as a bool or null.
@@ -44,6 +69,30 @@ def check_unique(names: dict[SkillId, str]) -> None:
                 f"deployed name {taken} is taken by several skills: {ids}; rename "
                 f'one: [rename] "{last}" = "{last.alias}-{last.name}"'
             )
+
+
+def check_reserved(config: Config, names: dict[SkillId, str]) -> list[str]:
+    """Errors on a deployed name the user reserved; warnings for shipped ones.
+
+    Compared ignoring case. The suggested rename is offered unless the skill
+    already has one: then the user chose the name.
+    """
+    mine = {name.casefold() for name in config.reserved}
+    shipped = {name.casefold() for name in SHIPPED}
+    warnings = []
+    for skill, name in names.items():
+        hint = f'[rename] "{skill}" = "{skill.alias}-{skill.name}"'
+        if name.casefold() in mine:
+            raise SkillGraftError(
+                f"`{skill}` deploys as `{name}`, which `reserved` lists; "
+                f"rename it: {hint}"
+            )
+        if name.casefold() in shipped:
+            warnings.append(
+                f"`{skill}` deploys as `{name}`, a name the harness already uses"
+                + ("" if skill in config.renames else f" (to avoid it: {hint})")
+            )
+    return warnings
 
 
 def rewrites(hull: Hull) -> dict[SkillId, dict[Path, bytes]]:

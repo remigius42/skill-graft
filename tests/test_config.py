@@ -261,6 +261,21 @@ def test_bad_rename(
         assert text in err
 
 
+def test_valid_reserved_list_loads() -> None:
+    write_config('reserved = ["review"]\n')
+
+    assert config.load().reserved == ["review"]
+
+
+@pytest.mark.parametrize("value", ['"review"', '["a/b"]', "[1]", '[""]'])
+def test_reserved_not_a_list_of_names(capsys: Capsys, value: str) -> None:
+    write_config(f"reserved = {value}\n")
+
+    code, err = build(capsys)
+
+    assert code == 1 and "'reserved'" in err
+
+
 def test_rename_not_a_table(capsys: Capsys) -> None:
     write_config('rename = "x"\n')
 

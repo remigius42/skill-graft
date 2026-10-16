@@ -44,7 +44,7 @@ that honors them in full, so no commit accepts intent it ignores.
   rename-outside-the-hull (warned once), clash-across-sources (lock unchanged), clash-through-a-reference,
   rename-settles-a-clash, rename-onto-another-skill's-name, renamed-skill-vendored, whole-folder-copied,
   slash-reference-to-a-renamed-skill, skill-tool-and-prose-forms, self-reference, sibling-file.
-- [ ] 4.2 `reserved` end to end: `Config.reserved`, the user's list as errors, `SHIPPED` (checked against current
+- [x] 4.2 `reserved` end to end: `Config.reserved`, the user's list as errors, `SHIPPED` (checked against current
   Claude Code and Codex docs) as warnings, once per **Skill**. Verify: valid-reserved-list,
   reserved-not-a-list-of-names, rename-table (its `reserved` half), reserved-by-the-user, renamed-out-of-the-way,
   shipped-clash (warned once), renamed-onto-a-shipped-name, both-lists.

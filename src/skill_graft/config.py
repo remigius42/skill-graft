@@ -1,4 +1,4 @@
-"""Reads `skill-graft.toml`: path and git sources, entries, binds and renames."""
+"""Reads `skill-graft.toml`: sources, entries, binds, renames, reserved names."""
 
 import re
 import tomllib
@@ -53,6 +53,8 @@ class Config:
     binds: dict[SkillId, SkillId | None]
     # The deployed name the user gives a skill.
     renames: dict[SkillId, str]
+    # Names no skill may deploy as.
+    reserved: list[str]
 
 
 def load() -> Config:
@@ -63,13 +65,17 @@ def load() -> Config:
         raise SkillGraftError(f"{file} not found: run `skill-graft init`") from None
     except (tomllib.TOMLDecodeError, UnicodeDecodeError) as error:
         raise SkillGraftError(f"{file}: {error}") from None
-    if unknown := sorted(data.keys() - {"sources", "entries", "bind", "rename"}):
+    known = {"sources", "entries", "bind", "rename", "reserved"}
+    if unknown := sorted(data.keys() - known):
         raise SkillGraftError(f"{unknown[0]!r} is unsupported in skill-graft.toml")
     sources = _sources(data.get("sources", {}), file.parent)
     entries = _entries(data.get("entries", []), sources)
     binds = _binds(data.get("bind", {}), sources)
     renames = _renames(data.get("rename", {}), sources)
-    return Config(sources, entries, _overlap_warnings(sources), binds, renames)
+    reserved = _reserved(data.get("reserved", []))
+    return Config(
+        sources, entries, _overlap_warnings(sources), binds, renames, reserved
+    )
 
 
 def _sources(raw: object, base: Path) -> dict[str, Source]:
@@ -191,6 +197,14 @@ def _renames(raw: object, sources: dict[str, Source]) -> dict[SkillId, str]:
             raise SkillGraftError(f"{where} must be a name: {NAME.pattern}")
         renames[_skill_id(where, key, sources)] = value
     return renames
+
+
+def _reserved(raw: object) -> list[str]:
+    if not isinstance(raw, list) or not all(
+        isinstance(name, str) and NAME.fullmatch(name) for name in raw
+    ):
+        raise SkillGraftError(f"'reserved' must be a list of names: {NAME.pattern}")
+    return raw
 
 
 def _skill_id(where: str, text: str, sources: dict[str, Source]) -> SkillId:
