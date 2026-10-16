@@ -5,9 +5,10 @@
 ### Requirement: Prose references
 
 A prose **Reference** SHALL be a code span whose whole content is a name (`` `grilling` ``), or a bare hyphenated
-token `[a-z0-9]+(-[a-z0-9]+)+` standing as its own token: not preceded by a letter, digit, `/`, `.`, `-`, `~`,
-`:`, `\`, `<` or `@`, and not followed by a letter, digit, `/`, `-`, or `.` or `:` and a letter or digit. It
-SHALL count anywhere, code blocks included, and never inside a slash or Skill tool **Reference**.
+token `[a-z0-9]+(-[a-z0-9]+)+` standing as its own token: not preceded by a letter, digit, `_`, `/`, `.`, `-`,
+`~`, `:`, `\`, `<`, `@`, `](`, `="` or `='`, and not followed by a letter, digit, `_`, `/`, `-`, or `.` or `:`
+and a letter or digit. It SHALL count anywhere, code blocks included, and never inside a slash or Skill tool
+**Reference**.
 
 #### Scenario: Backticked and hyphenated
 
@@ -18,7 +19,8 @@ SHALL count anywhere, code blocks included, and never inside a slash or Skill to
 #### Scenario: Not prose
 
 - **WHEN** it holds `grilling` unquoted, `` `grilling --fast` ``, `` `mp/grilling` ``, `--dry-run`,
-  `refs/red-green.md`, `x-ray.png` or `https://x.org/my-skill`
+  `refs/red-green.md`, `x-ray.png`, `[see](my-skill)`, `id="my-skill"`, `foo_my-skill` or
+  `https://x.org/my-skill`
 - **THEN** none is a prose **Reference**
 
 #### Scenario: Slash form wins
@@ -29,7 +31,8 @@ SHALL count anywhere, code blocks included, and never inside a slash or Skill to
 ### Requirement: Prose resolves in its own source only
 
 A prose **Reference** from a **Skill** in **Source** `a`, unless a **Bind** decides it, SHALL resolve to `a/<name>`
-only when `a` has a **Skill** whose name is read, valid and equal to `<name>`; otherwise it is no **Reference**:
+only when exactly one **Skill** in `a` is named `<name>`, and no **Skill** there with an unreadable name sits in a
+folder so named; otherwise it is no **Reference**:
 no edge, no warning, no error. It SHALL never extend the **Hull**: when its target is in the **Hull** it is an
 edge of kind `prose`, otherwise a suggestion.
 
@@ -47,6 +50,11 @@ edge of kind `prose`, otherwise a suggestion.
 #### Scenario: Only another source has it
 
 - **WHEN** `mp/tdd` mentions `` `notes` ``, `mp` has no `notes`, and `own` has one
+- **THEN** it is no **Reference**: no edge, no suggestion, no warning
+
+#### Scenario: Ambiguous in its own source
+
+- **WHEN** `mp/tdd` mentions `diagnosing-bugs`, and `mp` has two **Skills** named `diagnosing-bugs`
 - **THEN** it is no **Reference**: no edge, no suggestion, no warning
 
 #### Scenario: Matches nothing

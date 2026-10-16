@@ -87,10 +87,11 @@ and `bind = true` when a **Bind** decided it. One edge per from, to, kind and `b
 
 `resolve` SHALL print the **Hull** in the style of `cargo tree`: each **Entry** at the top level in TOML order,
 expanded there; under each **Skill**, one line per edge naming the **Skill** and the **Reference** as written
-upstream (`/name`, `Skill(name)`, `` `name` `` plus `prose`, plus `bind` when a **Bind** decided it). A renamed
-**Skill** SHALL be named `<skill id> as <deployed name>` on every line. A `prose` edge SHALL have a line only when
-its target is renamed. A **Skill** SHALL be expanded once, at its first depth-first line; its later lines, and
-any nested line for an **Entry**, SHALL end in `(*)` and not expand.
+upstream (`/name`, `Skill(name)`, `` `name` `` or `name` plus `prose`, plus `bind` when a **Bind** decided it). A
+renamed **Skill** SHALL be named `<skill id> as <deployed name>` on every line. A `prose` edge SHALL have a line
+only when the build rewrites it: its target's **Deployed name** differs from the name written. A **Skill** SHALL
+be expanded once, at its first depth-first line; its later lines, and any nested line for an **Entry**, SHALL end
+in `(*)` and not expand.
 
 #### Scenario: Tree
 
@@ -120,4 +121,17 @@ any nested line for an **Entry**, SHALL end in `(*)` and not expand.
   ├── mp/grilling as mp-grilling (/grilling)
   └── mp/grilling as mp-grilling (`grilling`, prose) (*)
   mp/notes
+  ```
+
+#### Scenario: Bound prose shown
+
+- **WHEN** **Entry** `mp/tdd` calls `/notes` and mentions `` `notes` ``, `[bind]` has `"mp/notes" = "own/grill"`,
+  and no rename names `own/grill`
+
+- **THEN** `resolve` prints
+
+  ```text
+  mp/tdd
+  ├── own/grill (/notes, bind)
+  └── own/grill (`notes`, prose, bind) (*)
   ```

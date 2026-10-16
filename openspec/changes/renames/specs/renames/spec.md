@@ -25,7 +25,7 @@ A **Skill**'s **Deployed name** SHALL be its `[rename]` value when one names its
 
 `build` SHALL vendor each **Hull** **Skill** to `.apm/skills/<deployed name>/`. A renamed **Skill**'s `SKILL.md`
 SHALL carry `name: <deployed name>`: an existing `name:` line replaced, else inserted as the front matter's first
-line, else a front matter of just that line prepended. An unrenamed **Skill**'s `SKILL.md` SHALL be unchanged.
+line, else a front matter of just that line prepended. An unrenamed **Skill**'s `name:` SHALL be unchanged.
 
 #### Scenario: Name line replaced
 

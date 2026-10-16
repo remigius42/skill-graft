@@ -26,7 +26,7 @@ follow, or a rename leaves the text pointing at a name that no longer exists (AD
   case); a clash error now names a `[rename]` line too.
 - **Lock and tree**: the lock records each renamed **Skill**'s `deployed` name, `prose` edges, and the prose
   suggestions; hashes cover the rewritten files, the same for `resolve` and `build`. The tree marks renamed
-  **Skills** (`mp/grilling as mp-grilling (/grilling)`) and shows prose edges to them; `resolve` lists the
+  **Skills** (`mp/grilling as mp-grilling (/grilling)`) and shows the prose edges it rewrites; `resolve` lists the
   suggestions after it.
 
 Out of scope: **Patches**, `why` and `tree`, the `add` and `rename` commands (until `add` exists, a suggestion

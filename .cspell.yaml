@@ -6,11 +6,12 @@ words:
   - blocklist
   - cacheinfo
   - cacheprovider
-  - casefold
   - capfd
   - capsys
+  - casefold
   - commitlint
   - conftest
+  - copymode
   - copytree
   - delenv
   - fcntl

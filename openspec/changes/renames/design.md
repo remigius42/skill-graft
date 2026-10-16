@@ -21,14 +21,16 @@ awareness beyond the regex); YAML beyond the `name:` line.
 ## Decisions
 
 - **Prose in the same regex**: two more alternatives after slash and Skill tool in `references.REFERENCE`:
-  `` (?<!`)`(?P<code>NAME)`(?!`) `` and the hyphenated token with the slash boundaries plus `(?![\w/-]|[.:]\w)`.
+  `` (?<!`)`(?P<code>NAME)`(?!`) `` and the hyphenated token with the slash lookbehinds (`[\w./:~\\<@-]`, `](`,
+  `="`, `='`) and `(?![\w/-]|[.:]\w)`, exactly the boundaries the hull spec lists.
   One leftmost scan means `` `/grilling` `` and `Skill(diagnosing-bugs)` yield one **Reference**, never a prose
   one inside. `Reference` gains `kind = "prose"` and `span`: the name's offsets in the decoded text, for rewriting.
   Alternative, a second pass for prose: overlaps must then be removed by hand.
 
 - **Prose resolves after the walk**: whether a prose target is in the **Hull** is known only when the BFS ends.
   The walk records each prose **Reference** with its candidate (**Bind**, else `a/<name>` if
-  `index.folders` has it, else dropped; `unreadable` names do not count, as prose must not raise); afterwards a
+  `index.folders` holds exactly one folder for it and `index.unreadable` none, else dropped: prose never raises,
+  and a suggestion must be addable); afterwards a
   candidate in the **Hull** becomes a `prose` edge, any other a suggestion (suggested `SkillId` → the `SkillIds`
   mentioning it). A **Bind** used by prose counts as used. A bound prose target is checked with `discovery.find` like
   any bound target, so a missing one is the same error.
@@ -42,8 +44,8 @@ awareness beyond the regex); YAML beyond the `name:` line.
   - `deployed(config, skills) → dict[SkillId, str]`; unused `[rename]` keys → warnings.
   - `check(config, deployed)`: uniqueness ignoring case (error naming both and `[rename] "<id>" = "<alias>-<name>"`
     for the later one), the user's `reserved` (error), `SHIPPED` (warning; suggestion only when not renamed).
-    Called on the **Entries** before the walk (cheap early clash) and on the **Hull** after it, replacing
-    `resolve._check_deployed_names`.
+    Called once, on the **Hull** after the walk, replacing `resolve._check_deployed_names`; before the walk only
+    the uniqueness error runs on the **Entries** (cheap early clash, no warnings, so none is wrong or doubled).
   - `rewrites(hull, deployed) → dict[SkillId, dict[Path, bytes]]`: per **Skill**, the relative paths whose bytes
     change. For each UTF-8 Markdown file, replace the spans of occurrences whose target's **Deployed name** differs
     from the written name, back to front; for a renamed **Skill**, `SKILL.md` gets `set_name`. Files that end up
@@ -60,7 +62,8 @@ awareness beyond the regex); YAML beyond the `name:` line.
 
 - **Vendor**: `vendor.vendor(hull)` copies each folder to `skills.new/<deployed>/`, then writes `rewrites` over the
   copy, before the swap; a failure still leaves `.apm/skills/` as it was. Writing after `copytree` keeps the copy
-  code unchanged; a rewritten file keeps the upstream file's mode (it is overwritten in place).
+  code unchanged. Each rewrite goes through `files.atomic_write` (temp file, `copymode`, `os.replace`), so a
+  read-only upstream file (`0444`) is replaced, not opened for writing, and keeps its mode.
 
 - **Hash**: `lock.folder_hash(folder, overrides)` hashes `overrides[path]` instead of the file's bytes where
   given. `resolve` passes the rewrites; `build` keeps hashing the vendored copies (now under deployed names), which
@@ -70,8 +73,9 @@ awareness beyond the regex); YAML beyond the `name:` line.
 - **Lock**: `[[skills]]` gains `deployed` only when renamed; edges gain kind `prose`; new `[[suggestions]]` with
   `id` and sorted `from` list, sorted by `id`. Still `version = 1`: the lock is output only.
 
-- **Tree**: a node is `<id>` or `<id> as <deployed>`; labels as written upstream; `prose` edges filtered out
-  unless the target is renamed, label `` `name`, prose ``. Suggestions printed by `cli` after the tree:
+- **Tree**: a node is `<id>` or `<id> as <deployed>`; labels as written upstream (`` `name` `` or bare `name`);
+  a `prose` edge shown only when rewritten (target's **Deployed name** ≠ name written: renamed or bound), label
+  `<as written>, prose[, bind]`. Suggestions printed by `cli` after the tree:
 
   ```text
 
@@ -88,6 +92,9 @@ awareness beyond the regex); YAML beyond the `name:` line.
   prose-only **Bind** if it bites.
 - [Hyphenated prose matches ordinary compounds] → only when the own **Source** has a **Skill** of exactly that
   name, and it does nothing unless the target is renamed or outside the **Hull** (a suggestion).
+- \[A relative link into a renamed **Skill**'s folder (`../diagnosing-bugs/SKILL.md`) is not rewritten\] → out of
+  scope: a **Skill** is its own folder, and such links already break when the upstream layout differs from the
+  flat `.apm/skills/`; a **Patch** (next change) fixes one.
 - \[`SHIPPED` goes stale as harnesses add commands\] → a warning only; the user's `reserved` covers the gap.
 - [Rewriting by span on decoded text] → re-encoded as UTF-8; the only bytes that change are the replaced names
   (and a BOM is kept as read).
@@ -100,5 +107,5 @@ Configs without `[rename]` or `reserved` load unchanged. Two visible changes on 
 
 ## Open Questions
 
-- The exact `SHIPPED` contents: checked against the current Claude Code and Codex docs during task 3.1; any name
+- The exact `SHIPPED` contents: checked against the current Claude Code and Codex docs during task 4.2; any name
   added later only adds a warning.
