@@ -121,7 +121,10 @@ def rewrites(hull: Hull) -> dict[SkillId, dict[Path, bytes]]:
             by_file.setdefault(folder / "SKILL.md", [])
         changed = {}
         for file, spans in by_file.items():
-            text = file.read_bytes().decode("utf-8")
+            try:
+                text = file.read_bytes().decode("utf-8")
+            except (OSError, UnicodeDecodeError) as error:  # changed since the scan
+                raise SkillGraftError(f"{file} cannot be rewritten: {error}") from None
             for (start, end), new in sorted(spans, reverse=True):  # back to front
                 text = f"{text[:start]}{new}{text[end:]}"
             if renamed and file == folder / "SKILL.md":

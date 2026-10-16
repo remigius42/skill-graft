@@ -7,10 +7,11 @@ from pathlib import Path
 import pytest
 from conftest import Upstream, configure, skill, write_config
 
-from skill_graft import config, paths, rename, resolve
+from skill_graft import config, paths, rename, resolve, vendor
 from skill_graft.cache import Cache
 from skill_graft.cli import main
 from skill_graft.config import SkillId
+from skill_graft.errors import SkillGraftError
 from skill_graft.hull import Hull
 
 
@@ -144,6 +145,23 @@ def test_own_name_line_not_rewritten(home: Path) -> None:
     )
 
     assert rewritten(resolved()) == {}
+
+
+@pytest.mark.parametrize("change", ["not UTF-8", "deleted"])
+def test_file_changed_before_vendoring(home: Path, change: str) -> None:
+    tdd = skill(home / "mp" / "tdd", "/grilling\n")
+    skill(home / "mp" / "grilling")
+    configure(["mp/tdd"], mp="~/mp")
+    hull = resolved(mp__grilling="mp-grilling")
+    if change == "deleted":
+        (tdd / "SKILL.md").unlink()
+    else:
+        (tdd / "SKILL.md").write_bytes(b"/grilling \xff\n")
+
+    with pytest.raises(SkillGraftError, match="SKILL.md"):
+        vendor.vendor(hull)
+
+    assert not (package() / ".apm" / "skills.new").exists()
 
 
 def test_unresolved_names_untouched(home: Path) -> None:

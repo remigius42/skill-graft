@@ -18,9 +18,9 @@ def vendor(hull: Hull) -> None:
     skills = paths.skills()
     new = skills.with_name("skills.new")
     old = skills.with_name("skills.old")
+    rewrites = rename.rewrites(hull)  # may fail: before anything is written
     _recover(skills, new, old)
     new.mkdir(parents=True)
-    rewrites = rename.rewrites(hull)
     for skill, folder in hull.skills.items():
         written = {
             folder / path: data for path, data in rewrites.get(skill, {}).items()
