@@ -3,6 +3,9 @@
 import argparse
 import sys
 
+from skill_graft import config, vendor
+from skill_graft.errors import SkillGraftError
+
 
 def main(argv: list[str] | None = None) -> int:
     parser = argparse.ArgumentParser(
@@ -17,7 +20,16 @@ def main(argv: list[str] | None = None) -> int:
     build.add_argument(
         "--no-install", action="store_true", help="stop before running APM"
     )
-    parser.parse_args(argv)
+    args = parser.parse_args(argv)
+    try:
+        if args.command == "build":
+            loaded = config.load()
+            for warning in loaded.warnings:
+                print(f"skill-graft: warning: {warning}", file=sys.stderr)
+            vendor.vendor(loaded)
+    except SkillGraftError as error:
+        print(f"skill-graft: {error}", file=sys.stderr)
+        return 1
     return 0
 
 

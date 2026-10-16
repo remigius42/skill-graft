@@ -95,3 +95,10 @@ def write_config(text: str) -> Path:
     path.parent.mkdir(parents=True, exist_ok=True)
     path.write_text(text)
     return path
+
+
+def skill(folder: Path, text: str = "# skill\n") -> Path:
+    """Writes a fixture skill: `folder` holding `SKILL.md`."""
+    folder.mkdir(parents=True, exist_ok=True)
+    (folder / "SKILL.md").write_text(text)
+    return folder

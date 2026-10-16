@@ -1,16 +1,11 @@
 from pathlib import Path
 
 import pytest
+from conftest import skill
 
 from skill_graft.config import SkillId
 from skill_graft.discovery import find, read_name, skill_folders
 from skill_graft.errors import SkillGraftError
-
-
-def skill(folder: Path, text: str = "# skill\n") -> Path:
-    folder.mkdir(parents=True, exist_ok=True)
-    (folder / "SKILL.md").write_text(text)
-    return folder
 
 
 def found(source: Path) -> set[str]:

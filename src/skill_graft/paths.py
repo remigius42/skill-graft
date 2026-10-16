@@ -31,3 +31,7 @@ def deploy_folders() -> list[Path]:
 def overlap(a: Path, b: Path) -> bool:
     """Whether one folder is, or is inside, the other."""
     return a.is_relative_to(b) or b.is_relative_to(a)
+
+
+def skills() -> Path:
+    return package() / ".apm" / "skills"

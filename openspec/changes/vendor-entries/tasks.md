@@ -34,7 +34,7 @@ Each task: failing test first, then code, one commit, `pre-commit run --all-file
 
 ## 4. Build
 
-- [ ] 4.1 `build --no-install`: clash check, then copy entries into `skills.new/` (no `.git`) and swap it in.
+- [x] 4.1 `build --no-install`: clash check, then copy entries into `skills.new/` (no `.git`) and swap it in.
   Verify: whole-folder, removed-entry, copy-fails, clash and no-install scenario tests pass, and `apm` is
   never called.
 - [ ] 4.2 Run `apm install -g <absolute path>` and check `~/.apm/apm.yml` lists the package (`- x` or

@@ -4,6 +4,7 @@ words:
   - autouse
   - backticked
   - blocklist
+  - capsys
   - commitlint
   - conftest
   - copytree
