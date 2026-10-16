@@ -1,0 +1,46 @@
+"""Runs APM. skill-graft never writes `~/.apm/apm.yml`; APM does (ADR 0003)."""
+
+import subprocess
+from pathlib import Path
+
+from skill_graft import paths
+from skill_graft.discovery import COMMENT
+from skill_graft.errors import SkillGraftError
+
+
+def install() -> None:
+    """Registers and deploys the package with `apm install -g <absolute path>`."""
+    command = ["apm", "install", "-g", str(paths.package().absolute())]
+    try:
+        result = subprocess.run(command, check=False)
+    except FileNotFoundError:
+        raise SkillGraftError("APM is not installed: no `apm` on PATH") from None
+    if result.returncode != 0:
+        raise SkillGraftError(
+            f"`{' '.join(command)}` failed with exit code {result.returncode}"
+        )
+    if not registered():
+        raise SkillGraftError(
+            f"{paths.manifest()} does not list {paths.package().absolute()}: "
+            "APM did not register the package"
+        )
+
+
+def registered() -> bool:
+    """Whether a list item in `~/.apm/apm.yml`, `- x` or `- path: x`, names the package.
+
+    A line scan, not a YAML parse: the runtime dependencies include no YAML library.
+    """
+    manifest = paths.manifest()
+    if not manifest.exists():
+        return False
+    package = paths.package().resolve()
+    for line in manifest.read_text().splitlines():
+        item = line.strip()
+        if not item.startswith("- "):
+            continue
+        value = item.removeprefix("- ").strip().removeprefix("path:")
+        value = COMMENT.sub("", value).strip().strip("\"'")
+        if value and Path(value).expanduser().resolve() == package:
+            return True
+    return False

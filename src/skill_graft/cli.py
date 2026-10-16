@@ -3,7 +3,7 @@
 import argparse
 import sys
 
-from skill_graft import config, vendor
+from skill_graft import apm, config, vendor
 from skill_graft.errors import SkillGraftError
 
 
@@ -27,6 +27,8 @@ def main(argv: list[str] | None = None) -> int:
             for warning in loaded.warnings:
                 print(f"skill-graft: warning: {warning}", file=sys.stderr)
             vendor.vendor(loaded)
+            if not args.no_install:
+                apm.install()
     except SkillGraftError as error:
         print(f"skill-graft: {error}", file=sys.stderr)
         return 1

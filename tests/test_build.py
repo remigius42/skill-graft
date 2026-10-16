@@ -101,3 +101,105 @@ def test_no_install_does_not_run_apm(home: Path, fake_apm: FakeApm) -> None:
 
     assert (skills_dir(home) / "chisel" / "SKILL.md").exists()
     assert fake_apm.calls == []
+
+
+def build_one_skill(home: Path) -> None:
+    skill(home / "src" / "chisel")
+    write_config('entries = ["own/chisel"]\n[sources.own]\npath = "~/src"\n')
+
+
+def test_apm_succeeds(home: Path, fake_apm: FakeApm) -> None:
+    build_one_skill(home)
+
+    assert main(["build"]) == 0
+
+    assert fake_apm.calls == [["install", "-g", str(home / ".apm" / "skill-graft")]]
+
+
+def test_apm_exits_non_zero(
+    home: Path, fake_apm: FakeApm, capsys: pytest.CaptureFixture[str]
+) -> None:
+    build_one_skill(home)
+    fake_apm.exit_code = 7
+
+    assert main(["build"]) == 1
+
+    assert "exit code 7" in capsys.readouterr().err
+
+
+def test_apm_missing(
+    home: Path,
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+    capsys: pytest.CaptureFixture[str],
+) -> None:
+    build_one_skill(home)
+    monkeypatch.setenv("PATH", str(tmp_path / "empty"))
+
+    assert main(["build"]) == 1
+
+    assert "APM is not installed" in capsys.readouterr().err
+    assert (skills_dir(home) / "chisel").exists()
+
+
+@pytest.mark.parametrize("manifest", [None, "dependencies:\n  apm:\n    - /other\n"])
+def test_package_not_registered(
+    home: Path,
+    fake_apm: FakeApm,
+    capsys: pytest.CaptureFixture[str],
+    manifest: str | None,
+) -> None:
+    build_one_skill(home)
+    fake_apm.register = False
+    if manifest is not None:
+        (home / ".apm" / "apm.yml").write_text(manifest)
+
+    assert main(["build"]) == 1
+
+    err = capsys.readouterr().err
+    assert str(home / ".apm" / "apm.yml") in err
+    assert str(home / ".apm" / "skill-graft") in err
+
+
+@pytest.mark.parametrize(
+    "item",
+    [
+        "- ~/.apm/skill-graft",
+        "- '~/.apm/skill-graft/'",
+        '- "{package}"',
+        "- path: {package}",
+        "- path: ~/.apm/skill-graft # pinned",
+    ],
+)
+def test_listed_forms(home: Path, fake_apm: FakeApm, item: str) -> None:
+    build_one_skill(home)
+    fake_apm.register = False
+    line = item.format(package=home / ".apm" / "skill-graft")
+    (home / ".apm" / "apm.yml").write_text(f"dependencies:\n  apm:\n    {line}\n")
+
+    assert main(["build"]) == 0
+
+
+def test_symlinked_home(
+    home: Path, tmp_path: Path, fake_apm: FakeApm, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    link = tmp_path / "link-home"
+    link.symlink_to(home)
+    monkeypatch.setenv("HOME", str(link))
+    build_one_skill(link)
+    fake_apm.register = False
+    (home / ".apm" / "apm.yml").write_text(
+        f"dependencies:\n  apm:\n    - {home / '.apm' / 'skill-graft'}\n"
+    )
+
+    assert main(["build"]) == 0
+
+
+def test_registration_removed_by_hand(home: Path, fake_apm: FakeApm) -> None:
+    build_one_skill(home)
+    manifest = home / ".apm" / "apm.yml"
+    manifest.write_text("dependencies:\n  apm:\n    - /other\n")
+
+    assert main(["build"]) == 0
+
+    assert f"- {home / '.apm' / 'skill-graft'}" in manifest.read_text()

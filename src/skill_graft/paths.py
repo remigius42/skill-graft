@@ -35,3 +35,8 @@ def overlap(a: Path, b: Path) -> bool:
 
 def skills() -> Path:
     return package() / ".apm" / "skills"
+
+
+def manifest() -> Path:
+    """APM's user manifest, which lists the package once registered."""
+    return Path.home() / ".apm" / "apm.yml"

@@ -37,7 +37,7 @@ Each task: failing test first, then code, one commit, `pre-commit run --all-file
 - [x] 4.1 `build --no-install`: clash check, then copy entries into `skills.new/` (no `.git`) and swap it in.
   Verify: whole-folder, removed-entry, copy-fails, clash and no-install scenario tests pass, and `apm` is
   never called.
-- [ ] 4.2 Run `apm install -g <absolute path>` and check `~/.apm/apm.yml` lists the package (`- x` or
+- [x] 4.2 Run `apm install -g <absolute path>` and check `~/.apm/apm.yml` lists the package (`- x` or
   `- path: x`, `~` or absolute, compared resolved). Verify: fake-`apm` tests for success, registration removed
   by hand, symlinked home, non-zero exit, not registered, and `apm` missing pass.
 
