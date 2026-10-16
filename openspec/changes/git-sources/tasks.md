@@ -28,7 +28,7 @@ Apply with the `tdd` skill: each task red-green-refactor (failing test first, th
   before URLs), repository by `clone --bare` into a temporary name (leftover deleted first) then renamed, fetch
   all branches with `--prune`, once per URL per command, has-commit. Verify: git-missing, unreachable-remote,
   shared-URL-fetched-once, interrupted-clone and SHA-256-remote scenarios.
-- [ ] 3.3 `checkout(source, ref)`: reuse an existing export, else fetch only when the commit is missing,
+- [x] 3.3 `checkout(source, ref)`: reuse an existing export, else fetch only when the commit is missing,
   ref-not-found error, export via `ls-tree -r -z` and `cat-file --batch` into `<sha>.tmp` (leftover deleted
   first; modes 100644, 100755, 120000; submodules skipped), then rename. Verify: upstream-moved-on (remote not
   contacted when cached), fresh-machine, cache-deleted, ref-gone, interrupted-checkout, attributes-ignored and

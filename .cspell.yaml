@@ -6,6 +6,7 @@ words:
   - blocklist
   - cacheprovider
   - capfd
+  - cacheinfo
   - capsys
   - commitlint
   - conftest
@@ -15,9 +16,11 @@ words:
   - frontmatter
   - kiro
   - mattpocock
+  - mktree
   - monkeypatched
   - mypy
   - nosystem
+  - oids
   - openclaw
   - opencode
   - openspec

@@ -1,5 +1,7 @@
 """The `git-sources` cache: where it lives and how URLs name repositories."""
 
+import os
+import shutil
 import subprocess
 from pathlib import Path
 
@@ -133,3 +135,127 @@ def test_git_missing(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
 
     with pytest.raises(SkillGraftError, match="git is not installed"):
         cache.Cache(paths.cache()).fetch("mp", "/srv/skills")
+
+
+def test_checkout_on_a_fresh_machine(tmp_path: Path) -> None:
+    upstream = Upstream(tmp_path / "up")
+    sha = upstream.commit({"tdd/SKILL.md": "# tdd\n", "tdd/refs/x.md": "x\n"})
+
+    tree = cache.Cache(paths.cache()).checkout("mp", upstream.url, sha)
+
+    assert (tree / "tdd" / "SKILL.md").read_text() == "# tdd\n"
+    assert (tree / "tdd" / "refs" / "x.md").read_text() == "x\n"
+    assert not (tree / ".git").exists()
+    assert tree.is_relative_to(paths.cache())
+
+
+def test_checkout_reads_the_ref_without_the_remote(tmp_path: Path) -> None:
+    upstream = Upstream(tmp_path / "up")
+    old = upstream.commit({"tdd/SKILL.md": "old\n"})
+    cache.Cache(paths.cache()).fetch("mp", upstream.url)
+    upstream.commit({"tdd/SKILL.md": "new\n"})
+    upstream.path.rename(tmp_path / "gone")
+
+    tree = cache.Cache(paths.cache()).checkout("mp", upstream.url, old)
+
+    assert (tree / "tdd" / "SKILL.md").read_text() == "old\n"
+
+
+def test_checkout_after_the_cache_was_deleted(tmp_path: Path) -> None:
+    upstream = Upstream(tmp_path / "up")
+    sha = upstream.commit({"tdd/SKILL.md": "# tdd\n"})
+    cache.Cache(paths.cache()).checkout("mp", upstream.url, sha)
+    shutil.rmtree(paths.cache())
+
+    tree = cache.Cache(paths.cache()).checkout("mp", upstream.url, sha)
+
+    assert (tree / "tdd" / "SKILL.md").read_text() == "# tdd\n"
+
+
+def test_ref_gone_upstream(tmp_path: Path) -> None:
+    upstream = Upstream(tmp_path / "up")
+    upstream.commit({"tdd/SKILL.md": "# tdd\n"})
+    missing = "c" * 40
+
+    with pytest.raises(SkillGraftError) as error:
+        cache.Cache(paths.cache()).checkout("mp", upstream.url, missing)
+
+    assert "'mp'" in str(error.value) and missing in str(error.value)
+
+
+def test_interrupted_checkout_is_redone(tmp_path: Path) -> None:
+    upstream = Upstream(tmp_path / "up")
+    sha = upstream.commit({"tdd/SKILL.md": "# tdd\n", "tdd/b.md": "b\n"})
+    partial = paths.cache() / "trees" / cache.key(upstream.url) / f"{sha}.tmp"
+    (partial / "tdd").mkdir(parents=True)
+    (partial / "tdd" / "SKILL.md").write_text("# tdd\n")
+
+    tree = cache.Cache(paths.cache()).checkout("mp", upstream.url, sha)
+
+    assert (tree / "tdd" / "b.md").read_text() == "b\n"
+    assert not partial.exists()
+
+
+def test_checkout_ignores_attributes_and_filters(tmp_path: Path) -> None:
+    upstream = Upstream(tmp_path / "up")
+    sha = upstream.commit(
+        {".gitattributes": "* text eol=crlf\n*.md filter=f\n", "a/SKILL.md": "a\nb\n"}
+    )
+    Path(os.environ["GIT_CONFIG_GLOBAL"]).write_text(
+        '[filter "f"]\n\tsmudge = tr a X\n'
+    )
+
+    tree = cache.Cache(paths.cache()).checkout("mp", upstream.url, sha)
+
+    assert (tree / "a" / "SKILL.md").read_bytes() == b"a\nb\n"
+
+
+@pytest.mark.parametrize("name", ["..", ".GIT"])
+def test_hostile_tree_path_is_refused(tmp_path: Path, name: str) -> None:
+    upstream = Upstream(tmp_path / "up")
+    upstream.commit({})
+    blob = subprocess.run(
+        ["git", "-C", upstream.url, "hash-object", "-w", "--stdin"],
+        input="x\n",
+        capture_output=True,
+        text=True,
+        check=True,
+    ).stdout.strip()
+
+    def mktree(entry: str) -> str:
+        return subprocess.run(
+            ["git", "-C", upstream.url, "mktree"],
+            input=entry,
+            capture_output=True,
+            text=True,
+            check=True,
+        ).stdout.strip()
+
+    inner = mktree(f"100644 blob {blob}\tconfig\n")
+    root = mktree(f"040000 tree {inner}\t{name}\n")
+    sha = upstream.git("commit-tree", root, "-m", "evil")
+    upstream.git("update-ref", "refs/heads/main", sha)
+
+    with pytest.raises(SkillGraftError, match="refusing the tree path"):
+        cache.Cache(paths.cache()).checkout("mp", upstream.url, sha)
+    assert not (paths.cache() / "trees" / cache.key(upstream.url) / "config").exists()
+
+
+def test_checkout_keeps_modes_and_skips_submodules(tmp_path: Path) -> None:
+    upstream = Upstream(tmp_path / "up")
+    script = upstream.path / "a" / "run.sh"
+    script.parent.mkdir()
+    script.write_text("#!/bin/sh\n")
+    script.chmod(0o755)
+    (upstream.path / "a" / "b.md").write_text("b\n")
+    (upstream.path / "a" / "link.md").symlink_to("b.md")
+    upstream.git("add", "-A")
+    upstream.git("update-index", "--add", "--cacheinfo", f"160000,{'d' * 40},a/sub")
+    sha = upstream.commit({})
+
+    tree = cache.Cache(paths.cache()).checkout("mp", upstream.url, sha)
+
+    assert os.access(tree / "a" / "run.sh", os.X_OK)
+    assert not os.access(tree / "a" / "b.md", os.X_OK)
+    assert os.readlink(tree / "a" / "link.md") == "b.md"
+    assert not (tree / "a" / "sub").exists()

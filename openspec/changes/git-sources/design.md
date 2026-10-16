@@ -62,7 +62,8 @@ beyond what git does itself.
   ever appears complete. Otherwise ensure the commit (fetch only if missing; still missing → "ref not found"
   error), delete any leftover `<sha>.tmp/`, and write the tree there from `git ls-tree -r -z --full-tree <sha>`
   and one `git cat-file --batch` process: mode `100644` a file, `100755` a file with its exec bit, `120000` a
-  symlink whose target is the blob, `160000` (submodule) skipped. Then rename `<sha>.tmp/` to `<sha>/`. These
+  symlink whose target is the blob, `160000` (submodule) skipped. A path with an empty, `.` or `..` part, or a
+  `.git` part in any case, is refused: a clone of a local path skips fsck. Then rename `<sha>.tmp/` to `<sha>/`. These
   are the committed bytes exactly: no `.gitattributes` conversion, no filter drivers from the user's config, no
   `export-ignore` dropping (as `git archive` would), and no worktree or index state to go stale. A cached commit
   is used without asking the remote whether it still exists.

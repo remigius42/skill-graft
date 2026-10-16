@@ -1,6 +1,7 @@
 """The cache of git sources: one bare repository per URL, one export per commit."""
 
 import hashlib
+import os
 import re
 import shutil
 from pathlib import Path
@@ -51,6 +52,25 @@ class Cache:
             self._clone(url, repo, context)
         self._fetched.add(url)
 
+    def checkout(self, alias: str, url: str, ref: str) -> Path:
+        """The tree of commit `ref`, as committed; fetches only if `ref` is missing."""
+        tree = self.root / "trees" / key(url) / ref
+        if tree.exists():  # renamed into place only once complete
+            return tree
+        if not self.has_commit(url, ref):
+            self.fetch(alias, url)
+            if not self.has_commit(url, ref):
+                raise SkillGraftError(
+                    f"source {alias!r}: ref {ref} is on no branch of {url}"
+                )
+        tmp = tree.with_name(f"{ref}.tmp")
+        if tmp.exists():
+            shutil.rmtree(tmp)
+        tmp.mkdir(parents=True)
+        _export(self.repository(url), ref, tmp, f"source {alias!r} ({url})")
+        tmp.rename(tree)
+        return tree
+
     def has_commit(self, url: str, sha: str) -> bool:
         repo = self.repository(url)
         if not repo.exists():
@@ -83,3 +103,65 @@ class Cache:
             context=context,
         )
         tmp.rename(repo)
+
+
+def _export(repo: Path, ref: str, folder: Path, context: str) -> None:
+    """Writes the tree of `ref` into `folder`, byte for byte as committed.
+
+    Unlike a checkout, no `.gitattributes` conversion or filter driver applies,
+    and unlike `git archive`, `export-ignore` files are kept. Submodules are
+    skipped.
+    """
+    listing = git.run(
+        "ls-tree", "-r", "-z", "--full-tree", ref, repo=repo, context=context
+    )
+    entries = []
+    for record in listing.split(b"\0"):
+        if not record:
+            continue
+        meta, name = record.split(b"\t", 1)
+        mode, kind, oid = meta.split(b" ")
+        if kind == b"blob":
+            entries.append((mode, oid, _safe(os.fsdecode(name), context)))
+    blobs = _read_blobs(repo, [oid for _, oid, _ in entries], context)
+    for (mode, _, path), content in zip(entries, blobs, strict=True):
+        target = folder / path
+        target.parent.mkdir(parents=True, exist_ok=True)
+        if mode == b"120000":
+            target.symlink_to(os.fsdecode(content))
+        else:
+            target.write_bytes(content)
+            if mode == b"100755":
+                target.chmod(target.stat().st_mode | 0o111)
+
+
+def _safe(path: str, context: str) -> str:
+    """A tree path, refused if it could leave the folder or write into `.git`.
+
+    git's fsck refuses these on fetch, but a local clone skips that check.
+    """
+    parts = path.split("/")
+    if any(part in ("", ".", "..") or part.lower() == ".git" for part in parts):
+        raise SkillGraftError(f"{context}: refusing the tree path {path!r}")
+    return path
+
+
+def _read_blobs(repo: Path, oids: list[bytes], context: str) -> list[bytes]:
+    """The contents of `oids`, read by one `git cat-file --batch`."""
+    if not oids:
+        return []
+    output = git.run(
+        "cat-file",
+        "--batch",
+        repo=repo,
+        context=context,
+        input=b"\n".join(oids) + b"\n",
+    )
+    blobs, at = [], 0
+    for _ in oids:
+        header_end = output.index(b"\n", at)
+        size = int(output[at:header_end].split(b" ")[2])
+        start = header_end + 1
+        blobs.append(output[start : start + size])
+        at = start + size + 1  # the newline after each object
+    return blobs
