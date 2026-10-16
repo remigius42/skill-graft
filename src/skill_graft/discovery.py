@@ -13,15 +13,18 @@ from skill_graft.errors import SkillGraftError
 COMMENT = re.compile(r"\s+#.*$")
 
 
-def skill_folders(source: Path) -> list[Path]:
+def skill_folders(source: Path, confined: bool = False) -> list[Path]:
     """Every folder under `source` holding a `SKILL.md`, not looking inside one.
 
     Follows symlinked folders, visiting each resolved folder once, and skips `.git`
-    and the package, so build never reads its own output.
+    and the package, so build never reads its own output. When `confined`, as for
+    a git source, whose links someone else wrote, only links that stay inside
+    `source` are followed.
     """
     found = []
     package = paths.package().resolve()
-    visited = {source.resolve()}
+    root = source.resolve()
+    visited = {root}
     for dirpath, dirnames, filenames in os.walk(source, followlinks=True):
         if "SKILL.md" in filenames:
             found.append(Path(dirpath))
@@ -34,6 +37,7 @@ def skill_folders(source: Path) -> list[Path]:
                 name != ".git"
                 and real not in visited
                 and not real.is_relative_to(package)
+                and (not confined or real.is_relative_to(root))
             ):
                 visited.add(real)
                 keep.append(name)
@@ -96,9 +100,9 @@ class Index:
     invalid: dict[str, list[SkillGraftError]]
 
 
-def index(source: Path) -> Index:
+def index(source: Path, confined: bool = False) -> Index:
     skills = Index({}, {}, {})
-    for folder in skill_folders(source):
+    for folder in skill_folders(source, confined):
         try:
             name = read_name(folder)
         except SkillGraftError as error:

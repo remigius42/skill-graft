@@ -87,7 +87,8 @@ and telling the user to run `skill-graft update <alias>`. `build` SHALL then wri
 
 A git **Source**'s folder SHALL be the full tree of its `ref` with the bytes as committed, the same on every
 machine: files marked `export-ignore` included, no `.gitattributes` conversion or filter applied, exec bits and
-symlinks kept. Skill discovery and vendoring then work as for a path **Source**. Submodules SHALL be skipped
+symlinks kept. Skill discovery and vendoring then work as for a path **Source**, except that discovery follows
+only symlinked folders that stay inside the tree: their author is not the user. Submodules SHALL be skipped
 and LFS objects SHALL NOT be fetched (their pointer files are vendored as committed).
 
 #### Scenario: Skill from git
@@ -101,6 +102,12 @@ and LFS objects SHALL NOT be fetched (their pointer files are vendored as commit
 - **WHEN** commit A has `.gitattributes` with `* text eol=crlf` and `*.md filter=f`, the user's git config
   defines `filter.f.smudge`, and `SKILL.md` was committed with LF line endings
 - **THEN** the vendored `SKILL.md` equals the committed blob byte for byte
+
+#### Scenario: Link out of the tree
+
+- **WHEN** commit A holds `out` as a symlink to a local folder holding `secret/SKILL.md`, and `mp/secret` is an
+  **Entry**
+- **THEN** `build` exits non-zero naming `mp/secret`, and nothing local is vendored
 
 #### Scenario: Hostile tree
 

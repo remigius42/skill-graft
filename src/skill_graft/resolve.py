@@ -38,7 +38,10 @@ def folders(config: Config, cache: Cache, refs: dict[str, str]) -> dict[str, Pat
 def resolve(config: Config, folders: dict[str, Path]) -> dict[SkillId, Path]:
     """Each entry's skill folder, checked for clashes and stray symlinks."""
     _check_deployed_names(config.entries)
-    indexes = {alias: discovery.index(folder) for alias, folder in folders.items()}
+    indexes = {
+        alias: discovery.index(folder, isinstance(config.sources[alias], GitSource))
+        for alias, folder in folders.items()
+    }
     resolved = {
         entry: discovery.find(indexes[entry.alias], entry) for entry in config.entries
     }

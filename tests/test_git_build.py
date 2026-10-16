@@ -50,6 +50,26 @@ def test_build_reads_the_ref_not_the_tip(tmp_path: Path, capsys: Capsys) -> None
     assert config.read_text() == text
 
 
+def test_discovery_stays_inside_a_git_source(
+    home: Path, tmp_path: Path, capsys: Capsys
+) -> None:
+    skill(home / "local" / "secret")
+    upstream = Upstream(tmp_path / "up")
+    upstream.commit({"skills/tdd/SKILL.md": "# tdd\n"})
+    (upstream.path / "out").symlink_to(home / "local")
+    (upstream.path / "in").symlink_to("skills")
+    sha = upstream.commit({})
+    git = f'[sources.mp]\ngit = "{upstream.url}"\nref = "{sha}"\n'
+
+    write_config('entries = ["mp/secret"]\n' + git)
+    code, err = build(capsys)
+    assert code == 1 and "mp/secret" in err
+
+    write_config('entries = ["mp/tdd"]\n' + git)
+    assert build(capsys) == (0, "")
+    assert vendored() == {"tdd"}
+
+
 @pytest.mark.parametrize("entries", ['["mp/tdd"]', '["own/chisel"]'])
 def test_git_source_without_ref(
     home: Path, tmp_path: Path, capsys: Capsys, entries: str
