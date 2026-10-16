@@ -79,11 +79,17 @@ def test_fetch_once_per_url_per_command(tmp_path: Path) -> None:
     assert later.has_commit(upstream.url, newer)
 
 
+def leftover_of(final: Path) -> Path:
+    """A killed run's temporary folder for `final`: the name the cache gives it."""
+    folder = cache._temporary(final)
+    assert folder.parent == final.parent and folder.name.startswith(f"{final.name}.")
+    return folder
+
+
 def test_interrupted_clone_does_not_block(tmp_path: Path) -> None:
     upstream = Upstream(tmp_path / "up")
     sha = upstream.commit({"a/SKILL.md": "# a\n"})
-    leftover = paths.cache() / "repos" / f"{cache.key(upstream.url)}.git.tmp"
-    leftover.mkdir(parents=True)
+    leftover = leftover_of(paths.cache() / "repos" / f"{cache.key(upstream.url)}.git")
     (leftover / "junk").write_text("half a clone")
     git_cache = cache.Cache(paths.cache())
 
@@ -200,8 +206,8 @@ def test_ref_gone_upstream(tmp_path: Path) -> None:
 def test_interrupted_checkout_is_redone(tmp_path: Path) -> None:
     upstream = Upstream(tmp_path / "up")
     sha = upstream.commit({"tdd/SKILL.md": "# tdd\n", "tdd/b.md": "b\n"})
-    partial = paths.cache() / "trees" / cache.key(upstream.url) / f"{sha}.tmp"
-    (partial / "tdd").mkdir(parents=True)
+    partial = leftover_of(paths.cache() / "trees" / cache.key(upstream.url) / sha)
+    (partial / "tdd").mkdir()
     (partial / "tdd" / "SKILL.md").write_text("# tdd\n")
 
     tree = cache.Cache(paths.cache()).checkout("mp", upstream.url, sha)
