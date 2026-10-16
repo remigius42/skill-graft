@@ -67,7 +67,8 @@ def _previous(
 ) -> Hull | str:
     """The hull at the current refs, or why there is none to compare.
 
-    Never fetches: the diff is not worth a remote call or a cache write.
+    Never fetches: the diff is not worth a remote call. A cached commit whose tree
+    was never exported is exported, as any command reading that ref would.
     """
     for alias, source in selected.items():
         if source.ref is None:
