@@ -54,4 +54,5 @@ Out of scope: prose **References**, **Renames**, **Reserved names**, **Patches**
   `discovery.py` (`find` errors not worded for **Entries** only), `vendor.py` (copies the **Hull**), `update.py`
   (diff, lock), `cli.py` (`resolve`; `build` writes the lock).
 - `docs/design.md`: the lock format and the Skill tool form, once settled.
-- Every declared **Source** is now read, used by an **Entry** or not: a reference may resolve in any of them.
+- Every declared **Source** is now read, used by an **Entry** or not: a reference may resolve in any of them. So
+  `build` now fails on an unused git **Source** whose `ref` is uncached and cannot be fetched.

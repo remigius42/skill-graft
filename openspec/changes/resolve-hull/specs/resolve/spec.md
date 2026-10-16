@@ -35,7 +35,8 @@ missing from the cache.
 
 ### Requirement: Lock content
 
-`skill-graft.lock`, a TOML file beside `skill-graft.toml`, SHALL record: each declared **Source**'s alias with
+`skill-graft.lock`, a TOML file at `~/.apm/skill-graft/skill-graft.lock` even when `skill-graft.toml` is a
+symlink, SHALL record: each declared **Source**'s alias with
 its URL and `ref`, or its resolved folder; each **Hull** **Skill**'s **Skill ID**, whether it is an **Entry**,
 and a SHA-256 hash of its folder as vendored; and each edge: from, to, kind (`slash` or `skill-tool`), and
 `bind = true` when a **Bind** decided it. One edge per from, to, kind and `bind`.
@@ -52,6 +53,11 @@ and a SHA-256 hash of its folder as vendored; and each edge: from, to, kind (`sl
   `own/notes`
 - **THEN** the lock holds two `slash` edges `mp/tdd` → `own/notes`, one with `bind = true`, and the tree shows
   both
+
+#### Scenario: Symlinked config
+
+- **WHEN** `skill-graft.toml` is a symlink into another folder
+- **THEN** `resolve` writes `~/.apm/skill-graft/skill-graft.lock`, and nothing in that other folder
 
 #### Scenario: Hash follows content
 
@@ -84,7 +90,7 @@ result.
 `resolve` SHALL print the **Hull** in the style of `cargo tree`: each **Entry** at the top level in TOML order,
 expanded there; under each **Skill**, one line per edge naming the **Skill** and the **Reference** (`/name`,
 `Skill(name)`, plus `bind` when a **Bind** decided it). A **Skill** SHALL be expanded once, at its first
-depth-first line; its later lines, and any line for an **Entry**, SHALL end in `(*)` and not expand.
+depth-first line; its later lines, and any nested line for an **Entry**, SHALL end in `(*)` and not expand.
 
 #### Scenario: Tree
 

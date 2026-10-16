@@ -26,19 +26,32 @@ digit, trailing `.` dropped, standing as its own token: not preceded by a letter
 
 ### Requirement: Skill tool references
 
-A Skill tool **Reference** SHALL be the call form `Skill(<name>)`: the name optionally quoted with `"` or `'`,
-optionally given as `skill=<name>` or `skill: <name>`, with optional whitespace inside the parentheses.
+A Skill tool **Reference** SHALL be the call form `Skill(<name>)`: the name first, optionally quoted with `"` or
+`'`, optionally given as `skill=<name>` or `skill: <name>`, then `)` or `,` and further arguments, with optional
+whitespace inside the parentheses.
 
 #### Scenario: Call forms
 
-- **WHEN** a **Skill**'s Markdown holds `Skill(grilling)`, `Skill("grilling")` or `Skill(skill: "grilling")`
+- **WHEN** a **Skill**'s Markdown holds `Skill(grilling)`, `Skill("grilling")`, `Skill(skill: "grilling")` or
+  `Skill(skill: "grilling", args: "x")`
 - **THEN** each is a Skill tool **Reference** to `grilling`
+
+### Requirement: Names match exactly
+
+A **Reference** name SHALL match a **Skill** name, and a **Bind** key, case-sensitively.
+
+#### Scenario: Different case
+
+- **WHEN** `mp/tdd` calls `/Grilling`, and the only **Skill** of that name in any **Source** is `grilling`
+- **THEN** the command warns that no declared source has a skill `Grilling`
 
 ### Requirement: Every Markdown file
 
 **References** SHALL be read from every file ending in `.md` (any case) in the **Skill**'s folder, at any depth,
 `.git` excepted, once the **Skill**'s symlinks are checked. A Markdown file that is not UTF-8 SHALL be skipped
-with a warning naming it; it is still vendored. A **Skill**'s **Reference** to its own name SHALL be ignored.
+with a warning naming it; it is still vendored. One that cannot be read at all, a dangling link included, SHALL be
+an error naming it. A **Reference** that resolves, **Binds** applied, to the referencing **Skill** SHALL be
+ignored.
 
 #### Scenario: Reference in a sibling file
 
@@ -54,6 +67,22 @@ with a warning naming it; it is still vendored. A **Skill**'s **Reference** to i
 
 - **WHEN** a **Skill** reached from an **Entry** holds `x.md` as a symlink to `/dev/zero`
 - **THEN** the command exits non-zero naming `x.md` as pointing outside the **Skill**, without reading it
+
+#### Scenario: Dangling link
+
+- **WHEN** a **Hull** **Skill** holds `notes.md` as a symlink to a missing `gone.md` inside it
+- **THEN** the command exits non-zero naming `notes.md`, without a traceback, and writes nothing
+
+#### Scenario: Self-reference
+
+- **WHEN** `mp/tdd` holds `/tdd`, and no **Bind** names `mp/tdd`
+- **THEN** the **Hull** gets no edge from `mp/tdd` to itself
+
+#### Scenario: Bound self-reference
+
+- **WHEN** `mp/tdd` holds `/tdd`, and `[bind]` has `"mp/tdd" = "own/tdd"`
+- **THEN** `own/tdd` is pulled in, and the command exits non-zero as `mp/tdd` and `own/tdd` share a **Deployed
+  name**
 
 ### Requirement: Resolve in the own source first
 

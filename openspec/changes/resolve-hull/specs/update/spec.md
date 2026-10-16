@@ -6,8 +6,9 @@
 
 After the per-**Source** lines, `update` SHALL print the **Hull** diff between the current `ref`s and the new
 tips: the legend `hull (+ added, - removed, ~ changed):`, then `+ <skill id>`, `- <skill id>` or `~ <skill id>`
-(hash changed) per **Skill**, sorted by **Skill ID**; or `hull unchanged`. When the current `ref`s do not
-resolve, it SHALL say so instead. Warnings SHALL come from the new tips only. `--dry-run` SHALL print the same.
+(hash changed) per **Skill**, sorted by **Skill ID**; or `hull unchanged`. The diff SHALL never fetch: when a
+current `ref` is missing or not cached, or the current `ref`s do not resolve, it SHALL say so instead. Warnings
+SHALL come from the new tips only. `--dry-run` SHALL print the same.
 
 #### Scenario: Warnings once
 
@@ -38,6 +39,11 @@ resolve, it SHALL say so instead. Warnings SHALL come from the new tips only. `-
 
 - **WHEN** a selected git **Source** had no `ref`
 - **THEN** `update` says there is no previous **Hull** to compare, and succeeds
+
+#### Scenario: Old ref not cached
+
+- **WHEN** `mp`'s `ref` A is not in the cache and its new tip B is
+- **THEN** `update` says there is no previous **Hull** to compare (`mp` `ref` not cached), and fetches nothing
 
 ## MODIFIED Requirements
 
@@ -75,3 +81,26 @@ and the lock unchanged. `update` SHALL NOT vendor or run `apm`.
 
 - **WHEN** `update` succeeds
 - **THEN** `.apm/skills/` is unchanged and `apm` is not run
+
+### Requirement: Dry run writes nothing
+
+`update --dry-run` SHALL do everything `update` does, printing the same lines and errors and exiting with the
+same code, but SHALL write neither `skill-graft.toml`, `skill-graft.lock` nor the cache, nor anything outside a
+temporary folder it removes before exiting. It SHALL read what the cache already holds, and contact a remote
+exactly when `update` would. It SHALL say that the TOML and the lock were not written.
+
+#### Scenario: Dry run
+
+- **WHEN** the default branch has moved and the user runs `update --dry-run`
+- **THEN** it prints the new sha and `dry run: skill-graft.toml and skill-graft.lock not written`, and
+  `skill-graft.toml`, `skill-graft.lock` and the cache folder are unchanged
+
+#### Scenario: Dry run with an unreachable unselected source
+
+- **WHEN** `b`'s `ref` is in the cache, `b`'s remote is unreachable, and the user runs `update a --dry-run`
+- **THEN** it succeeds as `update a` would, reading `b` from the cache
+
+#### Scenario: Dry run with a failing entry
+
+- **WHEN** an **Entry** is gone at the new tip and the user runs `update --dry-run`
+- **THEN** it exits non-zero naming the **Entry**, as `update` would
