@@ -6,7 +6,7 @@ skill text is copied in. Each group updates `README.md` or `docs/design.md` for 
 
 ## 1. Slash references
 
-- [ ] 1.1 `references.py`: the quote-after-`(`/`[`/`,` and closing-backtick lookbehinds on the slash alternative.
+- [x] 1.1 `references.py`: the quote-after-`(`/`[`/`,` and closing-backtick lookbehinds on the slash alternative.
   Verify: path-arguments (first argument, later argument, second list item), after-a-code-span
   (`` `lint`/check `` exercises the backtick rule), standalone-token (with `` (`/grilling`) `` and
   `run '/grilling'`), and every existing hull test unchanged. `docs/design.md`: the slash rule.

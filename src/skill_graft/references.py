@@ -8,7 +8,9 @@ from skill_graft import files
 from skill_graft.errors import SkillGraftError
 
 # `/name` as its own token: not inside a path, URL or tag, nor a Markdown link
-# target (`](/x)`), an attribute (`="/x"`) or an alias (`@/x`). The possessive `*+`
+# target (`](/x)`), an attribute (`="/x"`) or an alias (`@/x`), nor a quoted path
+# argument or list item (`('/x'`, `, "/x"`), nor right after a code span closes
+# (`` `package.json`/x ``). The possessive `*+`
 # keeps the name whole, so `/my-dir/file` never yields `my`. Or the Skill tool's
 # call form, `Skill(name)`, the name quoted or not, as `skill=` or `skill:`, and
 # perhaps followed by further arguments. Or prose: a code span holding just a
@@ -16,6 +18,7 @@ from skill_graft.errors import SkillGraftError
 # a query value or a variable (`#x`, `=x`, `?x`, `&x`, `$x`).
 REFERENCE = re.compile(
     r"(?<![\w./:~\\<@-])(?<!\]\()(?<!=[\"'])"
+    r"(?<![(\[,][\"'])(?<![(\[,] [\"'])(?<![\w.)\]]`)"
     r"/(?P<slash>[A-Za-z0-9][A-Za-z0-9._-]*+)(?!/|:\w)"
     r"|\bSkill\(\s*(?:skill\s*[:=]\s*)?(?P<q>[\"']?)"
     r"(?P<tool>[A-Za-z0-9][A-Za-z0-9._-]*+)(?P=q)\s*(?:\)|,[^)\n]*+\)?)"

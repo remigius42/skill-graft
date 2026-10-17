@@ -17,7 +17,15 @@ def found(folder: Path) -> list[str]:
 
 @pytest.mark.parametrize(
     "text",
-    ["run /grilling.", "`/grilling`", "(/grilling)", "**/grilling**", "/grilling"],
+    [
+        "run /grilling.",
+        "`/grilling`",
+        "(/grilling)",
+        "(`/grilling`)",
+        "run '/grilling'",
+        "**/grilling**",
+        "/grilling",
+    ],
 )
 def test_standalone_token(tmp_path: Path, text: str) -> None:
     folder = skill(tmp_path / "tdd", f"{text}\n")
@@ -50,6 +58,25 @@ def test_paths_and_urls(tmp_path: Path, text: str) -> None:
     folder = skill(tmp_path / "tdd", f"{text}\n")
 
     assert found(folder) == []
+
+
+@pytest.mark.parametrize(
+    "text",
+    [
+        "fetch('/orders')",
+        "fetch(url, '/orders')",
+        'open("/grilling")',
+        '["/a", "/b"]',
+        "its `package.json`/build-tool scripts",
+        "`lint`/check",
+    ],
+)
+def test_path_arguments_and_after_a_code_span(tmp_path: Path, text: str) -> None:
+    folder = skill(tmp_path / "tdd", f"{text}\n")
+
+    refs, _ = references.scan(folder)
+
+    assert [r.text for r in refs if r.kind == "slash"] == []
 
 
 @pytest.mark.parametrize(
