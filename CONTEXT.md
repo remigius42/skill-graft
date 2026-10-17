@@ -54,7 +54,8 @@ A user's unified diff against a **Skill**'s upstream text. Applied before **Refe
 _Avoid_: Override, fix
 
 **Upstream**:
-A **Skill** as its **Source** has it, at the **Ref**, before any **Patch**. Never the **Source** itself.
+A **Skill** as its **Source** has it where it is read (at the **Ref**, at the tip during `update`, or in a
+path **Source**'s folder), before any **Patch**. Never the **Source** itself.
 _Avoid_: Original, pristine, vanilla
 
 **Deployed name**:

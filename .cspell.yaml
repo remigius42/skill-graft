@@ -32,6 +32,7 @@ words:
   - monkeypatched
   - mypy
   - nosystem
+  - nowarn
   - oids
   - openclaw
   - opencode

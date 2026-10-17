@@ -111,42 +111,50 @@ deployed file as `modified` drift.
 - `[patches]` maps a skill ID of a declared source to a non-empty list of patch files, each relative to the
   folder holding `skill-graft.toml` (`~` expanded); `patches/` is a convention. A file listed twice under one
   key is an error; one file under several keys is fine.
-- `git apply -p1` runs as a subprocess in a copy of the skill's folder, never in the cache. Paths are relative
-  to the skill folder (`a/SKILL.md`), as `git diff` inside it or `diff -ru` writes them. No fuzz: a hunk whose
-  context moved only by offset applies; any other fails.
-- The copies live in a temporary folder per run, removed whatever the outcome, and `git apply` runs with
+- `git apply -p1 --whitespace=nowarn` runs as a subprocess in a copy of the skill's folder, never in the cache;
+  `--whitespace=nowarn` keeps the user's `apply.whitespace` from changing or rejecting anything. Paths are
+  relative to the skill folder (`a/SKILL.md`), as `git diff --relative` inside it or `diff -ru` writes them. No
+  fuzz: a hunk whose context moved only by offset applies; any other fails.
+- The upstream folder is checked before it is copied, as the walk checks any skill before reading it. The copy
+  leaves out `.git`, as vendoring does. Each resolution (`update` makes two: at the current refs and at the
+  tips) copies into its own temporary folder, removed whatever the outcome, and `git apply` runs with
   `GIT_CEILING_DIRECTORIES` at its parent so no enclosing repository changes how paths resolve. `vendor` copies
   from them; messages and the lock name the upstream folder, never the copy. Without `git` on `PATH`, applying
   a patch is an error saying `[patches]` needs it; a config without patches never needs `git` for them.
 - A patch may change, add or delete any file in the skill's folder, nothing outside it. It must not delete
   `SKILL.md` or change its `name:`: the skill ID comes from it, and a new name is a rename. Either is an error
   pointing at `[rename]`.
-- The patched copy is checked like an upstream folder, so a symlink a patch creates fails the same way. Mode
-  changes apply; binary hunks are unsupported (`git apply`'s own error).
+- The patched copy is checked like an upstream folder, so a symlink a patch creates fails wherever an upstream
+  one would. Mode changes apply, but only `git diff` writes them. A `Binary files … differ` line, which is how
+  `diff -ru` reports a binary change it cannot express, is an error naming the patch file; binary hunks are
+  unsupported (`git apply`'s own error).
 - A skill's patches apply when the walk reaches it, before it is scanned. A key naming no hull skill is a
   warning, as for `[rename]`; a listed patch file that is missing or unreadable is an error, used or not. Files
   in `patches/` that no key lists are ignored.
 - A skill's patches apply in list order, each to the result of the one before. Applied with `--reject`, a
   failing patch names every hunk that failed (patch file, target file, `@@` header); the skill's later patches
-  are reported as not tried, and the walk goes on with the other skills so one run reports every failure. Any
-  failing hunk is an error in `resolve`, `build` and `update`, and nothing is written.
-- No command writes patches. The user copies the skill's `upstream` folder from the lock, edits the copy and
-  runs `diff -ruN upstream/ edited/ > patches/<name>.patch`, then adds the key.
+  are reported as not tried. A skill whose patch failed is not scanned, so skills reached only through it are
+  not reached; the walk goes on with the rest, so one run reports every failure among the skills it reaches.
+  Any failing hunk is an error in `resolve`, `build` and `update`, and nothing is written.
+- No command writes patches. The user copies the skill's `upstream` folder from the lock to `base/`, applies the
+  skill's earlier patches to it with `git apply -p1`, copies that to `edited/`, edits it and runs
+  `diff -ruN base/ edited/ > patches/<name>.patch`, then adds the patch to the key's list.
 - When `update` fails on a hunk, it names each failing skill's upstream folder at the tip (its export in the
-  cache) to redo the patch against; `ref` stays, and the next `update` moves it once the patches apply. Until
-  then `build` at the old `ref` fails too. `--dry-run` writes no cache, so it reports the hunks and says to run
-  without `--dry-run` to fetch the tip.
+  cache) to redo the patch against, after the skill's earlier patches, as above; `ref` stays, and the next
+  `update` moves it once the patches apply. Until then `build` at the old `ref` fails too. `--dry-run` writes no
+  cache, so it reports the hunks and says to run without `--dry-run` to fetch the tip.
 - `update`'s hull diff applies today's patches at the current refs too (the lock is never read back), so `~`
   covers upstream and patch changes alike. When they fail there, it says only "no previous hull to compare
   (patches fail at the current refs)", without repeating the hunks.
 
 ## Feedback
 
-The lock (TOML, sorted, never read back) records each source's `ref` or folder, each hull skill with a SHA-256
-of its folder as vendored (patches and rewrites applied), its `upstream` folder (absolute: the cache export or
-the path source's folder, plus the skill's path), its `deployed` name when renamed and its `patches` in apply
-order when patched, each edge with its kind (`slash`, `skill-tool`, `prose`) plus `bind = true` when a bind
-decided it, and each prose suggestion with the skills mentioning it, so the explanation is a view of it:
+The lock (TOML, sorted except `patches`, never read back) records each source's `ref` or folder, each hull
+skill with a SHA-256 of its folder as vendored (patches and rewrites applied), its `upstream` folder (absolute:
+the cache export or the path source's folder, plus the skill's path), its `deployed` name when renamed and its
+`patches` in apply order when patched, each edge with its kind (`slash`, `skill-tool`, `prose`) plus
+`bind = true` when a bind decided it, and each prose suggestion with the skills mentioning it, so the
+explanation is a view of it:
 
 - `resolve` prints a tree in the style of `cargo tree`: one line per edge naming the reference as written
   upstream, each skill expanded once and later lines marked `(*)`, a renamed skill as `<id> as <deployed name>`,
