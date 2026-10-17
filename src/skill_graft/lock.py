@@ -69,8 +69,8 @@ def tree(hull: Hull) -> str:
 
     Each entry expands at the top level; any other skill at its first line. A
     renamed skill shows its deployed name, a patched one `(patched)`. A prose edge
-    shows only when the build
-    rewrites it; it pulls nothing in, so its target expands elsewhere: `(*)`.
+    shows only when the build rewrites it; it pulls nothing in, so its target
+    expands elsewhere: `(*)`.
     """
     children: dict[SkillId, dict[tuple[SkillId, str, bool], Edge]] = {}
     for edge in hull.edges:  # in scan order; one line per target, kind and bind

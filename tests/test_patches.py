@@ -1,13 +1,14 @@
 """The `patches` spec end to end: a skill's patches apply before its references are read."""
 
 from pathlib import Path
+from typing import TypeAlias
 
 import pytest
 from conftest import build, make_patch, skill, vendored, write_config
 
 from skill_graft.cli import main
 
-Capsys = pytest.CaptureFixture[str]
+Capsys: TypeAlias = pytest.CaptureFixture[str]
 
 
 def write_patch(name: str, data: bytes) -> None:

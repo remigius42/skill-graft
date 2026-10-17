@@ -7,7 +7,7 @@ from typing import Any, cast
 
 import tomlkit
 
-from skill_graft import files, git, lock, paths, resolve
+from skill_graft import files, git, lock, patch, paths, resolve
 from skill_graft.cache import Cache
 from skill_graft.config import Config, GitSource, SkillId
 from skill_graft.errors import SkillGraftError, warn
@@ -26,9 +26,24 @@ def update(loaded: Config, aliases: list[str], dry_run: bool = False) -> None:
     try:
         with tempfile.TemporaryDirectory(prefix="skill-graft-") as tmp:
             git_cache = Cache(Path(tmp), Cache(paths.cache()))
-            _update(loaded, aliases, git_cache, write=False)
+            try:
+                _update(loaded, aliases, git_cache, write=False)
+            except patch.PatchError as error:
+                raise SkillGraftError(_fetch_hint(error, Path(tmp))) from None
     finally:
         print("dry run: skill-graft.toml and skill-graft.lock not written")
+
+
+def _fetch_hint(error: patch.PatchError, tmp: Path) -> str:
+    """The error, pointing at no upstream folder that goes away with `tmp`."""
+    message = str(error)
+    for skill, upstream, _ in error.failures:
+        if upstream.is_relative_to(tmp):
+            message = message.replace(
+                f"{skill}: redo it against {upstream}",
+                f"{skill}: run `update` without `--dry-run` to fetch the tip",
+            )
+    return message
 
 
 def _update(loaded: Config, aliases: list[str], git_cache: Cache, write: bool) -> None:
@@ -80,6 +95,8 @@ def _previous(
         with tempfile.TemporaryDirectory(prefix="skill-graft-") as work:
             folders = resolve.folders(loaded, git_cache, {})
             return lock.skill_hashes(resolve.resolve(loaded, folders, Path(work)))
+    except patch.PatchError:  # likely rewritten for the tips; its hunks say nothing
+        return "patches fail at the current refs"
     except (SkillGraftError, OSError) as error:  # the update itself is still fine
         return f"the current refs do not resolve: {error}"
 

@@ -5,7 +5,7 @@ from pathlib import Path
 from typing import TypeAlias
 
 import pytest
-from conftest import FakeApm, Upstream, skill, vendored, write_config
+from conftest import FakeApm, Upstream, make_patch, skill, vendored, write_config
 
 from skill_graft import cache, config, paths
 from skill_graft.cli import main
@@ -656,3 +656,74 @@ def test_broken_old_ref_only_skips_the_diff(upstream: Upstream, capsys: Capsys) 
     assert code == 0 and ref("mp") == new
     assert "no previous hull to compare (the current refs do not resolve:" in out
     assert "data.txt" in out
+
+
+LINES = "".join(f"line {i}\n" for i in range(1, 11))
+
+
+def patched_source(upstream: Upstream, ref: str, data: bytes) -> Path:
+    """Entry `mp/tdd` from `upstream` at `ref`, patched by `patches/tdd.patch`."""
+    folder = Path.home() / ".apm" / "skill-graft" / "patches"
+    folder.mkdir(parents=True, exist_ok=True)
+    (folder / "tdd.patch").write_bytes(data)
+    return write_config(
+        'entries = ["mp/tdd"]\n'
+        + git_source("mp", upstream, f'ref = "{ref}"\n')
+        + '[patches]\n"mp/tdd" = ["patches/tdd.patch"]\n'
+    )
+
+
+def test_patch_fails_at_the_tip(
+    upstream: Upstream, tmp_path: Path, capsys: Capsys
+) -> None:
+    old = upstream.commit({"tdd/SKILL.md": LINES})
+    tip_text = LINES.replace("line 5\n", "line 5 upstream\n")
+    new = upstream.commit({"tdd/SKILL.md": tip_text})
+    edited = LINES.replace("line 5\n", "line five\n")
+    file = patched_source(
+        upstream, old, make_patch(tmp_path, {"SKILL.md": LINES}, {"SKILL.md": edited})
+    )
+    assert main(["build", "--no-install"]) == 0
+    before, toml = lock_file().read_bytes(), file.read_bytes()
+    capsys.readouterr()
+
+    code, _, err = update(capsys)
+
+    tip = paths.cache() / "trees" / cache.key(upstream.url) / new / "tdd"
+    assert code == 1
+    assert "patches/tdd.patch: SKILL.md: hunk @@ -2,7 +2,7 @@ does not apply" in err
+    assert f"redo it against {tip}" in err
+    assert lock_file().read_bytes() == before and file.read_bytes() == toml
+
+    redone = make_patch(
+        tmp_path,
+        {"SKILL.md": tip_text},
+        {"SKILL.md": tip_text.replace("line 5 upstream\n", "line five\n")},
+    )
+    (Path.home() / ".apm" / "skill-graft" / "patches" / "tdd.patch").write_bytes(redone)
+
+    code, out, _ = update(capsys)
+
+    assert code == 0 and ref("mp") == new
+    assert "no previous hull to compare (patches fail at the current refs)" in out
+    assert lock_file().read_bytes() != before
+
+
+def test_dry_run_with_a_failing_patch(
+    upstream: Upstream, tmp_path: Path, capsys: Capsys
+) -> None:
+    old = upstream.commit({"tdd/SKILL.md": LINES})
+    edited = LINES.replace("line 5\n", "line five\n")
+    patched_source(
+        upstream, old, make_patch(tmp_path, {"SKILL.md": LINES}, {"SKILL.md": edited})
+    )
+    assert main(["build", "--no-install"]) == 0
+    upstream.commit({"tdd/SKILL.md": LINES.replace("line 5\n", "line 5 upstream\n")})
+    capsys.readouterr()
+
+    code, _, err = update(capsys, "--dry-run")
+
+    assert code == 1
+    assert "patches/tdd.patch: SKILL.md: hunk @@ -2,7 +2,7 @@ does not apply" in err
+    assert "mp/tdd: run `update` without `--dry-run` to fetch the tip" in err
+    assert "redo it against" not in err

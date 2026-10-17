@@ -53,7 +53,7 @@ ignores.
 
 ## 4. Update
 
-- [ ] 4.1 `update`: a `PatchError` at the tips leaves TOML and lock as they are and names the tip's **Upstream**
+- [x] 4.1 `update`: a `PatchError` at the tips leaves TOML and lock as they are and names the tip's **Upstream**
   folder; in a dry run, one under the temporary cache says to run without `--dry-run`; `_previous` reports
   "patches fail at the current refs". Verify: patch-fails-at-the-tip, patch-redone,
   dry-run-with-a-failing-patch, patch-already-rewritten-for-the-tip.
