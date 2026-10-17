@@ -159,10 +159,18 @@ def suggestions(hull: Hull) -> str:
     return "".join(f"{line}\n" for line in ["", header, *lines])
 
 
-def announce_suggestions(hull: Hull) -> None:
-    """For `build` and `update`: one line pointing to `resolve`, which lists them."""
-    if hull.suggestions:
-        notice(f"{len(hull.suggestions)} prose suggestion(s): run skill-graft resolve")
+def announce_suggestions(hull: Hull, dry_run: bool = False) -> None:
+    """For `build` and `update`: one line pointing to `resolve`, which lists them.
+
+    After a dry run `resolve` still reads the old refs, so the hint says to update.
+    """
+    if not hull.suggestions:
+        return
+    count = f"{len(hull.suggestions)} prose suggestion(s)"
+    if dry_run:
+        notice(f"{count} at the new tips: update, then run skill-graft resolve")
+    else:
+        notice(f"{count}: run skill-graft resolve")
 
 
 def skill_hashes(hull: Hull) -> dict[SkillId, str]:

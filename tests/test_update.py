@@ -581,9 +581,19 @@ def test_warnings_once(upstream: Upstream, capsys: Capsys) -> None:
     assert code == 0 and err.count("calls `/foo`") == 1
 
 
-@pytest.mark.parametrize("args", [[], ["--dry-run"]])
+@pytest.mark.parametrize(
+    ("args", "line"),
+    [
+        ([], "skill-graft: 1 prose suggestion(s): run skill-graft resolve\n"),
+        (
+            ["--dry-run"],
+            "skill-graft: 1 prose suggestion(s) at the new tips: "
+            "update, then run skill-graft resolve\n",
+        ),
+    ],
+)
 def test_update_announces_suggestions(
-    upstream: Upstream, capsys: Capsys, args: list[str]
+    upstream: Upstream, capsys: Capsys, args: list[str], line: str
 ) -> None:
     old = upstream.commit({"tdd/SKILL.md": "1\n", "diagnosing-bugs/SKILL.md": "d\n"})
     upstream.commit({"tdd/SKILL.md": "then diagnosing-bugs\n"})
@@ -594,7 +604,7 @@ def test_update_announces_suggestions(
     code, _, err = update(capsys, *args)
 
     assert code == 0
-    assert "skill-graft: 1 prose suggestion(s): run skill-graft resolve\n" in err
+    assert line in err
 
 
 def test_dry_run_prints_the_diff(upstream: Upstream, capsys: Capsys) -> None:

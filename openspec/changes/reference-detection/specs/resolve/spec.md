@@ -7,7 +7,9 @@
 `resolve` SHALL print, after the tree, each suggested **Skill** with the **Skills** mentioning it and how to accept it
 (`skill-graft add <skill id>`, named in the header), sorted, on standard output. `build` and `update` SHALL NOT
 print them, but when there are any SHALL print one line on standard error,
-`skill-graft: <n> prose suggestion(s): run skill-graft resolve`; `update` counts those of the new tips.
+`skill-graft: <n> prose suggestion(s): run skill-graft resolve`; `update` counts those of the new tips, and
+after `--dry-run`, whose tips `resolve` cannot see yet, prints
+`skill-graft: <n> prose suggestion(s) at the new tips: update, then run skill-graft resolve` instead.
 
 #### Scenario: Suggestion printed
 
@@ -30,5 +32,9 @@ print them, but when there are any SHALL print one line on standard error,
 #### Scenario: Update announces suggestions
 
 - **WHEN** at the new tip `mp/tdd` mentions `diagnosing-bugs`, not in the **Hull**, and the user runs `update`
-  or `update --dry-run`
 - **THEN** stderr holds `skill-graft: 1 prose suggestion(s): run skill-graft resolve`
+
+#### Scenario: Dry run announces suggestions
+
+- **WHEN** the same, with `update --dry-run`
+- **THEN** stderr holds `skill-graft: 1 prose suggestion(s) at the new tips: update, then run skill-graft resolve`
