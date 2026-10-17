@@ -40,6 +40,22 @@ unreadable file, or one file listed twice under one key (compared resolved) SHAL
 - **WHEN** `"mp/tdd"` and `"mp/notes"` both list `patches/common.patch`
 - **THEN** the config loads
 
+### Requirement: Patch files git would misread
+
+A listed patch file holding a line `git apply` skips as noise, losing a change silently (`Binary files … differ`,
+`Only in …`), or a `GIT binary patch` block, SHALL be an error naming the file, used or not.
+
+#### Scenario: Binary change
+
+- **WHEN** a listed patch holds a `Binary files upstream/x.png and edited/x.png differ` line, or a
+  `GIT binary patch` block, and its key names no **Hull** **Skill**
+- **THEN** the command exits non-zero naming the patch file
+
+#### Scenario: Added file without -N
+
+- **WHEN** a listed patch holds an `Only in edited/refs: new.md` line, as `diff -ru` without `-N` writes it
+- **THEN** the command exits non-zero naming the patch file
+
 ## MODIFIED Requirements
 
 ### Requirement: Unsupported keys are errors

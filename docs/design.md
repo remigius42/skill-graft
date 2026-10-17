@@ -111,20 +111,20 @@ deployed file as `modified` drift.
 - `[patches]` maps a skill ID of a declared source to a non-empty list of patch files, each relative to the
   folder holding `skill-graft.toml` (`~` expanded); `patches/` is a convention. A file listed twice under one
   key, compared as resolved paths, is an error; one file under several keys is fine.
-- `git -c apply.ignoreWhitespace=no apply -p1 --whitespace=nowarn` runs as a subprocess in a copy of the skill's
-  folder, never in the cache, with every `GIT_CONFIG*` variable removed from its environment and
-  `GIT_CONFIG_GLOBAL=/dev/null` and `GIT_CONFIG_NOSYSTEM=1` set, so no user, system or environment setting
-  changes what applies or what it writes; the two `apply` settings are also given explicitly, for a git too old
-  to know `GIT_CONFIG_GLOBAL`. Paths are relative to the skill folder (`a/SKILL.md`), as `git diff --relative`
-  inside it or `diff -ruN base/ edited/` from their parent writes them. No fuzz: a hunk whose context moved only
-  by offset applies, except that one whose context reaches the start or end of the file stays anchored there;
-  any other fails.
+- `git apply -p1 --whitespace=nowarn` runs as a subprocess in an owner-writable copy of the skill's folder, never
+  in the cache, with every `GIT_CONFIG*` variable removed from its environment, `HOME` and `XDG_CONFIG_HOME`
+  pointed at an empty folder and `GIT_CONFIG_NOSYSTEM=1`, so no user, system or environment setting changes what
+  applies or what it writes, on any git version. Paths are relative to the skill folder (`a/SKILL.md`), as
+  `git diff --relative` inside it or `diff -ruN base/ edited/` from their parent writes them. No fuzz: a hunk whose
+  context moved only by offset applies, except that one starting at the file's first line stays anchored there; any
+  other fails.
 - The upstream folder is checked before it is copied, as the walk checks any skill before reading it. The copy
-  leaves out `.git`, as vendoring does. Each resolution (`update` makes two: at the current refs and at the
-  tips) copies into its own temporary folder, removed whatever the outcome, and `git apply` runs with
+  leaves out `.git`, as vendoring does. Each resolution (`update` makes two: at the current refs and at the tips)
+  copies into its own temporary folder, removed whatever the outcome, and `git apply` runs with
   `GIT_CEILING_DIRECTORIES` at its parent so no enclosing repository changes how paths resolve. `vendor` copies
-  from them; messages and the lock name the upstream folder, never the copy. Without `git` on `PATH`, applying
-  a patch is an error saying `[patches]` needs it; a config without patches never needs `git` for them.
+  from them; messages and the lock name the upstream folder or a path inside the skill, never the copy. Without
+  `git` on `PATH`, applying a patch is an error saying `[patches]` needs it; a config without patches never needs
+  `git` for them.
 - A patch may change, add or delete any file in the skill's folder, nothing outside it. It must not delete
   `SKILL.md` or change its name, as read from `name:` else the folder (so adding or removing `name:` counts):
   the skill ID comes from it, and a new name is a rename. Either is an error pointing at `[rename]`.
@@ -149,7 +149,8 @@ deployed file as `modified` drift.
   `[patches]`, `[bind]`) are left out, since the hull is incomplete.
 - No command writes patches. After a `resolve`, which re-exports a deleted cache, the user copies the skill's
   `upstream` folder from the lock with `cp -rL` (links become files, as in skill-graft's own copy) to `base/` in
-  a fresh `mktemp -d`, outside any repository, applies the skill's
+  a fresh `mktemp -d`, outside any repository, deletes `base/.git` if there is one, and in `base/`, with no
+  `apply.*` git settings of its own, applies the skill's
   earlier patches to it with `git apply -p1`, copies that to `edited/`, edits it and runs
   `diff -ruN base/ edited/ > patches/<name>.patch`, then adds the patch to the key's list.
 - When `update` fails on a hunk, it names each failing skill's upstream folder at the tip (its export in the

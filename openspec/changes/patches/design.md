@@ -6,10 +6,11 @@ From renames: `hull.walk(config, indexes)` finds each **Skill**'s folder with `d
 `check_files` on it, then `references.scan`; `Hull.skills` maps each **Skill** to that folder, and everything
 downstream reads it: `rename.rewrites` (spans checked against the bytes scanned), `lock.skill_hashes`,
 `vendor.vendor`. Git folders are cache exports, immutable and shared. `git.run` strips the variables that point
-git at another repository but keeps the user's git config. `cli` resolves, then vendors and hashes; `update`
-resolves twice (`_previous` at the current refs, then the tips), the dry run inside a temporary cache. Tests:
-`tests/conftest.py` (`HOME` in `tmp_path`, `GIT_CONFIG_GLOBAL` pointed at an empty file, `skill`,
-`write_config`, `Upstream`). `docs/design.md` § Patches holds the decisions this design implements.
+git at another repository but keeps the user's git config; `vendor.vendor` copies with `copytree`. `cli`
+resolves, then vendors and hashes; `update` resolves twice (`_previous` at the current refs, then the tips), the
+dry run inside a temporary cache. Tests: `tests/conftest.py` (`HOME` in `tmp_path`, `GIT_CONFIG_GLOBAL` pointed
+at an empty file, `skill`, `write_config`, `Upstream`). `docs/design.md` § Patches holds the decisions this
+design implements.
 
 ## Goals / Non-Goals
 
@@ -35,28 +36,36 @@ a pure function of the **Source** folders, the TOML and the patch files, whateve
   resolutions of one **Skill** never share a copy. Alternative, `walk` owning it: the copies would be gone before
   `vendor` reads them.
 
-- **`patch.apply(skill, upstream, files, work) -> Path`**: `shutil.copytree` without `.git`, following symlinks as
-  vendoring does (`check_files` has made sure they lead to files inside); then per file, `git.apply(copy, data)`.
-  After the last, `SKILL.md` must be a file and `discovery.read_name(copy)` must equal `read_name(upstream)`, else
-  an error naming the patch and `[rename]`.
+- **One copy helper**: `files.copy_skill(source, target, copy_function=shutil.copy2)`, `shutil.copytree` without
+  `.git`, following symlinks; `vendor.vendor` passes its rewriting `copy_function`, `patch.apply` the default. So
+  the patched copy holds exactly what vendoring would copy, and a later change to what is skipped reaches both.
 
-- **`git.apply(folder, patch) -> (ok, stderr)`**:
-  `git -c apply.ignoreWhitespace=no apply -p1 --reject --whitespace=nowarn -`, the patch on stdin, `cwd=folder`,
-  the environment of `git.run` without any `GIT_CONFIG*` variable (`GIT_CONFIG_COUNT`, `GIT_CONFIG_PARAMETERS`,
-  …), plus `GIT_CONFIG_GLOBAL=/dev/null`, `GIT_CONFIG_NOSYSTEM=1` and `GIT_CEILING_DIRECTORIES=<folder's parent>`:
-  no user, system or environment config and no enclosing repository changes the result; the copy has no `.git`
-  of its own. The explicit `apply` settings cover a git older than 2.32, which ignores `GIT_CONFIG_GLOBAL`. A
-  missing `git` raises "`[patches]` needs git: no `git` on PATH". It returns instead of raising because a failure
-  is reported, not fatal on the spot. Alternative, a Python applier: about 150 lines for new files, deletions and
-  modes that git already gets right, and strict without fuzz.
+- **`patch.apply(skill, upstream, files, work) -> Path`**: `files.copy_skill(upstream, copy)` (`check_files` has
+  made sure links lead to files inside), then owner write permission added to every file and folder of the copy,
+  so a read-only **Upstream** folder (a Nix store, `0555` folders) never blocks `git apply`; the exec bit is kept.
+  Then per file, `git.apply(copy, data)`. After the last, `SKILL.md` must be a file, `check_files(copy)` must
+  pass, and `discovery.read_name(copy)` must equal `read_name(upstream)`; any `SkillGraftError` from these (a
+  link out, an unsupported `name:` form, non-UTF-8) is re-raised as `PatchFailed` naming the patch, a changed name
+  pointing at `[rename]`. Paths in these messages are relative to the **Skill**, never the copy's.
+  `PatchFailed` is a `SkillGraftError`, so one that escapes is still a clean error.
 
-- **Failures from `.rej` files**: `patch.apply` lists the copy's `*.rej` files before each `git.apply`; on a
-  non-zero exit, each new one is a target file (path without `.rej`) and its `@@` lines are the failing hunks;
-  locale never matters, and `.rej` files the **Upstream** folder ships never count. No new `.rej` means git
-  refused the patch whole (file to change missing, file to create present, malformed, `..` path): the failure is
-  git's stderr. `patch.apply` raises `PatchFailed(lines)` for the first failing file, listing the later ones as
-  not tried. A missing `SKILL.md`, a changed name, or `check_files` failing on the copy (which `patch.apply` runs)
-  is a `PatchFailed` too: the patch caused it.
+- **`git.call(*args, cwd, env, input) -> CompletedProcess`**: the part of `git.run` that builds the environment
+  (without `REDIRECTS`) and maps a missing `git` to an error, now shared; `git.run` checks the exit code on top.
+  `git.apply(folder, patch) -> (ok, stderr)` calls `git apply -p1 --reject --whitespace=nowarn -`, the patch on
+  stdin, `cwd=folder`, with every `GIT_CONFIG*` variable removed and `HOME` and `XDG_CONFIG_HOME` pointed at an
+  empty folder under `work`, `GIT_CONFIG_NOSYSTEM=1`, and `GIT_CEILING_DIRECTORIES=<folder's parent>`: no user,
+  system or environment config (`apply.*`, `core.autocrlf`, `core.whitespace`, …), on any git version, and no
+  enclosing repository changes the result; the copy has no `.git` of its own. A missing `git` raises "`[patches]`
+  needs git: no `git` on PATH". It returns instead of raising because a failure is reported, not fatal on the
+  spot. Alternative, a Python applier: about 150 lines for new files, deletions and modes that git already gets
+  right, and strict without fuzz.
+
+- **Failures from `.rej` files**: before each `git.apply`, `patch.apply` records the bytes of the copy's `*.rej`
+  files; on a non-zero exit, each `.rej` that is new or whose bytes changed is a target file (path without
+  `.rej`) and its `@@` lines are the failing hunks; locale never matters, and `.rej` files the **Upstream** folder
+  ships count only if git rewrote them. None means git refused the patch whole (file to change missing, file to
+  create present, malformed, `..` path): the failure is git's stderr. `patch.apply` raises `PatchFailed(lines)`
+  for the first failing file, listing the later ones as not tried.
 
 - **Collect, then raise once**: `walk` catches `PatchFailed` per **Skill**, records it with the **Upstream**
   folder, skips that **Skill**'s scan (so nothing it reaches is queued), and goes on. After the BFS, before prose
@@ -64,14 +73,14 @@ a pure function of the **Source** folders, the TOML and the patch files, whateve
   `(skill, upstream, lines)`; its message names, per **Skill**, the failures and "redo it against" and the
   **Upstream** folder. Any other `SkillGraftError` during the walk, once failures are collected, raises a
   `PatchError` holding them with that error's message last, so none is lost. The unused-key warnings are never
-  computed, so none is misleading.
+  computed, so none is misleading. `references.scan`'s warnings for a patched **Skill** name the **Upstream**
+  path: `walk` replaces the copy's path prefix with it.
 
 - **Config reads the patch files**: `Config.patches: dict[SkillId, list[PatchFile]]`, `PatchFile(path, data)`,
   `path` as written. Each path is resolved against the folder holding `skill-graft.toml`, `~` expanded, as path
   **Sources** are; the bytes are read at load, so a missing file is an error used or not, and lines `git apply`
-  would skip as noise, losing a change silently, are rejected there, naming the file: `Binary files … differ`
-  and `Only in …`; a `GIT binary patch` line is rejected too. Duplicates under one key
-  compare resolved paths.
+  would skip as noise, losing a change silently, are rejected there, used or not, naming the file:
+  `Binary files … differ`, `Only in …` and `GIT binary patch`. Duplicates under one key compare resolved paths.
 
 - **Warnings**: `patch.unused(config, skills)`, called in `resolve.resolve` beside `rename.unused`:
   `[patches] "<key>" patches no skill in the hull`.
@@ -91,6 +100,8 @@ a pure function of the **Source** folders, the TOML and the patch files, whateve
   hunks are fixed the next run shows git's message; parsing git's localized stderr for the mix is not worth it.
 - [Symlinks are copied as files before patching, so a git patch that edits a symlink as a link fails] → the copy
   matches what is vendored; such a patch is reported like any other failing one.
+- \[The copy is owner-writable where the **Upstream** folder was not, so vendored modes may gain `u+w`\] → modes
+  other than the exec bit are neither hashed nor deployed differently.
 - \[A path **Source** edited between the copy and vendoring\] → vendoring reads the copy, so the build is
   consistent with what was scanned.
 - \[Every existing lock gains `upstream`\] → one-time diff, noted in the proposal.

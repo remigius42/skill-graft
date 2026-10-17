@@ -18,8 +18,8 @@ every build, and fails loudly when an `update` moves the **Upstream** text under
   nothing.
 - **Limits**: a **Patch** may change, add or delete any file in the **Skill**'s folder, but must not delete
   `SKILL.md` or change the **Skill**'s name (a new name is a **Rename**). The patched copy passes the same file
-  checks as the **Upstream** one. A `Binary files … differ` line, which `diff -ru` writes for a change it cannot
-  express, is an error.
+  checks as the **Upstream** one. Lines `git apply` would skip silently (`Binary files … differ`, `Only in …`) and
+  `GIT binary patch` blocks are errors when the config loads.
 - **Config errors and warnings**: a listed patch file that is missing or unreadable, or listed twice under one
   key, is an error, used or not; a key naming no **Hull** **Skill** is a warning.
 - **Update**: a failing patch at the new tips leaves `ref` and the lock as they are and names each failing

@@ -76,8 +76,8 @@ what applies or what it writes.
 
 ### Requirement: A failing patch is an error
 
-A hunk SHALL apply only where its context matches exactly, moved by whole lines at most; one whose context reaches
-the start or end of the file SHALL match there. Every hunk that does
+A hunk SHALL apply only where its context matches exactly, moved by whole lines at most; one starting at the file's
+first line SHALL match there. Every hunk that does
 not apply SHALL be reported with its patch file, target file and `@@` header; a patch git refuses whole SHALL be
 reported with its patch file and git's message; the **Skill**'s later **Patches** SHALL be reported as not
 tried. Any failure SHALL make the command exit non-zero and write nothing.
@@ -152,7 +152,8 @@ walk SHALL be reported after the patch failures collected so far. The warnings f
 A **Patch** SHALL change, add or delete files inside the **Skill**'s folder only. A patched copy without
 `SKILL.md`, or whose name (`name:`, else the folder name) differs from the **Upstream** one, SHALL be a failure
 of that patch naming it and pointing at `[rename]`. The patched copy SHALL pass the checks the **Upstream** folder
-passes (symlinks, special files), and the **Upstream** folder SHALL pass them before it is copied.
+passes (symlinks, special files), and the **Upstream** folder SHALL pass them before it is copied. Every message
+SHALL name a file by its **Upstream** path or its path inside the **Skill**, never by the temporary copy's.
 
 #### Scenario: Name changed
 
@@ -177,7 +178,8 @@ passes (symlinks, special files), and the **Upstream** folder SHALL pass them be
 #### Scenario: Symlink leaving the skill
 
 - **WHEN** a patch creates `link.md` as a symlink to `/etc/hostname`
-- **THEN** the command exits non-zero naming `link.md` as pointing outside the **Skill**
+- **THEN** the command exits non-zero naming the patch and `link.md` as pointing outside the **Skill**, and no
+  temporary path
 
 #### Scenario: Symlink within the skill
 
@@ -194,16 +196,10 @@ passes (symlinks, special files), and the **Upstream** folder SHALL pass them be
 - **WHEN** a patch written by `git diff` makes `run.sh` executable
 - **THEN** the vendored `run.sh` is executable
 
-#### Scenario: Binary change
+#### Scenario: Read-only upstream
 
-- **WHEN** a patch holds a `Binary files upstream/x.png and edited/x.png differ` line, or a `GIT binary patch`
-  block
-- **THEN** the command exits non-zero naming the patch file
-
-#### Scenario: Added file without -N
-
-- **WHEN** a patch holds an `Only in edited/refs: new.md` line, as `diff -ru` without `-N` writes it
-- **THEN** the command exits non-zero naming the patch file
+- **WHEN** a patched **Skill**'s **Upstream** folder and files are read-only
+- **THEN** the patch applies, and the **Upstream** folder keeps its bytes and modes
 
 ### Requirement: Patches need git
 
