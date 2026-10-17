@@ -69,9 +69,9 @@ def render(
 def _source_path(folder: Path) -> str:
     """A path source's folder; in project scope, relative to the package when it
     is inside the project, so a committed lock reads the same on every machine."""
-    root = paths.root().resolve()
-    if paths.scope() == "project" and folder.is_relative_to(root):
-        return Path(os.path.relpath(folder, paths.package().resolve())).as_posix()
+    # In project scope the root is already resolved: `discover` or the working folder.
+    if paths.scope() == "project" and folder.is_relative_to(paths.root()):
+        return Path(os.path.relpath(folder, paths.package())).as_posix()
     return str(folder)
 
 

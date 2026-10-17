@@ -7,12 +7,16 @@ import os
 from pathlib import Path
 
 _root: Path | None = None
+_scope = "user"
 
 
 def use(root: Path | None) -> None:
-    """Sets the root for this invocation; `None` falls back to the home folder."""
-    global _root
+    """Sets the root for this invocation; `None` falls back to the home folder.
+    The scope is decided here, once: `user` when the root is the home folder."""
+    global _root, _scope
     _root = root
+    home = root is None or root.resolve() == Path.home().resolve()
+    _scope = "user" if home else "project"
 
 
 def root() -> Path:
@@ -20,8 +24,8 @@ def root() -> Path:
 
 
 def scope() -> str:
-    """`user` when the root is the home folder, else `project`."""
-    return "user" if root().resolve() == Path.home().resolve() else "project"
+    """`user` or `project`, as `use` decided."""
+    return _scope
 
 
 def discover(start: Path) -> Path:
