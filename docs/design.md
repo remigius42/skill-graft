@@ -107,7 +107,9 @@ path = "~/Documents/sync/2_areas/software/chisel_skill"
   its own token (never part of a path, URL, link target or attribute, nor a quoted path argument or list item
   such as `fetch('/orders')`, nor right after a closing code span as in `` `package.json`/x ``), the Skill
   tool's call form
-  `Skill(name)` (quoted or not, as `skill=` or `skill:`, further arguments allowed), and prose. Prose counts
+  `Skill(name)` (quoted or not, as `skill=` or `skill:`, further arguments allowed) or a sentence naming it
+  (`Call the Skill tool with "grilling".`: each name in double quotes or backticks after `Skill tool`, up to the
+  sentence's end, counts when it names a skill and is silently no reference otherwise), and prose. Prose counts
   only when the name cannot be an ordinary word: a code span holding just a name, or a bare lowercase hyphenated
   token bounded as a slash name is (never in a path, URL, query, link target, attribute or `#` anchor, nor a
   YAML key such as `allowed-tools:`). A Skill tool call's further arguments belong to it, never prose. The

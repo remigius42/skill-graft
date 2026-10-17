@@ -285,6 +285,32 @@ def test_renamed_skill_vendored(home: Path, capsys: pytest.CaptureFixture[str]) 
     )
 
 
+def test_renamed_in_a_skill_tool_sentence(home: Path) -> None:
+    skill(home / "mp" / "tdd", 'Call the Skill tool with "grilling".\n')
+    skill(home / "mp" / "grilling")
+    with_renames(home, ["mp/tdd"], '"mp/grilling" = "mp-grilling"')
+
+    assert main(["build", "--no-install"]) == 0
+    assert main(["build", "--no-install"]) == 0
+
+    assert (skills_dir() / "tdd" / "SKILL.md").read_text() == (
+        'Call the Skill tool with "mp-grilling".\n'
+    )
+
+
+def test_bind_silences_a_skill_tool_sentence(home: Path) -> None:
+    skill(home / "mp" / "tdd", 'Call the Skill tool with "grilling".\n')
+    skill(home / "mp" / "grilling")
+    write_config(
+        'entries = ["mp/tdd"]\n[sources.mp]\npath = "~/mp"\n'
+        '[bind]\n"mp/grilling" = false\n'
+    )
+
+    assert main(["build", "--no-install"]) == 0
+
+    assert {p.name for p in skills_dir().iterdir()} == {"tdd"}
+
+
 def test_rename_outside_the_hull(
     home: Path, capsys: pytest.CaptureFixture[str]
 ) -> None:

@@ -22,7 +22,7 @@ skill text is copied in. Each group updates `README.md` or `docs/design.md` for 
 - [x] 2.2 `hull.walk`: a sentence candidate that resolves to nothing is dropped without a warning; one that resolves
   is an edge of kind `skill-tool`, shown as `(Skill tool "grilling")` in `tree`. Verify: unresolved-name,
   tree label.
-- [ ] 2.3 Renames and binds carry into the sentence form. Verify: renamed (vendored text reads `"mp-grilling"`,
+- [x] 2.3 Renames and binds carry into the sentence form. Verify: renamed (vendored text reads `"mp-grilling"`,
   and a build with the rename succeeds twice), and a `[bind]` to `false` silences a candidate.
   `docs/design.md` and `README.md`: the sentence form.
 
