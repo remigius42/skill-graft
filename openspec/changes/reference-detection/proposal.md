@@ -13,17 +13,20 @@ same build also took two paths for slash calls: `fetch('/orders')` in a code exa
 ## What Changes
 
 - **Skill tool sentences**: in a sentence that names the `Skill tool`, each name after it in double quotes or
-  backticks is a Skill tool **Reference**: it extends the **Hull**, resolves across **Sources**, and is rewritten
-  by a **Rename**, like `Skill(name)`.
-- **Tighter slash references**: `/name` is no **Reference** right after `(` or `[` and `'` or `"` (a path
-  argument, `fetch('/orders')`), nor right after a backtick that closes a code span (`` `package.json`/x ``).
-  `` `/grilling` ``, `` (`/grilling`) ``, `'/grilling'` in prose and `cd /tmp` still count.
+  backticks that names a **Skill** is a Skill tool **Reference**: it extends the **Hull**, resolves across
+  **Sources**, and is rewritten by a **Rename**, like `Skill(name)`. A quoted word that names no **Skill** is
+  ignored, without a warning.
+- **Tighter slash references**: `/name` is no **Reference** right after `'` or `"` that follows `(`, `[` or `,`
+  (a quoted path argument or list item, `fetch('/orders')`, `["/a", "/b"]`), nor right after a backtick that
+  closes a code span (`` `package.json`/x ``). `` `/grilling` ``, `` (`/grilling`) ``, `'/grilling'` in prose
+  and `cd /tmp` still count.
 - **Suggestions are announced**: `build` and `update` print one line on stderr when prose names **Skills** outside
   the **Hull**, pointing to `skill-graft resolve`, which still prints them.
 - `CONTEXT.md`: the **Reference** entry names the sentence form (done with this proposal).
 
 Out of scope: negated sentences ("do not call the Skill tool with `x`"), which a **Bind** to `false` handles;
-single-quoted names in a Skill tool sentence (apostrophes); prose detection.
+single-quoted names in a Skill tool sentence (apostrophes); prose detection, beyond giving way to the sentence
+form.
 
 ## Capabilities
 
@@ -33,12 +36,13 @@ None.
 
 ### Modified Capabilities
 
-- `hull`: the Skill tool **Reference** gains the sentence form; the slash **Reference** excludes path arguments
-  and a `/` after a closing code span.
+- `hull`: the Skill tool **Reference** gains the sentence form, and prose gives way to it; the slash
+  **Reference** excludes quoted path arguments and list items, and a `/` after a closing code span.
 - `resolve`: `build` and `update` announce prose suggestions in one line instead of staying silent.
 
 ## Impact
 
-- `references.py` (the reference pattern and a sentence scan), `cli.py` and `update.py` (the announcement).
+- `references.py` (the reference pattern and a sentence scan), `hull.py` (unresolved sentence names stay silent),
+  `cli.py` and `update.py` (the announcement).
 - Tests: synthetic skills reproducing each form; the existing reference tests stay green.
 - Docs: `CONTEXT.md` (done), `docs/design.md` (reference forms), `README.md` (status line).

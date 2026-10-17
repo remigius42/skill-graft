@@ -18,33 +18,44 @@ names in `"…"` or `` `…` ``; the slash false positives were `fetch('/orders'
 **Non-Goals:**
 
 - Natural-language parsing: no negation, no tense, no "skill" without "tool".
-- Changing prose detection or the `cd /tmp` decision (slash references count in code blocks).
+- Changing prose detection beyond giving way to the sentence form, or the `cd /tmp` decision (slash references
+  count in code blocks).
 
 ## Decisions
 
-- **Sentence form as a second pass in `scan`**, before the `REFERENCE` loop: find each `Skill tool`, take the text
-  up to the sentence end (`[.!?]` then whitespace or end of text, or a blank line), and in it each `"name"` or
-  `` `name` `` whose whole content matches the name pattern. Each becomes a `skill-tool` **Reference** with text
-  `Skill tool "name"` (or with backticks, as written). Their spans are kept, and the `REFERENCE` loop skips a
-  prose match on the same span, so `` `writing-for-agents` `` or a quoted `domain-modeling` is one call, not also
-  prose. Rejected: folding it into `REFERENCE` (a variable-length sentence in one alternation would be unreadable
-  and could not yield several names per match).
-- **Only names after `Skill tool`**: the measured phrasing always puts them after; a name before it ("For `x`,
-  use the Skill tool") stays prose. Single quotes are not counted: apostrophes in English prose would pair up.
-- **Slash lookbehinds**: two more negative lookbehinds on the slash alternative, `(?<![(\[]["'])` and
-  `` (?<![\w.)\]]`) ``. Rejected: ignoring a quote before `/` only inside fenced blocks (needs fence tracking,
-  and `'/grilling'` in a fence is as likely a call as not); blocking `(` plus a backtick (it would drop
-  `` (`/grilling`) ``, common in prose, to catch a template literal path, which a following `/` mostly excludes
-  already).
+- **Sentence form as a second pass in `scan`, merged by span.** Find each `Skill tool`; its window runs to the
+  first of: the next `Skill tool`, a blank line, a line opening a list item (`-`, `*`, `+`, `1.`) or heading
+  (`#`), or `[.!?]` (a closing `"` or `` ` `` allowed after it) followed by whitespace and an uppercase letter,
+  or the end of the text. In the window, each `"name"` or `` `name` `` whose content matches the name pattern,
+  one trailing `.` dropped, is a candidate. Windows never overlap, so a name is a candidate once. The
+  `REFERENCE` matches and the candidates are then merged by span: a candidate inside a `Skill(...)` or slash
+  match is dropped (the call keeps it); a prose match on a candidate's span is dropped (the candidate keeps it).
+  The result is sorted by offset, so `scan` still returns references in file order. Rejected: folding the
+  sentence into `REFERENCE` (a variable-length window in one alternation is unreadable and cannot yield several
+  names per match); ending sentences at any `.` plus whitespace (`e.g. "x"` would end early).
+- **Candidates are calls only when they resolve.** A candidate is a `skill-tool` **Reference** with text
+  `Skill tool "name"` (backticks kept as written) and a `sentence` flag; `hull.walk` resolves it like any
+  Skill tool **Reference** but drops it silently when nothing matches, instead of warning. A sentence often
+  quotes non-skill words (`"fast"`, `` `true` ``); warning on each would be noise, while one that matches a
+  **Skill** is almost certainly the call. Rejected: warning like `Skill(name)` (noise on every build).
+- **Only names after `Skill tool`**, double quotes and backticks only: the measured phrasing always puts the
+  names after; single quotes would pair with apostrophes.
+- **Slash lookbehinds**: on the slash alternative, no `/` after `"` or `'` that follows `(`, `[` or `,`,
+  directly or after one space (fixed-width lookbehinds, one per case), and none after a backtick that follows
+  `[\w.)\]]`. This covers the first argument, later arguments and list items. Rejected: ignoring a quote before
+  `/` only inside fenced blocks (needs fence tracking); blocking `(` plus a backtick (drops `` (`/grilling`) ``,
+  common in prose; a template literal path is mostly excluded by its following `/` already).
 - **Announcement**: `cli` (for `build`) and `update` print
   `skill-graft: <n> prose suggestion(s): run skill-graft resolve` through `errors.notice`, after the run's warnings,
   when `hull.suggestions` is non-empty; `update` uses the hull at the new tips. `resolve` is unchanged.
 
 ## Risks / Trade-offs
 
-- \[A sentence mentions the Skill tool without calling it ("never call the Skill tool with `x`")\] → the target is
+- **A sentence mentions the Skill tool without calling it** ("never call the Skill tool with `x`"). The target is
   vendored and visible in `tree` and `why`; `[bind] "mp/x" = false` turns it off.
-- [A missing sentence end (a list item without a period) runs into the next item] → a blank line or the next
-  `Skill tool` bounds it; at worst a later quoted name that matches a real **Skill** is pulled in, visibly.
-- [Existing hull and lock tests depend on today's classification] → the new forms need text no fixture has (the
-  words "Skill tool", a closing backtick before `/`, `(` plus a quote before `/`); run the full suite per task.
+- **A word quoted in a Skill tool sentence happens to name a Skill** (`"review"`). It is vendored, visibly in
+  `tree` and `why`; a **Bind** to `false` turns it off.
+- **A sentence whose next one starts lowercase runs on** (`… "x". then …`). A blank line, a list item, a heading
+  or the next `Skill tool` bounds it, and a later quoted name only counts if it names a **Skill**.
+- **Existing hull and lock tests depend on today's classification and order.** Sorting by offset keeps file
+  order; the new forms need text no fixture has; run the full suite per task.

@@ -6,14 +6,14 @@
 
 A slash **Reference** SHALL be `/` then a name, the longest run of `[A-Za-z0-9._-]` starting with a letter or
 digit, trailing `.` dropped, standing as its own token: not preceded by a letter, digit, `/`, `.`, `-`, `~`, `:`,
-`\`, `<`, `@`, `](`, `="` or `='`, nor by `(` or `[` and `"` or `'`, nor by a backtick that follows a letter,
-digit, `.`, `)` or `]`, and not followed by `/`, or `:` and a letter or digit. It SHALL count anywhere, code
-blocks included.
+`\`, `<`, `@`, `](`, `="` or `='`, nor by `"` or `'` that follows `(`, `[` or `,` (directly or after one space),
+nor by a backtick that follows a letter, digit, `.`, `)` or `]`, and not followed by `/`, or `:` and a letter or
+digit. It SHALL count anywhere, code blocks included.
 
 #### Scenario: Standalone token
 
 - **WHEN** a **Skill**'s Markdown holds `run /grilling.`, `` `/grilling` ``, `(/grilling)`, `` (`/grilling`) ``,
-  `'/grilling'` or `**/grilling**`
+  `run '/grilling'` or `**/grilling**`
 - **THEN** each is a slash **Reference** to `grilling`
 
 #### Scenario: Paths and URLs
@@ -24,21 +24,26 @@ blocks included.
 
 #### Scenario: Path arguments
 
-- **WHEN** it holds `fetch('/orders', x)`, `open("/grilling")` or `["/a", "/b"]`
+- **WHEN** it holds `fetch('/orders')`, `fetch(url, '/orders')`, `open("/grilling")` or `["/a", "/b"]`
 - **THEN** none is a slash **Reference**
 
 #### Scenario: After a code span
 
-- **WHEN** it holds `` its `package.json`/build-tool scripts `` or `` `lint`/`check` ``
+- **WHEN** it holds `` its `package.json`/build-tool scripts `` or `` `lint`/check ``
 - **THEN** neither `build-tool` nor `check` is a slash **Reference**
 
 ### Requirement: Skill tool references
 
 A Skill tool **Reference** SHALL be the call form `Skill(<name>)`: the name first, optionally quoted with `"` or
 `'`, optionally given as `skill=<name>` or `skill: <name>`, then `)` or `,` and further arguments, with optional
-whitespace inside the parentheses. It SHALL also be each name in double quotes or backticks, the whole quoted
-text a name, that follows `Skill tool` in the same sentence. A sentence ends at `.`, `!` or `?` followed by
-whitespace or the end of the file, or at a blank line; a line break alone does not end it.
+whitespace inside the parentheses. It SHALL also be each name in double quotes or backticks, the whole quoted text
+a name (one trailing `.` dropped), between `Skill tool` and the end of its sentence, when it resolves to a
+**Skill**; one that resolves to none is no **Reference**: no edge, no warning. A name inside a `Skill(...)` call
+is that call's only. The sentence form uses the rules below.
+
+The sentence SHALL end at the next `Skill tool`; at a blank line; at a line opening a list item or heading; or
+at `.`, `!` or `?`, a closing quote or backtick allowed in between, then whitespace and an uppercase letter or the
+end of the file. A line break alone SHALL NOT end it.
 
 #### Scenario: Call forms
 
@@ -48,8 +53,9 @@ whitespace or the end of the file, or at a blank line; a line break alone does n
 
 #### Scenario: Sentence form
 
-- **WHEN** it holds `Call the Skill tool twice, for "grilling" and "domain-modeling".`
-- **THEN** it holds Skill tool **References** to `grilling` and `domain-modeling`
+- **WHEN** it holds `Call the Skill tool twice, for "grilling" and "domain-modeling".`, and its **Source** has
+  both
+- **THEN** it holds one Skill tool **Reference** each to `grilling` and `domain-modeling`
 
 #### Scenario: Backticked name in a sentence
 
@@ -60,12 +66,29 @@ whitespace or the end of the file, or at a blank line; a line break alone does n
 
 - **WHEN** it holds `call the Skill tool with` at the end of one line and `"codebase-design" for the vocabulary.`
   on the next
-- **THEN** it is a Skill tool **Reference** to `codebase-design`
+- **THEN** it is a Skill tool **Reference** to `codebase-design`, and no prose **Reference**
 
-#### Scenario: Outside the sentence
+#### Scenario: Sentence ends
 
-- **WHEN** it holds `` Use the Skill tool. Then see "grilling" and `notes`. ``
-- **THEN** `grilling` is no **Reference**, and `` `notes` `` is a prose **Reference**
+- **WHEN** it holds `` Use the Skill tool. Then see "grilling" and `notes`. ``, or the sentence's line is followed
+  by a list item `` - `grilling` ``
+- **THEN** `grilling` in quotes is no **Reference**, and the backticked names are prose **References**
+
+#### Scenario: Not a sentence end
+
+- **WHEN** it holds `Call the Skill tool, e.g. with "grilling" or "domain-modeling."`
+- **THEN** it holds Skill tool **References** to `grilling` and `domain-modeling`
+
+#### Scenario: Unresolved name
+
+- **WHEN** it holds `Call the Skill tool with "grilling" and set mode to "fast".`, and no **Source** has `fast`
+- **THEN** it holds a Skill tool **Reference** to `grilling` only, and no warning names `fast`
+
+#### Scenario: One reference per name
+
+- **WHEN** it holds `If the Skill tool fails, call the Skill tool again with "grilling".` or
+  `Call the Skill tool: Skill("grilling").`
+- **THEN** it holds exactly one Skill tool **Reference** to `grilling`
 
 #### Scenario: Unquoted name
 
@@ -76,3 +99,37 @@ whitespace or the end of the file, or at a blank line; a line break alone does n
 
 - **WHEN** `mp/tdd` holds `Call the Skill tool with "grilling".`, and `mp/grilling` is renamed to `mp-grilling`
 - **THEN** the vendored `mp/tdd` reads `Call the Skill tool with "mp-grilling".`
+
+### Requirement: Prose references
+
+A prose **Reference** SHALL be a code span whose whole content is a name (`` `grilling` ``), or a bare hyphenated
+token `[a-z0-9]+(-[a-z0-9]+)+` standing as its own token: not preceded by a letter, digit, `_`, `/`, `.`, `-`,
+`~`, `:`, `\`, `<`, `@`, `#`, `=`, `?`, `&`, `$` or `](`, and not followed by a letter, digit, `_`, `/`, `-`,
+`%`, `+`, or `.` or `:` and a letter or digit; nor a YAML key, first on its line (past indent or a list dash) and
+followed by `:`. It SHALL count anywhere, code blocks included, except the value of `SKILL.md`'s front matter
+`name:`, and never inside a slash or Skill tool **Reference**, whose arguments on that line belong to it, nor at
+a name that is a Skill tool **Reference** in the sentence form, on whatever line.
+
+#### Scenario: Backticked and hyphenated
+
+- **WHEN** a **Skill**'s Markdown holds `` use `grilling` ``, `then diagnosing-bugs.`, or `pre-commit run` in a
+  fenced block
+- **THEN** `grilling`, `diagnosing-bugs` and `pre-commit` are prose **References**
+
+#### Scenario: Not prose
+
+- **WHEN** it holds `grilling` unquoted, `` `grilling --fast` ``, `` `mp/grilling` ``, `--dry-run`,
+  `refs/red-green.md`, `x-ray.png`, `[see](my-skill)`, `[x](#my-skill)`, `id="my-skill"`, `foo_my-skill`,
+  `?q=my-skill`, `my-skill%20x`, `allowed-tools: Bash` or `https://x.org/my-skill`
+- **THEN** none is a prose **Reference**
+
+#### Scenario: Own name line
+
+- **WHEN** `mp/code-review`'s `SKILL.md` front matter has `name: code-review`, and `[bind]` has
+  `"mp/code-review" = "own/review"`
+- **THEN** that line is no **Reference**, and the vendored `name:` stays `code-review`
+
+#### Scenario: Slash form wins
+
+- **WHEN** it holds `` `/grilling` ``, `Skill(diagnosing-bugs)` or `Skill(skill: "grilling", args: "x-y")`
+- **THEN** each is one slash or Skill tool **Reference**, and no prose **Reference**

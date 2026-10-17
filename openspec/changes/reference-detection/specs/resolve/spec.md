@@ -22,8 +22,10 @@ print them, but when there are any SHALL print one line on standard error,
 
 #### Scenario: Build announces suggestions
 
-- **WHEN** `mp/tdd` mentions `diagnosing-bugs` and `notes`, neither in the **Hull**, and the user runs `build`
-- **THEN** stderr holds `skill-graft: 2 prose suggestion(s): run skill-graft resolve`, and stdout no suggestion block
+- **WHEN** `mp` has `diagnosing-bugs` and `notes`, **Entry** `mp/tdd` mentions `diagnosing-bugs` and
+  `` `notes` `` but calls neither, and the user runs `build`
+- **THEN** stderr holds `skill-graft: 2 prose suggestion(s): run skill-graft resolve`, and stdout no suggestion
+  block
 
 #### Scenario: Update announces suggestions
 
