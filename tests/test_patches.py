@@ -5,6 +5,8 @@ from pathlib import Path
 import pytest
 from conftest import build, make_patch, skill, vendored, write_config
 
+from skill_graft.cli import main
+
 Capsys = pytest.CaptureFixture[str]
 
 
@@ -126,6 +128,90 @@ def test_build_writes_nothing(home: Path, tmp_path: Path, capsys: Capsys) -> Non
     assert (
         package / ".apm" / "skills" / "tdd" / "SKILL.md"
     ).read_text() == "# tdd\nmore\n"
+
+
+def test_context_changed(home: Path, tmp_path: Path, capsys: Capsys) -> None:
+    tdd_patched(home, tmp_path)
+    (home / "mp" / "tdd" / "SKILL.md").write_text("# changed\n")
+
+    assert main(["resolve"]) == 1
+
+    err = capsys.readouterr().err
+    assert "patches/tdd.patch: SKILL.md: hunk @@ -1 +1,2 @@ does not apply" in err
+    assert f"redo it against {home / 'mp' / 'tdd'}" in err
+    assert not (home / ".apm" / "skill-graft" / "skill-graft.lock").exists()
+
+
+def test_two_skills_fail(home: Path, tmp_path: Path, capsys: Capsys) -> None:
+    for name in ("tdd", "notes"):
+        skill(home / "mp" / name, "# changed\n")
+        write_patch(
+            f"{name}.patch",
+            make_patch(tmp_path, {"SKILL.md": "# x\n"}, {"SKILL.md": "# x\nmore\n"}),
+        )
+    configure_patched(
+        '"mp/tdd", "mp/notes"',
+        '"mp/tdd" = ["patches/tdd.patch"]\n"mp/notes" = ["patches/notes.patch"]',
+    )
+
+    code, err = build(capsys)
+
+    assert code == 1
+    assert "patches/tdd.patch: SKILL.md: hunk" in err
+    assert "patches/notes.patch: SKILL.md: hunk" in err
+
+
+def test_another_error_after_a_patch_failure(
+    home: Path, tmp_path: Path, capsys: Capsys
+) -> None:
+    tdd_patched(home, tmp_path)
+    (home / "mp" / "tdd" / "SKILL.md").write_text("# changed\n")
+    skill(home / "mp" / "notes", "Run /x.\n")
+    (home / "own").mkdir()
+    write_config(
+        'entries = ["mp/tdd", "mp/notes"]\n[sources.mp]\npath = "~/mp"\n'
+        '[sources.own]\npath = "~/own"\n[bind]\n"mp/x" = "own/x"\n'
+        '[patches]\n"mp/tdd" = ["patches/tdd.patch"]\n'
+    )
+
+    code, err = build(capsys)
+
+    assert code == 1
+    assert err.index("patches/tdd.patch") < err.index("own/x")
+
+
+def test_reached_only_through_a_failed_skill(
+    home: Path, tmp_path: Path, capsys: Capsys
+) -> None:
+    skill(home / "mp" / "tdd", "# changed\nRun /grilling.\n")
+    skill(home / "mp" / "grilling")
+    write_patch(
+        "tdd.patch",
+        make_patch(tmp_path, {"SKILL.md": "# tdd\n"}, {"SKILL.md": "# tdd\nmore\n"}),
+    )
+    configure_patched(
+        '"mp/tdd"', '"mp/tdd" = ["patches/tdd.patch"]\n[rename]\n"mp/grilling" = "g"'
+    )
+
+    code, err = build(capsys)
+
+    assert code == 1
+    assert "patches/tdd.patch" in err
+    assert "warning" not in err
+
+
+def test_patch_outside_the_hull(home: Path, capsys: Capsys) -> None:
+    skill(home / "mp" / "tdd")
+    write_patch("notes.patch", b"--- a/SKILL.md\n")
+    write_patch("old.patch", b"--- a/SKILL.md\n")
+    configure_patched('"mp/tdd"', '"mp/notes" = ["patches/notes.patch"]')
+
+    code, err = build(capsys)
+
+    assert code == 0
+    assert err == (
+        'skill-graft: warning: [patches] "mp/notes" patches no skill in the hull\n'
+    )
 
 
 def test_no_git(

@@ -38,7 +38,7 @@ ignores.
   shared-patch, binary-change, added-file-without--N, patches-table), patch-adds-a-reference,
   patch-removes-a-reference, rename-on-top, upstream-checked-first, a non-UTF-8 file in a patched **Skill** warned
   by its **Upstream** path, build-writes-nothing, no-git, path-sources-without-patches, and every existing test.
-- [ ] 2.2 Failures collected: `walk` records `PatchFailed` with the **Upstream** folder, skips that **Skill**'s
+- [x] 2.2 Failures collected: `walk` records `PatchFailed` with the **Upstream** folder, skips that **Skill**'s
   scan, raises one `PatchError` after the BFS naming each failure and "redo it against" and the **Upstream**
   folder, or with another walk error last; `patch.unused` warns on keys naming no **Hull** **Skill**. Verify:
   context-changed, two-skills-fail, another-error-after-a-patch-failure, reached-only-through-a-failed-skill,

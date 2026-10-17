@@ -53,57 +53,70 @@ def walk(config: Config, indexes: dict[str, discovery.Index], work: Path) -> Hul
     used: set[SkillId] = set()  # bind keys some reference used
     upstream: dict[SkillId, Path] = {}
     queue = deque(skills)
-    while queue:
-        current = queue.popleft()
-        upstream[current] = skills[current]
-        files.check_files(skills[current])  # before reading any file in it
-        if current in config.patches:
-            skills[current] = patch.apply(
-                current, upstream[current], config.patches[current], work
-            )
-        found, file_warnings = references.scan(skills[current])
-        warnings += [  # naming the upstream file, not the copy, which goes away
-            w.replace(str(skills[current]), str(upstream[current]))
-            for w in file_warnings
-        ]
-        for ref in found:
-            key = SkillId(current.alias, ref.name)
-            bound = key in config.binds
-            if bound:
-                used.add(key)
-                target = config.binds[key]
-                if target is None:  # bound to nothing: not a reference
+    # Skills whose patches failed: the walk goes on, to report them all at once.
+    failed: list[tuple[SkillId, Path, list[str]]] = []
+    try:
+        while queue:
+            current = queue.popleft()
+            upstream[current] = skills[current]
+            files.check_files(skills[current])  # before reading any file in it
+            if current in config.patches:
+                try:
+                    skills[current] = patch.apply(
+                        current, upstream[current], config.patches[current], work
+                    )
+                except patch.PatchFailed as error:  # its references stay unread
+                    failed.append((current, upstream[current], error.lines))
                     continue
-            elif ref.kind == "prose":
-                target = _prose_target(current, ref, indexes[current.alias])
-                if target is None:  # matches nothing: not a reference
+            found, file_warnings = references.scan(skills[current])
+            warnings += [  # naming the upstream file, not the copy, which goes away
+                w.replace(str(skills[current]), str(upstream[current]))
+                for w in file_warnings
+            ]
+            for ref in found:
+                key = SkillId(current.alias, ref.name)
+                bound = key in config.binds
+                if bound:
+                    used.add(key)
+                    target = config.binds[key]
+                    if target is None:  # bound to nothing: not a reference
+                        continue
+                elif ref.kind == "prose":
+                    target = _prose_target(current, ref, indexes[current.alias])
+                    if target is None:  # matches nothing: not a reference
+                        continue
+                else:
+                    target = _target(current, ref, indexes)
+                    if target is None:
+                        if (current, ref.name) not in unmatched:
+                            unmatched.add((current, ref.name))
+                            warnings.append(
+                                f"`{current}` calls `{ref.text}`: no declared source has "
+                                f'a skill `{ref.name}` (to ignore it: [bind] "{key}" = '
+                                "false)"
+                            )
+                        continue
+                if ref.kind == "prose":  # never extends the hull: sorted out below
+                    prose.append((current, ref, target, bound, key))
                     continue
-            else:
-                target = _target(current, ref, indexes)
-                if target is None:
-                    if (current, ref.name) not in unmatched:
-                        unmatched.add((current, ref.name))
-                        warnings.append(
-                            f"`{current}` calls `{ref.text}`: no declared source has "
-                            f'a skill `{ref.name}` (to ignore it: [bind] "{key}" = '
-                            "false)"
-                        )
+                occurrences.setdefault(current, []).append((ref, target))
+                if target == current:
                     continue
-            if ref.kind == "prose":  # never extends the hull: sorted out below
-                prose.append((current, ref, target, bound, key))
-                continue
-            occurrences.setdefault(current, []).append((ref, target))
-            if target == current:
-                continue
-            edges.append(Edge(current, target, ref.kind, bound, ref.text, ref.name))
-            if target not in skills:
-                who = (
-                    f'[bind] "{key}" = "{target}"'
-                    if bound
-                    else f"'{current}' calls {ref.text}"
-                )
-                skills[target] = discovery.find(indexes[target.alias], target, who)
-                queue.append(target)
+                edges.append(Edge(current, target, ref.kind, bound, ref.text, ref.name))
+                if target not in skills:
+                    who = (
+                        f'[bind] "{key}" = "{target}"'
+                        if bound
+                        else f"'{current}' calls {ref.text}"
+                    )
+                    skills[target] = discovery.find(indexes[target.alias], target, who)
+                    queue.append(target)
+    except SkillGraftError as error:
+        if not failed:
+            raise
+        raise patch.PatchError(failed, str(error)) from None
+    if failed:  # the hull is incomplete: no warning about it would be right
+        raise patch.PatchError(failed)
     suggestions: dict[SkillId, set[SkillId]] = {}
     for current, ref, target, bound, key in prose:
         if target in skills:

@@ -5,7 +5,7 @@ import stat
 from pathlib import Path
 
 from skill_graft import discovery, files, git
-from skill_graft.config import PatchFile, SkillId
+from skill_graft.config import Config, PatchFile, SkillId
 from skill_graft.errors import SkillGraftError
 
 # A hunk's header in a `.rej` file, without the section heading after it.
@@ -18,6 +18,32 @@ class PatchFailed(SkillGraftError):
     def __init__(self, lines: list[str]) -> None:
         super().__init__("\n".join(lines))
         self.lines = lines
+
+
+def unused(config: Config, skills: dict[SkillId, Path]) -> list[str]:
+    """A warning per `[patches]` key naming no hull skill."""
+    return [
+        f'[patches] "{key}" patches no skill in the hull'
+        for key in config.patches
+        if key not in skills
+    ]
+
+
+class PatchError(SkillGraftError):
+    """The patches of one or more skills did not apply; then perhaps another error.
+
+    `failures` holds each failing skill, its upstream folder and what failed.
+    """
+
+    def __init__(
+        self, failures: list[tuple[SkillId, Path, list[str]]], other: str = ""
+    ) -> None:
+        lines = ["patches do not apply:"]
+        for skill, upstream, failed in failures:
+            lines += [f"  {skill}: {line}" for line in failed]
+            lines.append(f"  {skill}: redo it against {upstream}")
+        super().__init__("\n".join(lines + ([other] if other else [])))
+        self.failures = failures
 
 
 def apply(skill: SkillId, upstream: Path, patches: list[PatchFile], work: Path) -> Path:

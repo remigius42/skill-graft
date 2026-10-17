@@ -4,7 +4,7 @@ from collections.abc import Iterable
 from dataclasses import replace
 from pathlib import Path
 
-from skill_graft import discovery, hull, rename
+from skill_graft import discovery, hull, patch, rename
 from skill_graft.cache import Cache
 from skill_graft.config import Config, GitSource, deployed
 from skill_graft.errors import SkillGraftError
@@ -54,5 +54,6 @@ def resolve(config: Config, folders: dict[str, Path], work: Path) -> Hull:
     result = hull.walk(config, indexes, work)
     rename.check_unique(config, result.deployed)
     warnings = rename.unused(config, result.skills)
+    warnings += patch.unused(config, result.skills)
     warnings += rename.check_reserved(config, result.deployed)
     return replace(result, warnings=result.warnings + warnings)
