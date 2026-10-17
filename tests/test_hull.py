@@ -295,7 +295,11 @@ def test_prose_never_extends_the_hull(home: Path, capsys: Capsys) -> None:
     skill(home / "mp" / "diagnosing-bugs")
     two_sources(home, "Then diagnosing-bugs, or `foo`.\n")
 
-    assert build(capsys) == (0, "")
+    # A suggestion, announced; no warning, and not vendored.
+    assert build(capsys) == (
+        0,
+        "skill-graft: 1 prose suggestion(s): run skill-graft resolve\n",
+    )
     assert vendored() == {"tdd"}
 
 

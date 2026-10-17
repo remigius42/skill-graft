@@ -145,15 +145,27 @@ def test_suggestion_printed(home: Path, capsys: Capsys) -> None:
     )
 
 
-def test_build_prints_no_suggestions(home: Path, capsys: Capsys) -> None:
-    skill(home / "mp" / "tdd", "then diagnosing-bugs\n")
+def test_build_announces_suggestions(home: Path, capsys: Capsys) -> None:
+    skill(home / "mp" / "tdd", "then diagnosing-bugs and `notes`\n")
     skill(home / "mp" / "diagnosing-bugs")
+    skill(home / "mp" / "notes")
     configure(["mp/tdd"], mp="~/mp")
 
     assert main(["build", "--no-install"]) == 0
 
     out, err = capsys.readouterr()
+    assert "skill-graft: 2 prose suggestion(s): run skill-graft resolve\n" in err
     assert "diagnosing-bugs" not in out + err
+
+
+def test_build_without_suggestions_prints_no_line(home: Path, capsys: Capsys) -> None:
+    skill(home / "mp" / "tdd", "/notes\n")
+    skill(home / "mp" / "notes")
+    configure(["mp/tdd"], mp="~/mp")
+
+    assert main(["build", "--no-install"]) == 0
+
+    assert "prose suggestion(s)" not in capsys.readouterr().err
 
 
 def test_tree_leaves_out_prose_not_rewritten(home: Path, capsys: Capsys) -> None:

@@ -9,6 +9,7 @@ import tomlkit
 
 from skill_graft import files, paths, rename
 from skill_graft.config import Config, GitSource, SkillId
+from skill_graft.errors import notice
 from skill_graft.hull import Edge, Hull
 
 
@@ -156,6 +157,12 @@ def suggestions(hull: Hull) -> str:
         "mentioned in prose, not in the hull (`skill-graft add <skill id>` to include):"
     )
     return "".join(f"{line}\n" for line in ["", header, *lines])
+
+
+def announce_suggestions(hull: Hull) -> None:
+    """For `build` and `update`: one line pointing to `resolve`, which lists them."""
+    if hull.suggestions:
+        notice(f"{len(hull.suggestions)} prose suggestion(s): run skill-graft resolve")
 
 
 def skill_hashes(hull: Hull) -> dict[SkillId, str]:
