@@ -318,6 +318,11 @@ def test_stale_lock_left_alone(home: Path, capsys: Capsys) -> None:
     assert capsys.readouterr().out == "mp/tdd\nown/b\n"
     assert lock_file(home).read_bytes() == before
 
+    assert main(["why", "own/b"]) == 0
+
+    assert capsys.readouterr().out == "own/b (entry)\n"
+    assert lock_file(home).read_bytes() == before
+
 
 def test_tree_fails_on_a_failing_patch(
     home: Path, tmp_path: Path, capsys: Capsys
