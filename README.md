@@ -14,20 +14,59 @@ skills. Renames
 come with it: a skill named like a harness built-in (`code-review`) shadows it or is shadowed by it, and renaming
 one skill by hand misses the other skills that call it by name.
 
-Status: early. `skill-graft init` and `skill-graft build` vendor entries from local folders and from git repositories,
-read at the commit `ref` names, and deploy them through APM; `skill-graft update` moves each git source's `ref` to its
-branch tip. `build` follows slash references and Skill tool calls (`Skill(x)`, or "call the Skill tool with `x`")
-to the whole hull (prose mentions only become suggestions), applies `[rename]` and each source's `prefix`
-(`prefix = "mp-"` deploys every skill of `mp` as `mp-<name>`, dependencies included; a `[rename]` key wins) to
-folders, `name:` and every reference, and checks deployed names against reserved ones; it applies `[patches]`
-before any of that, so a patch can change what a skill calls. `skill-graft resolve` shows the tree and writes the
-lock, then lists the skills prose mentions outside the hull (`build` and `update` only count them); `skill-graft tree`
-shows it and writes nothing, as text or, with `--format mermaid`, as a Mermaid flowchart (`--link` prints a mermaid.live
-URL that holds it); `skill-graft why <skill>` shows the paths from the entries that reach a skill.
-`skill-graft add` and `remove <skill-id>…` change the entries in `skill-graft.toml`, and `rename <skill-id> <name>` a
-skill's deployed name (the name it would deploy as without a key, prefix included, undoes it), keeping the
-file's comments, once the result resolves.
-`skill-graft help [command]`, or `--help` on any command, explains each.
+Status: beta.
+
+## Commands
+
+- `init [--project]`: create the package, `~/.apm/skill-graft/` (or `./.apm/skill-graft/`), and register it with APM.
+- `resolve`: compute the hull, write the lock, print the tree and the skills prose mentions outside the hull.
+- `build [--no-install]`: resolve, vendor the hull patched and renamed into `.apm/skills/`, deploy through APM.
+- `update [source…] [--dry-run]`: move each git source's `ref` to its branch tip, if the hull still resolves there.
+- `tree [--format text|mermaid] [--link]`: print the hull, writing nothing; `--link` gives a mermaid.live URL.
+- `why <skill>`: print the paths from the entries that reach a skill, and its upstream folder.
+- `add <skill-id>…`, `remove <skill-id>…`: change `entries`, keeping the file's comments, once the result resolves.
+- `rename <skill-id> <name>`: set a skill's deployed name; the name it would deploy as without a key undoes it.
+- `help [command]`, or `--help` on any command: explain it.
+
+## Config
+
+`skill-graft.toml`, in the package:
+
+```toml
+entries = ["mp/tdd", "mp/implement", "own/chisel"]
+reserved = ["review"]
+
+[sources.mp]
+git = "https://github.com/mattpocock/skills.git"
+branch = "main"  # optional; defaults to the remote's default branch
+ref = "<sha>"
+prefix = "mp-"   # optional; every skill of `mp` deploys as mp-<name>
+
+[sources.own]
+path = "~/skills"
+
+[rename]
+"own/chisel" = "own-chisel"
+"mp/tdd" = "tdd"  # wins over the prefix
+
+[bind]
+"mp/grilling" = "own/grilling"
+"mp/tmp" = false  # `/tmp` from `mp` is not a reference
+
+[patches]
+"mp/implement" = ["patches/implement-no-pr.patch"]
+```
+
+- `entries`: the skills you ask for. Slash references and Skill tool calls (`Skill(x)`, or "call the Skill tool
+  with `x`") pull in the rest of the hull; prose mentions only become suggestions.
+- `sources`: local folders (`path`) and git repositories (`git`), read at the commit `ref` names.
+- `prefix` and `[rename]`: a skill deploys as its `[rename]` value, else its source's prefix before its name,
+  else its name. Carried into its folder, `name:` and every reference.
+- `[bind]`: settles which skill a reference means when several sources have one of that name, or with `false`
+  makes it no reference at all.
+- `[patches]`: unified diffs, applied before renames, so a patch can change what a skill calls (see
+  [Writing a patch](#writing-a-patch)).
+- `reserved`: deployed names to refuse, on top of the harness built-ins skill-graft warns about.
 
 ## Installation
 
