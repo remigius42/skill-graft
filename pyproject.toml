@@ -3,6 +3,8 @@ name = "skill-graft"
 version = "0.1.0"
 description = "Graft agent skills from other people's repositories onto your own setup"
 readme = "README.md"
+license = "MIT"
+license-files = ["LICENSE"]
 requires-python = ">=3.11"
 dependencies = [
   "tomlkit>=0.15.2",
