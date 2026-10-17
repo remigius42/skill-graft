@@ -52,12 +52,15 @@ path = "~/Documents/sync/2_areas/software/chisel_skill"
   registers it with `apm install -g <absolute path of ~/.apm/skill-graft>`. Refuses if the folder exists.
 - `add <skill-id>…`, `remove <skill-id>…`, `rename <skill-id> <name>`: resolve the edited config in memory and
   only if that succeeds write the TOML (in place, as `update` does), then the lock, and print what `resolve`
-  prints. Notices go to stderr with the warnings. Never build.
+  prints. Notices go to stderr with the warnings. Never build. An edit that changes nothing (every skill ID
+  already an entry, the current deployed name) prints only its notices and neither resolves nor writes.
 - `add` appends each skill ID to `entries` (creating the key before the first table if absent). An unknown alias
   or skill is an error; one already an entry is a notice and left alone; one already in the hull is added with a
-  notice naming the skill that reaches it.
-- `remove` deletes each skill ID from `entries`. One that is no entry is an error; one still in the hull is
-  removed with a notice naming the skill that reaches it. No command edits binds, patches or `reserved`, and only
+  notice naming the skill that reaches it from the other entries.
+- `remove` deletes each skill ID from `entries`, the last one too. One that is no entry is an error; one still in
+  the hull is removed with a notice naming the skill that reaches it from the remaining entries. Both notices come
+  from one breadth-first walk of the edited hull's slash and Skill tool edges, so the parent named is never
+  reached only through the skill itself. No command edits binds, patches or `reserved`, and only
   `update` edits sources (their `ref`).
 - `rename` sets the skill's `[rename]` value (appending the table if absent); renaming to the upstream name
   removes the key, which is how a rename is undone, and the current deployed name is a notice. An unknown alias or
@@ -73,16 +76,20 @@ path = "~/Documents/sync/2_areas/software/chisel_skill"
   does all of it without writing the TOML, the lock or the cache.
 - `why <skill>`: the reverse paths from the entries, as an inverted tree (`cargo tree -i`): the skill at the
   root, each child a skill whose slash or Skill tool reference reaches it, joined by `├─←` and `└─←`, labels and
-  `(*)` as in `resolve`'s tree, an entry marked `(entry)` and not expanded; prose and self-references omitted.
+  `(*)` as in `resolve`'s tree, an entry below the root marked `(entry)` and not expanded (the root always
+  expands, marked `(entry)` if it is one); children in hull order; prose and self-references omitted.
   `<skill>` is a skill ID if it holds a `/`, else a deployed name. A bare name that is only a renamed skill's
-  upstream name is an error naming its skill ID and deployed name. A skill outside the hull is an error saying
-  so, plus who mentions it in prose and the `add` hint.
+  upstream name is an error naming its skill ID and deployed name. A skill outside the hull, by skill ID or by the
+  bare name of a prose suggestion, is an error saying so, plus who mentions it in prose and the `add` hint.
 - `tree [--format text|mermaid] [--link]`: the hull as `resolve`'s tree (without the suggestions), or as a
   Mermaid `flowchart TD`: nodes `n0…` in hull order labelled as tree lines are (`as <deployed>`, `(patched)`),
   entries in `classDef entry`, one edge per source, target, kind and bind labelled with the reference as written
   (`, bind`), prose edges dotted and only where the build rewrites them, no code fence, no links to sources.
-  `--link` (Mermaid only) prints a `https://mermaid.live/edit#pako:…` URL instead: the diagram lives in the
-  fragment, so nothing is uploaded and skill-graft makes no network call.
+  Labels are quoted, with `"` as `#quot;` and every backtick as `#96;`: a quoted label opening with a backtick is
+  a Mermaid Markdown string. `--link` (Mermaid only) prints a `https://mermaid.live/edit#pako:…` URL instead: the
+  diagram lives in the fragment, so nothing is uploaded and skill-graft makes no network call. The fragment is
+  mermaid-live-editor's `pako` form, the JSON state `{"code": <diagram>, "mermaid": "{\"theme\": \"default\"}"}`
+  zlib-deflated at level 9 in url-safe base64 without padding; the editor merges it over its default state.
 - `help [command]`: the same text as `-h`/`--help`, which every command takes. No command, or an unknown one,
   prints the error and the command list to stderr and exits 2.
 

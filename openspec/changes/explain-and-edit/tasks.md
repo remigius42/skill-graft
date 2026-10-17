@@ -58,6 +58,6 @@ synthetic **Skills** and git repositories. Each group updates `README.md` for wh
 
 ## 6. Docs
 
-- [ ] 6.1 `docs/design.md`: `why`, `tree`, edits and help marked as built, the mermaid.live state shape. At
+- [x] 6.1 `docs/design.md`: `why`, `tree`, edits and help marked as built, the mermaid.live state shape. At
   archive, the new main specs keep their Purpose. Verify: `pre-commit run --all-files` green, and
   `openspec validate explain-and-edit --strict` passes.
