@@ -285,3 +285,16 @@ def test_another_projects_package_is_skipped(
 
     assert code == 1
     assert "own/tdd" in err
+
+
+def test_symlinked_package_is_skipped(home: Path, capsys: Capsys) -> None:
+    # The package folder itself is a link to a folder of another name.
+    skill(home / "team-sg" / ".apm" / "skills" / "tdd")
+    (home / "src" / "repo" / ".apm").mkdir(parents=True)
+    (home / "src" / "repo" / ".apm" / "skill-graft").symlink_to(home / "team-sg")
+    configure(["own/tdd"], own="~/src")
+
+    code, err = build(capsys)
+
+    assert code == 1
+    assert "own/tdd" in err
