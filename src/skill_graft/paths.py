@@ -1,11 +1,38 @@
-"""Where skill-graft and APM keep their files, all derived from `HOME`."""
+"""Where skill-graft and APM keep their files, derived from the scope's root.
+
+The root is the home folder (user scope) or a project folder (project scope).
+"""
 
 import os
 from pathlib import Path
 
+_root: Path | None = None
+
+
+def use(root: Path | None) -> None:
+    """Sets the root for this invocation; `None` falls back to the home folder."""
+    global _root
+    _root = root
+
+
+def root() -> Path:
+    return Path.home() if _root is None else _root
+
+
+def discover(start: Path) -> Path:
+    """The first of `start` and its ancestors holding `.apm/skill-graft/`, stopping
+    after the home folder; the home folder if none does."""
+    home = Path.home().resolve()
+    for folder in [start.resolve(), *start.resolve().parents]:
+        if folder == home:
+            break
+        if (folder / ".apm" / "skill-graft").is_dir():
+            return folder
+    return Path.home()
+
 
 def package() -> Path:
-    return Path.home() / ".apm" / "skill-graft"
+    return root() / ".apm" / "skill-graft"
 
 
 def config_file() -> Path:

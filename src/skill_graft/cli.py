@@ -1,6 +1,7 @@
 """The `skill-graft` command line."""
 
 import argparse
+import os
 import re
 import sys
 import tempfile
@@ -227,6 +228,8 @@ def main(argv: list[str] | None = None) -> int:
     if args.command == "tree" and args.link and args.format != "mermaid":
         commands["tree"].error("--link needs --format mermaid")
     try:
+        if args.command != "init":
+            paths.use(paths.discover(_working_folder()))
         if args.command == "init":
             init.init()
         elif args.command == "update":
@@ -281,7 +284,18 @@ def main(argv: list[str] | None = None) -> int:
     except (SkillGraftError, OSError) as error:
         print(f"skill-graft: {error}", file=sys.stderr)
         return 1
+    finally:
+        paths.use(None)
     return 0
+
+
+def _working_folder() -> Path:
+    try:
+        return Path.cwd()
+    except FileNotFoundError:
+        # The shell's PWD still names the deleted folder.
+        folder = f" {os.environ['PWD']}" if os.environ.get("PWD") else ""
+        raise SkillGraftError(f"the working folder{folder} no longer exists") from None
 
 
 def _load() -> config.Config:

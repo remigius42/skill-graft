@@ -9,7 +9,7 @@ for what it ships.
 
 - [x] 1.1 `conftest.py`: the autouse `home` fixture also `monkeypatch.chdir(home)`, so the walk up stops at once
   and never reaches the developer's real home. Verify: every existing test green, unchanged.
-- [ ] 1.2 `paths.discover(start)` and the module-level root (`paths.use(root)`, `paths.root()`,
+- [x] 1.2 `paths.discover(start)` and the module-level root (`paths.use(root)`, `paths.root()`,
   `paths.scope()`); `package()` derives from the root, the home folder while unset; `cli.main` sets it after
   parsing, inside its error handling, by discovery for every command but `init` (which gets the home folder),
   and unsets it in a `finally`. Verify: inside-a-project (from a subfolder), project-without-a-package,
