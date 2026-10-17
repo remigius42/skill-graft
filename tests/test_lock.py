@@ -8,7 +8,7 @@ from typing import Any
 
 from conftest import Upstream, configure, make_patch, skill, write_config
 
-from skill_graft import cache, config, lock, paths, resolve
+from skill_graft import config, lock, paths, resolve
 from skill_graft.cache import Cache
 from skill_graft.cli import main
 
@@ -86,9 +86,15 @@ def test_upstream_recorded(home: Path, tmp_path: Path) -> None:
 
     skills = {s["id"]: s for s in parsed()["skills"]}
 
-    tree = paths.cache() / "trees" / cache.key(upstream.url) / sha
-    assert skills["mp/tdd"]["upstream"] == str(tree / "skills" / "tdd")
-    assert skills["own/chisel"]["upstream"] == str(home / "own" / "chisel")
+    assert skills["mp/tdd"]["upstream"] == "skills/tdd"
+    assert skills["own/chisel"]["upstream"] == "chisel"
+
+
+def test_skill_at_the_source_root(home: Path) -> None:
+    skill(home / "own")
+    write_config('entries = ["own/own"]\n[sources.own]\npath = "~/own"\n')
+
+    assert [s["upstream"] for s in parsed()["skills"]] == ["."]
 
 
 def patched_tdd(home: Path, tmp_path: Path, files: list[str]) -> None:

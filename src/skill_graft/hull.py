@@ -1,7 +1,7 @@
 """Resolves references and walks the hull: the entries and every skill they reach."""
 
 from collections import deque
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from pathlib import Path
 
 from skill_graft import discovery, files, patch, references
@@ -35,6 +35,8 @@ class Hull:
     upstream: dict[SkillId, Path]
     # Each patched skill's patch files, as written, in apply order.
     patches: dict[SkillId, list[str]]
+    # Each source's folder as read (a git source's checkout); `resolve` sets it.
+    roots: dict[str, Path] = field(default_factory=dict)
 
 
 def walk(config: Config, indexes: dict[str, discovery.Index], work: Path) -> Hull:

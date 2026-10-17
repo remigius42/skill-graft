@@ -45,7 +45,9 @@ def render(
         }
         if (deployed := hull.deployed[skill_id]) != skill_id.name:
             item["deployed"] = deployed
-        item["upstream"] = str(hull.upstream[skill_id])
+        # Relative to its source, so the lock reads the same on every machine.
+        root = hull.roots[skill_id.alias]
+        item["upstream"] = hull.upstream[skill_id].relative_to(root).as_posix()
         if skill_id in hull.patches:  # in apply order, never sorted
             item["patches"] = hull.patches[skill_id]
         skills.append(tomlkit.item(item | {"hash": hashes[skill_id]}))
