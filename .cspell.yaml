@@ -13,6 +13,7 @@ words:
   - commitlint
   - conftest
   - copymode
+  - copystat
   - copytree
   - dataviz
   - delenv

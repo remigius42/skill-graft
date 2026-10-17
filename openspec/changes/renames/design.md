@@ -21,11 +21,14 @@ awareness beyond the regex); YAML beyond the `name:` line.
 ## Decisions
 
 - **Prose in the same regex**: two more alternatives after slash and Skill tool in `references.REFERENCE`:
-  `` (?<!`)`(?P<code>NAME)`(?!`) `` and the hyphenated token with the slash lookbehinds (`[\w./:~\\<@-]`, `](`,
-  `="`, `='`) and `(?![\w/-]|[.:]\w)`, exactly the boundaries the hull spec lists.
-  One leftmost scan means `` `/grilling` `` and `Skill(diagnosing-bugs)` yield one **Reference**, never a prose
-  one inside. `Reference` gains `kind = "prose"` and `span`: the offsets in the decoded text of the name alone (a slash
-  name's trailing dots excluded, as `scan` strips them), for rewriting. The front matter `name:` value of
+  `` (?<!`)`(?P<code>NAME)`(?!`) `` and the hyphenated token, bounded as the hull spec lists: the slash
+  lookbehinds plus `#`, `=`, `?`, `&` and `$` (anchors, query values, variables), and not followed by `%` or `+`
+  either (URL encoding). `scan` then drops a hyphenated token that opens its line and is followed by `:`, a YAML
+  key such as `allowed-tools:`, which a lookbehind cannot see. The Skill tool alternative consumes the call's
+  further arguments up to `)` on its line, so one leftmost scan means `` `/grilling` ``, `Skill(diagnosing-bugs)`
+  and `Skill(grilling, args: "x-y")` each yield one **Reference**, never a prose one inside. `Reference` gains
+  `kind = "prose"` and `span`: the offsets in the decoded text of the name alone (a slash name's trailing dots
+  excluded, as `scan` strips them), for rewriting. The front matter `name:` value of
   `SKILL.md` is skipped, so a **Bind** on a **Skill**'s own name never rewrites its `name:`.
   Alternative, a second pass for prose: overlaps must then be removed by hand.
 
@@ -57,7 +60,7 @@ awareness beyond the regex); YAML beyond the `name:` line.
   - `set_name(text, name)`: line-based on the front matter `discovery.read_name` reads (BOM and line endings kept):
     replace the `name:` line, else insert after the opening `---`, else prepend `---\nname: x\n---\n`. The value
     is double-quoted unless it is `[a-z][a-z0-9-]*` and not a YAML 1.1 bool or null word (`y`, `no`, `on`, …).
-  - `SHIPPED`: a sorted tuple of names, Claude Code's built-in commands and bundled skills (`agents`, `clear`,
+  - `SHIPPED`: a list of names, Claude Code's built-in commands and bundled skills (`agents`, `clear`,
     `code-review`, `compact`, `config`, `context`, `doctor`, `help`, `hooks`, `init`, `loop`, `mcp`, `memory`,
     `model`, `resume`, `review`, `schedule`, `security-review`, `simplify`, …) and Codex's (`diff`, `status`, …).
     Matched by `casefold`.
@@ -67,10 +70,13 @@ awareness beyond the regex); YAML beyond the `name:` line.
   `update` resolves twice, and its previous **Hull** needs only hashes.
 
 - **Vendor**: `vendor.vendor(hull)` copies each folder to `skills.new/<deployed>/` with `copytree` and a
-  `copy_function` that writes the rewritten bytes (then `copymode`) for a rewritten path and `copy2`s any other,
-  before the swap; a failure still leaves `.apm/skills/` as it was. No file is opened twice and `copytree` applies
-  folder modes last, so a read-only upstream file or folder (`0444`, `0555`, a Nix store) never blocks a rewrite.
-  Alternative, writing over the copy afterwards: fails on read-only copies.
+  `copy_function` that writes the rewritten bytes (then `copystat`) for a rewritten path, matched by its path
+  relative to the skill as `folder_hash` keys it, and `copy2`s any other, before the swap; a failure still leaves
+  `.apm/skills/` as it was. `copytree` applies folder modes last, so a read-only upstream file or folder (`0444`,
+  `0555`, a Nix store) never blocks a rewrite. Alternative, writing over the copy afterwards: fails on read-only
+  copies. The rewrites are computed before `skills.new/` exists, and each splice first checks that its span still
+  holds the name scanned: a file edited, deleted or no longer UTF-8 since the scan is an error naming it, never a
+  silently mangled copy.
 
 - **Hash**: `lock.folder_hash(folder, overrides)` hashes `overrides[path]` instead of the file's bytes where
   given; `lock.skill_hashes(hull)` applies each **Skill**'s rewrites, and `lock.render` uses it unless given
