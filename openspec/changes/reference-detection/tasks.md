@@ -35,7 +35,7 @@ skill text is copied in. Each group updates `README.md` or `docs/design.md` for 
 
 ## 4. Real-world check
 
-- [ ] 4.1 By hand, outside the test suite, in this repository's project package: `uv run skill-graft update`
+- [x] 4.1 By hand, outside the test suite, in this repository's project package: `uv run skill-graft update`
   then `tree` shows `mp/grilling`, `mp/domain-modeling`, `mp/codebase-design` and `mp/writing-for-agents` in
   the **Hull** and no `/orders` or `/build-tool` warning. Note the result in the commit body. Verify:
   `pre-commit run --all-files` green and `openspec validate reference-detection --strict` passes.
