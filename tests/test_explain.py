@@ -1,10 +1,11 @@
 """The `explain` spec: `why` and `tree` show the hull and write nothing."""
 
+import re
 from pathlib import Path
 from typing import TypeAlias
 
 import pytest
-from conftest import configure, make_patch, skill, write_config
+from conftest import Upstream, configure, make_patch, skill, write_config
 
 from skill_graft.cli import main
 
@@ -29,6 +30,66 @@ def test_tree_is_resolves_tree(home: Path, capsys: Capsys) -> None:
     tree = capsys.readouterr().out
     assert tree == ("mp/tdd\n└── mp/grilling (/grilling)\n    └── mp/notes (/notes)\n")
     assert resolved.startswith(tree + "\nmentioned in prose")
+
+
+def test_mermaid_diagram(home: Path, capsys: Capsys) -> None:
+    skill(home / "mp" / "tdd", "/grilling, see `grilling`\n")
+    skill(home / "mp" / "grilling")
+    write_config(
+        'entries = ["mp/tdd"]\n[sources.mp]\npath = "~/mp"\n'
+        '[rename]\n"mp/grilling" = "mp-grilling"\n'
+    )
+
+    assert main(["tree", "--format", "mermaid"]) == 0
+
+    assert capsys.readouterr().out == (
+        "flowchart TD\n"
+        '  n0["mp/tdd"]:::entry\n'
+        '  n1["mp/grilling as mp-grilling"]\n'
+        '  n0 -->|"/grilling"| n1\n'
+        '  n0 -.->|"#96;grilling#96;, prose"| n1\n'
+        "  classDef entry stroke-width:3px\n"
+    )
+
+
+def test_mermaid_labels_quoted(home: Path, capsys: Capsys) -> None:
+    skill(home / "mp" / "tdd", 'Skill(skill="grilling"), /notes, see `notes`\n')
+    skill(home / "mp" / "grilling")
+    skill(home / "mp" / "notes")
+    write_config(
+        'entries = ["mp/tdd"]\n[sources.mp]\npath = "~/mp"\n'
+        '[rename]\n"mp/notes" = "n"\n'
+    )
+
+    assert main(["tree", "--format", "mermaid"]) == 0
+
+    out = capsys.readouterr().out
+    labels = re.findall(r"\[(.*?)\]|\|(.*?)\|", out)
+    assert len(labels) == 6  # three nodes, three arrows
+    for label in (a or b for a, b in labels):
+        assert label.startswith('"') and label.endswith('"'), label
+        assert "`" not in label and '"' not in label[1:-1], label
+
+
+def test_mermaid_has_no_source_links(
+    home: Path, tmp_path: Path, capsys: Capsys
+) -> None:
+    upstream = Upstream(tmp_path / "upstream")
+    sha = upstream.commit({"tdd/SKILL.md": "/notes\n"})
+    skill(home / "own" / "notes")
+    write_config(
+        'entries = ["mp/tdd"]\n'
+        f'[sources.mp]\ngit = "{upstream.url}"\nref = "{sha}"\n'
+        '[sources.own]\npath = "~/own"\n'
+    )
+
+    assert main(["tree", "--format", "mermaid"]) == 0
+    first = capsys.readouterr().out
+    assert main(["tree", "--format", "mermaid"]) == 0
+
+    assert "own/notes" in first
+    assert "click" not in first and "://" not in first
+    assert capsys.readouterr().out == first
 
 
 def test_tree_writes_no_lock(home: Path, capsys: Capsys) -> None:

@@ -8,7 +8,17 @@ import textwrap
 from pathlib import Path
 from typing import Any, NoReturn
 
-from skill_graft import apm, config, init, lock, paths, resolve, update, vendor
+from skill_graft import (
+    apm,
+    config,
+    explain,
+    init,
+    lock,
+    paths,
+    resolve,
+    update,
+    vendor,
+)
 from skill_graft.cache import Cache
 from skill_graft.errors import SkillGraftError, warn
 from skill_graft.hull import Hull
@@ -119,11 +129,15 @@ def _parser() -> tuple[_Parser, dict[str, argparse.ArgumentParser]]:
         help="show the hull as a tree, writing nothing",
         description=(
             "Compute the hull as resolve does and print its tree, without the prose "
-            "suggestions and without writing the lock."
+            "suggestions and without writing the lock; or print it as a Mermaid "
+            "flowchart, to paste into Markdown."
         ),
     )
     tree.add_argument(
-        "--format", choices=["text"], default="text", help="default: text"
+        "--format",
+        choices=["text", "mermaid"],
+        default="text",
+        help="text (default): resolve's tree; mermaid: a Mermaid flowchart",
     )
     help_parser = commands.add_parser(
         "help",
@@ -159,7 +173,10 @@ def main(argv: list[str] | None = None) -> int:
         elif args.command == "tree":
             with tempfile.TemporaryDirectory(prefix="skill-graft-") as work:
                 _, resolved = _resolve(Path(work))
-            print(lock.tree(resolved), end="")
+            if args.format == "mermaid":
+                print(explain.mermaid(resolved), end="")
+            else:
+                print(lock.tree(resolved), end="")
             warn(resolved.warnings)
         elif args.command == "resolve":
             with tempfile.TemporaryDirectory(prefix="skill-graft-") as work:

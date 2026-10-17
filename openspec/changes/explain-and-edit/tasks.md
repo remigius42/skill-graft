@@ -25,7 +25,7 @@ synthetic **Skills** and git repositories. Each group updates `README.md` for wh
 
 - [x] 3.1 `tree [--format text]`: `_resolve` then `lock.tree`, writing nothing. Verify: same-tree, no-lock, stale
   lock unchanged (byte compare), failing-patch.
-- [ ] 3.2 `explain.mermaid(hull)` and `--format mermaid`, labels escaped. Verify: diagram, labels-quoted,
+- [x] 3.2 `explain.mermaid(hull)` and `--format mermaid`, labels escaped. Verify: diagram, labels-quoted,
   no-source-links, output identical across two runs.
 - [ ] 3.3 `explain.link(source)` and `--link`; `--link` without `--format mermaid` exits 2. Verify:
   link-decodes-to-the-diagram, link-without-mermaid; once by hand, the printed URL opens the diagram on

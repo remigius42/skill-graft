@@ -15,7 +15,8 @@ read at the commit `ref` names, and deploy them through APM; `skill-graft update
 branch tip. `build` follows slash, Skill tool and prose references to the whole hull, applies `[rename]` to folders,
 `name:` and every reference, and checks deployed names against reserved ones; it applies `[patches]` before any of that,
 so a patch can change what a skill calls. `skill-graft resolve` shows the tree and writes the lock; `skill-graft tree`
-shows it and writes nothing. `skill-graft help [command]`, or `--help` on any command, explains each.
+shows it and writes nothing, as text or, with `--format mermaid`, as a Mermaid flowchart. `skill-graft help [command]`,
+or `--help` on any command, explains each.
 
 ## Writing a patch
 
