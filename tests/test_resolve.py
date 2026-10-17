@@ -139,7 +139,7 @@ def test_suggestion_printed(home: Path, capsys: Capsys) -> None:
         "mp/tdd\n"
         "└── mp/grilling (/grilling)\n"
         "\n"
-        "mentioned in prose, not in the hull (add to entries to include):\n"
+        "mentioned in prose, not in the hull (`skill-graft add <skill id>` to include):\n"
         "  mp/diagnosing-bugs, by mp/grilling, mp/tdd\n"
         "  mp/notes, by mp/tdd\n"
     )

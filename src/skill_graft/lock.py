@@ -141,7 +141,9 @@ def suggestions(hull: Hull) -> str:
         f"  {skill}, by {', '.join(sorted(str(s) for s in hull.suggestions[skill]))}"
         for skill in sorted(hull.suggestions)
     ]
-    header = "mentioned in prose, not in the hull (add to entries to include):"
+    header = (
+        "mentioned in prose, not in the hull (`skill-graft add <skill id>` to include):"
+    )
     return "".join(f"{line}\n" for line in ["", header, *lines])
 
 
