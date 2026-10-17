@@ -38,6 +38,14 @@ def folders(config: Config, cache: Cache, refs: dict[str, str]) -> dict[str, Pat
     return result
 
 
+def indexes(config: Config, folders: dict[str, Path]) -> dict[str, discovery.Index]:
+    """Every source's skills by name, a git source's confined to its checkout."""
+    return {
+        alias: discovery.index(folder, isinstance(config.sources[alias], GitSource))
+        for alias, folder in folders.items()
+    }
+
+
 def resolve(config: Config, folders: dict[str, Path], work: Path) -> Hull:
     """The hull, its skills found and checked for stray symlinks and name clashes.
 
@@ -47,11 +55,7 @@ def resolve(config: Config, folders: dict[str, Path], work: Path) -> Hull:
     rename.check_unique(
         config, {entry: deployed(config, entry) for entry in config.entries}
     )
-    indexes = {
-        alias: discovery.index(folder, isinstance(config.sources[alias], GitSource))
-        for alias, folder in folders.items()
-    }
-    result = hull.walk(config, indexes, work)
+    result = hull.walk(config, indexes(config, folders), work)
     rename.check_unique(config, result.deployed)
     warnings = rename.unused(config, result.skills)
     warnings += patch.unused(config, result.skills)

@@ -15,9 +15,9 @@ synthetic **Skills** and git repositories. Each group updates `README.md` for wh
 
 ## 2. Shared resolution
 
-- [ ] 2.1 `config.parse(text, file)` split from `load()`; `resolve.resolve` also returns the **Source** indexes;
-  `lock.py`'s tree line filter and node label become module functions; `errors.notice()`. Verify: every existing
-  test unchanged and green.
+- [x] 2.1 `config.parse(text, file)` split from `load()`; `resolve.indexes()` split from `resolve.resolve`;
+  `lock.py`'s tree line filter, node label and edge label become module functions (`errors.notice()` lands with
+  its first use, in 5.2). Verify: every existing test unchanged and green.
 - [ ] 2.2 `resolve`'s suggestion header names `skill-graft add <skill id>`. Verify: suggestion-printed,
   no-suggestions.
 

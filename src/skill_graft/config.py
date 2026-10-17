@@ -73,10 +73,19 @@ def deployed(config: Config, skill: SkillId) -> str:
 def load() -> Config:
     file = paths.config_file()
     try:
-        data = tomllib.loads(file.read_bytes().decode())
+        text = file.read_bytes().decode()
     except FileNotFoundError:
         raise SkillGraftError(f"{file} not found: run `skill-graft init`") from None
-    except (tomllib.TOMLDecodeError, UnicodeDecodeError) as error:
+    except UnicodeDecodeError as error:
+        raise SkillGraftError(f"{file}: {error}") from None
+    return parse(text, file)
+
+
+def parse(text: str, file: Path) -> Config:
+    """The config `text` holds, read as `file`: relative paths start at its folder."""
+    try:
+        data = tomllib.loads(text)
+    except tomllib.TOMLDecodeError as error:
         raise SkillGraftError(f"{file}: {error}") from None
     known = {"sources", "entries", "bind", "rename", "reserved", "patches"}
     if unknown := sorted(data.keys() - known):

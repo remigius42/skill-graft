@@ -72,47 +72,65 @@ def tree(hull: Hull) -> str:
     shows only when the build rewrites it; it pulls nothing in, so its target
     expands elsewhere: `(*)`.
     """
-    children: dict[SkillId, dict[tuple[SkillId, str, bool], Edge]] = {}
-    for edge in hull.edges:  # in scan order; one line per target, kind and bind
-        if edge.kind == "prose" and hull.deployed[edge.target] == edge.name:
-            continue
-        key = (edge.target, edge.kind, edge.bind)
-        children.setdefault(edge.source, {}).setdefault(key, edge)
+    children = shown_edges(hull)
     expanded: set[SkillId] = set()
     lines: list[str] = []
 
-    def node(skill_id: SkillId) -> str:
-        deployed = hull.deployed[skill_id]
-        return (
-            str(skill_id)
-            + ("" if deployed == skill_id.name else f" as {deployed}")
-            + (" (patched)" if skill_id in hull.patches else "")
-        )
-
     def expand(skill_id: SkillId, prefix: str) -> None:
         expanded.add(skill_id)
-        edges = list(children.get(skill_id, {}).values())
+        edges = children.get(skill_id, [])
         for i, edge in enumerate(edges):
             last = i == len(edges) - 1
-            label = ", ".join(
-                [edge.text]
-                + (["prose"] if edge.kind == "prose" else [])
-                + (["bind"] if edge.bind else [])
-            )
             repeat = (
                 edge.kind == "prose"
                 or edge.target in expanded
                 or edge.target in hull.entries
             )
-            line = f"{prefix}{'└── ' if last else '├── '}{node(edge.target)} ({label})"
+            line = (
+                f"{prefix}{'└── ' if last else '├── '}"
+                f"{node_label(hull, edge.target)} ({edge_label(edge)})"
+            )
             lines.append(line + (" (*)" if repeat else ""))
             if not repeat:
                 expand(edge.target, prefix + ("    " if last else "│   "))
 
     for entry in hull.entries:
-        lines.append(node(entry))
+        lines.append(node_label(hull, entry))
         expand(entry, "")
     return "".join(f"{line}\n" for line in lines)
+
+
+def shown_edges(hull: Hull) -> dict[SkillId, list[Edge]]:
+    """Each skill's edges that get a tree line, in scan order.
+
+    One per target, kind and bind; a prose edge only when the build rewrites it.
+    """
+    children: dict[SkillId, dict[tuple[SkillId, str, bool], Edge]] = {}
+    for edge in hull.edges:
+        if edge.kind == "prose" and hull.deployed[edge.target] == edge.name:
+            continue
+        key = (edge.target, edge.kind, edge.bind)
+        children.setdefault(edge.source, {}).setdefault(key, edge)
+    return {source: list(edges.values()) for source, edges in children.items()}
+
+
+def node_label(hull: Hull, skill_id: SkillId) -> str:
+    """A skill as tree lines name it: its deployed name if renamed, `(patched)`."""
+    deployed = hull.deployed[skill_id]
+    return (
+        str(skill_id)
+        + ("" if deployed == skill_id.name else f" as {deployed}")
+        + (" (patched)" if skill_id in hull.patches else "")
+    )
+
+
+def edge_label(edge: Edge) -> str:
+    """The reference as written, plus `prose` and `bind` when they apply."""
+    return ", ".join(
+        [edge.text]
+        + (["prose"] if edge.kind == "prose" else [])
+        + (["bind"] if edge.bind else [])
+    )
 
 
 def suggestions(hull: Hull) -> str:

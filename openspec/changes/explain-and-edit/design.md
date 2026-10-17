@@ -50,7 +50,9 @@ every edge with its `text`; the lock does not, which is one reason `why` and `tr
 - **The in-place write is shared.** `update._write_refs`' read/parse/atomic-write moves to an `edit` helper used
   by both, so the symlink and byte rules live once.
 - **Skill existence** for `add`/`rename`/`why <id>` uses `discovery.find` on the index of the alias.
-  `resolve.resolve` exposes its indexes (it returns them beside the **Hull**), so no **Source** is indexed twice.
+  `resolve.indexes()` builds them; it is called again only on those paths, where the skill is outside the
+  **Hull** (an `add`ed skill is an **Entry**, so the walk itself finds or refuses it). Indexing twice on an error
+  or rare path is cheaper than changing `resolve.resolve`'s return for every caller.
 - **Array style.** tomlkit's `Array.append` keeps a multi-line array multi-line when the existing items each
   have their own line; the trailing-comma case is pinned by a test, and where tomlkit falls short the item is
   added with explicit `Whitespace`/`Comment` trivia. A new top-level `entries` key needs nothing special: tomlkit
