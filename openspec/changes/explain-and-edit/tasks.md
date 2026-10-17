@@ -23,7 +23,7 @@ synthetic **Skills** and git repositories. Each group updates `README.md` for wh
 
 ## 3. Tree
 
-- [ ] 3.1 `tree [--format text]`: `_resolve` then `lock.tree`, writing nothing. Verify: same-tree, no-lock, stale
+- [x] 3.1 `tree [--format text]`: `_resolve` then `lock.tree`, writing nothing. Verify: same-tree, no-lock, stale
   lock unchanged (byte compare), failing-patch.
 - [ ] 3.2 `explain.mermaid(hull)` and `--format mermaid`, labels escaped. Verify: diagram, labels-quoted,
   no-source-links, output identical across two runs.

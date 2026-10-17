@@ -114,6 +114,17 @@ def _parser() -> tuple[_Parser, dict[str, argparse.ArgumentParser]]:
     update_parser.add_argument(
         "--dry-run", action="store_true", help="show the new shas, write nothing"
     )
+    tree = commands.add_parser(
+        "tree",
+        help="show the hull as a tree, writing nothing",
+        description=(
+            "Compute the hull as resolve does and print its tree, without the prose "
+            "suggestions and without writing the lock."
+        ),
+    )
+    tree.add_argument(
+        "--format", choices=["text"], default="text", help="default: text"
+    )
     help_parser = commands.add_parser(
         "help",
         help="show the help of skill-graft or of a command",
@@ -145,6 +156,11 @@ def main(argv: list[str] | None = None) -> int:
             init.init()
         elif args.command == "update":
             update.update(_load(), args.aliases, args.dry_run)
+        elif args.command == "tree":
+            with tempfile.TemporaryDirectory(prefix="skill-graft-") as work:
+                _, resolved = _resolve(Path(work))
+            print(lock.tree(resolved), end="")
+            warn(resolved.warnings)
         elif args.command == "resolve":
             with tempfile.TemporaryDirectory(prefix="skill-graft-") as work:
                 loaded, resolved = _resolve(Path(work))

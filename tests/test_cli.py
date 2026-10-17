@@ -4,7 +4,7 @@ import pytest
 
 from skill_graft.cli import main
 
-COMMANDS = ["init", "resolve", "build", "update", "help"]
+COMMANDS = ["init", "resolve", "build", "update", "tree", "help"]
 
 
 def run(argv: list[str], capsys: pytest.CaptureFixture[str]) -> tuple[int, str, str]:
@@ -47,6 +47,11 @@ def test_command_help(capsys: pytest.CaptureFixture[str]) -> None:
 
 def test_help_command_same_text(capsys: pytest.CaptureFixture[str]) -> None:
     assert run(["help", "update"], capsys) == run(["update", "--help"], capsys)
+    # Prints tree's help, never runs it: there is no config to resolve.
+    code, out, _ = run(["help", "tree"], capsys)
+    assert code == 0
+    assert "--format" in out
+    assert (code, out) == run(["tree", "--help"], capsys)[:2]
     assert run(["help"], capsys) == run(["--help"], capsys)
 
 

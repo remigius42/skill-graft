@@ -10,12 +10,12 @@ Renames are the reason it exists: a skill named like a harness built-in (`code-r
 `prototype`) shadows it or is shadowed by it, and renaming one skill by hand misses the other skills that call
 it by name.
 
-Status: early. `skill-graft init` and `skill-graft build` vendor entries from local folders and from git
-repositories, read at the commit `ref` names, and deploy them through APM; `skill-graft update` moves each
-git source's `ref` to its branch tip. `build` follows slash, Skill tool and prose references to the whole hull,
-applies `[rename]` to folders, `name:` and every reference, and checks deployed names against reserved ones;
-it applies `[patches]` before any of that, so a patch can change what a skill calls. `skill-graft resolve`
-shows the tree and writes the lock. `skill-graft help [command]`, or `--help` on any command, explains each.
+Status: early. `skill-graft init` and `skill-graft build` vendor entries from local folders and from git repositories,
+read at the commit `ref` names, and deploy them through APM; `skill-graft update` moves each git source's `ref` to its
+branch tip. `build` follows slash, Skill tool and prose references to the whole hull, applies `[rename]` to folders,
+`name:` and every reference, and checks deployed names against reserved ones; it applies `[patches]` before any of that,
+so a patch can change what a skill calls. `skill-graft resolve` shows the tree and writes the lock; `skill-graft tree`
+shows it and writes nothing. `skill-graft help [command]`, or `--help` on any command, explains each.
 
 ## Writing a patch
 
