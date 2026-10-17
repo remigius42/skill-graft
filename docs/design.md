@@ -7,13 +7,13 @@ reasons for the less obvious choices in `docs/adr/`. OpenSpec specs replace this
 
 All under `~/.apm/skill-graft/`:
 
-| File                  | Written by                          | Holds                                                       |
-| --------------------- | ----------------------------------- | ----------------------------------------------------------- |
-| `skill-graft.toml`    | the user; `add`, `rename`, `update` | intent: sources, entries, renames, binds, patches, reserved |
-| `skill-graft.lock`    | `resolve`, `build`, `update`        | provenance: resolved shas, the hull and its edges, hashes   |
-| `patches/`            | the user                            | unified diffs for content changes                           |
-| `apm.yml`             | `init`                              | `name` and `version`, nothing else                          |
-| `.apm/skills/<name>/` | `build`                             | the vendored, patched, renamed skills                       |
+| File                  | Written by                                    | Holds                                                       |
+| --------------------- | --------------------------------------------- | ----------------------------------------------------------- |
+| `skill-graft.toml`    | the user; `add`, `remove`, `rename`, `update` | intent: sources, entries, renames, binds, patches, reserved |
+| `skill-graft.lock`    | `resolve`, `build`, `update`                  | provenance: resolved shas, the hull and its edges, hashes   |
+| `patches/`            | the user                                      | unified diffs for content changes                           |
+| `apm.yml`             | `init`                                        | `name` and `version`, nothing else                          |
+| `.apm/skills/<name>/` | `build`                                       | the vendored, patched, renamed skills                       |
 
 `resolve` never rewrites `skill-graft.toml`. Commands that edit it on purpose use `tomlkit`, so comments and
 formatting survive. The lock is output only: never an input that overrides the TOML.
@@ -50,7 +50,18 @@ path = "~/Documents/sync/2_areas/software/chisel_skill"
 
 - `init`: creates `~/.apm/skill-graft/` with a commented `skill-graft.toml` and the two-line `apm.yml`, then
   registers it with `apm install -g <absolute path of ~/.apm/skill-graft>`. Refuses if the folder exists.
-- `add <skill-id>`, `rename <skill-id> <name>`: edit the TOML, then resolve.
+- `add <skill-id>…`, `remove <skill-id>…`, `rename <skill-id> <name>`: resolve the edited config in memory and
+  only if that succeeds write the TOML (in place, as `update` does), then the lock, and print what `resolve`
+  prints. Notices go to stderr with the warnings. Never build.
+- `add` appends each skill ID to `entries` (creating the key before the first table if absent). An unknown alias
+  or skill is an error; one already an entry is a notice and left alone; one already in the hull is added with a
+  notice naming the skill that reaches it.
+- `remove` deletes each skill ID from `entries`. One that is no entry is an error; one still in the hull is
+  removed with a notice naming the skill that reaches it. No command edits binds, patches, sources or `reserved`.
+- `rename` sets the skill's `[rename]` value (appending the table if absent); renaming to the upstream name
+  removes the key, which is how a rename is undone, and the current deployed name is a notice. An unknown alias or
+  skill is an error; a skill outside the hull gets the unused-rename warning; clashes are the usual errors and
+  warnings, an error writing nothing.
 - `resolve`: computes the hull from the TOML, writes the lock, prints the tree, warnings and suggestions.
   Reads every declared source, each git one at its `ref`, fetching only when that commit is not cached.
 - `build`: resolves, writes `.apm/skills/`, then the lock, then runs the same `apm install -g` as `init`.
@@ -59,8 +70,20 @@ path = "~/Documents/sync/2_areas/software/chisel_skill"
   tips' shas into `ref` when one moved; prints the hull diff (`+` added, `-` removed, `~` changed, against the
   hull at the current refs if those are cached, never fetching for it) and any failing patch hunks. `--dry-run`
   does all of it without writing the TOML, the lock or the cache.
-- `why <skill>`: the reverse paths from the entries.
-- `tree [--format mermaid]`: the hull as a tree, or as Mermaid for documentation.
+- `why <skill>`: the reverse paths from the entries, as an inverted tree (`cargo tree -i`): the skill at the
+  root, each child a skill whose slash or Skill tool reference reaches it, joined by `├─←` and `└─←`, labels and
+  `(*)` as in `resolve`'s tree, an entry marked `(entry)` and not expanded; prose and self-references omitted.
+  `<skill>` is a skill ID if it holds a `/`, else a deployed name. A bare name that is only a renamed skill's
+  upstream name is an error naming its skill ID and deployed name. A skill outside the hull is an error saying
+  so, plus who mentions it in prose and the `add` hint.
+- `tree [--format text|mermaid] [--link]`: the hull as `resolve`'s tree (without the suggestions), or as a
+  Mermaid `flowchart TD`: nodes `n0…` in hull order labelled as tree lines are (`as <deployed>`, `(patched)`),
+  entries in `classDef entry`, one edge per source, target, kind and bind labelled with the reference as written
+  (`, bind`), prose edges dotted and only where the build rewrites them, no code fence, no links to sources.
+  `--link` (Mermaid only) prints a `https://mermaid.live/edit#pako:…` URL instead: the diagram lives in the
+  fragment, so nothing is uploaded and skill-graft makes no network call.
+- `help [command]`: the same text as `-h`/`--help`, which every command takes. No command, or an unknown one,
+  prints the error and the command list to stderr and exits 2.
 
 ## Resolution
 
@@ -78,7 +101,7 @@ path = "~/Documents/sync/2_areas/software/chisel_skill"
   `"mp/foo" = false` bind that silences it. A bind no reference uses is a warning too.
 - Prose references resolve only in their own source, to the one skill of that name there, and never extend
   the hull. One inside the hull is an edge of kind `prose` and is rewritten on rename; one outside it is
-  suggested (add it to `entries` to accept, until `add` exists); one that matches nothing, or several skills, is
+  suggested (`add` it to accept); one that matches nothing, or several skills, is
   not a reference and says nothing.
 - A bind overrides all of this, for every form. A bind to `false` makes the name no reference at all. A
   reference bound to a skill of another name is rewritten to that skill's deployed name.
@@ -175,7 +198,8 @@ explanation is a view of it:
   upstream, each skill expanded once and later lines marked `(*)`, a renamed skill as `<id> as <deployed name>`,
   a patched one followed by `(patched)`, and a prose edge only when the build rewrites it; then the prose
   suggestions, and the warnings on stderr.
-- `why` and `tree` read the lock.
+- `why` and `tree` resolve as `resolve` does (fetching only an uncached commit, warnings on stderr, a failing
+  patch an error) but write nothing, so they never see a missing or stale lock.
 
 ## Stack
 
