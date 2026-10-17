@@ -101,3 +101,18 @@ def test_deleted_working_folder(
     err = capsys.readouterr().err
     assert err.startswith("skill-graft: ")
     assert f"working folder {gone} no longer exists" in err
+
+
+def test_project_package_without_config(
+    home: Path, monkeypatch: pytest.MonkeyPatch, capsys: pytest.CaptureFixture[str]
+) -> None:
+    package = home / "repo" / ".apm" / "skill-graft"
+    package.mkdir(parents=True)
+    monkeypatch.chdir(home / "repo")
+
+    assert main(["build", "--no-install"]) == 1
+
+    err = capsys.readouterr().err
+    assert f"{package}/skill-graft.toml" in err
+    assert "skill-graft init --project" in err
+    assert "run `skill-graft init`" not in err

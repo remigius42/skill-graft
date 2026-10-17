@@ -80,6 +80,11 @@ def text() -> str:
     try:
         return file.read_bytes().decode()
     except FileNotFoundError:
+        if paths.scope() == "project":
+            raise SkillGraftError(
+                f"{file} not found: restore it, or delete {paths.package()} and run "
+                f"`skill-graft init --project` in {paths.root()}"
+            ) from None
         raise SkillGraftError(f"{file} not found: run `skill-graft init`") from None
     except UnicodeDecodeError as error:
         raise SkillGraftError(f"{file}: {error}") from None

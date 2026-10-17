@@ -16,7 +16,7 @@ for what it ships.
   nested-projects, package-above-the-home-folder, working-folder-outside-home (a **Package** at its working
   folder, so no walk leaves `tmp_path`), root unset after `main` returns, project-build (`--no-install`
   leaves `~/.apm/skill-graft/` absent), not-initialized, deleted-working-folder.
-- [ ] 1.3 `config.text()`: in project scope a missing `skill-graft.toml` names `skill-graft init --project` and
+- [x] 1.3 `config.text()`: in project scope a missing `skill-graft.toml` names `skill-graft init --project` and
   not plain `init`. Verify: project-package-without-config, and the user-scope not-initialized test unchanged.
 
 ## 2. APM per scope

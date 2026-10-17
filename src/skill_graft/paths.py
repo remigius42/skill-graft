@@ -19,6 +19,11 @@ def root() -> Path:
     return Path.home() if _root is None else _root
 
 
+def scope() -> str:
+    """`user` when the root is the home folder, else `project`."""
+    return "user" if root().resolve() == Path.home().resolve() else "project"
+
+
 def discover(start: Path) -> Path:
     """The first of `start` and its ancestors holding `.apm/skill-graft/`, stopping
     after the home folder; the home folder if none does."""
