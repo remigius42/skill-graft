@@ -60,6 +60,6 @@ ignores.
 
 ## 5. Docs
 
-- [ ] 5.1 `docs/design.md` (§ Patches as built, the lock's `upstream` and `patches`, the tree's `(patched)`),
+- [x] 5.1 `docs/design.md` (§ Patches as built, the lock's `upstream` and `patches`, the tree's `(patched)`),
   `README.md` (patches built, the recipe for writing one). Verify: the recipe in the README, run by hand on a
   synthetic **Skill**, gives a patch `build` applies; `pre-commit run --all-files` green.
