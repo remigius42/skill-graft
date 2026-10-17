@@ -40,16 +40,15 @@ def test_init_update_build_deploys_a_git_entry(home: Path, tmp_path: Path) -> No
     assert (home / ".agents" / "skills" / "tdd" / "SKILL.md").exists()
 
 
-def test_build_deploys_a_project_package(
+def test_init_project_then_build_deploys_it(
     home: Path, monkeypatch: pytest.MonkeyPatch
 ) -> None:
     repo = home / "repo"
     (repo / ".claude").mkdir(parents=True)
     skill(repo / "src" / "chisel", "---\nname: chisel\ndescription: d\n---\nhi\n")
-    package = repo / ".apm" / "skill-graft"
-    package.mkdir(parents=True)
-    (package / "apm.yml").write_text("name: skill-graft\nversion: 0.1.0\n")
-    (package / "skill-graft.toml").write_text(
+    monkeypatch.chdir(repo)
+    assert main(["init", "--project"]) == 0
+    (repo / ".apm" / "skill-graft" / "skill-graft.toml").write_text(
         'entries = ["own/chisel"]\n[sources.own]\npath = "../../src"\n'
     )
     monkeypatch.chdir(repo / "src")

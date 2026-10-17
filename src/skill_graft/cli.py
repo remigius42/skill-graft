@@ -77,13 +77,21 @@ def _parser() -> tuple[_Parser, dict[str, argparse.ArgumentParser]]:
     commands = parser.add_subparsers(
         dest="command", metavar="command", parser_class=_Command
     )
-    commands.add_parser(
+    init_parser = commands.add_parser(
         "init",
         help="create and register ~/.apm/skill-graft/",
         description=(
             "Create ~/.apm/skill-graft/ with a commented skill-graft.toml and an "
             "apm.yml, and register it with `apm install -g`. Refuses if the folder "
             "exists."
+        ),
+    )
+    init_parser.add_argument(
+        "--project",
+        action="store_true",
+        help=(
+            "create ./.apm/skill-graft/ instead, a package for this project, and "
+            "register it with `apm install ./.apm/skill-graft` here"
         ),
     )
     commands.add_parser(
@@ -230,8 +238,10 @@ def main(argv: list[str] | None = None) -> int:
     try:
         if args.command != "init":
             paths.use(paths.discover(_working_folder()))
+        elif args.project:
+            paths.use(_working_folder())
         if args.command == "init":
-            init.init()
+            init.init(args.project)
         elif args.command == "update":
             update.update(_load(), args.aliases, args.dry_run)
         elif args.command == "add":

@@ -35,7 +35,7 @@ for what it ships.
 
 ## 3. Init --project
 
-- [ ] 3.1 `init --project`: creates `<cwd>/.apm/skill-graft/` and registers it; refuses an existing folder and the
+- [x] 3.1 `init --project`: creates `<cwd>/.apm/skill-graft/` and registers it; refuses an existing folder and the
   home folder (compared resolved, before the package line); when APM leaves the package unlisted, removes
   `.apm/skill-graft/` and any `.apm/` it created and says to rerun `skill-graft init --project`, else keeps it and
   says to run `skill-graft build`; `init`'s help describes the flag. Verify:

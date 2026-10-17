@@ -63,3 +63,124 @@ def test_apm_fails(
 
     assert f"apm install -g {package}" in capsys.readouterr().err
     assert (package / "skill-graft.toml").exists()
+
+
+def project_root(home: Path, monkeypatch: pytest.MonkeyPatch) -> Path:
+    """`~/repo` with a `.claude/` harness marker, the working folder."""
+    repo = home / "repo"
+    (repo / ".claude").mkdir(parents=True)
+    monkeypatch.chdir(repo)
+    return repo
+
+
+def test_project_package(
+    home: Path, fake_apm: FakeApm, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    repo = project_root(home, monkeypatch)
+
+    assert main(["init", "--project"]) == 0
+
+    package = repo / ".apm" / "skill-graft"
+    assert tomllib.loads((package / "skill-graft.toml").read_text()) == {}
+    assert (package / "apm.yml").read_text() == "name: skill-graft\nversion: 0.1.0\n"
+    assert not (home / ".apm" / "skill-graft").exists()
+    assert fake_apm.calls == [["install", "./.apm/skill-graft"]]
+    assert fake_apm.working_folders == [str(repo)]
+    assert "    - ./.apm/skill-graft\n" in (repo / "apm.yml").read_text()
+
+
+def test_no_harness_in_the_project(
+    home: Path,
+    fake_apm: FakeApm,
+    monkeypatch: pytest.MonkeyPatch,
+    capsys: pytest.CaptureFixture[str],
+) -> None:
+    repo = home / "repo"
+    repo.mkdir()
+    monkeypatch.chdir(repo)
+    fake_apm.exit_code = 2
+    fake_apm.register = False
+
+    assert main(["init", "--project"]) == 1
+
+    assert "fix that, then run: skill-graft init --project" in capsys.readouterr().err
+    assert not (repo / ".apm").exists()
+
+
+def test_project_apm_fails_keeps_existing_apm_folder(
+    home: Path, fake_apm: FakeApm, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    repo = project_root(home, monkeypatch)
+    (repo / ".apm" / "skills").mkdir(parents=True)
+    fake_apm.register = False
+
+    assert main(["init", "--project"]) == 1
+
+    assert (repo / ".apm" / "skills").is_dir()
+    assert not (repo / ".apm" / "skill-graft").exists()
+
+
+def test_apm_fails_after_registering(
+    home: Path,
+    fake_apm: FakeApm,
+    monkeypatch: pytest.MonkeyPatch,
+    capsys: pytest.CaptureFixture[str],
+) -> None:
+    repo = project_root(home, monkeypatch)
+    fake_apm.exit_code = 1
+
+    assert main(["init", "--project"]) == 1
+
+    assert "fix that, then run: skill-graft build" in capsys.readouterr().err
+    assert (repo / ".apm" / "skill-graft" / "skill-graft.toml").exists()
+
+
+def test_project_folder_exists(
+    home: Path, fake_apm: FakeApm, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    repo = project_root(home, monkeypatch)
+    (repo / ".apm" / "skill-graft").mkdir(parents=True)
+
+    assert main(["init", "--project"]) == 1
+
+    assert list((repo / ".apm" / "skill-graft").iterdir()) == []
+    assert fake_apm.calls == []
+
+
+@pytest.mark.parametrize("via_symlink", [False, True])
+def test_project_init_at_home(
+    home: Path,
+    tmp_path: Path,
+    fake_apm: FakeApm,
+    monkeypatch: pytest.MonkeyPatch,
+    capsys: pytest.CaptureFixture[str],
+    via_symlink: bool,
+) -> None:
+    if via_symlink:
+        (tmp_path / "link").symlink_to(home)
+        monkeypatch.chdir(tmp_path / "link")
+
+    assert main(["init", "--project"]) == 1
+
+    assert "`skill-graft init`" in capsys.readouterr().err
+    assert not (home / ".apm").exists()
+    assert fake_apm.calls == []
+
+
+def test_project_init_inside_another_project(
+    home: Path, fake_apm: FakeApm, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    (home / "a" / ".apm" / "skill-graft").mkdir(parents=True)
+    inner = project_root(home / "a", monkeypatch)
+
+    assert main(["init", "--project"]) == 0
+
+    assert (inner / ".apm" / "skill-graft" / "skill-graft.toml").exists()
+    assert fake_apm.working_folders == [str(inner)]
+
+
+def test_init_help_describes_project(capsys: pytest.CaptureFixture[str]) -> None:
+    with pytest.raises(SystemExit):
+        main(["init", "--help"])
+
+    assert "--project" in capsys.readouterr().out

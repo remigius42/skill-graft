@@ -21,6 +21,17 @@ URL that holds it); `skill-graft why <skill>` shows the paths from the entries t
 skill's deployed name (its own name undoes it), keeping the file's comments, once the result resolves.
 `skill-graft help [command]`, or `--help` on any command, explains each.
 
+## A package for one project
+
+`skill-graft init` creates your package, `~/.apm/skill-graft/`, deployed for you in every project. For skills a
+team shares through one repository, run `skill-graft init --project` in its root (which needs a harness folder
+such as `.claude/`, or APM refuses): it creates `.apm/skill-graft/` there and registers it in the project's
+`apm.yml`. Every command then acts on the nearest `.apm/skill-graft/` above the working folder, and on
+`~/.apm/skill-graft/` when there is none.
+
+Commit the whole `.apm/skill-graft/`, vendored skills included, with `apm.yml` and `apm.lock.yaml`. Teammates
+then need only APM: `apm install` deploys the skills, and only whoever changes them runs skill-graft.
+
 ## Writing a patch
 
 A patch is a unified diff against the skill's upstream folder, which the lock records as `upstream`. No command

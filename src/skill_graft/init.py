@@ -1,4 +1,7 @@
-"""Creates `~/.apm/skill-graft/` and registers it with APM."""
+"""Creates a package, `~/.apm/skill-graft/` or a project's, and registers it with APM."""
+
+import shutil
+from pathlib import Path
 
 from skill_graft import apm, paths
 from skill_graft.errors import SkillGraftError
@@ -20,8 +23,15 @@ CONFIG_TEMPLATE = """\
 APM_YML = "name: skill-graft\nversion: 0.1.0\n"
 
 
-def init() -> None:
+def init(project: bool = False) -> None:
+    """Creates and registers the user scope's package, or with `project` the one in
+    the root `cli` set: the working folder."""
+    if project and paths.root().resolve() == Path.home().resolve():
+        raise SkillGraftError(
+            "the home folder is user scope: `skill-graft init` creates its package"
+        )
     package = paths.package()
+    made = package.parent if not package.parent.exists() else package
     try:
         package.mkdir(parents=True)
     except FileExistsError:
@@ -31,5 +41,14 @@ def init() -> None:
     try:
         apm.install()
     except SkillGraftError as error:
-        retry = f"apm install -g {package.absolute()}"
-        raise SkillGraftError(f"{error}\nto retry, run: {retry}") from None
+        if not project:
+            retry = f"apm install -g {package.absolute()}"
+            raise SkillGraftError(f"{error}\nto retry, run: {retry}") from None
+        if apm.registered():
+            raise SkillGraftError(
+                f"{error}\nfix that, then run: skill-graft build"
+            ) from None
+        # A package left behind would be found by every command below it.
+        shutil.rmtree(made)
+        retry = "skill-graft init --project"
+        raise SkillGraftError(f"{error}\nfix that, then run: {retry}") from None
