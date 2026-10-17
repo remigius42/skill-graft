@@ -44,7 +44,7 @@ is that call's only. The sentence form uses the rules below.
 
 The sentence SHALL end at the next `Skill tool`; at a blank line; at a line opening a list item, heading, code
 fence or table row; or at `.`, `!` or `?` (not the `.` of `e.g.` or `i.e.`), closing quotes, backticks, `*`, `)`
-or `]` allowed after it, then whitespace and an uppercase letter, a backtick, `*`, `(` or `[`, or the end of the
+or `]` allowed after it, then whitespace and an uppercase letter, a quote, a backtick, `*`, `(` or `[`, or the end of the
 file. A line break alone SHALL NOT end it. The SKILL.md front matter's own `name:` line holds no such name.
 
 #### Scenario: Call forms

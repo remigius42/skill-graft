@@ -67,7 +67,6 @@ def _update(loaded: Config, aliases: list[str], git_cache: Cache, write: bool) -
         )
         hashes = lock.skill_hashes(hull)
     warn(hull.warnings)
-    lock.announce_suggestions(hull, dry_run=not write)
     _print_diff(_previous(loaded, selected, git_cache), hashes)
     moved = {alias: tip for alias, tip in tips.items() if tip != selected[alias].ref}
     if write:
@@ -75,6 +74,7 @@ def _update(loaded: Config, aliases: list[str], git_cache: Cache, write: bool) -
         if moved:
             _write_refs(moved)
         lock.write(text)  # even if no ref moved: a path source may have changed
+    lock.announce_suggestions(hull, dry_run=not write)  # once the writes succeeded
 
 
 def _previous(

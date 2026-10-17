@@ -47,8 +47,9 @@ names in `"…"` or `` `…` ``; the slash false positives were `fetch('/orders'
   after a word character (it dropped `` 运行`/grilling` ``); ignoring quotes only in fenced blocks (needs fence
   tracking); blocking `(` plus a backtick (drops `` (`/grilling`) ``).
 - **Announcement**: `cli` (for `build`) and `update` print
-  `skill-graft: <n> prose suggestion(s): run skill-graft resolve` through `errors.notice`, after the run's warnings,
-  when `hull.suggestions` is non-empty; `update` uses the hull at the new tips. `resolve` is unchanged.
+  `skill-graft: <n> prose suggestion(s): run skill-graft resolve` through `errors.notice`, once the lock is written (so
+  a failed run never points to `resolve`), when `hull.suggestions` is non-empty; `update` uses the hull at the new tips.
+  `resolve` is unchanged.
 
 ## Risks / Trade-offs
 

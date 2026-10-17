@@ -89,6 +89,19 @@ def unreadable(folder: Path) -> None:
 
 
 @pytest.mark.skipif(os.geteuid() == 0, reason="root reads any file")
+def test_failed_build_announces_no_suggestions(
+    home: Path, capsys: pytest.CaptureFixture[str]
+) -> None:
+    unreadable(skill(home / "src" / "tdd", "then diagnosing-bugs\n"))
+    skill(home / "src" / "diagnosing-bugs")
+    write_config('entries = ["own/tdd"]\n[sources.own]\npath = "~/src"\n')
+
+    assert main(["build", "--no-install"]) == 1
+
+    assert "prose suggestion(s)" not in capsys.readouterr().err
+
+
+@pytest.mark.skipif(os.geteuid() == 0, reason="root reads any file")
 def test_copy_fails(home: Path, capsys: pytest.CaptureFixture[str]) -> None:
     skill(home / "src" / "chisel")
     broken = skill(home / "src" / "tdd")

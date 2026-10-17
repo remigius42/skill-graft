@@ -291,7 +291,6 @@ def main(argv: list[str] | None = None) -> int:
             with tempfile.TemporaryDirectory(prefix="skill-graft-") as work:
                 loaded, resolved = _resolve(Path(work))
                 warn(resolved.warnings)
-                lock.announce_suggestions(resolved)
                 vendor.vendor(resolved)
             # Hashes the vendored copies, so the lock holds exactly what was vendored.
             copies = {
@@ -299,6 +298,7 @@ def main(argv: list[str] | None = None) -> int:
                 for s in resolved.skills
             }
             lock.write(lock.render(loaded, {}, resolved, copies))
+            lock.announce_suggestions(resolved)  # once nothing before APM can fail
             if not args.no_install:
                 apm.install()
     except (SkillGraftError, OSError) as error:
