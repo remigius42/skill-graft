@@ -8,7 +8,7 @@ before changing behavior. Until OpenSpec specs cover it, `docs/design.md` holds 
 ## Git
 
 - Conventional Commits (commitlint). No Co-Authored-By trailer.
-- Local only: there is no remote. Never add one or push without asking.
+- Remote `origin`: <https://github.com/remigius42/skill-graft>. Never push without asking.
 - Work on a branch, never on main: one per OpenSpec change, `feat/opsx-<change-name>`.
 
 ## Workflow
