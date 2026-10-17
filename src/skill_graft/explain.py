@@ -1,11 +1,51 @@
-"""Views of the hull beyond `resolve`'s tree: Mermaid and its mermaid.live link."""
+"""Views of the hull beyond `resolve`'s tree: why, Mermaid and its mermaid.live link."""
 
 import base64
 import json
 import zlib
 
 from skill_graft import lock
-from skill_graft.hull import Hull
+from skill_graft.config import SkillId
+from skill_graft.hull import Edge, Hull
+
+
+def why(hull: Hull, skill: SkillId) -> str:
+    """The inverted tree, as `cargo tree -i`: `skill`, then what reaches it.
+
+    Children are the skills whose slash or Skill tool reference resolves to the
+    parent, in hull order. An entry below the root ends the path; any other
+    skill expands once, its later lines marked `(*)`.
+    """
+    callers: dict[SkillId, dict[tuple[SkillId, str, bool], Edge]] = {}
+    for edge in hull.edges:
+        if edge.kind != "prose" and edge.source != edge.target:
+            key = (edge.source, edge.kind, edge.bind)
+            callers.setdefault(edge.target, {}).setdefault(key, edge)
+    order = {s: i for i, s in enumerate(hull.skills)}
+    expanded = {skill}
+    lines = [lock.node_label(hull, skill) + _entry(hull, skill)]
+
+    def expand(target: SkillId, prefix: str) -> None:
+        edges = sorted(callers.get(target, {}).values(), key=lambda e: order[e.source])
+        for i, edge in enumerate(edges):
+            last = i == len(edges) - 1
+            entry = edge.source in hull.entries
+            repeat = not entry and edge.source in expanded
+            line = (
+                f"{prefix}{'└─← ' if last else '├─← '}"
+                f"{lock.node_label(hull, edge.source)} ({lock.edge_label(edge)})"
+            )
+            lines.append(line + _entry(hull, edge.source) + (" (*)" if repeat else ""))
+            if not (entry or repeat):
+                expanded.add(edge.source)
+                expand(edge.source, prefix + ("    " if last else "│   "))
+
+    expand(skill, "")
+    return "".join(f"{line}\n" for line in lines)
+
+
+def _entry(hull: Hull, skill: SkillId) -> str:
+    return " (entry)" if skill in hull.entries else ""
 
 
 def mermaid(hull: Hull) -> str:

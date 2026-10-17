@@ -4,7 +4,7 @@ import pytest
 
 from skill_graft.cli import main
 
-COMMANDS = ["init", "resolve", "build", "update", "tree", "help"]
+COMMANDS = ["init", "resolve", "build", "update", "why", "tree", "help"]
 
 
 def run(argv: list[str], capsys: pytest.CaptureFixture[str]) -> tuple[int, str, str]:

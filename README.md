@@ -16,7 +16,8 @@ branch tip. `build` follows slash, Skill tool and prose references to the whole 
 `name:` and every reference, and checks deployed names against reserved ones; it applies `[patches]` before any of that,
 so a patch can change what a skill calls. `skill-graft resolve` shows the tree and writes the lock; `skill-graft tree`
 shows it and writes nothing, as text or, with `--format mermaid`, as a Mermaid flowchart (`--link` prints a mermaid.live
-URL that holds it). `skill-graft help [command]`, or `--help` on any command, explains each.
+URL that holds it); `skill-graft why <skill>` shows the paths from the entries that reach a skill.
+`skill-graft help [command]`, or `--help` on any command, explains each.
 
 ## Writing a patch
 

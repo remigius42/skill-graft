@@ -123,6 +123,96 @@ def test_link_needs_mermaid(home: Path, capsys: Capsys) -> None:
     assert "--link" in err and "--format mermaid" in err
 
 
+def test_why_two_paths(home: Path, capsys: Capsys) -> None:
+    skill(home / "mp" / "tdd", "/grilling, then /implement\n")
+    skill(home / "mp" / "implement", "Skill(grilling)\n")
+    skill(home / "mp" / "grilling")
+    configure(["mp/tdd"], mp="~/mp")
+
+    assert main(["why", "mp/grilling"]) == 0
+
+    assert capsys.readouterr().out == (
+        "mp/grilling\n"
+        "├─← mp/tdd (/grilling) (entry)\n"
+        "└─← mp/implement (Skill(grilling))\n"
+        "    └─← mp/tdd (/implement) (entry)\n"
+    )
+
+
+def test_why_repeated_skill(home: Path, capsys: Capsys) -> None:
+    for name in ("a", "b"):
+        skill(home / "mp" / name, "/mid\n")
+    skill(home / "mp" / "mid", "/x and /y\n")
+    for name in ("x", "y"):
+        skill(home / "mp" / name, "/leaf\n")
+    skill(home / "mp" / "leaf")
+    configure(["mp/a", "mp/b"], mp="~/mp")
+
+    assert main(["why", "mp/leaf"]) == 0
+
+    assert capsys.readouterr().out == (
+        "mp/leaf\n"
+        "├─← mp/x (/leaf)\n"
+        "│   └─← mp/mid (/x)\n"
+        "│       ├─← mp/a (/mid) (entry)\n"
+        "│       └─← mp/b (/mid) (entry)\n"
+        "└─← mp/y (/leaf)\n"
+        "    └─← mp/mid (/y) (*)\n"
+    )
+
+
+def test_why_an_entry(home: Path, capsys: Capsys) -> None:
+    skill(home / "mp" / "tdd", "/grilling\n")
+    skill(home / "mp" / "grilling", "/tdd\n")
+    configure(["mp/tdd"], mp="~/mp")
+
+    assert main(["why", "mp/tdd"]) == 0
+
+    assert capsys.readouterr().out == (
+        "mp/tdd (entry)\n└─← mp/grilling (/tdd)\n    └─← mp/tdd (/grilling) (entry)\n"
+    )
+
+
+def test_why_renamed_patched_and_bound(
+    home: Path, tmp_path: Path, capsys: Capsys
+) -> None:
+    skill(home / "mp" / "tdd", "/notes\n")
+    skill(home / "own" / "notes")
+    patches = home / ".apm" / "skill-graft" / "patches"
+    patches.mkdir(parents=True)
+    (patches / "tdd.patch").write_bytes(
+        make_patch(tmp_path, {"SKILL.md": "/notes\n"}, {"SKILL.md": "/notes\nmore\n"})
+    )
+    write_config(
+        'entries = ["mp/tdd"]\n'
+        '[sources.mp]\npath = "~/mp"\n[sources.own]\npath = "~/own"\n'
+        '[rename]\n"mp/tdd" = "mp-tdd"\n'
+        '[bind]\n"mp/notes" = "own/notes"\n'
+        '[patches]\n"mp/tdd" = ["patches/tdd.patch"]\n'
+    )
+
+    assert main(["why", "own/notes"]) == 0
+
+    assert capsys.readouterr().out == (
+        "own/notes\n└─← mp/tdd as mp-tdd (patched) (/notes, bind) (entry)\n"
+    )
+
+
+def test_why_leaves_prose_out(home: Path, capsys: Capsys) -> None:
+    skill(home / "mp" / "tdd", "/grilling, see `grilling`\n")
+    skill(home / "mp" / "grilling")
+    write_config(
+        'entries = ["mp/tdd"]\n[sources.mp]\npath = "~/mp"\n'
+        '[rename]\n"mp/grilling" = "mp-grilling"\n'  # so the prose edge is shown in tree
+    )
+
+    assert main(["why", "mp/grilling"]) == 0
+
+    assert capsys.readouterr().out == (
+        "mp/grilling as mp-grilling\n└─← mp/tdd (/grilling) (entry)\n"
+    )
+
+
 def test_tree_writes_no_lock(home: Path, capsys: Capsys) -> None:
     skill(home / "mp" / "tdd")
     configure(["mp/tdd"], mp="~/mp")

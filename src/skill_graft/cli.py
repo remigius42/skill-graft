@@ -20,6 +20,7 @@ from skill_graft import (
     vendor,
 )
 from skill_graft.cache import Cache
+from skill_graft.config import SkillId
 from skill_graft.errors import SkillGraftError, warn
 from skill_graft.hull import Hull
 
@@ -147,6 +148,16 @@ def _parser() -> tuple[_Parser, dict[str, argparse.ArgumentParser]]:
             "in its fragment instead; nothing is uploaded"
         ),
     )
+    why = commands.add_parser(
+        "why",
+        help="show why a skill is in the hull, writing nothing",
+        description=(
+            "Compute the hull as resolve does and print the paths that reach a "
+            "skill, as an inverted tree: the skill first, then each skill whose "
+            "slash or Skill tool reference reaches it, up to the entries."
+        ),
+    )
+    why.add_argument("skill", help="a skill ID (<source alias>/<name>)")
     help_parser = commands.add_parser(
         "help",
         help="show the help of skill-graft or of a command",
@@ -180,6 +191,12 @@ def main(argv: list[str] | None = None) -> int:
             init.init()
         elif args.command == "update":
             update.update(_load(), args.aliases, args.dry_run)
+        elif args.command == "why":
+            with tempfile.TemporaryDirectory(prefix="skill-graft-") as work:
+                _, resolved = _resolve(Path(work))
+            alias, _, name = args.skill.partition("/")
+            print(explain.why(resolved, SkillId(alias, name)), end="")
+            warn(resolved.warnings)
         elif args.command == "tree":
             with tempfile.TemporaryDirectory(prefix="skill-graft-") as work:
                 _, resolved = _resolve(Path(work))
