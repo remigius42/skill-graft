@@ -18,14 +18,15 @@ from skill_graft.errors import SkillGraftError, notice, warn
 from skill_graft.hull import Hull
 
 
-def read() -> tomlkit.TOMLDocument:
-    """The config as `tomlkit` keeps it: comments and formatting included.
+def read() -> tuple[tomlkit.TOMLDocument, config.Config, str]:
+    """The config as `tomlkit` keeps it, comments and formatting included; as
+    `load` reads it; and its text, to restore.
 
     Checked as `load` checks it first, so an edit only ever sees a valid config.
     """
     text = config.text()
-    config.parse(text, paths.config_file())
-    return tomlkit.parse(text)
+    loaded = config.parse(text, paths.config_file())  # before tomlkit sees it
+    return tomlkit.parse(text), loaded, text
 
 
 def write(document: tomlkit.TOMLDocument) -> None:
@@ -35,7 +36,7 @@ def write(document: tomlkit.TOMLDocument) -> None:
 
 def add(skills: list[str]) -> None:
     """Appends each skill ID to `entries`."""
-    document = read()
+    document, _, before = read()
     if "entries" not in document:
         document["entries"] = tomlkit.array()  # before the first table
     array = cast(Array, document["entries"])
@@ -48,7 +49,7 @@ def add(skills: list[str]) -> None:
             added.append(text)
     if not added:
         return
-    hull = _finish(document)
+    hull = _finish(document, before)
     # The hull before the edit: what the other entries reach.
     parents = _reach(hull, [e for e in hull.entries if str(e) not in added])
     for skill in hull.entries:
@@ -58,13 +59,13 @@ def add(skills: list[str]) -> None:
 
 def remove(skills: list[str]) -> None:
     """Deletes each skill ID from `entries`."""
-    document = read()
+    document, _, before = read()
     array = cast(Array, document.get("entries", tomlkit.array()))
     for text in dict.fromkeys(skills):
         if text not in array:
             raise SkillGraftError(f"`{text}` is no entry")
         array.remove(text)
-    hull = _finish(document)
+    hull = _finish(document, before)
     parents = _reach(hull, hull.entries)  # the remaining entries
     for skill, parent in parents.items():
         if str(skill) in skills:
@@ -73,8 +74,7 @@ def remove(skills: list[str]) -> None:
 
 def rename(text: str, name: str) -> None:
     """Sets the skill's `[rename]` value to `name`."""
-    document = read()
-    loaded = config.parse(tomlkit.dumps(document), paths.config_file())
+    document, loaded, before = read()
     if not config.NAME.fullmatch(name):  # before looking anything up
         raise SkillGraftError(
             f"rename: {name!r} is not a skill name: {config.NAME.pattern}"
@@ -90,7 +90,7 @@ def rename(text: str, name: str) -> None:
         del table[text]
     else:
         table[text] = name
-    _finish(document)
+    _finish(document, before)
 
 
 def _reach(hull: Hull, seeds: list[SkillId]) -> dict[SkillId, SkillId]:
@@ -116,8 +116,11 @@ def _reach(hull: Hull, seeds: list[SkillId]) -> dict[SkillId, SkillId]:
     return parents
 
 
-def _finish(document: tomlkit.TOMLDocument) -> Hull:
-    """Resolves the edited config; only if it resolves, writes it and the lock."""
+def _finish(document: tomlkit.TOMLDocument, before: str) -> Hull:
+    """Resolves the edited config; only if it resolves, writes it and the lock.
+
+    `before` is the text the edit started from, restored if the lock fails.
+    """
     text = tomlkit.dumps(document)
     # Relative paths start where `load` starts them, even for a symlinked file.
     loaded = config.parse(text, paths.config_file())
@@ -126,13 +129,11 @@ def _finish(document: tomlkit.TOMLDocument) -> Hull:
         folders = resolve.folders(loaded, Cache(paths.cache()), {})
         hull = resolve.resolve(loaded, folders, Path(work))
         lock_text = lock.render(loaded, {}, hull)  # hashes the patched copies
-    file = paths.config_file().resolve()
-    before = file.read_bytes()
     write(document)
     try:
         lock.write(lock_text)
     except OSError:  # leave neither file changed
-        files.atomic_write(file, before)
+        files.atomic_write(paths.config_file().resolve(), before.encode())
         raise
     print(lock.tree(hull) + lock.suggestions(hull), end="")
     warn(hull.warnings)

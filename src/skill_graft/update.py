@@ -5,7 +5,9 @@ from collections.abc import MutableMapping
 from pathlib import Path
 from typing import Any, cast
 
-from skill_graft import edit, git, lock, patch, paths, resolve
+import tomlkit
+
+from skill_graft import config, edit, git, lock, patch, paths, resolve
 from skill_graft.cache import Cache
 from skill_graft.config import Config, GitSource, SkillId
 from skill_graft.errors import SkillGraftError, warn
@@ -122,7 +124,8 @@ def _write_refs(refs: dict[str, str]) -> None:
 
     Replaces the file a symlinked `skill-graft.toml` points to, not the link.
     """
-    document = edit.read()
+    # Not edit.read: the config was checked when update loaded it.
+    document = tomlkit.parse(config.text())
     # A table, inline table, or proxy over split tables, by how the user wrote
     # it; config.load already checked that each is a table.
     sources = cast(MutableMapping[str, Any], document["sources"])

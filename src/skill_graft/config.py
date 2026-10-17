@@ -75,7 +75,7 @@ def load() -> Config:
 
 
 def text() -> str:
-    """The config file's text, as UTF-8 bytes: no newline translation."""
+    """The config file's text, decoded from UTF-8 bytes: no newline translation."""
     file = paths.config_file()
     try:
         return file.read_bytes().decode()
