@@ -46,7 +46,7 @@ ignores.
 
 ## 3. Lock and tree
 
-- [ ] 3.1 `lock.render`: `upstream` on every **Skill**, `patches` in apply order on a patched one. Verify:
+- [x] 3.1 `lock.render`: `upstream` on every **Skill**, `patches` in apply order on a patched one. Verify:
   upstream-recorded, patches-recorded, patch-changes-the-hash, resolve-and-build-agree-with-patches, same-input.
 - [ ] 3.2 `lock.tree`: `(patched)` after the name and any `as <name>`. Verify: patches-marked, and the tree,
   renames-marked and bound-prose-shown scenarios unchanged.

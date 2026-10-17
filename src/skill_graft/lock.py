@@ -18,7 +18,7 @@ def render(
     hull: Hull,
     hashes: dict[SkillId, str] | None = None,
 ) -> str:
-    """The lock's text: git sources at `refs`, else their ref; all sorted.
+    """The lock's text: git sources at `refs`, else their ref; all sorted but a skill's patches.
 
     Hashes each skill as `hashes` gives, else as it would be vendored.
     """
@@ -45,6 +45,9 @@ def render(
         }
         if (deployed := hull.deployed[skill_id]) != skill_id.name:
             item["deployed"] = deployed
+        item["upstream"] = str(hull.upstream[skill_id])
+        if skill_id in hull.patches:  # in apply order, never sorted
+            item["patches"] = hull.patches[skill_id]
         skills.append(tomlkit.item(item | {"hash": hashes[skill_id]}))
     document["skills"] = skills
     edges = tomlkit.aot()
