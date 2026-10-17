@@ -6,9 +6,12 @@ You name the skills you want. skill-graft follows their references to other skil
 whole graph, applies your renames and patches, and hands the result to [APM](https://github.com/microsoft/apm)
 to deploy into Claude Code, opencode, and the other harnesses APM supports.
 
-Renames are the reason it exists: a skill named like a harness built-in (`code-review`, `research`,
-`prototype`) shadows it or is shadowed by it, and renaming one skill by hand misses the other skills that call
-it by name.
+Skills call each other (`/grilling`, "call the Skill tool with `domain-modeling`"), so taking one skill means
+taking every skill it reaches. Installing a whole collection is fine for a large model, but on a smaller one the
+full skill set crowds the context, and taking only a subset by hand means tracing those calls yourself, skill by
+skill. skill-graft computes that transitive hull for the skills you ask for, and deploys nothing more. Renames
+come with it: a skill named like a harness built-in (`code-review`) shadows it or is shadowed by it, and renaming
+one skill by hand misses the other skills that call it by name.
 
 Status: early. `skill-graft init` and `skill-graft build` vendor entries from local folders and from git repositories,
 read at the commit `ref` names, and deploy them through APM; `skill-graft update` moves each git source's `ref` to its
@@ -22,6 +25,20 @@ URL that holds it); `skill-graft why <skill>` shows the paths from the entries t
 `skill-graft add` and `remove <skill-id>…` change the entries in `skill-graft.toml`, and `rename <skill-id> <name>` a
 skill's deployed name (its own name undoes it), keeping the file's comments, once the result resolves.
 `skill-graft help [command]`, or `--help` on any command, explains each.
+
+## Installation
+
+skill-graft needs Python 3.11 or later. It is not on PyPI; install it from the repository with any of:
+
+```sh
+uv tool install git+https://github.com/remigius42/skill-graft
+pipx install git+https://github.com/remigius42/skill-graft
+pip install git+https://github.com/remigius42/skill-graft      # into the active environment
+pipenv install "git+https://github.com/remigius42/skill-graft#egg=skill-graft"
+```
+
+skill-graft runs APM as a command, so `apm` must be on `PATH` as well, in the version it is tested against:
+`uv tool install apm-cli==0.33.0` or `pipx install apm-cli==0.33.0`.
 
 ## A package for one project
 

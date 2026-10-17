@@ -44,6 +44,8 @@ words:
   - opsx
   - pako
   - pathlib
+  - pipenv
+  - pipx
   - pocock
   - popleft
   - powerup
