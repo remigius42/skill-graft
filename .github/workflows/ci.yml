@@ -17,3 +17,20 @@ jobs:
 
       - name: Run pre-commit
         run: uv run pre-commit run --all-files --show-diff-on-failure
+
+  # The commitlint pre-commit hook lints only .git/COMMIT_EDITMSG, so this job calls commitlint on the
+  # pushed or proposed commits instead, at the versions that hook installs.
+  commitlint:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7.0.1
+        with:
+          fetch-depth: 0
+
+      - name: Lint commit messages
+        env:
+          FROM: ${{ github.event.pull_request.base.sha || github.event.before }}
+          TO: ${{ github.event.pull_request.head.sha || github.sha }}
+        run: >
+          npx --yes -p @commitlint/cli@20.5.0 -p @commitlint/config-conventional@20.5.0 --
+          commitlint --from "$FROM" --to "$TO" --verbose
