@@ -48,6 +48,8 @@ either `apm.yml`.
 - `resolve`: lock paths (`upstream` relative to its **Source**; project path **Sources** relative to the
   **Package**).
 - `skill-discovery`: skip every `.apm/skill-graft` folder.
+- `explain`: `why` names the skill's absolute upstream folder, the base for a new **Patch**, since the lock no
+  longer does.
 
 ## Impact
 
