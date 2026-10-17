@@ -189,12 +189,13 @@ def _source_folder(alias: str, raw: str, base: Path) -> Path:
 
 
 def _overlap_warnings(sources: dict[str, Source]) -> list[str]:
+    deploys = [(deploy, deploy.resolve()) for deploy in paths.deploy_folders()]
     return [
         f"source {alias!r} overlaps {deploy}, where APM deploys skills"
         for alias, source in sources.items()
         if isinstance(source, PathSource)
-        for deploy in paths.deploy_folders()
-        if paths.overlap(source.folder, deploy.resolve())
+        for deploy, resolved in deploys
+        if paths.overlap(source.folder, resolved)
     ]
 
 

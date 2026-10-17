@@ -31,13 +31,18 @@ def discover(start: Path) -> Path:
     for folder in [start.resolve(), *start.resolve().parents]:
         if folder == home:
             break
-        if (folder / ".apm" / "skill-graft").is_dir():
+        if package_in(folder).is_dir():
             return folder
     return Path.home()
 
 
+def package_in(folder: Path) -> Path:
+    """Where a package lives in `folder`, the home folder or a project root."""
+    return folder / ".apm" / "skill-graft"
+
+
 def package() -> Path:
-    return root() / ".apm" / "skill-graft"
+    return package_in(root())
 
 
 def config_file() -> Path:
@@ -83,8 +88,9 @@ def deploy_folders() -> list[Path]:
 
 def packages() -> list[Path]:
     """The package in effect, and in project scope the user scope's too."""
-    user = Path.home() / ".apm" / "skill-graft"
-    return [package()] if scope() == "user" else [package(), user]
+    if scope() == "user":
+        return [package()]
+    return [package(), package_in(Path.home())]
 
 
 def overlap(a: Path, b: Path) -> bool:
