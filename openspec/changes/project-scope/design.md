@@ -35,8 +35,9 @@ Measured with APM 0.33.0, `HOME` a scratch folder, in a scratch git repository:
 
 - **A subpackage, `<root>/.apm/skill-graft/`**, not the project's own `.apm/`: the same layout in both scopes,
   and skill-graft never owns files the project has. Rejected: vendoring into `<root>/.apm/skills/` (see Context).
-- **The root is fixed once per invocation.** `paths` gains a module-level root that `cli.main` sets after
-  parsing, inside its `SkillGraftError` handling: `paths.discover(Path.cwd())` for every command but `init`
+- **The root is fixed once per invocation.** `paths` gains a module-level root, the home folder while unset,
+  that `cli.main` sets after parsing and unsets in a `finally`, so in-process calls and tests never see a stale
+  one. It sets it inside its `SkillGraftError` handling: `paths.discover(Path.cwd())` for every command but `init`
   (a deleted working folder becomes an error, not a traceback), which sets the home folder or, with
   `--project`, the working folder. `paths.scope()` says `user` when the root is the home folder. The existing
   functions keep their signatures and derive from the root. Rejected: threading a root argument through every
@@ -55,14 +56,17 @@ Measured with APM 0.33.0, `HOME` a scratch folder, in a scratch git repository:
 - **Package line.** `cli.main` prints `skill-graft: package: <absolute package>` to stderr through
   `errors.notice` for the writing commands only, after parsing and before dispatch; `init --project` prints it
   only after its home-folder check passes.
-- **Failed `init --project` removes its folder** (`shutil.rmtree` of what it created), because a kept folder would
-  be found by every later command below it. User scope keeps the folder and the `apm install -g` retry hint,
-  since discovery never finds the user package by accident.
+- **Failed `init --project` removes its folder** (`shutil.rmtree` of what it created, `.apm/` included when `init` made
+  it), because a kept folder would be found by every later command below it. Only when the project's `apm.yml` does not
+  list the package: if APM recorded it and then failed, removing the folder would leave `apm.yml` naming a missing
+  package, so the folder stays and `build` is the retry. User scope keeps the folder and the `apm install -g` retry
+  hint, since discovery never finds the user package by accident.
 - **Lock paths.** `upstream` is written relative to its **Source**'s root (the cache export or the path
   **Source**'s folder) in both scopes; the absolute folder stays in memory, where `update`'s error filter and the
   patch messages use it. In project scope a path **Source** inside the root is written relative to the package
   folder, else absolute. Rejected: per-scope `upstream` (a branch for no reader of the absolute cache path).
-- **Discovery skips every `.apm/skill-graft`**, besides the resolved package: vendored copies in a committed
+- **Discovery skips every `.apm/skill-graft`**, judged on the resolved folder so a symlink named otherwise is
+  caught, besides the resolved package: vendored copies in a committed
   project **Package** must never be read back as a **Source**'s **Skills**, wherever the **Source** points.
 
 ## Risks / Trade-offs
@@ -70,7 +74,12 @@ Measured with APM 0.33.0, `HOME` a scratch folder, in a scratch git repository:
 - \[Tests run with the working folder inside the developer's real home, while `HOME` points at `tmp_path/home`;
   the walk up would find the real `~/.apm/skill-graft` as a project\] → `conftest.py`'s autouse `home` fixture
   also changes into `home` (`monkeypatch.chdir`), where the walk stops at once; tests needing a project build it
-  under `home`. Changing into `tmp_path` would not do: `home` is below it, so the walk would pass on to `/`.
+  under `home`. Changing into `tmp_path` would not do: `home` is below it, so the walk would pass on to `/`. A
+  test outside `home` (working-folder-outside-home) always has a **Package** at its working folder, so its walk
+  stops there too.
+- \[A **Source** containing a **Package** stays an error although discovery now skips packages\] → kept: such a
+  **Source** (`~`, a project root) also holds the cache or deploy folders, whose copies would fail later as
+  duplicate **Skill IDs** with a less clear message.
 - \[Implicit discovery acts on an unexpected **Package**\] → writing commands name it; errors name it.
 - [APM changes its project-scope folders or harness detection] → measured list in `docs/design.md`; the real-APM
   integration test covers `.claude/skills`.

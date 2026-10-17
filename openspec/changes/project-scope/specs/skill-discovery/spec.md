@@ -7,8 +7,8 @@
 Every folder under a **Source** that holds a file named `SKILL.md` SHALL be a **Skill**, at any depth,
 including inside hidden folders other than `.git` and through symlinked folders, each resolved folder visited
 once. A **Skill** is its whole folder, so discovery SHALL NOT look for further **Skills** inside one. Discovery
-SHALL NOT enter a folder that resolves into `~/.apm/skill-graft/`, nor any folder named `skill-graft` inside a
-folder named `.apm`, so a build never reads its own output or another **Package**'s.
+SHALL NOT enter a folder that resolves into `~/.apm/skill-graft/`, nor any folder that resolves to one named
+`skill-graft` inside one named `.apm`, so a build never reads its own output or another **Package**'s.
 
 #### Scenario: Nested layout
 
@@ -43,4 +43,10 @@ folder named `.apm`, so a build never reads its own output or another **Package*
 #### Scenario: Another project's package
 
 - **WHEN** a source holds `repo/.apm/skill-graft/.apm/skills/tdd/SKILL.md`, a project **Package** committed there
+- **THEN** `tdd` is not a **Skill** of that source
+
+#### Scenario: Symlink to another project's package
+
+- **WHEN** a source holds `team -> ~/team-repo/.apm`, and `~/team-repo/.apm/skill-graft/.apm/skills/tdd/SKILL.md`
+  exists
 - **THEN** `tdd` is not a **Skill** of that source

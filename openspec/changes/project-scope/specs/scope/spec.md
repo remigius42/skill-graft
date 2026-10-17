@@ -72,7 +72,8 @@ plain `skill-graft init`.
 
 ### Requirement: Working folder is gone
 
-When the working folder no longer exists, every command except `help` SHALL exit 1 with a `skill-graft:` error
+When the working folder no longer exists, every command except `help` and plain `init` SHALL exit 1 with a
+`skill-graft:` error
 saying so, not a traceback.
 
 #### Scenario: Deleted working folder
@@ -85,7 +86,7 @@ saying so, not a traceback.
 `init`, `resolve`, `build`, `update`, `add`, `remove` and `rename` SHALL print
 `skill-graft: package: <absolute path of the Package>` on stderr before the command's own output, in either
 **Scope**, including when the command fails after its arguments parsed. `tree`, `why` and `help` SHALL NOT print
-it, and neither SHALL a usage error.
+it, and neither SHALL a usage error or `init --project` refused in the home folder.
 
 #### Scenario: Build names the package
 

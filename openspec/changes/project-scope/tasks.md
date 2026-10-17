@@ -10,9 +10,11 @@ for what it ships.
 - [ ] 1.1 `conftest.py`: the autouse `home` fixture also `monkeypatch.chdir(home)`, so the walk up stops at once
   and never reaches the developer's real home. Verify: every existing test green, unchanged.
 - [ ] 1.2 `paths.discover(start)` and the module-level root (`paths.use(root)`, `paths.root()`,
-  `paths.scope()`); `package()` derives from the root; `cli.main` sets it after parsing, inside its error
-  handling, for every command but `init`. Verify: inside-a-project (from a subfolder), project-without-a-package,
-  nested-projects, package-above-the-home-folder, working-folder-outside-home, project-build (`--no-install`
+  `paths.scope()`); `package()` derives from the root, the home folder while unset; `cli.main` sets it after
+  parsing, inside its error handling, by discovery for every command but `init` (which gets the home folder),
+  and unsets it in a `finally`. Verify: inside-a-project (from a subfolder), project-without-a-package,
+  nested-projects, package-above-the-home-folder, working-folder-outside-home (a **Package** at its working
+  folder, so no walk leaves `tmp_path`), root unset after `main` returns, project-build (`--no-install`
   leaves `~/.apm/skill-graft/` absent), not-initialized, deleted-working-folder.
 - [ ] 1.3 `config.text()`: in project scope a missing `skill-graft.toml` names `skill-graft init --project` and
   not plain `init`. Verify: project-package-without-config, and the user-scope not-initialized test unchanged.
@@ -34,9 +36,10 @@ for what it ships.
 ## 3. Init --project
 
 - [ ] 3.1 `init --project`: creates `<cwd>/.apm/skill-graft/` and registers it; refuses an existing folder and the
-  home folder (compared resolved, before the package line); on any APM failure removes the folder it created and
-  says to fix the problem and rerun `skill-graft init --project`; `init`'s help describes the flag. Verify:
-  project-package, project-registration-succeeds, no-harness-in-the-project (fake APM exits 2; folder gone),
+  home folder (compared resolved, before the package line); when APM leaves the package unlisted, removes
+  `.apm/skill-graft/` and any `.apm/` it created and says to rerun `skill-graft init --project`, else keeps it and
+  says to run `skill-graft build`; `init`'s help describes the flag. Verify:
+  project-package, project-registration-succeeds, no-harness-in-the-project (fake APM exits 2; `.apm/` gone), apm-fails-after-registering,
   project-folder-exists, project-init-at-home (also through a symlink), project-init-inside-another-project, and
   the user-scope init tests unchanged. README: a project-scope section, recommending committing the whole
   **Package** (vendored skills included), `apm.yml` and `apm.lock.yaml`, so teammates need only APM.
@@ -48,8 +51,8 @@ for what it ships.
   Verify: source-is-the-project's-deploy-folder, project-source-is-a-user-deploy-folder,
   source-contains-the-project-package, project-source-contains-the-user-package, and the user-scope overlap
   tests unchanged.
-- [ ] 4.2 `discovery.py` skips every folder named `skill-graft` inside a folder named `.apm`. Verify:
-  another-project's-package, symlink-into-the-package unchanged.
+- [ ] 4.2 `discovery.py` skips every folder that resolves to `.apm/skill-graft`. Verify: another-project's-package,
+  symlink-to-another-project's-package, symlink-into-the-package unchanged.
 
 ## 5. Portable lock
 
