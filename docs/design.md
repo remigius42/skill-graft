@@ -103,17 +103,16 @@ path = "~/Documents/sync/2_areas/software/chisel_skill"
 ## Resolution
 
 - A skill is its whole folder. Everything in it is vendored; nothing outside it is.
-- References are found in every Markdown file of a skill, code blocks included, in three forms: `/name` as
-  its own token (never part of a path, URL, link target or attribute, nor a quoted path argument or list item
-  such as `fetch('/orders')` or `${id}/orders`, nor right after a closing code span as in `` `package.json`/x ``), the Skill
-  tool's call form
-  `Skill(name)` (quoted or not, as `skill=` or `skill:`, further arguments allowed) or a sentence naming it
-  (`Call the Skill tool with "grilling".`: each name in double quotes or backticks after `Skill tool`, up to the
-  sentence's end, counts when it names a skill and is silently no reference otherwise), and prose. Prose counts
-  only when the name cannot be an ordinary word: a code span holding just a name, or a bare lowercase hyphenated
-  token bounded as a slash name is (never in a path, URL, query, link target, attribute or `#` anchor, nor a
-  YAML key such as `allowed-tools:`). A Skill tool call's further arguments belong to it, never prose. The
-  `name:` line of a skill's own `SKILL.md` is never a reference. Names match case-sensitively.
+- References are found in every Markdown file of a skill, code blocks included, in three forms: `/name` as its own token
+  (never part of a path, URL, link target or attribute, nor a quoted first argument or list item such as
+  `fetch('/orders')`, nor after an interpolation as in `${id}/orders`, nor right after a closing code span as in
+  `` `package.json`/x ``), the Skill tool's call form `Skill(name)` (quoted or not, as `skill=` or `skill:`, further
+  arguments allowed) or a sentence naming it (`Call the Skill tool with "grilling".`: each name in double quotes or
+  backticks after `Skill tool`, up to the sentence's end, counts when it names a skill and is silently no reference
+  otherwise), and prose. Prose counts only when the name cannot be an ordinary word: a code span holding just a name, or
+  a bare lowercase hyphenated token bounded as a slash name is (never in a path, URL, query, link target, attribute or
+  `#` anchor, nor a YAML key such as `allowed-tools:`). A Skill tool call's further arguments belong to it, never prose.
+  The `name:` line of a skill's own `SKILL.md` is never a reference. Names match case-sensitively.
 - Slash and Skill tool references extend the hull. They resolve in their own source first, else in exactly
   one other source; several other sources is an error until a bind settles it. One that matches no skill in
   any declared source is a warning: "`mp/tdd` calls `/foo`: no declared source has a skill `foo`", naming the

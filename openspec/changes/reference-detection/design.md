@@ -40,11 +40,12 @@ names in `"…"` or `` `…` ``; the slash false positives were `fetch('/orders'
   **Skill** is almost certainly the call. Rejected: warning like `Skill(name)` (noise on every build).
 - **Only names after `Skill tool`**, double quotes and backticks only: the measured phrasing always puts the
   names after; single quotes would pair with apostrophes.
-- **Slash lookbehinds**: on the slash alternative, no `/` after `"` or `'` that follows `(`, `[` or `,`,
-  directly or after one space (fixed-width lookbehinds, one per case), and none after a backtick that follows
-  `[\w.)\]]`. This covers the first argument, later arguments and list items. Rejected: ignoring a quote before
-  `/` only inside fenced blocks (needs fence tracking); blocking `(` plus a backtick (drops `` (`/grilling`) ``,
-  common in prose; a template literal path is mostly excluded by its following `/` already).
+- **Slash exclusions**: a lookbehind drops `/` after `}` (`${id}/orders`) and after `"` or `'` right after `(`
+  or `[` (a first argument or list item); `scan` drops one after a backtick that closes a code span, an odd
+  number of backticks before it on its line. Rejected: also after `, "` (it dropped real calls in prose lists,
+  `Run "/tdd", "/grilling"`, silently, while a later path argument only warns and a bind silences it); a backtick
+  after a word character (it dropped `` 运行`/grilling` ``); ignoring quotes only in fenced blocks (needs fence
+  tracking); blocking `(` plus a backtick (drops `` (`/grilling`) ``).
 - **Announcement**: `cli` (for `build`) and `update` print
   `skill-graft: <n> prose suggestion(s): run skill-graft resolve` through `errors.notice`, after the run's warnings,
   when `hull.suggestions` is non-empty; `update` uses the hull at the new tips. `resolve` is unchanged.
