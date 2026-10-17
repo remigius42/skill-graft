@@ -735,7 +735,7 @@ def test_other_error_at_the_current_refs_shown(
 
     assert code == 0
     assert "no previous hull to compare (the current refs do not resolve:" in out
-    assert "mp/x" in out
+    assert "patches fail there" in out and "mp/x" in out
 
 
 def test_dry_run_with_a_failing_patch(

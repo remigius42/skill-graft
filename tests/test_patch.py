@@ -320,3 +320,31 @@ def test_skill_md_deleted_says_so(tmp_path: Path) -> None:
         "p.patch: deletes SKILL.md: a skill needs one; give it a new name with "
         "[rename], never by deleting it"
     ]
+
+
+def test_reject_file_link_never_read(tmp_path: Path) -> None:
+    upstream = upstream_with(tmp_path, {})
+    fifo = tmp_path / "fifo"
+    os.mkfifo(fifo)  # reading it would block forever
+    a = new_link("notes.md.rej", str(fifo))
+    b = make_patch(tmp_path, {"SKILL.md": LINES}, {"SKILL.md": LINES + "more\n"})
+    patches = [PatchFile("a.patch", a), PatchFile("b.patch", b)]
+
+    with pytest.raises(patch.PatchFailed) as failed:
+        patch.apply(TDD, upstream, patches, work_in(tmp_path))
+
+    assert "notes.md.rej points outside the skill" in failed.value.lines[0]
+
+
+def test_skill_md_made_a_link(tmp_path: Path) -> None:
+    upstream = upstream_with(tmp_path, {})
+    deleted = "".join(f"-{line}\n" for line in LINES.splitlines())
+    data = (
+        "diff --git a/SKILL.md b/SKILL.md\ndeleted file mode 100644\n"
+        f"--- a/SKILL.md\n+++ /dev/null\n@@ -1,10 +0,0 @@\n{deleted}"
+    ).encode() + new_link("SKILL.md", "/etc/hostname")
+
+    with pytest.raises(patch.PatchFailed) as failed:
+        patch.apply(TDD, upstream, [PatchFile("p.patch", data)], work_in(tmp_path))
+
+    assert failed.value.lines == ["p.patch: makes SKILL.md a link"]

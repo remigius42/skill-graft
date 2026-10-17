@@ -95,7 +95,7 @@ def _previous(
             return lock.skill_hashes(resolve.resolve(loaded, folders, Path(work)))
     except patch.PatchError as error:  # likely rewritten for the tips
         if error.other:  # an error that is no patch's: that one matters
-            return f"the current refs do not resolve: {error.other}"
+            return f"the current refs do not resolve: patches fail there; {error.other}"
         return "patches fail at the current refs"
     except (SkillGraftError, OSError) as error:  # the update itself is still fine
         return f"the current refs do not resolve: {error}"

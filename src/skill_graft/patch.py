@@ -97,6 +97,8 @@ def apply(skill: SkillId, upstream: Path, patches: list[PatchFile], work: Path) 
 
 def _check_name(path: str, copy: Path, name: str) -> list[str]:
     """What is wrong with the patched copy: the skill must stay the same skill."""
+    if (copy / "SKILL.md").is_symlink():  # never followed: it may lead anywhere
+        return [f"{path}: makes SKILL.md a link"]
     if not (copy / "SKILL.md").is_file():
         return [
             f"{path}: deletes SKILL.md: a skill needs one; give it a new name with "
@@ -126,8 +128,16 @@ def _relative(error: SkillGraftError, copy: Path) -> str:
 
 
 def _rejects(folder: Path) -> dict[Path, bytes]:
-    """Each `.rej` file in `folder` and its bytes."""
-    return {rej: rej.read_bytes() for rej in folder.rglob("*.rej")}
+    """Each `.rej` file in `folder` and its bytes.
+
+    A link is never read: one a patch made is checked only after the last patch,
+    and git writes no `.rej` through a link.
+    """
+    return {
+        rej: rej.read_bytes()
+        for rej in folder.rglob("*.rej")
+        if not rej.is_symlink() and rej.is_file()
+    }
 
 
 def _failures(
