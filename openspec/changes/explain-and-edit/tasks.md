@@ -6,7 +6,7 @@ synthetic **Skills** and git repositories. Each group updates `README.md` for wh
 
 ## 1. Help and usage errors
 
-- [ ] 1.1 `cli.py`: `help=`/`description=` on the top level and on `init`, `resolve`, `build` and `update` and
+- [x] 1.1 `cli.py`: `help=`/`description=` on the top level and on `init`, `resolve`, `build` and `update` and
   their arguments; the `help [command]` subcommand (argument `dest="topic"`); no or unknown command (top level
   or in `help`) prints the command list on stderr and exits 2. Verify: top-level-help for the commands that exist
   so far, extended by each later task that adds a command, which also gives it `help=`/`description=` and its own
