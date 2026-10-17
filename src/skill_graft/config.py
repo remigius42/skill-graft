@@ -71,14 +71,18 @@ def deployed(config: Config, skill: SkillId) -> str:
 
 
 def load() -> Config:
+    return parse(text(), paths.config_file())
+
+
+def text() -> str:
+    """The config file's text, as UTF-8 bytes: no newline translation."""
     file = paths.config_file()
     try:
-        text = file.read_bytes().decode()
+        return file.read_bytes().decode()
     except FileNotFoundError:
         raise SkillGraftError(f"{file} not found: run `skill-graft init`") from None
     except UnicodeDecodeError as error:
         raise SkillGraftError(f"{file}: {error}") from None
-    return parse(text, file)
 
 
 def parse(text: str, file: Path) -> Config:

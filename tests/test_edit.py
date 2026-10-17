@@ -373,6 +373,45 @@ def test_rename_missing_argument(home: Path, capsys: Capsys) -> None:
     assert "name" in capsys.readouterr().err
 
 
+@pytest.mark.parametrize(
+    ("text", "argv", "named"),
+    [
+        (b"entries = [\n", ["add", "mp/tdd"], "skill-graft.toml"),
+        (b"\xff\n", ["remove", "mp/tdd"], "skill-graft.toml"),
+        (b'entries = "mp/tdd2"\n', ["add", "mp/tdd"], "entries"),
+        (b'entries = "mp/tdd2"\n', ["remove", "mp/tdd"], "entries"),
+    ],
+)
+def test_edit_refuses_a_broken_config(
+    home: Path, capsys: Capsys, text: bytes, argv: list[str], named: str
+) -> None:
+    config = write_config("")
+    config.write_bytes(text)
+
+    assert main(argv) == 1
+
+    out, err = capsys.readouterr()
+    assert (out, config.read_bytes()) == ("", text)
+    assert named in err and "Traceback" not in err
+
+
+def test_edit_without_a_config(home: Path, capsys: Capsys) -> None:
+    assert main(["add", "mp/tdd"]) == 1
+
+    assert "run `skill-graft init`" in capsys.readouterr().err
+
+
+def test_edit_keeps_the_config_when_the_lock_fails(home: Path, capsys: Capsys) -> None:
+    mp_skills(home, "tdd", "notes")
+    config = write_config('entries = ["mp/tdd"]\n' + SOURCES)
+    before = config.read_bytes()
+    (package(home) / "skill-graft.lock").mkdir()  # the lock cannot be replaced
+
+    assert main(["add", "mp/notes"]) == 1
+
+    assert config.read_bytes() == before
+
+
 def test_edit_fails_to_resolve(home: Path, capsys: Capsys) -> None:
     skill(home / "mp" / "tdd")
     skill(home / "mp" / "notes", "/x\n")

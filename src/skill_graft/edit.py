@@ -19,9 +19,13 @@ from skill_graft.hull import Hull
 
 
 def read() -> tomlkit.TOMLDocument:
-    """The config as `tomlkit` keeps it: comments and formatting included."""
-    # Bytes, as config.load reads them: no newline translation, no locale encoding.
-    return tomlkit.parse(paths.config_file().read_bytes().decode())
+    """The config as `tomlkit` keeps it: comments and formatting included.
+
+    Checked as `load` checks it first, so an edit only ever sees a valid config.
+    """
+    text = config.text()
+    config.parse(text, paths.config_file())
+    return tomlkit.parse(text)
 
 
 def write(document: tomlkit.TOMLDocument) -> None:
@@ -122,8 +126,14 @@ def _finish(document: tomlkit.TOMLDocument) -> Hull:
         folders = resolve.folders(loaded, Cache(paths.cache()), {})
         hull = resolve.resolve(loaded, folders, Path(work))
         lock_text = lock.render(loaded, {}, hull)  # hashes the patched copies
+    file = paths.config_file().resolve()
+    before = file.read_bytes()
     write(document)
-    lock.write(lock_text)
+    try:
+        lock.write(lock_text)
+    except OSError:  # leave neither file changed
+        files.atomic_write(file, before)
+        raise
     print(lock.tree(hull) + lock.suggestions(hull), end="")
     warn(hull.warnings)
     return hull
