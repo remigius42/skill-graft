@@ -7,13 +7,13 @@
 A slash **Reference** SHALL be `/` then a name, the longest run of `[A-Za-z0-9._-]` starting with a letter or
 digit, trailing `.` dropped, standing as its own token: not preceded by a letter, digit, `/`, `.`, `-`, `~`, `:`,
 `\`, `<`, `@`, `}`, `](`, `="` or `='`, nor by `"` or `'` right after `(` or `[`, nor by a backtick that closes a
-code span (an odd number of backticks before it on its line), and not followed by `/`, or `:` and a letter or
+code span (an odd number of backtick runs before it on its line), and not followed by `/`, or `:` and a letter or
 digit. It SHALL count anywhere, code blocks included.
 
 #### Scenario: Standalone token
 
 - **WHEN** a **Skill**'s Markdown holds `run /grilling.`, `` `/grilling` ``, `(/grilling)`, `` (`/grilling`) ``,
-  `run '/grilling'`, `**/grilling**`, `Run "/tdd", "/grilling"` or `` 运行`/grilling` ``
+  `run '/grilling'`, `**/grilling**`, `Run "/tdd", "/grilling"`, `` 运行`/grilling` `` or ``` ``/grilling`` ```
 - **THEN** each is a slash **Reference** to `grilling`
 
 #### Scenario: Paths and URLs
