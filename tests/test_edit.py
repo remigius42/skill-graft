@@ -156,6 +156,79 @@ def test_add_reached_only_through_itself(home: Path, capsys: Capsys) -> None:
     assert capsys.readouterr().err == ""
 
 
+def test_remove(home: Path, capsys: Capsys) -> None:
+    mp_skills(home, "tdd", "notes")
+    write_config('entries = ["mp/tdd", "mp/notes"]\n' + SOURCES)
+
+    assert main(["remove", "mp/notes"]) == 0
+
+    assert entries(home) == ["mp/tdd"]
+    assert capsys.readouterr().out == "mp/tdd\n"
+
+
+def test_remove_not_an_entry(home: Path, capsys: Capsys) -> None:
+    skill(home / "mp" / "tdd", "/grilling\n")
+    mp_skills(home, "grilling")
+    config = write_config('entries = ["mp/tdd"]\n' + SOURCES)
+    before = config.read_bytes()
+
+    assert main(["remove", "mp/grilling"]) == 1
+
+    out, err = capsys.readouterr()
+    assert (out, config.read_bytes()) == ("", before)
+    assert "`mp/grilling` is no entry" in err
+
+
+def test_remove_still_reachable(home: Path, capsys: Capsys) -> None:
+    skill(home / "mp" / "tdd", "/grilling\n")
+    mp_skills(home, "grilling")
+    write_config('entries = ["mp/tdd", "mp/grilling"]\n' + SOURCES)
+
+    assert main(["remove", "mp/grilling"]) == 0
+
+    assert entries(home) == ["mp/tdd"]
+    assert "`mp/grilling` stays in the hull, via `mp/tdd`" in capsys.readouterr().err
+
+
+def test_remove_names_no_circular_parent(home: Path, capsys: Capsys) -> None:
+    skill(home / "mp" / "tdd", "/y\n")
+    skill(home / "mp" / "y", "/x\n")
+    skill(home / "mp" / "x", "/z\n")
+    skill(home / "mp" / "z", "/x\n")
+    write_config('entries = ["mp/tdd", "mp/x"]\n' + SOURCES)
+
+    assert main(["remove", "mp/x"]) == 0
+
+    assert "`mp/x` stays in the hull, via `mp/y`" in capsys.readouterr().err
+
+
+def test_remove_the_last_entry(home: Path, capsys: Capsys) -> None:
+    mp_skills(home, "tdd")
+    write_config('entries = ["mp/tdd"]\n' + SOURCES)
+
+    assert main(["remove", "mp/tdd"]) == 0
+
+    assert entries(home) == []
+    lock = tomllib.loads((package(home) / "skill-graft.lock").read_text())
+    assert lock.get("skills", []) == []
+    assert capsys.readouterr().out == ""
+
+
+def test_remove_keeps_other_comments(home: Path, capsys: Capsys) -> None:
+    mp_skills(home, "a", "b", "c")
+    config = write_config(
+        "# mine\n"
+        'entries = [\n  "mp/a",  # keep a\n  "mp/b",  # goes\n  "mp/c",  # keep c\n]\n'
+        + SOURCES
+    )
+
+    assert main(["remove", "mp/b"]) == 0
+
+    text = config.read_text()
+    assert entries(home) == ["mp/a", "mp/c"]
+    assert "# mine" in text and "# keep a" in text and "# keep c" in text
+
+
 def test_edit_fails_to_resolve(home: Path, capsys: Capsys) -> None:
     skill(home / "mp" / "tdd")
     skill(home / "mp" / "notes", "/x\n")

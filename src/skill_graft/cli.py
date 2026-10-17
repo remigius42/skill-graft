@@ -176,6 +176,18 @@ def _parser() -> tuple[_Parser, dict[str, argparse.ArgumentParser]]:
     add.add_argument(
         "skills", nargs="+", metavar="skill-id", help="<source alias>/<name>"
     )
+    remove = commands.add_parser(
+        "remove",
+        help="remove skills from the entries, then resolve",
+        description=(
+            "Delete each skill ID from `entries` in skill-graft.toml, keeping its "
+            "other comments and formatting, as add does. A removed skill another "
+            "entry reaches stays in the hull. Never builds."
+        ),
+    )
+    remove.add_argument(
+        "skills", nargs="+", metavar="skill-id", help="an entry to remove"
+    )
     help_parser = commands.add_parser(
         "help",
         help="show the help of skill-graft or of a command",
@@ -211,6 +223,8 @@ def main(argv: list[str] | None = None) -> int:
             update.update(_load(), args.aliases, args.dry_run)
         elif args.command == "add":
             edit.add(args.skills)
+        elif args.command == "remove":
+            edit.remove(args.skills)
         elif args.command == "why":
             with tempfile.TemporaryDirectory(prefix="skill-graft-") as work:
                 loaded, resolved = _resolve(Path(work))

@@ -14,7 +14,7 @@ from tomlkit.items import Array
 from skill_graft import config, files, lock, paths, resolve
 from skill_graft.cache import Cache
 from skill_graft.config import SkillId
-from skill_graft.errors import notice, warn
+from skill_graft.errors import SkillGraftError, notice, warn
 from skill_graft.hull import Hull
 
 
@@ -50,6 +50,21 @@ def add(skills: list[str]) -> None:
     for skill in hull.entries:
         if str(skill) in added and skill in parents:
             notice(f"`{skill}` was already in the hull, via `{parents[skill]}`")
+
+
+def remove(skills: list[str]) -> None:
+    """Deletes each skill ID from `entries`."""
+    document = read()
+    array = cast(Array, document.get("entries", tomlkit.array()))
+    for text in dict.fromkeys(skills):
+        if text not in array:
+            raise SkillGraftError(f"`{text}` is no entry")
+        array.remove(text)
+    hull = _finish(document)
+    parents = _reach(hull, hull.entries)  # the remaining entries
+    for skill, parent in parents.items():
+        if str(skill) in skills:
+            notice(f"`{skill}` stays in the hull, via `{parent}`")
 
 
 def _reach(hull: Hull, seeds: list[SkillId]) -> dict[SkillId, SkillId]:

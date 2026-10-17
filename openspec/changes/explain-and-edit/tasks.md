@@ -50,7 +50,7 @@ synthetic **Skills** and git repositories. Each group updates `README.md` for wh
 - [x] 5.2 `add <skill-id>…`. Verify: edit-succeeds, appended, multi-line-array, no-entries-key, unknown-skill,
   undeclared-alias, already-an-entry (bytes and mtime kept), already-reachable, reached-only-through-itself,
   added-together, notice-stream, no-op (nothing resolved, lock untouched, nothing on stdout).
-- [ ] 5.3 `remove <skill-id>…`. Verify: removed, not-an-entry, still-reachable, last-entry, other comments kept,
+- [x] 5.3 `remove <skill-id>…`. Verify: removed, not-an-entry, still-reachable, last-entry, other comments kept,
   removed-not-circular (`mp/x` reached via `mp/y`, `mp/z` calling back: the notice names `mp/y`).
 - [ ] 5.4 `rename <skill-id> <name>`, undo by upstream name. Verify: new-rename, comments-survive,
   already-that-name, invalid-name, undone, outside-the-hull, clash, user's-reserved-name,
