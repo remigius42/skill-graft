@@ -16,7 +16,7 @@ ignores.
   user-git-config (a `~/.gitconfig` and a `GIT_CONFIG_GLOBAL` file setting `apply.whitespace = fix`,
   `apply.ignoreWhitespace = change` and `core.autocrlf = true` change nothing), enclosing-repository (the folder
   inside a git work tree), no-git; every existing git and cache test.
-- [ ] 1.2 `files.copy_skill` (`copytree` without `.git`, following symlinks), used by `vendor.vendor` and
+- [x] 1.2 `files.copy_skill` (`copytree` without `.git`, following symlinks), used by `vendor.vendor` and
   `patch.apply(skill, upstream, files, work)`: copy, owner write added, apply in order; failures from new or
   rewritten `.rej` files (target file, `@@` headers) or git's stderr when there is none, later patches not tried
   (`PatchFailed`, a `SkillGraftError`); `SKILL.md` kept, `check_files` passing on the copy and `read_name`

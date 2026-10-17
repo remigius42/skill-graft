@@ -35,6 +35,12 @@ class GitSource:
 
 Source = PathSource | GitSource
 
+
+class PatchFile(NamedTuple):
+    path: str  # as written in the TOML
+    data: bytes
+
+
 # A full commit name: SHA-1 or SHA-256.
 REF = re.compile(r"[0-9a-f]{40}|[0-9a-f]{64}")
 

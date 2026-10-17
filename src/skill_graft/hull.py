@@ -1,7 +1,5 @@
 """Resolves references and walks the hull: the entries and every skill they reach."""
 
-import os
-import stat
 from collections import deque
 from dataclasses import dataclass
 from pathlib import Path
@@ -49,7 +47,7 @@ def walk(config: Config, indexes: dict[str, discovery.Index]) -> Hull:
     queue = deque(skills)
     while queue:
         current = queue.popleft()
-        check_files(skills[current])  # before reading any file in it
+        files.check_files(skills[current])  # before reading any file in it
         found, file_warnings = references.scan(skills[current])
         warnings += file_warnings
         for ref in found:
@@ -150,27 +148,3 @@ def _has(index: discovery.Index, name: str) -> bool:
     An invalid name is known not to be `name`, so it never counts.
     """
     return name in index.folders or name in index.unreadable
-
-
-def check_files(folder: Path) -> None:
-    """A skill is its whole folder: a symlink may only lead to a file inside it.
-
-    A link to a folder, even one inside, is refused: it can form a cycle. So is
-    a FIFO, socket or device, which reading would block on or never finish.
-    """
-    root = folder.resolve()
-    for link in files.skill_entries(folder):
-        if not link.is_symlink():
-            mode = link.lstat().st_mode
-            if not (stat.S_ISREG(mode) or stat.S_ISDIR(mode)):
-                raise SkillGraftError(f"{link} is not a regular file")
-            continue
-        target = Path(os.path.realpath(link))
-        if not target.is_relative_to(root):
-            raise SkillGraftError(f"{link} points outside the skill, to {target}")
-        if not target.exists():
-            raise SkillGraftError(f"{link} points to {target}, which is missing")
-        if target.is_dir():
-            raise SkillGraftError(f"{link} points to a folder; only file links work")
-        if not target.is_file():
-            raise SkillGraftError(f"{link} points to {target}: not a regular file")

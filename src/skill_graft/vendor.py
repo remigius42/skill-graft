@@ -3,7 +3,7 @@
 import shutil
 from pathlib import Path
 
-from skill_graft import paths, rename
+from skill_graft import files, paths, rename
 from skill_graft.errors import SkillGraftError
 from skill_graft.hull import Hull
 
@@ -37,12 +37,7 @@ def vendor(hull: Hull) -> None:
             return target
 
         try:
-            shutil.copytree(
-                folder,
-                new / hull.deployed[skill],
-                ignore=shutil.ignore_patterns(".git"),
-                copy_function=copy,
-            )
+            files.copy_skill(folder, new / hull.deployed[skill], copy)
         except OSError as error:
             # The copy error is the one to report; the next run clears what is left.
             shutil.rmtree(new, ignore_errors=True)

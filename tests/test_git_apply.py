@@ -5,27 +5,10 @@ import subprocess
 from pathlib import Path
 
 import pytest
+from conftest import make_patch
 
 from skill_graft import git
 from skill_graft.errors import SkillGraftError
-
-
-def make_patch(tmp_path: Path, before: dict[str, str], after: dict[str, str]) -> bytes:
-    """`diff -ruN base/ edited/` for two folders holding these files."""
-    for name, files in (("base", before), ("edited", after)):
-        folder = tmp_path / "diff" / name
-        shutil.rmtree(folder, ignore_errors=True)
-        folder.mkdir(parents=True)
-        for path, text in files.items():
-            (folder / path).parent.mkdir(parents=True, exist_ok=True)
-            (folder / path).write_text(text)
-    result = subprocess.run(
-        ["diff", "-ruN", "base/", "edited/"],
-        cwd=tmp_path / "diff",
-        capture_output=True,
-    )
-    assert result.returncode == 1, result.stderr
-    return result.stdout
 
 
 def folder_with(tmp_path: Path, files: dict[str, str]) -> Path:
