@@ -41,9 +41,10 @@ exit 0 without reading `skill-graft.toml`. The top level SHALL list every comman
 
 ### Requirement: Usage errors
 
-No command, an unknown command, or a wrong argument or option SHALL print the usage and the error to standard
-error and exit 2, distinct from the exit 1 of a failing command. No command and an unknown command SHALL also
-list the commands.
+No command, an unknown command, a missing or extra argument, or an unknown option SHALL print the usage and the error to
+standard error and exit 2, distinct from the exit 1 of a failing command. An argument of the right count but an invalid
+value, such as a malformed **Skill ID**, SHALL be a failing command (exit 1). No command and an unknown command SHALL
+also list the commands.
 
 #### Scenario: Unknown command
 

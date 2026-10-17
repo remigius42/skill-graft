@@ -25,8 +25,8 @@ synthetic **Skills** and git repositories. Each group updates `README.md` for wh
 
 - [ ] 3.1 `tree [--format text]`: `_resolve` then `lock.tree`, writing nothing. Verify: same-tree, no-lock, stale
   lock unchanged (byte compare), failing-patch.
-- [ ] 3.2 `explain.mermaid(hull)` and `--format mermaid`. Verify: diagram, labels-quoted, no-source-links,
-  output identical across two runs.
+- [ ] 3.2 `explain.mermaid(hull)` and `--format mermaid`, labels escaped. Verify: diagram, labels-quoted,
+  no-source-links, output identical across two runs.
 - [ ] 3.3 `explain.link(source)` and `--link`; `--link` without `--format mermaid` exits 2. Verify:
   link-decodes-to-the-diagram, link-without-mermaid; once by hand, the printed URL opens the diagram on
   mermaid.live (note the result in the commit body).
@@ -39,7 +39,7 @@ synthetic **Skills** and git repositories. Each group updates `README.md` for wh
 - [ ] 4.2 `<skill>` lookup and errors: **Skill ID** or **Deployed name**; upstream name of a renamed **Skill**;
   outside the **Hull** with and without prose mentions; unknown; undeclared alias. Verify: deployed-name,
   unrenamed-skill-by-name, upstream-name-of-a-renamed-skill, outside-the-hull-mentioned-in-prose,
-  outside-the-hull-not-mentioned, unknown, undeclared-alias.
+  outside-the-hull-not-mentioned, bare-name-outside-the-hull-mentioned-in-prose, unknown, undeclared-alias.
 
 ## 5. Edits
 
@@ -48,8 +48,10 @@ synthetic **Skills** and git repositories. Each group updates `README.md` for wh
   `update._write_refs` uses the same write. Verify: every update test green, plus edit-fails-to-resolve and
   symlinked-config (with a relative path source) through 5.2.
 - [ ] 5.2 `add <skill-id>…`. Verify: edit-succeeds, appended, multi-line-array, no-entries-key, unknown-skill,
-  undeclared-alias, already-an-entry (bytes and mtime kept), already-reachable, reached-only-through-itself, notice-stream.
-- [ ] 5.3 `remove <skill-id>…`. Verify: removed, not-an-entry, still-reachable, other comments kept.
+  undeclared-alias, already-an-entry (bytes and mtime kept), already-reachable, reached-only-through-itself,
+  added-together, notice-stream, no-op (nothing resolved, lock untouched, nothing on stdout).
+- [ ] 5.3 `remove <skill-id>…`. Verify: removed, not-an-entry, still-reachable, last-entry, other comments kept,
+  removed-not-circular (`mp/x` reached via `mp/y`, `mp/z` calling back: the notice names `mp/y`).
 - [ ] 5.4 `rename <skill-id> <name>`, undo by upstream name. Verify: new-rename, comments-survive,
   already-that-name, invalid-name, undone, outside-the-hull, clash, user's-reserved-name,
   shipped-reserved-name, unknown-skill-to-rename, missing-argument (exit 2).

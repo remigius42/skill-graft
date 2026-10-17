@@ -11,7 +11,9 @@ user, checking that the result resolves before anything is written.
 
 `add`, `remove` and `rename` SHALL compute the **Hull** of the edited config, as `resolve` does, before writing
 anything. Only if that succeeds SHALL they write `skill-graft.toml`, then `skill-graft.lock`, and print what
-`resolve` prints. A failure SHALL leave both files unchanged. They SHALL NOT write `.apm/skills/` or run `apm`.
+`resolve` prints. A failure SHALL exit 1 and leave both files unchanged. They SHALL NOT write `.apm/skills/` or run
+`apm`. When the command changes no value (every **Skill ID** given is a no-op), it SHALL print only its notices,
+exit 0, and neither resolve nor write anything.
 
 #### Scenario: Edit succeeds
 
@@ -77,7 +79,7 @@ SHALL create `entries` before the first table when it is absent. A **Skill ID** 
 `add` SHALL refuse a **Skill ID** that is malformed, has an undeclared alias, or names no **Skill** in its
 **Source**, writing nothing. A **Skill ID** already an **Entry** SHALL be a notice and left alone. A **Skill**
 already in the **Hull** before the edit SHALL be added, with a notice naming a **Skill** whose slash or Skill tool
-**Reference** reached it then.
+**Reference** reached it then; **Skill IDs** added by the same command do not count.
 
 #### Scenario: Unknown skill
 
@@ -99,6 +101,12 @@ already in the **Hull** before the edit SHALL be added, with a notice naming a *
 - **WHEN** **Entry** `mp/tdd` calls `/grilling` and the user runs `skill-graft add mp/grilling`
 - **THEN** `entries` holds `mp/grilling`, and a notice says it was already in the **Hull** via `mp/tdd`
 
+#### Scenario: Added together
+
+- **WHEN** neither `mp/a` nor `mp/b` is in the **Hull**, `mp/a` calls `/b`, and the user runs
+  `skill-graft add mp/a mp/b`
+- **THEN** `entries` holds both and no notice is printed
+
 #### Scenario: Reached only through itself
 
 - **WHEN** `mp/x` calls `/y`, `mp/y` calls `/x`, no **Entry** reaches either, an **Entry** mentions `x` in prose,
@@ -109,7 +117,13 @@ already in the **Hull** before the edit SHALL be added, with a notice naming a *
 
 `remove <skill-id>…` SHALL delete each **Skill ID** from `entries`, keeping the array's style. A **Skill ID** that
 is no **Entry** SHALL be an error, writing nothing. A removed **Skill** still in the **Hull** SHALL be a notice
-naming a **Skill** whose slash or Skill tool **Reference** reaches it.
+naming a **Skill** whose slash or Skill tool **Reference** reaches it from the remaining **Entries**. Removing the last
+**Entry** SHALL leave `entries = []`, an empty **Hull**.
+
+#### Scenario: Last entry
+
+- **WHEN** `entries = ["mp/tdd"]` and the user runs `skill-graft remove mp/tdd`
+- **THEN** `entries = []`, the lock holds no **Skills**, and the printed tree is empty
 
 #### Scenario: Removed
 

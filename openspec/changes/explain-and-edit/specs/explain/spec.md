@@ -31,12 +31,11 @@ same errors. They SHALL NOT read or write `skill-graft.lock`, write `skill-graft
 
 ### Requirement: Why prints an inverted tree
 
-`why <skill>` SHALL print the **Skill** on the first line, then, as a tree whose lines join with `├─←` and
-`└─←`, each **Skill** with a slash or Skill tool **Reference** resolved to it, labelled as in `resolve`'s tree.
-Children SHALL be in the order the walk reached them. A **Skill** SHALL be expanded once; its later lines end in
-`(*)`. An **Entry** below the first line SHALL be marked `(entry)` and not expanded; the first line SHALL be
-expanded, and marked `(entry)` when the **Skill** is an **Entry**. Prose edges and self-references SHALL be left
-out.
+`why <skill>` SHALL print the **Skill** on the first line, then, as a tree whose lines join with `├─←` and `└─←`, each
+**Skill** with a slash or Skill tool **Reference** resolved to it, labelled as in `resolve`'s tree. Children SHALL be in
+the order the walk reached them, which is the **Hull**'s order. A **Skill** SHALL be expanded once; its later lines end
+in `(*)`. An **Entry** below the first line SHALL be marked `(entry)` and not expanded; the first line SHALL be
+expanded, and marked `(entry)` when the **Skill** is an **Entry**. Prose edges and self-references SHALL be left out.
 
 #### Scenario: Two paths
 
@@ -93,7 +92,8 @@ compared exactly.
 ### Requirement: Why explains a skill it cannot show
 
 `why` SHALL exit non-zero, printing nothing on standard output, when `<skill>` names no **Hull** **Skill**. The
-error SHALL say why and what to do instead.
+error SHALL say why and what to do instead. A bare name that is the name of a **Skill** prose suggests SHALL get
+that **Skill**'s error, as if its **Skill ID** were given.
 
 #### Scenario: Upstream name of a renamed skill
 
@@ -111,10 +111,16 @@ error SHALL say why and what to do instead.
 - **WHEN** `mp/notes` exists in **Source** `mp` but is not in the **Hull** and no prose mentions it
 - **THEN** `skill-graft why mp/notes` exits non-zero saying it is not in the **Hull**, naming `skill-graft add mp/notes`
 
+#### Scenario: Bare name outside the hull, mentioned in prose
+
+- **WHEN** `mp/tdd` mentions `diagnosing-bugs`, `mp/diagnosing-bugs` is not in the **Hull**, and the user runs
+  `skill-graft why diagnosing-bugs`
+- **THEN** it exits non-zero as for `skill-graft why mp/diagnosing-bugs`
+
 #### Scenario: Unknown
 
 - **WHEN** the user runs `skill-graft why mp/nope` and **Source** `mp` has no **Skill** `nope`, or
-  `skill-graft why nope` and no **Hull** **Skill** deploys as `nope`
+  `skill-graft why nope` and no **Hull** **Skill** deploys as `nope` and no prose mentions `nope`
 - **THEN** it exits non-zero naming `nope`
 
 #### Scenario: Undeclared alias
@@ -139,7 +145,8 @@ the prose suggestions.
 drawn with a thicker border, and one arrow per pair of **Skills**, kind and **Bind** that has a tree line,
 labelled with the **Reference** as written (`, bind` when a **Bind** decided it). Prose arrows SHALL be dotted.
 The output SHALL be deterministic. Every label SHALL stand in double quotes, so
-parentheses and backticks in it do not break the diagram.
+parentheses do not break the diagram, and each backtick in it SHALL be written `#96;`, so Mermaid does not read it
+as a Markdown string.
 
 #### Scenario: Diagram
 
@@ -152,14 +159,14 @@ parentheses and backticks in it do not break the diagram.
     n0["mp/tdd"]:::entry
     n1["mp/grilling as mp-grilling"]
     n0 -->|"/grilling"| n1
-    n0 -.->|"`grilling`, prose"| n1
+    n0 -.->|"#96;grilling#96;, prose"| n1
     classDef entry stroke-width:3px
   ```
 
 #### Scenario: Labels quoted
 
 - **WHEN** a **Reference** is written `Skill(grilling)` or `` `grilling` ``
-- **THEN** every node and arrow label in the diagram stands in double quotes
+- **THEN** every node and arrow label in the diagram stands in double quotes, and no label holds a backtick
 
 #### Scenario: No source links
 

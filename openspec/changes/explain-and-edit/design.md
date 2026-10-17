@@ -23,9 +23,10 @@ every edge with its `text`; the lock does not, which is one reason `why` and `tr
 
 ## Decisions
 
-- **Explain from a fresh Hull, never the lock.** The lock lacks the reference text, can be missing or stale, and
-  the spec "the lock is output only" forbids reading it. The alternative, storing `text` in the lock and reading
-  it, would make the lock an input. `why`/`tree` call `_resolve` in a temporary work folder and render.
+- **Explain from a fresh Hull, never the lock.** The lock lacks the reference text, can be missing or stale, and the
+  spec "the lock is output only" forbids reading it. The alternative, storing `text` in the lock and reading it, would
+  make the lock an input. `why`/`tree` call `_resolve` in a temporary work folder and render; they skip `lock.render`,
+  so no folder is hashed.
 - **`explain.py`** holds the reverse tree, Mermaid and link. The reverse tree inverts `hull.edges` (slash and
   Skill tool only, self-edges dropped), deduplicated per (source, target, kind, bind) as `lock.tree` does, and
   ordered by each source's position in `hull.skills` (the walk's order). Mermaid reuses `lock.tree`'s line
@@ -42,9 +43,10 @@ every edge with its `text`; the lock does not, which is one reason `why` and `tr
   symlink. Only on success does it write those same bytes to the resolved file, then the lock. The alternative,
   mutating a loaded `Config`, could resolve something other than what gets written.
 - **Reachability notices come from the edited Hull.** The edges of a **Skill** do not depend on the **Entries**,
-  so the **Hull** before `add` is what the other **Entries** reach over slash and Skill tool edges of the edited
-  **Hull**; no second resolution. A notice names the first such parent of the skill. For `remove`, any such
-  in-edge from another **Skill** of the edited **Hull** names a parent.
+  so one breadth-first walk over the edited **Hull**'s slash and Skill tool edges, seeded with the **Entries** the
+  command did not touch (for `add`, those from before the edit; for `remove`, those that remain), gives what was
+  or stays reachable without them, and each **Skill**'s predecessor on that walk is the parent a notice names.
+  No second resolution, and no circular parent: a parent is always reached before its child.
 - **The in-place write is shared.** `update._write_refs`' read/parse/atomic-write moves to an `edit` helper used
   by both, so the symlink and byte rules live once.
 - **Skill existence** for `add`/`rename`/`why <id>` uses `discovery.find` on the index of the alias.
@@ -53,6 +55,12 @@ every edge with its `text`; the lock does not, which is one reason `why` and `tr
   have their own line; the trailing-comma case is pinned by a test, and where tomlkit falls short the item is
   added with explicit `Whitespace`/`Comment` trivia. A new top-level `entries` key needs nothing special: tomlkit
   inserts it before the first table (checked with tomlkit 0.15.2); a test pins it.
+- **No-op edits** return before resolving: every given **Skill ID** already an **Entry** for `add`, or the
+  current **Deployed name** for `rename`. A partial no-op (`add a b`, `a` already an **Entry**) prints its notice
+  and goes on with the rest.
+- **Malformed Skill IDs** fail in `config` validation (exit 1), not in argparse: argparse only counts arguments.
+- **Mermaid labels** escape `"` as `#quot;` and every backtick as `#96;`: a label opening with a backtick inside
+  quotes is a Mermaid Markdown string, and a lone one breaks the lexer.
 - **Notices** go through the existing `warn` path's stream (stderr) but without the `warning:` prefix: a new
   `notice()` in `errors.py`.
 - **Help.** Every `add_parser` gets `help=` (list summary) and `description=` (page). The `help` subcommand's
