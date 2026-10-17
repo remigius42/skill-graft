@@ -51,7 +51,7 @@ for what it ships.
   Verify: source-is-the-project's-deploy-folder, project-source-is-a-user-deploy-folder,
   source-contains-the-project-package, project-source-contains-the-user-package, and the user-scope overlap
   tests unchanged.
-- [ ] 4.2 `discovery.py` skips every folder that resolves to `.apm/skill-graft`. Verify: another-project's-package,
+- [x] 4.2 `discovery.py` skips every folder that resolves to `.apm/skill-graft`. Verify: another-project's-package,
   symlink-to-another-project's-package, symlink-into-the-package unchanged.
 
 ## 5. Portable lock

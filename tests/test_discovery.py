@@ -267,3 +267,21 @@ def test_unreadable_named_skill(home: Path, capsys: Capsys, how: str) -> None:
     code, err = build(capsys)
 
     assert code == 1 and "other/SKILL.md" in err
+
+
+@pytest.mark.parametrize("via_symlink", [False, True])
+def test_another_projects_package_is_skipped(
+    home: Path, capsys: Capsys, via_symlink: bool
+) -> None:
+    apm = home / "src" / "repo" / ".apm"
+    if via_symlink:
+        apm = home / "team-repo" / ".apm"
+        (home / "src").mkdir()
+        (home / "src" / "team").symlink_to(apm)
+    skill(apm / "skill-graft" / ".apm" / "skills" / "tdd")
+    configure(["own/tdd"], own="~/src")
+
+    code, err = build(capsys)
+
+    assert code == 1
+    assert "own/tdd" in err

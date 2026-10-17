@@ -16,8 +16,9 @@ COMMENT = re.compile(r"\s+#.*$")
 def skill_folders(source: Path, confined: bool = False) -> list[Path]:
     """Every folder under `source` holding a `SKILL.md`, not looking inside one.
 
-    Follows symlinked folders, visiting each resolved folder once, and skips `.git`
-    and the package, so build never reads its own output. When `confined`, as for
+    Follows symlinked folders, visiting each resolved folder once, and skips `.git`,
+    the package and any other `.apm/skill-graft`, so build never reads its own
+    output or another package's vendored copies. When `confined`, as for
     a git source, whose links someone else wrote, only links that stay inside
     `source` are followed.
     """
@@ -37,6 +38,7 @@ def skill_folders(source: Path, confined: bool = False) -> list[Path]:
                 name != ".git"
                 and real not in visited
                 and not real.is_relative_to(package)
+                and not (real.name == "skill-graft" and real.parent.name == ".apm")
                 and (not confined or real.is_relative_to(root))
             ):
                 visited.add(real)
