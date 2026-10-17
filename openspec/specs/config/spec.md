@@ -92,8 +92,8 @@ never a crash.
 
 ### Requirement: Unsupported keys are errors
 
-Any top-level key other than `sources`, `entries`, `bind`, `rename` and `reserved`, and any source key other
-than `path`, `git`, `branch` and `ref`, SHALL be an error, so declared intent is never silently ignored.
+Any top-level key other than `sources`, `entries`, `bind`, `rename`, `reserved` and `patches`, and any source key
+other than `path`, `git`, `branch` and `ref`, SHALL be an error, so declared intent is never silently ignored.
 
 #### Scenario: Git source
 
@@ -108,7 +108,7 @@ than `path`, `git`, `branch` and `ref`, SHALL be an error, so declared intent is
 #### Scenario: Patches table
 
 - **WHEN** the TOML has a `[patches]` table
-- **THEN** the command exits non-zero naming `patches` as unsupported
+- **THEN** it is not reported as unsupported
 
 ### Requirement: Missing or invalid config
 
@@ -230,3 +230,57 @@ error naming the key.
 
 - **WHEN** `reserved = "review"` or `reserved = ["a/b"]`
 - **THEN** the command exits non-zero naming `reserved`
+
+### Requirement: Patches
+
+`[patches]` SHALL be a table whose keys are **Skill IDs**, every alias declared, and whose values are non-empty
+lists of file paths, `~` expanded and relative ones taken relative to the folder holding `skill-graft.toml`.
+Every listed file SHALL be readable, used or not. A malformed key or value, an undeclared alias, a missing or
+unreadable file, or one file listed twice under one key (compared resolved) SHALL be an error naming the key.
+
+#### Scenario: Valid patches
+
+- **WHEN** `[patches]` has `"mp/tdd" = ["patches/tdd.patch"]`, `mp` is declared, and the file exists
+- **THEN** the config loads
+
+#### Scenario: Value not a list of paths
+
+- **WHEN** `[patches]` has `"mp/tdd" = "patches/tdd.patch"`, `"mp/tdd" = []` or `"mp/tdd" = [1]`
+- **THEN** the command exits non-zero naming `patches."mp/tdd"`
+
+#### Scenario: Undeclared alias in a patch
+
+- **WHEN** `[patches]` has `"nope/tdd" = ["patches/tdd.patch"]` and no `[sources.nope]` exists
+- **THEN** the command exits non-zero naming `patches."nope/tdd"` and `nope`
+
+#### Scenario: Missing patch file
+
+- **WHEN** `[patches]` has `"mp/tdd" = ["patches/gone.patch"]`, the file does not exist, and `mp/tdd` is not in
+  the **Hull**
+- **THEN** the command exits non-zero naming `patches."mp/tdd"` and `patches/gone.patch`
+
+#### Scenario: Listed twice
+
+- **WHEN** `"mp/tdd" = ["patches/a.patch", "./patches/a.patch"]`
+- **THEN** the command exits non-zero naming `patches."mp/tdd"` and `a.patch`
+
+#### Scenario: Shared patch
+
+- **WHEN** `"mp/tdd"` and `"mp/notes"` both list `patches/common.patch`
+- **THEN** the config loads
+
+### Requirement: Patch files git would misread
+
+A listed patch file holding a line `git apply` skips as noise, losing a change silently (`Binary files … differ`,
+`Only in …`), or a `GIT binary patch` block, SHALL be an error naming the file, used or not.
+
+#### Scenario: Binary change
+
+- **WHEN** a listed patch holds a `Binary files upstream/x.png and edited/x.png differ` line, or a
+  `GIT binary patch` block, and its key names no **Hull** **Skill**
+- **THEN** the command exits non-zero naming the patch file
+
+#### Scenario: Added file without -N
+
+- **WHEN** a listed patch holds an `Only in edited/refs: new.md` line, as `diff -ru` without `-N` writes it
+- **THEN** the command exits non-zero naming the patch file
