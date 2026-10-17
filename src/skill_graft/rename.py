@@ -52,8 +52,8 @@ def unused(config: Config, skills: dict[SkillId, Path]) -> list[str]:
 def _hint(config: Config, skill: SkillId, prefix_helps: bool = True) -> str:
     """The `[rename]` line to write, or the setting to change: never a second key.
 
-    A prefix is offered only if changing it would help: not when the skills
-    clashing all take it.
+    A prefix is offered only if changing it would help: not when another skill
+    clashing takes it too.
     """
     if skill in config.renames:
         return f'change [rename] "{skill}" = "{config.renames[skill]}"'
@@ -74,7 +74,7 @@ def _rank(config: Config, skill: SkillId) -> int:
     """The order to hint in: not chosen, then renamed, then prefixed."""
     if skill in config.renames:
         return 1
-    return 2 if _chosen(config, skill) else 0
+    return 2 if skill.alias in config.prefixes else 0
 
 
 def check_unique(config: Config, names: dict[SkillId, str]) -> None:
@@ -93,7 +93,8 @@ def check_unique(config: Config, names: dict[SkillId, str]) -> None:
             ids = ", ".join(str(skill) for skill in clashing)
             best = min(_rank(config, skill) for skill in clashing)
             pick = [s for s in clashing if _rank(config, s) == best][-1]
-            hint = _hint(config, pick, len({s.alias for s in clashing}) > 1)
+            alone = all(s.alias != pick.alias for s in clashing if s != pick)
+            hint = _hint(config, pick, alone)
             raise SkillGraftError(
                 f"deployed name {taken} is taken by several skills: {ids}; "
                 f"rename one: {hint}"
@@ -128,8 +129,8 @@ def rewrites(hull: Hull) -> dict[SkillId, dict[Path, bytes]]:
 
     A reference whose target's deployed name differs from the name written is
     rewritten in place; a renamed or prefixed skill's `SKILL.md` gets its new
-    `name:`. Keyed
-    by the path relative to the skill's folder; unchanged files are left out.
+    `name:`. Keyed by the path relative to the skill's folder; unchanged files are
+    left out.
     """
     result: dict[SkillId, dict[Path, bytes]] = {}
     for skill, folder in hull.skills.items():

@@ -547,6 +547,20 @@ def test_clash_within_one_prefixed_source(
     assert 'add a [rename] key for "mp/tdd"' in err and "prefix" not in err
 
 
+def test_clash_within_and_across_prefixed_sources(
+    home: Path, capsys: pytest.CaptureFixture[str]
+) -> None:
+    skill(home / "mp" / "a", "---\nname: Tdd\n---\n")
+    skill(home / "mp" / "b", "---\nname: tdd\n---\n")
+    skill(home / "own" / "tdd")
+    with_prefixes(home, ["own/tdd", "mp/Tdd", "mp/tdd"], mp="x-", own="x-")
+
+    assert main(["resolve"]) == 1
+
+    err = after_package_line(capsys.readouterr().err)
+    assert 'add a [rename] key for "mp/tdd"' in err and "prefix" not in err
+
+
 def test_prefixed_onto_a_reserved_name(
     home: Path, capsys: pytest.CaptureFixture[str]
 ) -> None:

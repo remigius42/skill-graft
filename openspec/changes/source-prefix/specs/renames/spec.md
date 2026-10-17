@@ -101,7 +101,7 @@ Two **Hull** **Skills** with the same **Deployed name**, compared ignoring case,
 and a change that would separate them, and the command SHALL then write nothing. The hint SHALL name a `[rename]`
 line for a clashing **Skill** with neither a `[rename]` key nor a **Prefix**; else the `[rename]` value of a
 renamed one to change; else, for a prefixed one, that a `[rename]` key for it would, or its **Source**'s `prefix`
-unless every clashing **Skill** is of that **Source**.
+unless another clashing **Skill** is of that **Source**.
 
 #### Scenario: Clash across sources
 
