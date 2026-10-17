@@ -2,6 +2,7 @@
 
 [![Version](https://img.shields.io/badge/dynamic/toml?url=https%3A%2F%2Fraw.githubusercontent.com%2Fremigius42%2Fskill-graft%2Fmain%2Fpyproject.toml&query=%24.project.version&label=version)](pyproject.toml)
 [![License](https://img.shields.io/badge/license-MIT-blue.svg)](LICENSE)
+[![CI](https://github.com/remigius42/skill-graft/actions/workflows/ci.yml/badge.svg)](https://github.com/remigius42/skill-graft/actions/workflows/ci.yml)
 
 Graft agent skills from other people's repositories onto your own setup.
 
