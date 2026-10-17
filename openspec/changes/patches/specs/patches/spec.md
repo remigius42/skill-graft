@@ -46,9 +46,9 @@ and `build` SHALL vendor it, **Renames** applied on top. The **Upstream** folder
 ### Requirement: Patch paths
 
 A patch's paths SHALL be relative to the **Skill**'s folder with one leading component stripped (`a/SKILL.md`),
-as `git diff --relative` inside the folder or `diff -ru <folder> <copy>` writes them. Neither the user's git
-configuration nor a repository enclosing the copy or the **Upstream** folder SHALL change what applies or what
-it writes.
+as `git diff --relative` inside the folder or `diff -ruN base/ edited/` run from their parent writes them.
+Neither the user's git configuration nor a repository enclosing the copy or the **Upstream** folder SHALL change
+what applies or what it writes.
 
 #### Scenario: Diff of two folders
 
@@ -62,6 +62,12 @@ it writes.
 - **THEN** the vendored line keeps its spaces, and a hunk whose context differs from the **Upstream** text only
   in spacing fails
 
+#### Scenario: Config in the environment
+
+- **WHEN** the environment sets `GIT_CONFIG_COUNT=1`, `GIT_CONFIG_KEY_0=apply.whitespace` and
+  `GIT_CONFIG_VALUE_0=fix`, and a patch adds a line ending in spaces
+- **THEN** the vendored line keeps its spaces
+
 #### Scenario: Source is a repository
 
 - **WHEN** path **Source** `own` is a git repository whose root is the **Skill** `own/chisel`, and a patch names
@@ -70,15 +76,27 @@ it writes.
 
 ### Requirement: A failing patch is an error
 
-A hunk SHALL apply only where its context matches exactly, moved by whole lines at most. Every hunk that does
+A hunk SHALL apply only where its context matches exactly, moved by whole lines at most; one whose context reaches
+the start or end of the file SHALL match there. Every hunk that does
 not apply SHALL be reported with its patch file, target file and `@@` header; a patch git refuses whole SHALL be
 reported with its patch file and git's message; the **Skill**'s later **Patches** SHALL be reported as not
 tried. Any failure SHALL make the command exit non-zero and write nothing.
 
 #### Scenario: Context moved
 
-- **WHEN** **Upstream** `SKILL.md` gained three lines above a hunk's context since the patch was written
+- **WHEN** **Upstream** `SKILL.md` gained three lines above a hunk in the middle of the file since the patch was
+  written
 - **THEN** the hunk applies
+
+#### Scenario: Anchored at the start
+
+- **WHEN** a hunk's context starts at line 1 of `SKILL.md`, and **Upstream** `SKILL.md` gained a line above it
+- **THEN** the hunk fails
+
+#### Scenario: Upstream ships a reject file
+
+- **WHEN** the **Upstream** folder holds `notes.md.rej`, and a patch fails because `refs/old.md` is gone
+- **THEN** the error passes on git's message and names no hunk of `notes.md`
 
 #### Scenario: Context changed
 
@@ -109,13 +127,19 @@ tried. Any failure SHALL make the command exit non-zero and write nothing.
 ### Requirement: One run reports every failure
 
 A **Skill** whose patch failed SHALL not have its **References** read, and the walk SHALL go on with the other
-**Skills** it reaches, so one run reports the failures of every **Skill** reached. The warnings for `[rename]`,
-`[patches]` and `[bind]` keys no **Hull** **Skill** uses SHALL be left out, as the **Hull** is incomplete.
+**Skills** it reaches, so one run reports the failures of every **Skill** reached. Another error that stops the
+walk SHALL be reported after the patch failures collected so far. The warnings for `[rename]`, `[patches]` and
+`[bind]` keys no **Hull** **Skill** uses SHALL be left out, as the **Hull** is incomplete.
 
 #### Scenario: Two skills fail
 
 - **WHEN** **Entries** `mp/tdd` and `mp/notes` each have a failing patch
 - **THEN** one `resolve` reports both
+
+#### Scenario: Another error after a patch failure
+
+- **WHEN** **Entry** `mp/tdd`'s patch fails, and **Entry** `mp/notes` calls `/x`, bound to the missing `own/x`
+- **THEN** `resolve` reports `mp/tdd`'s failure, then the missing `own/x`
 
 #### Scenario: Reached only through a failed skill
 
@@ -126,8 +150,8 @@ A **Skill** whose patch failed SHALL not have its **References** read, and the w
 ### Requirement: Patch limits
 
 A **Patch** SHALL change, add or delete files inside the **Skill**'s folder only. A patched copy without
-`SKILL.md`, or whose name (`name:`, else the folder name) differs from the **Upstream** one, SHALL be an error
-naming the patch and pointing at `[rename]`. The patched copy SHALL pass the checks the **Upstream** folder
+`SKILL.md`, or whose name (`name:`, else the folder name) differs from the **Upstream** one, SHALL be a failure
+of that patch naming it and pointing at `[rename]`. The patched copy SHALL pass the checks the **Upstream** folder
 passes (symlinks, special files), and the **Upstream** folder SHALL pass them before it is copied.
 
 #### Scenario: Name changed
@@ -172,7 +196,13 @@ passes (symlinks, special files), and the **Upstream** folder SHALL pass them be
 
 #### Scenario: Binary change
 
-- **WHEN** a patch holds a `Binary files upstream/x.png and edited/x.png differ` line
+- **WHEN** a patch holds a `Binary files upstream/x.png and edited/x.png differ` line, or a `GIT binary patch`
+  block
+- **THEN** the command exits non-zero naming the patch file
+
+#### Scenario: Added file without -N
+
+- **WHEN** a patch holds an `Only in edited/refs: new.md` line, as `diff -ru` without `-N` writes it
 - **THEN** the command exits non-zero naming the patch file
 
 ### Requirement: Patches need git

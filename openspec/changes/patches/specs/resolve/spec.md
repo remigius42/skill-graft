@@ -38,8 +38,8 @@ as written in the TOML, in apply order. Each hash SHALL cover the folder as vend
 
 The same TOML, **Source** contents and **Source** folders SHALL give a byte-identical lock, whenever it is
 written: no timestamps, everything sorted except a **Skill**'s `patches`, which keep their apply order. A path
-**Source**'s resolved folder is part of the input, so the lock differs across machines whose folders differ. The
-lock SHALL be replaced atomically.
+**Source**'s resolved folder and the cache's location are part of the input, so the lock differs across machines
+whose folders differ. The lock SHALL be replaced atomically.
 
 #### Scenario: Same input
 

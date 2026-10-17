@@ -111,11 +111,14 @@ deployed file as `modified` drift.
 - `[patches]` maps a skill ID of a declared source to a non-empty list of patch files, each relative to the
   folder holding `skill-graft.toml` (`~` expanded); `patches/` is a convention. A file listed twice under one
   key, compared as resolved paths, is an error; one file under several keys is fine.
-- `git apply -p1 --whitespace=nowarn` runs as a subprocess in a copy of the skill's folder, never in the cache,
-  with `GIT_CONFIG_GLOBAL=/dev/null` and `GIT_CONFIG_NOSYSTEM=1`, so no user or system setting
-  (`apply.whitespace`, `apply.ignoreWhitespace`) changes what applies or what it writes. Paths are relative to
-  the skill folder (`a/SKILL.md`), as `git diff --relative` inside it or `diff -ru` writes them. No fuzz: a
-  hunk whose context moved only by offset applies; any other fails.
+- `git -c apply.ignoreWhitespace=no apply -p1 --whitespace=nowarn` runs as a subprocess in a copy of the skill's
+  folder, never in the cache, with every `GIT_CONFIG*` variable removed from its environment and
+  `GIT_CONFIG_GLOBAL=/dev/null` and `GIT_CONFIG_NOSYSTEM=1` set, so no user, system or environment setting
+  changes what applies or what it writes; the two `apply` settings are also given explicitly, for a git too old
+  to know `GIT_CONFIG_GLOBAL`. Paths are relative to the skill folder (`a/SKILL.md`), as `git diff --relative`
+  inside it or `diff -ruN base/ edited/` from their parent writes them. No fuzz: a hunk whose context moved only
+  by offset applies, except that one whose context reaches the start or end of the file stays anchored there;
+  any other fails.
 - The upstream folder is checked before it is copied, as the walk checks any skill before reading it. The copy
   leaves out `.git`, as vendoring does. Each resolution (`update` makes two: at the current refs and at the
   tips) copies into its own temporary folder, removed whatever the outcome, and `git apply` runs with
@@ -126,22 +129,27 @@ deployed file as `modified` drift.
   `SKILL.md` or change its name, as read from `name:` else the folder (so adding or removing `name:` counts):
   the skill ID comes from it, and a new name is a rename. Either is an error pointing at `[rename]`.
 - The patched copy is checked like an upstream folder, so a symlink a patch creates fails wherever an upstream
-  one would. Mode changes apply, but only `git diff` writes them. A `Binary files … differ` line, which is how
-  `diff -ru` reports a binary change it cannot express, is an error naming the patch file; binary hunks are
-  unsupported (`git apply`'s own error).
+  one would. Mode changes apply, but only `git diff` writes them. Lines `git apply` would skip as noise, losing a
+  change without a word, are errors naming the patch file, at load: `Binary files … differ` (a binary change
+  `diff` cannot express) and `Only in …` (an added or deleted file, from `diff` without `-N`). So is a
+  `GIT binary patch` block: binary hunks are unsupported.
 - A skill's patches apply when the walk reaches it, before it is scanned. A key naming no hull skill is a
   warning, as for `[rename]`; a listed patch file that is missing or unreadable is an error, used or not. Files
   in `patches/` that no key lists are ignored.
 - A skill's patches apply in list order, each to the result of the one before. Applied with `--reject`, a
   failing patch names every hunk that failed (patch file, target file, `@@` header), read from the `.rej` files
-  rather than git's localized messages. A patch git refuses whole (a file to change is gone, a file to create
-  exists, the patch is malformed) leaves no `.rej`: the error names the patch file and passes git's message on.
-  The skill's later patches are reported as not tried. A skill whose patch failed is not scanned, so skills
-  reached only through it are not reached; the walk goes on with the rest, so one run reports every failure
-  among the skills it reaches. Any failure is an error in `resolve`, `build` and `update`, nothing is written,
-  and the unused-key warnings (`[rename]`, `[patches]`, `[bind]`) are left out, since the hull is incomplete.
+  rather than git's localized messages; only `.rej` files the patch created count, not ones the upstream folder
+  ships. A patch git refuses whole (a file to change is gone, a file to create exists, the patch is malformed)
+  leaves no new `.rej`: the error names the patch file and passes git's message on. A patched copy that changes
+  the skill's name or fails the file checks is a failure of that patch too. The skill's later patches are
+  reported as not tried. A skill whose patch failed is not scanned, so skills reached only through it are not
+  reached; the walk goes on with the rest, so one run reports every patch failure among the skills it reaches.
+  Another error stops the walk as before, reported after the patch failures collected so far. Any failure is an
+  error in `resolve`, `build` and `update`, nothing is written, and the unused-key warnings (`[rename]`,
+  `[patches]`, `[bind]`) are left out, since the hull is incomplete.
 - No command writes patches. After a `resolve`, which re-exports a deleted cache, the user copies the skill's
-  `upstream` folder from the lock to `base/` in a fresh `mktemp -d`, outside any repository, applies the skill's
+  `upstream` folder from the lock with `cp -rL` (links become files, as in skill-graft's own copy) to `base/` in
+  a fresh `mktemp -d`, outside any repository, applies the skill's
   earlier patches to it with `git apply -p1`, copies that to `edited/`, edits it and runs
   `diff -ruN base/ edited/ > patches/<name>.patch`, then adds the patch to the key's list.
 - When `update` fails on a hunk, it names each failing skill's upstream folder at the tip (its export in the
@@ -154,7 +162,8 @@ deployed file as `modified` drift.
 
 ## Feedback
 
-The lock (TOML, sorted except `patches`, never read back) records each source's `ref` or folder, each hull
+The lock (TOML, sorted except `patches`, never read back; its `upstream` paths depend on where the cache is)
+records each source's `ref` or folder, each hull
 skill with a SHA-256 of its folder as vendored (patches and rewrites applied), its `upstream` folder (absolute:
 the cache export or the path source's folder, plus the skill's path), its `deployed` name when renamed and its
 `patches` in apply order when patched, each edge with its kind (`slash`, `skill-tool`, `prose`) plus

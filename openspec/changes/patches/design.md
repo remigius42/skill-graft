@@ -22,7 +22,7 @@ a pure function of the **Source** folders, the TOML and the patch files, whateve
 
 - **Patch in the walk, then forget it**: for each **Skill** reached, `walk` finds the **Upstream** folder, runs
   `check_files` on it, and if `config.patches` names the **Skill**, calls `patch.apply`, which returns the patched
-  copy; `check_files` runs again on the copy, and `scan` reads it. `Hull.skills` holds the copy, so rewrites,
+  copy, checked with `check_files`; `scan` reads it. `Hull.skills` holds the copy, so rewrites,
   hashes and vendoring need no change. `Hull` gains `upstream: dict[SkillId, Path]` (every **Skill**) and
   `patches: dict[SkillId, list[str]]` (patched **Skills**, paths as written), for the lock and the tree.
   Alternative, patching at vendor time: the scan would read unpatched text, and a patch could not change the
@@ -40,29 +40,38 @@ a pure function of the **Source** folders, the TOML and the patch files, whateve
   After the last, `SKILL.md` must be a file and `discovery.read_name(copy)` must equal `read_name(upstream)`, else
   an error naming the patch and `[rename]`.
 
-- **`git.apply(folder, patch) -> (ok, stderr)`**: `git apply -p1 --reject --whitespace=nowarn -`, the patch on
-  stdin, `cwd=folder`, the environment of `git.run` plus `GIT_CONFIG_GLOBAL=/dev/null`, `GIT_CONFIG_NOSYSTEM=1`
-  and `GIT_CEILING_DIRECTORIES=<folder's parent>`: no user or system config (`apply.whitespace`,
-  `apply.ignoreWhitespace`) and no enclosing repository changes the result; the copy has no `.git` of its own. A
+- **`git.apply(folder, patch) -> (ok, stderr)`**:
+  `git -c apply.ignoreWhitespace=no apply -p1 --reject --whitespace=nowarn -`, the patch on stdin, `cwd=folder`,
+  the environment of `git.run` without any `GIT_CONFIG*` variable (`GIT_CONFIG_COUNT`, `GIT_CONFIG_PARAMETERS`,
+  …), plus `GIT_CONFIG_GLOBAL=/dev/null`, `GIT_CONFIG_NOSYSTEM=1` and `GIT_CEILING_DIRECTORIES=<folder's parent>`:
+  no user, system or environment config and no enclosing repository changes the result; the copy has no `.git`
+  of its own. The explicit `apply` settings cover a git older than 2.32, which ignores `GIT_CONFIG_GLOBAL`. A
   missing `git` raises "`[patches]` needs git: no `git` on PATH". It returns instead of raising because a failure
   is reported, not fatal on the spot. Alternative, a Python applier: about 150 lines for new files, deletions and
   modes that git already gets right, and strict without fuzz.
 
-- **Failures from `.rej` files**: on a non-zero exit, each `*.rej` under the copy is a target file (path without
-  `.rej`) and its `@@` lines are the failing hunks; locale never matters. No `.rej` means git refused the patch
-  whole (file to change missing, file to create present, malformed, `..` path): the failure is git's stderr.
-  `patch.apply` raises `PatchFailed(lines)` for the first failing file, listing the later ones as not tried.
+- **Failures from `.rej` files**: `patch.apply` lists the copy's `*.rej` files before each `git.apply`; on a
+  non-zero exit, each new one is a target file (path without `.rej`) and its `@@` lines are the failing hunks;
+  locale never matters, and `.rej` files the **Upstream** folder ships never count. No new `.rej` means git
+  refused the patch whole (file to change missing, file to create present, malformed, `..` path): the failure is
+  git's stderr. `patch.apply` raises `PatchFailed(lines)` for the first failing file, listing the later ones as
+  not tried. A missing `SKILL.md`, a changed name, or `check_files` failing on the copy (which `patch.apply` runs)
+  is a `PatchFailed` too: the patch caused it.
 
 - **Collect, then raise once**: `walk` catches `PatchFailed` per **Skill**, records it with the **Upstream**
   folder, skips that **Skill**'s scan (so nothing it reaches is queued), and goes on. After the BFS, before prose
   classification and warnings, any failures raise one `PatchError(SkillGraftError)` holding them as
   `(skill, upstream, lines)`; its message names, per **Skill**, the failures and "redo it against" and the
-  **Upstream** folder. The unused-key warnings are never computed, so none is misleading.
+  **Upstream** folder. Any other `SkillGraftError` during the walk, once failures are collected, raises a
+  `PatchError` holding them with that error's message last, so none is lost. The unused-key warnings are never
+  computed, so none is misleading.
 
 - **Config reads the patch files**: `Config.patches: dict[SkillId, list[PatchFile]]`, `PatchFile(path, data)`,
   `path` as written. Each path is resolved against the folder holding `skill-graft.toml`, `~` expanded, as path
-  **Sources** are; the bytes are read at load, so a missing file is an error used or not, and a line
-  `Binary files … differ` is rejected there, naming the file. Duplicates under one key compare resolved paths.
+  **Sources** are; the bytes are read at load, so a missing file is an error used or not, and lines `git apply`
+  would skip as noise, losing a change silently, are rejected there, naming the file: `Binary files … differ`
+  and `Only in …`; a `GIT binary patch` line is rejected too. Duplicates under one key
+  compare resolved paths.
 
 - **Warnings**: `patch.unused(config, skills)`, called in `resolve.resolve` beside `rename.unused`:
   `[patches] "<key>" patches no skill in the hull`.

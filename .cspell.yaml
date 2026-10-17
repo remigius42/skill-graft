@@ -28,8 +28,8 @@ words:
   - kiro
   - mattpocock
   - mkfifo
-  - mktree
   - mktemp
+  - mktree
   - monkeypatched
   - mypy
   - nosystem

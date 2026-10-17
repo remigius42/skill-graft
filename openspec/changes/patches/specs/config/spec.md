@@ -26,7 +26,8 @@ unreadable file, or one file listed twice under one key (compared resolved) SHAL
 
 #### Scenario: Missing patch file
 
-- **WHEN** `[patches]` lists `patches/gone.patch`, which does not exist, under a key naming no **Hull** **Skill**
+- **WHEN** `[patches]` has `"mp/tdd" = ["patches/gone.patch"]`, the file does not exist, and `mp/tdd` is not in
+  the **Hull**
 - **THEN** the command exits non-zero naming `patches."mp/tdd"` and `patches/gone.patch`
 
 #### Scenario: Listed twice
