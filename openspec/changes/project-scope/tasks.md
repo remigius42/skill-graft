@@ -27,7 +27,7 @@ for what it ships.
   relative entries against the manifest's folder. Verify: project-build-from-a-subfolder,
   project-package-not-registered, every user-scope deploy test unchanged, and `build --no-install` in project
   scope reads no `apm.yml`.
-- [ ] 2.2 Real-APM integration test (skipped without `apm`): a project with `.claude/`, `init --project`, a path
+- [x] 2.2 Real-APM integration test (skipped without `apm`): a project with `.claude/`, `init --project`, a path
   **Source**, `build`; the skill lands in `<project>/.claude/skills/`, `<project>/apm.yml` lists
   `./.apm/skill-graft`, `~/.apm/skill-graft/` is absent, and `~/.apm/apm.yml`, if any, does not list the project
   package. `docs/design.md`: the measured project-scope APM behavior beside the user-scope list. Verify: the test

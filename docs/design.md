@@ -231,3 +231,15 @@ APM 0.33.0, `apm install -g -t claude`, with `HOME` pointed at a scratch directo
   `dependencies.apm` as an absolute path, never with `~`. Repeating it changes nothing ("updated ref in
   apm.yml") and redeploys. A package of just the two-line `apm.yml`, with no skills yet, registers too.
 - Without `-t` and without `targets:` in `~/.apm/apm.yml`, skills deploy to `~/.agents/skills/`.
+
+APM 0.33.0 at project scope, `apm install ./.apm/skill-graft` in a scratch repository, `HOME` a scratch directory:
+
+- In the project root it creates `apm.yml` if missing and lists `./.apm/skill-graft` under `dependencies.apm`,
+  relative; repeating it adds no second line. It also writes `apm.lock.yaml` and `apm_modules/`, adds
+  `apm_modules/` to `.gitignore`, and creates `~/.apm` for its own state.
+- It takes the working directory as the project root: run in a subfolder, it fails.
+- Without a harness marker (`.claude/`, `.cursor/`, `.github/copilot-instructions.md`, …) and without `targets:`,
+  it exits 2 with "No harness detected" and removes the `apm.yml` it had created.
+- It deploys only to the detected harnesses; with every target, skills land in `.agents/skills`,
+  `.claude/skills`, `.grok/skills` and `.kiro/skills` under the project root.
+- Removing a skill from the package and reinstalling prunes it.

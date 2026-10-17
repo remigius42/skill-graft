@@ -38,3 +38,26 @@ def test_init_update_build_deploys_a_git_entry(home: Path, tmp_path: Path) -> No
     assert main(["build"]) == 0
 
     assert (home / ".agents" / "skills" / "tdd" / "SKILL.md").exists()
+
+
+def test_build_deploys_a_project_package(
+    home: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    repo = home / "repo"
+    (repo / ".claude").mkdir(parents=True)
+    skill(repo / "src" / "chisel", "---\nname: chisel\ndescription: d\n---\nhi\n")
+    package = repo / ".apm" / "skill-graft"
+    package.mkdir(parents=True)
+    (package / "apm.yml").write_text("name: skill-graft\nversion: 0.1.0\n")
+    (package / "skill-graft.toml").write_text(
+        'entries = ["own/chisel"]\n[sources.own]\npath = "../../src"\n'
+    )
+    monkeypatch.chdir(repo / "src")
+
+    assert main(["build"]) == 0
+
+    assert (repo / ".claude" / "skills" / "chisel" / "SKILL.md").exists()
+    assert "- ./.apm/skill-graft" in (repo / "apm.yml").read_text()
+    assert not (home / ".apm" / "skill-graft").exists()
+    user_manifest = home / ".apm" / "apm.yml"
+    assert not user_manifest.exists() or "skill-graft" not in user_manifest.read_text()
