@@ -6,7 +6,7 @@
 
 A slash **Reference** SHALL be `/` then a name, the longest run of `[A-Za-z0-9._-]` starting with a letter or
 digit, trailing `.` dropped, standing as its own token: not preceded by a letter, digit, `/`, `.`, `-`, `~`, `:`,
-`\`, `<`, `@`, `](`, `="` or `='`, nor by `"` or `'` that follows `(`, `[` or `,` (directly or after one space),
+`\`, `<`, `@`, `}`, `](`, `="` or `='`, nor by `"` or `'` that follows `(`, `[` or `,` (directly or after one space),
 nor by a backtick that follows a letter, digit, `.`, `)` or `]`, and not followed by `/`, or `:` and a letter or
 digit. It SHALL count anywhere, code blocks included.
 
@@ -24,7 +24,8 @@ digit. It SHALL count anywhere, code blocks included.
 
 #### Scenario: Path arguments
 
-- **WHEN** it holds `fetch('/orders')`, `fetch(url, '/orders')`, `open("/grilling")` or `["/a", "/b"]`
+- **WHEN** it holds `fetch('/orders')`, `fetch(url, '/orders')`, `open("/grilling")`, `["/a", "/b"]` or
+  `${id}/orders`
 - **THEN** none is a slash **Reference**
 
 #### Scenario: After a code span

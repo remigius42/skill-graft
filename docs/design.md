@@ -105,7 +105,7 @@ path = "~/Documents/sync/2_areas/software/chisel_skill"
 - A skill is its whole folder. Everything in it is vendored; nothing outside it is.
 - References are found in every Markdown file of a skill, code blocks included, in three forms: `/name` as
   its own token (never part of a path, URL, link target or attribute, nor a quoted path argument or list item
-  such as `fetch('/orders')`, nor right after a closing code span as in `` `package.json`/x ``), the Skill
+  such as `fetch('/orders')` or `${id}/orders`, nor right after a closing code span as in `` `package.json`/x ``), the Skill
   tool's call form
   `Skill(name)` (quoted or not, as `skill=` or `skill:`, further arguments allowed) or a sentence naming it
   (`Call the Skill tool with "grilling".`: each name in double quotes or backticks after `Skill tool`, up to the

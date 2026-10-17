@@ -67,6 +67,7 @@ def test_paths_and_urls(tmp_path: Path, text: str) -> None:
         "fetch(url, '/orders')",
         'open("/grilling")',
         '["/a", "/b"]',
+        "fetch(`/users/${userId}/orders`)",
         "its `package.json`/build-tool scripts",
         "`lint`/check",
     ],
