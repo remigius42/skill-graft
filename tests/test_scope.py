@@ -1,5 +1,7 @@
 """Which package a command acts on: the nearest `.apm/skill-graft/` up to home."""
 
+import shutil
+import tomllib
 from pathlib import Path
 
 import pytest
@@ -208,3 +210,48 @@ def test_project_source_overlapping_a_package_fails(
     err = capsys.readouterr().err
     assert "'own'" in err and f"overlaps {home / package}" in err
     assert not (home / "repo" / ".apm" / "skill-graft" / "skill-graft.lock").exists()
+
+
+def lock_sources(package: Path) -> object:
+    return tomllib.loads((package / "skill-graft.lock").read_text())["sources"]
+
+
+def test_project_source_inside_the_project(
+    home: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    package = project(home / "repo")
+    monkeypatch.chdir(home / "repo")
+
+    assert main(["resolve"]) == 0
+
+    assert lock_sources(package) == {"own": {"path": "../../src"}}
+
+
+def test_project_source_outside_the_project(
+    home: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    package = project(home / "repo", "[]")
+    (home / "skills").mkdir()
+    (package / "skill-graft.toml").write_text('[sources.own]\npath = "~/skills"\n')
+    monkeypatch.chdir(home / "repo")
+
+    assert main(["resolve"]) == 0
+
+    assert lock_sources(package) == {"own": {"path": str((home / "skills").resolve())}}
+
+
+def test_same_lock_on_another_machine(
+    home: Path, tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    project(home / "repo")
+    monkeypatch.chdir(home / "repo")
+    assert main(["resolve"]) == 0
+    other = tmp_path / "other-home"
+    shutil.copytree(home / "repo", other / "repo")
+    monkeypatch.setenv("HOME", str(other))
+    monkeypatch.chdir(other / "repo")
+
+    assert main(["resolve"]) == 0
+
+    lock = Path(".apm") / "skill-graft" / "skill-graft.lock"
+    assert (other / "repo" / lock).read_bytes() == (home / "repo" / lock).read_bytes()

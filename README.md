@@ -30,7 +30,9 @@ such as `.claude/`, or APM refuses): it creates `.apm/skill-graft/` there and re
 `~/.apm/skill-graft/` when there is none.
 
 Commit the whole `.apm/skill-graft/`, vendored skills included, with `apm.yml` and `apm.lock.yaml`. Teammates
-then need only APM: `apm install` deploys the skills, and only whoever changes them runs skill-graft.
+then need only APM: `apm install` deploys the skills, and only whoever changes them runs skill-graft. Keep path
+sources inside the project (`path = "../../skills"`) and the rest git sources: the lock then records them
+relative to the package and reads the same on every machine; a path outside the project is recorded absolute.
 
 ## Writing a patch
 

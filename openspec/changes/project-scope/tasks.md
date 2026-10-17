@@ -61,7 +61,7 @@ for what it ships.
 - [x] 5.2 `lock.render`: `upstream` relative to its **Source**'s root (`.` for a **Skill** at the root), in both
   scopes. Verify: upstream-recorded, skill-at-the-source-root, patch-changes-the-hash, every lock test updated to
   the relative form, and `update`'s and the patch errors still name absolute folders.
-- [ ] 5.3 In project scope, a path **Source** inside the project root is written relative to the **Package**.
+- [x] 5.3 In project scope, a path **Source** inside the project root is written relative to the **Package**.
   Verify: project-source-inside-the-project, project-source-outside-the-project, same-lock-on-another-machine
   (two `HOME`s, one project copied between them, byte-equal locks). README: what makes a committed **Package**
   machine-independent.

@@ -34,7 +34,7 @@ def render(
             table["git"] = source.url
             table["ref"] = refs.get(alias) or source.ref
         else:
-            table["path"] = str(source.folder)
+            table["path"] = _source_path(source.folder)
         sources[alias] = table
     document["sources"] = sources
     skills = tomlkit.aot()
@@ -64,6 +64,15 @@ def render(
         suggestions.append(tomlkit.item({"id": str(skill_id), "from": mentions}))
     document["suggestions"] = suggestions
     return tomlkit.dumps(document)
+
+
+def _source_path(folder: Path) -> str:
+    """A path source's folder; in project scope, relative to the package when it
+    is inside the project, so a committed lock reads the same on every machine."""
+    root = paths.root().resolve()
+    if paths.scope() == "project" and folder.is_relative_to(root):
+        return Path(os.path.relpath(folder, paths.package().resolve())).as_posix()
+    return str(folder)
 
 
 def tree(hull: Hull) -> str:
