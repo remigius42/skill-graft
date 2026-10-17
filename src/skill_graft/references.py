@@ -27,6 +27,20 @@ REFERENCE = re.compile(
     r"(?P<prose>[a-z0-9]++(?:-[a-z0-9]++)++)(?![\w/%+-]|[.:]\w)"
 )
 
+# The Skill tool named in a sentence (`Call the Skill tool with "grilling".`): the
+# names after it, in double quotes or backticks, up to the sentence's end. That is
+# the next `Skill tool`, a blank line, a line opening a list item or heading, or
+# `.`, `!` or `?` (perhaps closing a quote) before whitespace and a capital letter
+# or the end of the text, so `e.g.` and a lowercase continuation do not end it.
+SKILL_TOOL = re.compile(r"Skill tool")
+SENTENCE_END = re.compile(
+    r"\n[ \t]*\n|\n[ \t]*(?:[-*+]|\d+\.|#+)[ \t]"
+    r"|(?P<stop>[.!?][\"`]?)(?:\s+(?=[A-Z])|\s*\Z)"
+)
+QUOTED_NAME = re.compile(
+    r'(?P<open>["`])(?P<name>[A-Za-z0-9][A-Za-z0-9._-]*+)(?P=open)'
+)
+
 # Each named group of REFERENCE: the kind it gives, and how it is written.
 FORMS = {
     "slash": ("slash", "/{}"),
@@ -43,6 +57,7 @@ class Reference:
     text: str  # as written: `/name`, `Skill(name)`, `` `name` `` or `name`
     file: Path
     span: tuple[int, int]  # the name's offsets in the file's decoded text
+    sentence: bool = False  # named in a Skill tool sentence: counts only if it resolves
 
 
 def scan(folder: Path) -> tuple[list[Reference], list[str]]:
@@ -61,6 +76,9 @@ def scan(folder: Path) -> tuple[list[Reference], list[str]]:
         except OSError as error:
             raise SkillGraftError(f"{file} cannot be read: {error}") from None
         skip = name_line(text) if file == folder / "SKILL.md" else None
+        named = _sentence_names(text, file)
+        taken = {ref.span for ref in named}
+        here = []
         for match in REFERENCE.finditer(text):
             if skip and skip[0] <= match.start() < skip[1]:
                 continue  # the skill's own name, never a reference
@@ -70,12 +88,44 @@ def scan(folder: Path) -> tuple[list[Reference], list[str]]:
             name = match[group].rstrip(".") if group == "slash" else match[group]
             start = match.start(group)
             kind, text_form = FORMS[group]
-            found.append(
+            span = (start, start + len(name))
+            if kind == "prose" and span in taken:
+                continue  # the sentence names it: a call, not prose
+            if kind != "prose":  # a call keeps the names inside it
+                named = [r for r in named if not _inside(r.span, match.span())]
+            here.append(Reference(name, kind, text_form.format(name), file, span))
+        found += sorted(here + named, key=lambda ref: ref.span)
+    return found, warnings
+
+
+def _sentence_names(text: str, file: Path) -> list[Reference]:
+    """The names a Skill tool sentence quotes after `Skill tool`, one trailing `.`
+    dropped; each window ends where its sentence does, or at the next `Skill tool`."""
+    names = []
+    starts = [m.end() for m in SKILL_TOOL.finditer(text)]
+    for i, start in enumerate(starts):
+        limit = starts[i + 1] if i + 1 < len(starts) else len(text)
+        end = SENTENCE_END.search(text, start, limit)
+        stop = limit if end is None else end.start() + len(end["stop"] or "")
+        for match in QUOTED_NAME.finditer(text, start, stop):
+            name = match["name"].removesuffix(".")
+            begin = match.start("name")
+            quote = match["open"]
+            names.append(
                 Reference(
-                    name, kind, text_form.format(name), file, (start, start + len(name))
+                    name,
+                    "skill-tool",
+                    f"Skill tool {quote}{name}{quote}",
+                    file,
+                    (begin, begin + len(name)),
+                    sentence=True,
                 )
             )
-    return found, warnings
+    return names
+
+
+def _inside(span: tuple[int, int], outer: tuple[int, int]) -> bool:
+    return outer[0] <= span[0] and span[1] <= outer[1]
 
 
 def _yaml_key(text: str, match: re.Match[str]) -> bool:

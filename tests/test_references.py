@@ -249,3 +249,70 @@ def test_own_name_line(tmp_path: Path, line: str) -> None:
         ("SKILL.md", len(f"---\n{line}\ndescription: before code-review\n---\nsee ")),
         ("notes.md", 4 + line.index("code-review")),
     ]
+
+
+def kinds(text: str, tmp_path: Path) -> list[tuple[str, str]]:
+    """Each reference in a skill holding `text`: its name and kind."""
+    refs, _ = references.scan(skill(tmp_path / "tdd", text))
+    return [(r.name, r.kind) for r in refs]
+
+
+@pytest.mark.parametrize(
+    ("text", "expected"),
+    [
+        (
+            'Call the Skill tool twice, for "grilling" and "domain-modeling".\n',
+            [("grilling", "skill-tool"), ("domain-modeling", "skill-tool")],
+        ),
+        (
+            "Call the Skill tool with `writing-for-agents` for the style guide.\n",
+            [("writing-for-agents", "skill-tool")],
+        ),
+        (
+            'call the Skill tool with\n"codebase-design" for the vocabulary.\n',
+            [("codebase-design", "skill-tool")],
+        ),
+        (
+            'Call the Skill tool, e.g. with "grilling" or "domain-modeling."\n',
+            [("grilling", "skill-tool"), ("domain-modeling", "skill-tool")],
+        ),
+    ],
+)
+def test_sentence_form(
+    tmp_path: Path, text: str, expected: list[tuple[str, str]]
+) -> None:
+    assert kinds(text, tmp_path) == expected
+
+
+@pytest.mark.parametrize(
+    "text",
+    [
+        'Use the Skill tool. Then see "grilling" and `notes`.\n',
+        "Use the Skill tool for this\n- `notes`\n",
+        "Use the Skill tool for this\n\n`notes`\n",
+        "Use the Skill tool for this\n# `notes`\n",
+    ],
+)
+def test_sentence_ends(tmp_path: Path, text: str) -> None:
+    assert kinds(text, tmp_path) == [("notes", "prose")]
+
+
+@pytest.mark.parametrize(
+    "text",
+    [
+        'If the Skill tool fails, call the Skill tool again with "grilling".\n',
+        'Call the Skill tool: Skill("grilling").\n',
+    ],
+)
+def test_one_reference_per_name(tmp_path: Path, text: str) -> None:
+    assert kinds(text, tmp_path) == [("grilling", "skill-tool")]
+
+
+def test_unquoted_name(tmp_path: Path) -> None:
+    assert kinds("call the Skill tool with grilling.\n", tmp_path) == []
+
+
+def test_sentence_text_and_order(tmp_path: Path) -> None:
+    folder = skill(tmp_path / "tdd", '/a first.\n\nCall the Skill tool with "b".\n')
+
+    assert found(folder) == ["/a", 'Skill tool "b"']

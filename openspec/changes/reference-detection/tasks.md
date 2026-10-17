@@ -13,7 +13,7 @@ skill text is copied in. Each group updates `README.md` or `docs/design.md` for 
 
 ## 2. Skill tool sentences
 
-- [ ] 2.1 `references.scan`: the sentence windows and candidates, merged with the `REFERENCE` matches by span and
+- [x] 2.1 `references.scan`: the sentence windows and candidates, merged with the `REFERENCE` matches by span and
   sorted by offset; text `Skill tool "name"`. Verify: sentence-form, backticked-name-in-a-sentence (no prose
   edge in the lock), sentence-across-lines (no prose edge), sentence-ends (next sentence, list item),
   not-a-sentence-end (`e.g.`, period inside the quotes), one-reference-per-name (two `Skill tool`s, a
