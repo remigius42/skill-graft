@@ -447,3 +447,119 @@ def test_renamed_onto_a_reserved_name(
     err = capsys.readouterr().err
     assert 'change [rename] "mp/check" = "review"' in err
     assert "mp-check" not in err
+
+
+def with_prefixes(
+    home: Path, entries: list[str], renames: str = "", **prefixes: str
+) -> None:
+    """Path sources `mp` and `own` under `home`, these prefixes, entries and renames."""
+    text = f"entries = {entries!r}\n".replace("'", '"')
+    for alias in ["mp", "own"]:
+        (home / alias).mkdir(exist_ok=True)
+        text += f'[sources.{alias}]\npath = "~/{alias}"\n'
+        if alias in prefixes:
+            text += f'prefix = "{prefixes[alias]}"\n'
+    write_config(text + f"[rename]\n{renames}\n")
+
+
+def test_dependency_prefixed(home: Path) -> None:
+    skill(home / "mp" / "tdd", "---\nname: tdd\n---\n/grilling and `grilling`\n")
+    skill(home / "mp" / "grilling", "---\nname: grilling\n---\n")
+    skill(home / "own" / "notes")
+    with_prefixes(home, ["mp/tdd", "own/notes"], mp="mp-")
+
+    assert main(["build", "--no-install"]) == 0
+
+    assert {p.name for p in skills_dir().iterdir()} == {
+        "mp-tdd",
+        "mp-grilling",
+        "notes",
+    }
+    assert (skills_dir() / "mp-tdd" / "SKILL.md").read_text() == (
+        "---\nname: mp-tdd\n---\n/mp-grilling and `mp-grilling`\n"
+    )
+    assert (skills_dir() / "mp-grilling" / "SKILL.md").read_text() == (
+        "---\nname: mp-grilling\n---\n"
+    )
+
+
+def test_rename_wins_over_the_prefix_used_as_written(home: Path) -> None:
+    skill(home / "mp" / "tdd")
+    skill(home / "mp" / "grilling")
+    with_prefixes(home, ["mp/tdd", "mp/grilling"], '"mp/tdd" = "tdd"', mp="mp")
+
+    assert main(["build", "--no-install"]) == 0
+
+    assert {p.name for p in skills_dir().iterdir()} == {"tdd", "mpgrilling"}
+
+
+def test_bound_to_a_prefixed_skill(home: Path) -> None:
+    skill(home / "mp" / "tdd", "Run /grilling.\n")
+    skill(home / "own" / "grill")
+    with_prefixes(home, ["mp/tdd"], own="own-")
+    file = package() / "skill-graft.toml"
+    file.write_text(file.read_text() + '[bind]\n"mp/grilling" = "own/grill"\n')
+
+    assert main(["build", "--no-install"]) == 0
+
+    assert (skills_dir() / "tdd" / "SKILL.md").read_text() == "Run /own-grill.\n"
+
+
+def test_prefix_onto_another_skills_name(
+    home: Path, capsys: pytest.CaptureFixture[str]
+) -> None:
+    skill(home / "mp" / "tdd")
+    skill(home / "own" / "mp-tdd")
+    with_prefixes(home, ["own/mp-tdd", "mp/tdd"], mp="mp-")
+
+    assert main(["resolve"]) == 1
+
+    err = capsys.readouterr().err
+    assert "mp/tdd" in err and "own/mp-tdd" in err
+    assert '[rename] "own/mp-tdd" = "own-mp-tdd"' in err
+    assert '"mp/tdd" = "mp-tdd"' not in err
+
+
+def test_two_sources_one_prefix(home: Path, capsys: pytest.CaptureFixture[str]) -> None:
+    skill(home / "mp" / "tdd")
+    skill(home / "own" / "tdd")
+    with_prefixes(home, ["mp/tdd", "own/tdd"], mp="x-", own="x-")
+
+    assert main(["resolve"]) == 1
+
+    err = capsys.readouterr().err
+    assert "mp/tdd" in err and "own/tdd" in err
+    assert (
+        'add a [rename] key for "own/tdd", or change [sources.own] prefix = "x-"' in err
+    )
+
+
+def test_prefixed_onto_a_reserved_name(
+    home: Path, capsys: pytest.CaptureFixture[str]
+) -> None:
+    skill(home / "mp" / "review")
+    with_prefixes(home, ["mp/review"], mp="mp-")
+    file = package() / "skill-graft.toml"
+    file.write_text('reserved = ["mp-review"]\n' + file.read_text())
+
+    assert main(["resolve"]) == 1
+
+    err = capsys.readouterr().err
+    assert "mp/review" in err and "`mp-review`" in err
+    assert (
+        'add a [rename] key for "mp/review", or change [sources.mp] prefix = "mp-"'
+        in err
+    )
+
+
+def test_prefixed_onto_a_shipped_name(
+    home: Path, capsys: pytest.CaptureFixture[str]
+) -> None:
+    skill(home / "own" / "view")
+    with_prefixes(home, ["own/view"], own="re")
+
+    assert main(["build", "--no-install"]) == 0
+
+    err = after_package_line(capsys.readouterr().err)
+    assert "own/view" in err and "`review`" in err
+    assert "[rename]" not in err and "prefix" not in err

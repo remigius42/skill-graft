@@ -59,6 +59,8 @@ class Config:
     binds: dict[SkillId, SkillId | None]
     # The deployed name the user gives a skill.
     renames: dict[SkillId, str]
+    # What each skill of a source deploys prefixed with, by alias.
+    prefixes: dict[str, str]
     # Names no skill may deploy as.
     reserved: list[str]
     # Each patched skill's patches, in apply order.
@@ -66,8 +68,14 @@ class Config:
 
 
 def deployed(config: Config, skill: SkillId) -> str:
-    """The name `skill` deploys as: its rename, else its name."""
-    return config.renames.get(skill, skill.name)
+    """The name `skill` deploys as: its rename, else its default name."""
+    return config.renames.get(skill, default_name(config, skill))
+
+
+def default_name(config: Config, skill: SkillId) -> str:
+    """The name `skill` deploys as without a rename: its source's prefix, if any,
+    before its name."""
+    return config.prefixes.get(skill.alias, "") + skill.name
 
 
 def load() -> Config:
@@ -111,6 +119,7 @@ def parse(text: str, file: Path) -> Config:
         _overlap_warnings(sources),
         binds,
         renames,
+        _prefixes(data.get("sources", {})),
         reserved,
         patches,
     )
@@ -130,16 +139,30 @@ def _sources(raw: object, base: Path) -> dict[str, Source]:
         if "path" in table and "git" in table:
             raise SkillGraftError(f"'sources.{alias}' has both 'path' and 'git'")
         if "path" in table:
-            _check_keys(alias, table, {"path"})
+            _check_keys(alias, table, {"path", "prefix"})
             folder = _source_folder(alias, _string(alias, table, "path"), base)
             sources[alias] = PathSource(folder)
         elif "git" in table:
-            _check_keys(alias, table, {"git", "branch", "ref"})
+            _check_keys(alias, table, {"git", "branch", "ref", "prefix"})
             sources[alias] = _git_source(alias, table)
         else:
             _check_keys(alias, table, set())
             raise SkillGraftError(f"'sources.{alias}' needs 'path' or 'git'")
     return sources
+
+
+def _prefixes(raw: dict[str, dict[str, object]]) -> dict[str, str]:
+    """The prefix of each source that has one; `raw` passed `_sources`."""
+    prefixes = {}
+    for alias, table in raw.items():
+        if "prefix" in table:
+            prefix = table["prefix"]
+            if not (isinstance(prefix, str) and NAME.fullmatch(prefix)):
+                raise SkillGraftError(
+                    f"'sources.{alias}.prefix' must be a name: {NAME.pattern}"
+                )
+            prefixes[alias] = prefix
+    return prefixes
 
 
 def _check_keys(alias: str, table: dict[str, object], allowed: set[str]) -> None:

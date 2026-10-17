@@ -7,7 +7,7 @@ build, hints and `rename` alike, so no commit accepts intent it ignores or misha
 
 ## 1. Prefix
 
-- [ ] 1.1 `prefix` end to end. `config.py`: a supported source key on both kinds, validated as a name, into
+- [x] 1.1 `prefix` end to end. `config.py`: a supported source key on both kinds, validated as a name, into
   `Config.prefixes`; `default_name` and `deployed` apply it. `rename.py`: a prefixed **Skill** counts as
   user-named; `_hint`'s prefix case; `check_unique` hints for neither, then renamed, then prefixed; the shipped
   warning suggests only for neither. `edit.rename`: remove the key only when the name equals `default_name`,

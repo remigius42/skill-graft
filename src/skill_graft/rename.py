@@ -49,17 +49,30 @@ def unused(config: Config, skills: dict[SkillId, Path]) -> list[str]:
 
 
 def _hint(config: Config, skill: SkillId) -> str:
-    """The `[rename]` line to write, or to change: never a second key."""
+    """The `[rename]` line to write, or the setting to change: never a second key."""
     if skill in config.renames:
         return f'change [rename] "{skill}" = "{config.renames[skill]}"'
+    if prefix := config.prefixes.get(skill.alias):
+        return (
+            f'add a [rename] key for "{skill}", or change '
+            f'[sources.{skill.alias}] prefix = "{prefix}"'
+        )
     return f'[rename] "{skill}" = "{skill.alias}-{skill.name}"'
+
+
+def _rank(config: Config, skill: SkillId) -> int:
+    """How the user named `skill`: 0 not at all, 1 by a rename, 2 by a prefix."""
+    if skill in config.renames:
+        return 1
+    return 2 if skill.alias in config.prefixes else 0
 
 
 def check_unique(config: Config, names: dict[SkillId, str]) -> None:
     """No two skills share a deployed name.
 
     Compared ignoring case: on a case-insensitive file system the folders collide.
-    The hint names a skill not yet renamed, if one is.
+    The hint names a skill the user has not named, else a renamed one, else a
+    prefixed one.
     """
     by_name: dict[str, list[SkillId]] = {}
     for skill, name in names.items():
@@ -68,8 +81,8 @@ def check_unique(config: Config, names: dict[SkillId, str]) -> None:
         if len(clashing) > 1:
             taken = " / ".join(sorted({repr(names[skill]) for skill in clashing}))
             ids = ", ".join(str(skill) for skill in clashing)
-            unrenamed = [skill for skill in clashing if skill not in config.renames]
-            hint = _hint(config, (unrenamed or clashing)[-1])
+            best = min(_rank(config, skill) for skill in clashing)
+            hint = _hint(config, [s for s in clashing if _rank(config, s) == best][-1])
             raise SkillGraftError(
                 f"deployed name {taken} is taken by several skills: {ids}; "
                 f"rename one: {hint}"
@@ -79,8 +92,8 @@ def check_unique(config: Config, names: dict[SkillId, str]) -> None:
 def check_reserved(config: Config, names: dict[SkillId, str]) -> list[str]:
     """Errors on a deployed name the user reserved; warnings for shipped ones.
 
-    Compared ignoring case. The suggested rename is offered unless the skill
-    already has one: then the user chose the name.
+    Compared ignoring case. The suggested rename is offered unless a rename or
+    a prefix gives the skill its name: then the user chose it.
     """
     mine = {name.casefold() for name in config.reserved}
     shipped = {name.casefold() for name in SHIPPED}
@@ -94,7 +107,7 @@ def check_reserved(config: Config, names: dict[SkillId, str]) -> list[str]:
         if name.casefold() in shipped:
             warnings.append(
                 f"`{skill}` deploys as `{name}`, a name the harness already uses"
-                + ("" if skill in config.renames else f"; {_hint(config, skill)}")
+                + ("" if _rank(config, skill) else f"; {_hint(config, skill)}")
             )
     return warnings
 

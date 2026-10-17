@@ -208,8 +208,9 @@ def _parser() -> tuple[_Parser, dict[str, argparse.ArgumentParser]]:
         description=(
             "Set the skill's value in [rename] of skill-graft.toml, keeping its "
             "comments and formatting, as add does. The new deployed name is carried "
-            "into every reference to the skill. Renaming a skill to its own name "
-            "undoes its rename. Never builds."
+            "into every reference to the skill. Renaming a skill to the name it "
+            "deploys as without one (its source's prefix, if any, before its own "
+            "name) undoes its rename. Never builds."
         ),
     )
     rename.add_argument("skill", metavar="skill-id", help="<source alias>/<name>")

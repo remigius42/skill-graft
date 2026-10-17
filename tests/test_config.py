@@ -380,3 +380,24 @@ def test_bind_not_a_table(capsys: Capsys) -> None:
     code, err = build(capsys)
 
     assert code == 1 and "'bind'" in err
+
+
+def test_valid_prefix_loads(home: Path) -> None:
+    (home / "a").mkdir()
+    write_config(
+        '[sources.mp]\ngit = "/srv/mp"\nprefix = "mp-"\n'
+        '[sources.own]\npath = "~/a"\nprefix = "own."\n'
+        '[sources.x]\ngit = "/srv/x"\n'
+    )
+
+    assert config.load().prefixes == {"mp": "mp-", "own": "own."}
+
+
+@pytest.mark.parametrize("prefix", ['""', '"-x"', '"a/"', "1"])
+def test_prefix_not_a_name(home: Path, capsys: Capsys, prefix: str) -> None:
+    (home / "a").mkdir()
+    write_config(f'[sources.mp]\npath = "~/a"\nprefix = {prefix}\n')
+
+    code, err = build(capsys)
+
+    assert code == 1 and "'sources.mp.prefix'" in err

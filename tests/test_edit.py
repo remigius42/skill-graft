@@ -301,6 +301,44 @@ def test_rename_undone(home: Path, capsys: Capsys) -> None:
     assert "`code-review`, a name the harness already uses" in err
 
 
+PREFIXED = '[sources.mp]\npath = "~/mp"\nprefix = "mp-"\n'
+
+
+def test_rename_opts_out_of_the_prefix(home: Path, capsys: Capsys) -> None:
+    mp_skills(home, "tdd")
+    config = write_config('entries = ["mp/tdd"]\n' + PREFIXED)
+
+    assert main(["rename", "mp/tdd", "tdd"]) == 0
+
+    assert config.read_text() == (
+        'entries = ["mp/tdd"]\n' + PREFIXED + '\n[rename]\n"mp/tdd" = "tdd"\n'
+    )
+    assert capsys.readouterr().out == "mp/tdd\n"
+
+
+def test_rename_back_to_the_prefix(home: Path, capsys: Capsys) -> None:
+    mp_skills(home, "tdd")
+    config = write_config(
+        'entries = ["mp/tdd"]\n' + PREFIXED + '[rename]\n"mp/tdd" = "tdd"\n'
+    )
+
+    assert main(["rename", "mp/tdd", "mp-tdd"]) == 0
+
+    assert config.read_text() == 'entries = ["mp/tdd"]\n' + PREFIXED + "[rename]\n"
+    assert capsys.readouterr().out == "mp/tdd as mp-tdd\n"
+
+
+def test_rename_to_the_prefixed_name(home: Path, capsys: Capsys) -> None:
+    mp_skills(home, "tdd")
+    config = write_config('entries = ["mp/tdd"]\n' + PREFIXED)
+    before = config.read_bytes()
+
+    assert main(["rename", "mp/tdd", "mp-tdd"]) == 0
+
+    assert "`mp/tdd` already deploys as `mp-tdd`" in capsys.readouterr().err
+    assert config.read_bytes() == before
+
+
 def test_rename_keeps_comments(home: Path, capsys: Capsys) -> None:
     mp_skills(home, "tdd")
     text = (

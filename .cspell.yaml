@@ -34,6 +34,7 @@ words:
   - mktree
   - monkeypatch
   - monkeypatched
+  - mpgrilling
   - mptdd
   - mypy
   - nosystem

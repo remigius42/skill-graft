@@ -86,7 +86,9 @@ def rename(text: str, name: str) -> None:
     if "rename" not in document:
         document.add("rename", tomlkit.table())
     table = cast(Table, document["rename"])
-    if name == skill.name:  # its own name: the rename is undone
+    # The name it deploys as without a key: the rename is undone. With no key that
+    # is its deployed name, handled above, so the key exists.
+    if name == config.default_name(loaded, skill):
         del table[text]
     else:
         table[text] = name
