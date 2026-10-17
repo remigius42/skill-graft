@@ -8,18 +8,18 @@ from skill_graft import files
 from skill_graft.errors import SkillGraftError
 
 # `/name` as its own token: not inside a path, URL or tag, nor a Markdown link
-# target (`](/x)`), an attribute (`="/x"`) or an alias (`@/x`), nor a quoted path
-# argument or list item (`('/x'`, `, "/x"`), nor a path after an interpolation
-# (`${x}/y`), nor right after a code span closes (`` `package.json`/x ``). The
-# possessive `*+`
-# keeps the name whole, so `/my-dir/file` never yields `my`. Or the Skill tool's
+# target (`](/x)`), an attribute (`="/x"`) or an alias (`@/x`), nor a quoted first
+# argument or list item (`('/x'`, `["/x"`), nor a path after an interpolation
+# (`${x}/y`); `scan` also drops one right after a code span closes
+# (`` `package.json`/x ``). The possessive `*+` keeps the name whole, so
+# `/my-dir/file` never yields `my`. Or the Skill tool's
 # call form, `Skill(name)`, the name quoted or not, as `skill=` or `skill:`, and
 # perhaps followed by further arguments. Or prose: a code span holding just a
 # name, or a bare hyphenated name, bounded as a slash name is: never an anchor,
 # a query value or a variable (`#x`, `=x`, `?x`, `&x`, `$x`).
 REFERENCE = re.compile(
     r"(?<![\w./:~\\<@}-])(?<!\]\()(?<!=[\"'])"
-    r"(?<![(\[,][\"'])(?<![(\[,] [\"'])(?<![\w.)\]]`)"
+    r"(?<![(\[][\"'])"
     r"/(?P<slash>[A-Za-z0-9][A-Za-z0-9._-]*+)(?!/|:\w)"
     r"|\bSkill\(\s*(?:skill\s*[:=]\s*)?(?P<q>[\"']?)"
     r"(?P<tool>[A-Za-z0-9][A-Za-z0-9._-]*+)(?P=q)\s*(?:\)|,[^)\n]*+\)?)"
@@ -30,13 +30,16 @@ REFERENCE = re.compile(
 
 # The Skill tool named in a sentence (`Call the Skill tool with "grilling".`): the
 # names after it, in double quotes or backticks, up to the sentence's end. That is
-# the next `Skill tool`, a blank line, a line opening a list item or heading, or
-# `.`, `!` or `?` (perhaps closing a quote) before whitespace and a capital letter
-# or the end of the text, so `e.g.` and a lowercase continuation do not end it.
-SKILL_TOOL = re.compile(r"Skill tool")
+# the next `Skill tool`, a blank line, a line opening a list item, heading, code
+# fence or table row, or `.`, `!` or `?` (perhaps closing quotes, emphasis or
+# brackets) before whitespace and the start of a sentence (a capital letter, a code
+# span, emphasis or a bracket) or the end of the text. `e.g.`, `i.e.` and a
+# lowercase continuation do not end it.
+SKILL_TOOL = re.compile(r"(?<!\w)(?:`Skill`|Skill) tool\b")
 SENTENCE_END = re.compile(
-    r"\n[ \t]*\n|\n[ \t]*(?:[-*+]|\d+\.|#+)[ \t]"
-    r"|(?P<stop>[.!?][\"`]?)(?:\s+(?=[A-Z])|\s*\Z)"
+    r"\n[ \t]*\n|\n[ \t]*(?:(?:[-*+]|\d+\.|#+)[ \t]|```|~~~|\|)"
+    r"|(?<!\be\.g)(?<!\bi\.e)(?P<stop>[.!?][\"'`*)\]]*)"
+    r"(?:\s+(?=[A-Z`*(\[])|\s*\Z)"
 )
 QUOTED_NAME = re.compile(
     r'(?P<open>["`])(?P<name>[A-Za-z0-9][A-Za-z0-9._-]*+)(?P=open)'
@@ -77,24 +80,35 @@ def scan(folder: Path) -> tuple[list[Reference], list[str]]:
         except OSError as error:
             raise SkillGraftError(f"{file} cannot be read: {error}") from None
         skip = name_line(text) if file == folder / "SKILL.md" else None
-        named = _sentence_names(text, file)
+        named = [
+            ref
+            for ref in _sentence_names(text, file)
+            if not (skip and skip[0] <= ref.span[0] < skip[1])
+        ]
         taken = {ref.span for ref in named}
-        here = []
+        tool_words = [m.span() for m in SKILL_TOOL.finditer(text)]  # `` `Skill` tool ``
+        here, calls = [], []
         for match in REFERENCE.finditer(text):
             if skip and skip[0] <= match.start() < skip[1]:
                 continue  # the skill's own name, never a reference
             group = next(g for g in FORMS if match[g])
             if group == "prose" and _yaml_key(text, match):
                 continue
+            if group == "slash" and _after_code_span(text, match.start()):
+                continue
             name = match[group].rstrip(".") if group == "slash" else match[group]
             start = match.start(group)
             kind, text_form = FORMS[group]
             span = (start, start + len(name))
-            if kind == "prose" and span in taken:
-                continue  # the sentence names it: a call, not prose
-            if kind != "prose":  # a call keeps the names inside it
-                named = [r for r in named if not _inside(r.span, match.span())]
+            if kind == "prose" and (
+                span in taken or any(_inside(span, w) for w in tool_words)
+            ):
+                continue  # the sentence names it, or it is the tool's own name
+            if kind != "prose":
+                calls.append(match.span())
             here.append(Reference(name, kind, text_form.format(name), file, span))
+        # A call keeps the names inside it: `Skill("x")` in a Skill tool sentence.
+        named = [r for r in named if not any(_inside(r.span, c) for c in calls)]
         found += sorted(here + named, key=lambda ref: ref.span)
     return found, warnings
 
@@ -123,6 +137,15 @@ def _sentence_names(text: str, file: Path) -> list[Reference]:
                 )
             )
     return names
+
+
+def _after_code_span(text: str, slash: int) -> bool:
+    """Whether the `/` at `slash` follows a backtick that closes a code span: one
+    with an odd number of backticks before it on its line."""
+    if text[slash - 1 : slash] != "`":
+        return False
+    line_start = text.rfind("\n", 0, slash - 1) + 1
+    return text.count("`", line_start, slash - 1) % 2 == 1
 
 
 def _inside(span: tuple[int, int], outer: tuple[int, int]) -> bool:

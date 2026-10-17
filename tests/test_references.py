@@ -64,9 +64,8 @@ def test_paths_and_urls(tmp_path: Path, text: str) -> None:
     "text",
     [
         "fetch('/orders')",
-        "fetch(url, '/orders')",
         'open("/grilling")',
-        '["/a", "/b"]',
+        '["/a"]',
         "fetch(`/users/${userId}/orders`)",
         "its `package.json`/build-tool scripts",
         "`lint`/check",
@@ -277,6 +276,10 @@ def kinds(text: str, tmp_path: Path) -> list[tuple[str, str]]:
             'Call the Skill tool, e.g. with "grilling" or "domain-modeling."\n',
             [("grilling", "skill-tool"), ("domain-modeling", "skill-tool")],
         ),
+        (
+            "Call the Skill tool, e.g. `grilling`.\n",
+            [("grilling", "skill-tool")],
+        ),
     ],
 )
 def test_sentence_form(
@@ -292,6 +295,11 @@ def test_sentence_form(
         "Use the Skill tool for this\n- `notes`\n",
         "Use the Skill tool for this\n\n`notes`\n",
         "Use the Skill tool for this\n# `notes`\n",
+        "Use the Skill tool. `notes` holds them.\n",
+        "**Use the Skill tool.** Then see `notes`.\n",
+        "(Use the Skill tool.) Then `notes`.\n",
+        'Use the Skill tool:\n```json\n{"skill": "x"}\n```\n`notes`\n',
+        'Use the Skill tool:\n| "x" |\n\n`notes`\n',
     ],
 )
 def test_sentence_ends(tmp_path: Path, text: str) -> None:
@@ -317,3 +325,35 @@ def test_sentence_text_and_order(tmp_path: Path) -> None:
     folder = skill(tmp_path / "tdd", '/a first.\n\nCall the Skill tool with "b".\n')
 
     assert found(folder) == ["/a", 'Skill tool "b"']
+
+
+@pytest.mark.parametrize(
+    "text",
+    [
+        'Run "/tdd", "/grilling" in order.\n',
+        "运行`/tdd`和`/grilling`\n",
+        "step1`/tdd` `/grilling`\n",
+    ],
+)
+def test_commands_in_lists_and_without_spaces(tmp_path: Path, text: str) -> None:
+    assert kinds(text, tmp_path) == [("tdd", "slash"), ("grilling", "slash")]
+
+
+@pytest.mark.parametrize(
+    ("text", "expected"),
+    [
+        ('Use the `Skill` tool with "grilling".\n', [("grilling", "skill-tool")]),
+        ('MySkill tool with "grilling".\n', []),
+        ('Skill tooling with "grilling".\n', []),
+    ],
+)
+def test_skill_tool_words(
+    tmp_path: Path, text: str, expected: list[tuple[str, str]]
+) -> None:
+    assert kinds(text, tmp_path) == expected
+
+
+def test_sentence_skips_the_own_name_line(tmp_path: Path) -> None:
+    text = '---\ndescription: via the Skill tool\nname: "tdd"\n---\n'
+
+    assert kinds(text, tmp_path) == []

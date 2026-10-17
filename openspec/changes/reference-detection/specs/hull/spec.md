@@ -6,14 +6,14 @@
 
 A slash **Reference** SHALL be `/` then a name, the longest run of `[A-Za-z0-9._-]` starting with a letter or
 digit, trailing `.` dropped, standing as its own token: not preceded by a letter, digit, `/`, `.`, `-`, `~`, `:`,
-`\`, `<`, `@`, `}`, `](`, `="` or `='`, nor by `"` or `'` that follows `(`, `[` or `,` (directly or after one space),
-nor by a backtick that follows a letter, digit, `.`, `)` or `]`, and not followed by `/`, or `:` and a letter or
+`\`, `<`, `@`, `}`, `](`, `="` or `='`, nor by `"` or `'` right after `(` or `[`, nor by a backtick that closes a
+code span (an odd number of backticks before it on its line), and not followed by `/`, or `:` and a letter or
 digit. It SHALL count anywhere, code blocks included.
 
 #### Scenario: Standalone token
 
 - **WHEN** a **Skill**'s Markdown holds `run /grilling.`, `` `/grilling` ``, `(/grilling)`, `` (`/grilling`) ``,
-  `run '/grilling'` or `**/grilling**`
+  `run '/grilling'`, `**/grilling**`, `Run "/tdd", "/grilling"` or `` 运行`/grilling` ``
 - **THEN** each is a slash **Reference** to `grilling`
 
 #### Scenario: Paths and URLs
@@ -24,8 +24,7 @@ digit. It SHALL count anywhere, code blocks included.
 
 #### Scenario: Path arguments
 
-- **WHEN** it holds `fetch('/orders')`, `fetch(url, '/orders')`, `open("/grilling")`, `["/a", "/b"]` or
-  `${id}/orders`
+- **WHEN** it holds `fetch('/orders')`, `open("/grilling")`, `["/a"]` or `${id}/orders`
 - **THEN** none is a slash **Reference**
 
 #### Scenario: After a code span
@@ -38,13 +37,15 @@ digit. It SHALL count anywhere, code blocks included.
 A Skill tool **Reference** SHALL be the call form `Skill(<name>)`: the name first, optionally quoted with `"` or
 `'`, optionally given as `skill=<name>` or `skill: <name>`, then `)` or `,` and further arguments, with optional
 whitespace inside the parentheses. It SHALL also be each name in double quotes or backticks, the whole quoted text
-a name (one trailing `.` dropped), between `Skill tool` and the end of its sentence, when it resolves to a
-**Skill**; one that resolves to none is no **Reference**: no edge, no warning. A name inside a `Skill(...)` call
+a name (one trailing `.` dropped), between `Skill tool` (or `` `Skill` tool ``, as words of their own) and the
+end of its sentence, when it resolves to a **Skill**; one that resolves to none, to several, or to a **Skill**
+whose name cannot be read is no **Reference**: no edge, no warning, no error. A name inside a `Skill(...)` call
 is that call's only. The sentence form uses the rules below.
 
-The sentence SHALL end at the next `Skill tool`; at a blank line; at a line opening a list item or heading; or
-at `.`, `!` or `?`, a closing quote or backtick allowed in between, then whitespace and an uppercase letter or the
-end of the file. A line break alone SHALL NOT end it.
+The sentence SHALL end at the next `Skill tool`; at a blank line; at a line opening a list item, heading, code
+fence or table row; or at `.`, `!` or `?` (not the `.` of `e.g.` or `i.e.`), closing quotes, backticks, `*`, `)`
+or `]` allowed after it, then whitespace and an uppercase letter, a backtick, `*`, `(` or `[`, or the end of the
+file. A line break alone SHALL NOT end it. The SKILL.md front matter's own `name:` line holds no such name.
 
 #### Scenario: Call forms
 
@@ -71,8 +72,9 @@ end of the file. A line break alone SHALL NOT end it.
 
 #### Scenario: Sentence ends
 
-- **WHEN** it holds `` Use the Skill tool. Then see "grilling" and `notes`. ``, or the sentence's line is followed
-  by a list item `` - `grilling` ``
+- **WHEN** it holds `` Use the Skill tool. Then see "grilling" and `notes`. ``,
+  `` (Use the Skill tool.) Then `notes`. ``, or the sentence's line is followed by a list item `` - `grilling` ``
+  or a code fence
 - **THEN** `grilling` in quotes is no **Reference**, and the backticked names are prose **References**
 
 #### Scenario: Not a sentence end
@@ -82,8 +84,9 @@ end of the file. A line break alone SHALL NOT end it.
 
 #### Scenario: Unresolved name
 
-- **WHEN** it holds `Call the Skill tool with "grilling" and set mode to "fast".`, and no **Source** has `fast`
-- **THEN** it holds a Skill tool **Reference** to `grilling` only, and no warning names `fast`
+- **WHEN** it holds `Call the Skill tool with "grilling" and set mode to "fast".`, and no **Source** has `fast`,
+  or two other **Sources** both have it
+- **THEN** it holds a Skill tool **Reference** to `grilling` only, and no warning or error names `fast`
 
 #### Scenario: One reference per name
 
@@ -93,7 +96,8 @@ end of the file. A line break alone SHALL NOT end it.
 
 #### Scenario: Unquoted name
 
-- **WHEN** it holds `call the Skill tool with grilling.`
+- **WHEN** it holds `call the Skill tool with grilling.`, `MySkill tool with "grilling".` or
+  `Skill tooling with "grilling".`
 - **THEN** it holds no Skill tool **Reference**
 
 #### Scenario: Renamed
