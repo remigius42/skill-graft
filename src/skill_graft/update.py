@@ -67,6 +67,7 @@ def _update(loaded: Config, aliases: list[str], git_cache: Cache, write: bool) -
         )
         hashes = lock.skill_hashes(hull)
     warn(hull.warnings)
+    lock.announce_suggestions(hull)
     _print_diff(_previous(loaded, selected, git_cache), hashes)
     moved = {alias: tip for alias, tip in tips.items() if tip != selected[alias].ref}
     if write:

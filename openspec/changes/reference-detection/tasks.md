@@ -30,7 +30,7 @@ skill text is copied in. Each group updates `README.md` or `docs/design.md` for 
 
 - [x] 3.1 `build` prints the suggestion line on stderr when there are suggestions. Verify:
   build-announces-suggestions, no-suggestions (no line), stdout holds no block.
-- [ ] 3.2 `update` and `update --dry-run` print it for the new tips. Verify: update-announces-suggestions.
+- [x] 3.2 `update` and `update --dry-run` print it for the new tips. Verify: update-announces-suggestions.
   `README.md`: where suggestions show.
 
 ## 4. Real-world check
