@@ -107,7 +107,7 @@ def parse(text: str, file: Path) -> Config:
     known = {"sources", "entries", "bind", "rename", "reserved", "patches"}
     if unknown := sorted(data.keys() - known):
         raise SkillGraftError(f"{unknown[0]!r} is unsupported in skill-graft.toml")
-    sources = _sources(data.get("sources", {}), file.parent)
+    sources, prefixes = _sources(data.get("sources", {}), file.parent)
     entries = _entries(data.get("entries", []), sources)
     binds = _binds(data.get("bind", {}), sources)
     renames = _renames(data.get("rename", {}), sources)
@@ -119,16 +119,18 @@ def parse(text: str, file: Path) -> Config:
         _overlap_warnings(sources),
         binds,
         renames,
-        _prefixes(data.get("sources", {})),
+        prefixes,
         reserved,
         patches,
     )
 
 
-def _sources(raw: object, base: Path) -> dict[str, Source]:
+def _sources(raw: object, base: Path) -> tuple[dict[str, Source], dict[str, str]]:
+    """The sources by alias, and the prefix of each source that has one."""
     if not isinstance(raw, dict):
         raise SkillGraftError("'sources' must hold [sources.<alias>] tables")
     sources: dict[str, Source] = {}
+    prefixes: dict[str, str] = {}
     for alias, table in raw.items():
         if not NAME.fullmatch(alias):
             raise SkillGraftError(
@@ -146,15 +148,8 @@ def _sources(raw: object, base: Path) -> dict[str, Source]:
             _check_keys(alias, table, {"git", "branch", "ref", "prefix"})
             sources[alias] = _git_source(alias, table)
         else:
-            _check_keys(alias, table, set())
+            _check_keys(alias, table, {"prefix"})
             raise SkillGraftError(f"'sources.{alias}' needs 'path' or 'git'")
-    return sources
-
-
-def _prefixes(raw: dict[str, dict[str, object]]) -> dict[str, str]:
-    """The prefix of each source that has one; `raw` passed `_sources`."""
-    prefixes = {}
-    for alias, table in raw.items():
         if "prefix" in table:
             prefix = table["prefix"]
             if not (isinstance(prefix, str) and NAME.fullmatch(prefix)):
@@ -162,7 +157,7 @@ def _prefixes(raw: dict[str, dict[str, object]]) -> dict[str, str]:
                     f"'sources.{alias}.prefix' must be a name: {NAME.pattern}"
                 )
             prefixes[alias] = prefix
-    return prefixes
+    return sources, prefixes
 
 
 def _check_keys(alias: str, table: dict[str, object], allowed: set[str]) -> None:

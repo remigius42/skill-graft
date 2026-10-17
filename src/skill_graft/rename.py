@@ -1,4 +1,5 @@
-"""Deployed names: carried into each renamed skill's `name:` and every reference."""
+"""Deployed names: carried into each renamed or prefixed skill's `name:` and every
+reference."""
 
 import re
 from pathlib import Path
@@ -48,23 +49,32 @@ def unused(config: Config, skills: dict[SkillId, Path]) -> list[str]:
     ]
 
 
-def _hint(config: Config, skill: SkillId) -> str:
-    """The `[rename]` line to write, or the setting to change: never a second key."""
+def _hint(config: Config, skill: SkillId, prefix_helps: bool = True) -> str:
+    """The `[rename]` line to write, or the setting to change: never a second key.
+
+    A prefix is offered only if changing it would help: not when the skills
+    clashing all take it.
+    """
     if skill in config.renames:
         return f'change [rename] "{skill}" = "{config.renames[skill]}"'
     if prefix := config.prefixes.get(skill.alias):
-        return (
-            f'add a [rename] key for "{skill}", or change '
-            f'[sources.{skill.alias}] prefix = "{prefix}"'
-        )
+        add = f'add a [rename] key for "{skill}"'
+        if not prefix_helps:
+            return add
+        return f'{add}, or change [sources.{skill.alias}] prefix = "{prefix}"'
     return f'[rename] "{skill}" = "{skill.alias}-{skill.name}"'
 
 
+def _chosen(config: Config, skill: SkillId) -> bool:
+    """Whether the user chose `skill`'s deployed name, by a rename or a prefix."""
+    return skill in config.renames or skill.alias in config.prefixes
+
+
 def _rank(config: Config, skill: SkillId) -> int:
-    """How the user named `skill`: 0 not at all, 1 by a rename, 2 by a prefix."""
+    """The order to hint in: not chosen, then renamed, then prefixed."""
     if skill in config.renames:
         return 1
-    return 2 if skill.alias in config.prefixes else 0
+    return 2 if _chosen(config, skill) else 0
 
 
 def check_unique(config: Config, names: dict[SkillId, str]) -> None:
@@ -82,7 +92,8 @@ def check_unique(config: Config, names: dict[SkillId, str]) -> None:
             taken = " / ".join(sorted({repr(names[skill]) for skill in clashing}))
             ids = ", ".join(str(skill) for skill in clashing)
             best = min(_rank(config, skill) for skill in clashing)
-            hint = _hint(config, [s for s in clashing if _rank(config, s) == best][-1])
+            pick = [s for s in clashing if _rank(config, s) == best][-1]
+            hint = _hint(config, pick, len({s.alias for s in clashing}) > 1)
             raise SkillGraftError(
                 f"deployed name {taken} is taken by several skills: {ids}; "
                 f"rename one: {hint}"
@@ -107,7 +118,7 @@ def check_reserved(config: Config, names: dict[SkillId, str]) -> list[str]:
         if name.casefold() in shipped:
             warnings.append(
                 f"`{skill}` deploys as `{name}`, a name the harness already uses"
-                + ("" if _rank(config, skill) else f"; {_hint(config, skill)}")
+                + ("" if _chosen(config, skill) else f"; {_hint(config, skill)}")
             )
     return warnings
 
@@ -116,7 +127,8 @@ def rewrites(hull: Hull) -> dict[SkillId, dict[Path, bytes]]:
     """Per hull skill, the files whose vendored bytes differ from upstream.
 
     A reference whose target's deployed name differs from the name written is
-    rewritten in place; a renamed skill's `SKILL.md` gets its new `name:`. Keyed
+    rewritten in place; a renamed or prefixed skill's `SKILL.md` gets its new
+    `name:`. Keyed
     by the path relative to the skill's folder; unchanged files are left out.
     """
     result: dict[SkillId, dict[Path, bytes]] = {}

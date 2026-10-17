@@ -100,7 +100,8 @@ SHALL be unchanged.
 Two **Hull** **Skills** with the same **Deployed name**, compared ignoring case, SHALL be an error naming both
 and a change that would separate them, and the command SHALL then write nothing. The hint SHALL name a `[rename]`
 line for a clashing **Skill** with neither a `[rename]` key nor a **Prefix**; else the `[rename]` value of a
-renamed one to change; else, for a prefixed one, that a `[rename]` key for it or its **Source**'s `prefix` would.
+renamed one to change; else, for a prefixed one, that a `[rename]` key for it would, or its **Source**'s `prefix`
+unless every clashing **Skill** is of that **Source**.
 
 #### Scenario: Clash across sources
 
@@ -140,6 +141,11 @@ renamed one to change; else, for a prefixed one, that a `[rename]` key for it or
   `[rename]` key
 - **THEN** the command exits non-zero naming `a/tdd` and `b/tdd`, and says to add a `[rename]` key for one of
   them or change its **Source**'s `prefix = "x-"`
+
+#### Scenario: Clash within one prefixed source
+
+- **WHEN** `[sources.mp]` has `prefix = "mp-"`, and **Entries** `mp/Tdd` and `mp/tdd` have no `[rename]` key
+- **THEN** the command exits non-zero saying to add a `[rename]` key for one of them, and names no `prefix`
 
 ### Requirement: The user's reserved names are errors
 

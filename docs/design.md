@@ -216,14 +216,14 @@ The lock (TOML, sorted except `patches`, never read back, the same on every mach
 sources lie inside the project) records each source's `ref` or folder (in project scope relative to the package when
 inside the project), each hull skill with a SHA-256 of its folder as vendored (patches and rewrites applied), its
 `upstream` folder (relative to its source: the cache export or the path source's folder; `why` prints it absolute), its
-`deployed` name when renamed and its `patches` in apply order when patched, each edge with its kind (`slash`,
-`skill-tool`, `prose`) plus `bind = true` when a bind decided it, and each prose suggestion with the skills mentioning
+`deployed` name when renamed or prefixed and its `patches` in apply order when patched, each edge with its kind
+(`slash`, `skill-tool`, `prose`) plus `bind = true` when a bind decided it, and each prose suggestion with the skills mentioning
 it, so the explanation is a view of it:
 
 - `resolve` prints a tree in the style of `cargo tree`: one line per edge naming the reference as written
-  upstream, each skill expanded once and later lines marked `(*)`, a renamed skill as `<id> as <deployed name>`,
-  a patched one followed by `(patched)`, and a prose edge only when the build rewrites it; then the prose
-  suggestions, and the warnings on stderr.
+  upstream, each skill expanded once and later lines marked `(*)`, a renamed or prefixed skill as
+  `<id> as <deployed name>`, a patched one followed by `(patched)`, and a prose edge only when the build rewrites
+  it; then the prose suggestions, and the warnings on stderr.
 - `why` and `tree` resolve as `resolve` does (fetching only an uncached commit, warnings on stderr, a failing
   patch an error) but write nothing, so they never see a missing or stale lock.
 

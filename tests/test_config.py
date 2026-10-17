@@ -401,3 +401,11 @@ def test_prefix_not_a_name(home: Path, capsys: Capsys, prefix: str) -> None:
     code, err = build(capsys)
 
     assert code == 1 and "'sources.mp.prefix'" in err
+
+
+def test_prefix_without_a_kind(capsys: Capsys) -> None:
+    write_config('[sources.mp]\nprefix = "mp-"\n')
+
+    code, err = build(capsys)
+
+    assert code == 1 and "'sources.mp' needs 'path' or 'git'" in err

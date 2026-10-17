@@ -12,6 +12,11 @@ A source's `prefix`, on a path or a git **Source**, SHALL be a name, one path se
   `prefix = "own."`
 - **THEN** the config loads
 
+#### Scenario: Prefix without a kind
+
+- **WHEN** `[sources.mp]` holds only `prefix = "mp-"`
+- **THEN** the command exits non-zero saying `sources.mp` needs `path` or `git`, not that `prefix` is unsupported
+
 #### Scenario: Prefix not a name
 
 - **WHEN** `[sources.mp]` has `prefix = ""`, `prefix = "-x"`, `prefix = "a/"` or `prefix = 1`

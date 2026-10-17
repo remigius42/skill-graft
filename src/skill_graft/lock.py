@@ -80,7 +80,7 @@ def tree(hull: Hull) -> str:
     """The hull as `cargo tree` prints: one line per edge, repeats marked `(*)`.
 
     Each entry expands at the top level; any other skill at its first line. A
-    renamed skill shows its deployed name, a patched one `(patched)`. A prose edge
+    renamed or prefixed skill shows its deployed name, a patched one `(patched)`. A prose edge
     shows only when the build rewrites it; it pulls nothing in, so its target
     expands elsewhere: `(*)`.
     """
@@ -127,7 +127,7 @@ def shown_edges(hull: Hull) -> dict[SkillId, list[Edge]]:
 
 
 def node_label(hull: Hull, skill_id: SkillId) -> str:
-    """A skill as tree lines name it: its deployed name if renamed, `(patched)`."""
+    """A skill as tree lines name it: its deployed name if it differs, `(patched)`."""
     deployed = hull.deployed[skill_id]
     return (
         str(skill_id)
