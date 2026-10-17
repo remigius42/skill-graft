@@ -69,4 +69,4 @@ def resolve(config: Config, folders: dict[str, Path], work: Path) -> Hull:
     warnings = rename.unused(config, result.skills)
     warnings += patch.unused(config, result.skills)
     warnings += rename.check_reserved(config, result.deployed)
-    return replace(result, warnings=result.warnings + warnings, roots=dict(folders))
+    return replace(result, warnings=result.warnings + warnings)
