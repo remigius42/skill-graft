@@ -78,5 +78,7 @@ def skills() -> Path:
 
 
 def manifest() -> Path:
-    """APM's user manifest, which lists the package once registered."""
+    """APM's manifest for the scope, which lists the package once registered."""
+    if scope() == "project":
+        return root() / "apm.yml"
     return Path.home() / ".apm" / "apm.yml"

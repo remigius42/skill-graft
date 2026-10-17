@@ -3,7 +3,7 @@
 from pathlib import Path
 
 import pytest
-from conftest import skill
+from conftest import FakeApm, skill
 
 from skill_graft import paths
 from skill_graft.cli import main
@@ -116,3 +116,44 @@ def test_project_package_without_config(
     assert f"{package}/skill-graft.toml" in err
     assert "skill-graft init --project" in err
     assert "run `skill-graft init`" not in err
+
+
+def test_project_build_from_a_subfolder(
+    home: Path, monkeypatch: pytest.MonkeyPatch, fake_apm: FakeApm
+) -> None:
+    project(home / "repo")
+    monkeypatch.chdir(home / "repo" / "src")
+
+    assert main(["build"]) == 0
+
+    assert fake_apm.calls == [["install", "./.apm/skill-graft"]]
+    assert fake_apm.working_folders == [str(home / "repo")]
+    assert "    - ./.apm/skill-graft\n" in (home / "repo" / "apm.yml").read_text()
+
+
+def test_project_package_not_registered(
+    home: Path,
+    monkeypatch: pytest.MonkeyPatch,
+    fake_apm: FakeApm,
+    capsys: pytest.CaptureFixture[str],
+) -> None:
+    project(home / "repo")
+    monkeypatch.chdir(home / "repo")
+    fake_apm.register = False
+
+    assert main(["build"]) == 1
+
+    err = capsys.readouterr().err
+    assert f"{home}/repo/apm.yml does not list {home}/repo/.apm/skill-graft" in err
+
+
+def test_no_install_reads_no_project_manifest(
+    home: Path, monkeypatch: pytest.MonkeyPatch, fake_apm: FakeApm
+) -> None:
+    project(home / "repo")
+    (home / "repo" / "apm.yml").mkdir()  # unreadable as a file
+    monkeypatch.chdir(home / "repo")
+
+    assert main(["build", "--no-install"]) == 0
+
+    assert fake_apm.calls == []

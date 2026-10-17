@@ -1,4 +1,4 @@
-"""Runs APM. skill-graft never writes `~/.apm/apm.yml`; APM does (ADR 0003)."""
+"""Runs APM. skill-graft never writes APM's `apm.yml`; APM does (ADR 0003)."""
 
 import re
 import subprocess
@@ -7,15 +7,23 @@ from pathlib import Path
 from skill_graft import paths
 from skill_graft.errors import SkillGraftError
 
-# A YAML comment in `~/.apm/apm.yml`: `#` after whitespace, to the end of the line.
+# A YAML comment in `apm.yml`: `#` after whitespace, to the end of the line.
 COMMENT = re.compile(r"\s+#.*$")
 
 
+def _command() -> list[str]:
+    """`apm install -g <absolute path>` in user scope; in project scope
+    `apm install ./.apm/skill-graft`, run in the project root."""
+    if paths.scope() == "project":
+        return ["apm", "install", "./.apm/skill-graft"]
+    return ["apm", "install", "-g", str(paths.package().absolute())]
+
+
 def install() -> None:
-    """Registers and deploys the package with `apm install -g <absolute path>`."""
-    command = ["apm", "install", "-g", str(paths.package().absolute())]
+    """Registers and deploys the package."""
+    command = _command()
     try:
-        result = subprocess.run(command, check=False)
+        result = subprocess.run(command, cwd=paths.root(), check=False)
     except FileNotFoundError:
         raise SkillGraftError("APM is not installed: no `apm` on PATH") from None
     except OSError as error:
@@ -32,7 +40,8 @@ def install() -> None:
 
 
 def registered() -> bool:
-    """Whether a list item in `~/.apm/apm.yml`, `- x` or `- path: x`, names the package.
+    """Whether a list item in the scope's `apm.yml`, `- x` or `- path: x`, names the
+    package; a relative `x` is relative to the manifest's folder.
 
     A line scan, not a YAML parse: the runtime dependencies include no YAML library.
     """
@@ -46,6 +55,6 @@ def registered() -> bool:
             continue
         value = item.removeprefix("- ").strip().removeprefix("path:")
         value = COMMENT.sub("", value).strip().strip("\"'")
-        if value and Path(value).expanduser().resolve() == package:
+        if value and (manifest.parent / Path(value).expanduser()).resolve() == package:
             return True
     return False

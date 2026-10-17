@@ -21,7 +21,7 @@ for what it ships.
 
 ## 2. APM per scope
 
-- [ ] 2.1 Fake `apm` in `conftest.py`: without `-g`, lists `<arg>` under `dependencies.apm` in `./apm.yml` in its
+- [x] 2.1 Fake `apm` in `conftest.py`: without `-g`, lists `<arg>` under `dependencies.apm` in `./apm.yml` in its
   working folder, creating it as APM does, and logs its working folder. `paths.manifest()` per scope;
   `apm.install()` runs `apm install ./.apm/skill-graft` with `cwd=root` in project scope; `registered()` resolves
   relative entries against the manifest's folder. Verify: project-build-from-a-subfolder,

@@ -9,8 +9,9 @@ import pytest
 
 from skill_graft.cli import main
 
-# Stands in for `apm`: logs its argv, and for `install -g <path>` adds the path to
-# ~/.apm/apm.yml the way APM 0.33.0 does, unless told not to.
+# Stands in for `apm`: logs its argv and working folder, and for `install -g <path>`
+# adds the path to ~/.apm/apm.yml the way APM 0.33.0 does, or for `install <path>`
+# to ./apm.yml, unless told not to.
 FAKE_APM = """\
 import json, sys
 from pathlib import Path
@@ -18,14 +19,20 @@ from pathlib import Path
 state_file = Path(__file__).with_name("state.json")
 state = json.loads(state_file.read_text())
 state["calls"].append(sys.argv[1:])
+state["working_folders"].append(str(Path.cwd()))
 state_file.write_text(json.dumps(state))
 args = sys.argv[1:]
 print("fake apm: " + " ".join(args))
-if state["register"] and args[:2] == ["install", "-g"] and len(args) > 2:
-    manifest = Path.home() / ".apm" / "apm.yml"
+if args[:2] == ["install", "-g"] and len(args) > 2:
+    manifest, package = Path.home() / ".apm" / "apm.yml", args[2]
+elif args[:1] == ["install"] and len(args) == 2:
+    manifest, package = Path("apm.yml"), args[1]
+else:
+    manifest = None
+if state["register"] and manifest is not None:
     manifest.parent.mkdir(parents=True, exist_ok=True)
     text = manifest.read_text() if manifest.exists() else "dependencies:\\n  apm:\\n"
-    line = f"    - {args[2]}\\n"
+    line = f"    - {package}\\n"
     if line not in text:
         text = text.replace("  apm:\\n", "  apm:\\n" + line, 1)
     manifest.write_text(text)
@@ -37,7 +44,9 @@ class FakeApm:
     def __init__(self, folder: Path) -> None:
         self._state = folder / "state.json"
         self._state.write_text(
-            json.dumps({"calls": [], "exit_code": 0, "register": True})
+            json.dumps(
+                {"calls": [], "working_folders": [], "exit_code": 0, "register": True}
+            )
         )
 
     def _get(self, key: str) -> object:
@@ -53,6 +62,12 @@ class FakeApm:
         calls = self._get("calls")
         assert isinstance(calls, list)
         return calls
+
+    @property
+    def working_folders(self) -> list[str]:
+        working_folders = self._get("working_folders")
+        assert isinstance(working_folders, list)
+        return working_folders
 
     @property
     def exit_code(self) -> int:
