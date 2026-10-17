@@ -40,6 +40,7 @@ words:
   - opencode
   - openspec
   - opsx
+  - pako
   - pathlib
   - pocock
   - popleft
@@ -59,6 +60,7 @@ words:
   - ufeff
   - ultraplan
   - ultrareview
+  - unpadded
   - unrenamed
   - unsets
   - venv

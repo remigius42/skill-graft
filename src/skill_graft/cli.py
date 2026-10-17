@@ -139,6 +139,14 @@ def _parser() -> tuple[_Parser, dict[str, argparse.ArgumentParser]]:
         default="text",
         help="text (default): resolve's tree; mermaid: a Mermaid flowchart",
     )
+    tree.add_argument(
+        "--link",
+        action="store_true",
+        help=(
+            "with --format mermaid: print a mermaid.live URL that holds the diagram "
+            "in its fragment instead; nothing is uploaded"
+        ),
+    )
     help_parser = commands.add_parser(
         "help",
         help="show the help of skill-graft or of a command",
@@ -165,6 +173,8 @@ def main(argv: list[str] | None = None) -> int:
         else:
             parser.error(f"no command {args.topic!r}")
         return 0
+    if args.command == "tree" and args.link and args.format != "mermaid":
+        commands["tree"].error("--link needs --format mermaid")
     try:
         if args.command == "init":
             init.init()
@@ -173,7 +183,9 @@ def main(argv: list[str] | None = None) -> int:
         elif args.command == "tree":
             with tempfile.TemporaryDirectory(prefix="skill-graft-") as work:
                 _, resolved = _resolve(Path(work))
-            if args.format == "mermaid":
+            if args.link:
+                print(explain.link(explain.mermaid(resolved)))
+            elif args.format == "mermaid":
                 print(explain.mermaid(resolved), end="")
             else:
                 print(lock.tree(resolved), end="")

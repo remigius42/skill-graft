@@ -1,4 +1,8 @@
-"""Views of the hull beyond `resolve`'s tree: Mermaid."""
+"""Views of the hull beyond `resolve`'s tree: Mermaid and its mermaid.live link."""
+
+import base64
+import json
+import zlib
 
 from skill_graft import lock
 from skill_graft.hull import Hull
@@ -21,6 +25,18 @@ def mermaid(hull: Hull) -> str:
             lines.append(f"  {ids[source]} {arrow}|{label}| {ids[edge.target]}")
     lines.append("  classDef entry stroke-width:3px")
     return "".join(f"{line}\n" for line in lines)
+
+
+def link(diagram: str) -> str:
+    """A mermaid.live URL holding `diagram` in its fragment, which no request sends.
+
+    The editor's `pako` form: its JSON state zlib-deflated, in url-safe base64
+    without padding. The editor fills in the state's other fields.
+    """
+    state = {"code": diagram, "mermaid": json.dumps({"theme": "default"})}
+    data = zlib.compress(json.dumps(state).encode(), 9)
+    encoded = base64.urlsafe_b64encode(data).decode().rstrip("=")
+    return f"https://mermaid.live/edit#pako:{encoded}"
 
 
 def _quote(text: str) -> str:

@@ -1,6 +1,9 @@
 """The `explain` spec: `why` and `tree` show the hull and write nothing."""
 
+import base64
+import json
 import re
+import zlib
 from pathlib import Path
 from typing import TypeAlias
 
@@ -90,6 +93,34 @@ def test_mermaid_has_no_source_links(
     assert "own/notes" in first
     assert "click" not in first and "://" not in first
     assert capsys.readouterr().out == first
+
+
+def test_mermaid_link_decodes_to_the_diagram(home: Path, capsys: Capsys) -> None:
+    skill(home / "mp" / "tdd", "/grilling\n")
+    skill(home / "mp" / "grilling")
+    configure(["mp/tdd"], mp="~/mp")
+    assert main(["tree", "--format", "mermaid"]) == 0
+    diagram = capsys.readouterr().out
+
+    assert main(["tree", "--format", "mermaid", "--link"]) == 0
+
+    out = capsys.readouterr().out
+    prefix = "https://mermaid.live/edit#pako:"
+    assert out.startswith(prefix) and out.endswith("\n") and out.count("\n") == 1
+    data = out[len(prefix) : -1]
+    assert "=" not in data  # url-safe base64, unpadded, as js-base64 writes it
+    state = json.loads(zlib.decompress(base64.urlsafe_b64decode(data + "==")))
+    assert state["code"] == diagram
+    assert json.loads(state["mermaid"]) == {"theme": "default"}
+
+
+def test_link_needs_mermaid(home: Path, capsys: Capsys) -> None:
+    with pytest.raises(SystemExit) as exit:
+        main(["tree", "--link"])
+
+    assert exit.value.code == 2
+    err = capsys.readouterr().err
+    assert "--link" in err and "--format mermaid" in err
 
 
 def test_tree_writes_no_lock(home: Path, capsys: Capsys) -> None:
