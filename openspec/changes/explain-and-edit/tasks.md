@@ -43,7 +43,7 @@ synthetic **Skills** and git repositories. Each group updates `README.md` for wh
 
 ## 5. Edits
 
-- [ ] 5.1 `edit.py`: read, edit a `tomlkit` document, `config.parse`, resolve, then write TOML (atomic, symlink
+- [x] 5.1 `edit.py`: read, edit a `tomlkit` document, `config.parse`, resolve, then write TOML (atomic, symlink
   kept, untouched when unchanged, relative paths from the unresolved config path) and lock, print as `resolve`;
   `update._write_refs` uses the same write. Verify: every update test green, plus edit-fails-to-resolve and
   symlinked-config (with a relative path source) through 5.2.

@@ -12,6 +12,7 @@ from skill_graft import (
     apm,
     config,
     discovery,
+    edit,
     explain,
     init,
     lock,
@@ -162,6 +163,19 @@ def _parser() -> tuple[_Parser, dict[str, argparse.ArgumentParser]]:
         "skill",
         help="a skill ID (<source alias>/<name>), or the name a hull skill deploys as",
     )
+    add = commands.add_parser(
+        "add",
+        help="add skills to the entries, then resolve",
+        description=(
+            "Append each skill ID to `entries` in skill-graft.toml, keeping its "
+            "comments and formatting. The edited config is resolved first; only if "
+            "it resolves are skill-graft.toml and the lock written and the tree "
+            "printed. Never builds."
+        ),
+    )
+    add.add_argument(
+        "skills", nargs="+", metavar="skill-id", help="<source alias>/<name>"
+    )
     help_parser = commands.add_parser(
         "help",
         help="show the help of skill-graft or of a command",
@@ -195,6 +209,8 @@ def main(argv: list[str] | None = None) -> int:
             init.init()
         elif args.command == "update":
             update.update(_load(), args.aliases, args.dry_run)
+        elif args.command == "add":
+            edit.add(args.skills)
         elif args.command == "why":
             with tempfile.TemporaryDirectory(prefix="skill-graft-") as work:
                 loaded, resolved = _resolve(Path(work))
