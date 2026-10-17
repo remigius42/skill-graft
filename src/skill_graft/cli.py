@@ -240,11 +240,15 @@ def main(argv: list[str] | None = None) -> int:
         elif args.command == "why":
             with tempfile.TemporaryDirectory(prefix="skill-graft-") as work:
                 loaded, resolved = _resolve(Path(work))
-            warn(resolved.warnings)
-            target = explain.find(
-                resolved, args.skill, lambda text: resolve.known(loaded, "why", text)
-            )
-            print(explain.why(resolved, target), end="")
+            try:
+                target = explain.find(
+                    resolved,
+                    args.skill,
+                    lambda text: resolve.known(loaded, "why", text),
+                )
+                print(explain.why(resolved, target), end="")
+            finally:  # after the output, as `tree` and `resolve` print them
+                warn(resolved.warnings)
         elif args.command == "tree":
             with tempfile.TemporaryDirectory(prefix="skill-graft-") as work:
                 _, resolved = _resolve(Path(work))

@@ -17,10 +17,10 @@ def find(hull: Hull, text: str, parse: Callable[[str], SkillId]) -> SkillId:
     `parse` reads a skill ID, raising unless its source has that skill.
     """
     if "/" in text:
-        skill = parse(text)
-        if skill in hull.skills:
-            return skill
-        raise SkillGraftError(outside(hull, skill))
+        for skill in hull.skills:  # in the hull, it exists: no need to look
+            if str(skill) == text:
+                return skill
+        raise SkillGraftError(outside(hull, parse(text)))
     for skill, deployed in hull.deployed.items():
         if deployed == text:
             return skill
@@ -53,7 +53,7 @@ def why(hull: Hull, skill: SkillId) -> str:
     """
     callers: dict[SkillId, dict[tuple[SkillId, str, bool], Edge]] = {}
     for edge in hull.edges:
-        if edge.kind != "prose" and edge.source != edge.target:
+        if edge.kind != "prose":  # the walk records no self-references
             key = (edge.source, edge.kind, edge.bind)
             callers.setdefault(edge.target, {}).setdefault(key, edge)
     order = {s: i for i, s in enumerate(hull.skills)}
