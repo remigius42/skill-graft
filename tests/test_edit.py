@@ -229,6 +229,150 @@ def test_remove_keeps_other_comments(home: Path, capsys: Capsys) -> None:
     assert "# mine" in text and "# keep a" in text and "# keep c" in text
 
 
+def test_rename_new(home: Path, capsys: Capsys) -> None:
+    skill(home / "mp" / "tdd", "/code-review\n")
+    mp_skills(home, "code-review")
+    config = write_config('entries = ["mp/tdd"]\n' + SOURCES)
+
+    assert main(["rename", "mp/code-review", "mp-code-review"]) == 0
+
+    assert config.read_text() == (
+        'entries = ["mp/tdd"]\n'
+        + SOURCES
+        + '\n[rename]\n"mp/code-review" = "mp-code-review"\n'
+    )
+    assert capsys.readouterr().out == (
+        "mp/tdd\n└── mp/code-review as mp-code-review (/code-review)\n"
+    )
+
+
+@pytest.mark.parametrize(
+    ("argv", "named"),
+    [
+        (["mp/nope", "x"], "mp/nope"),
+        (["zz/tdd", "x"], "'zz'"),
+        (["mp/tdd", "a/b"], "a/b"),
+    ],
+)
+def test_rename_refuses(
+    home: Path, capsys: Capsys, argv: list[str], named: str
+) -> None:
+    mp_skills(home, "tdd")
+    config = write_config('entries = ["mp/tdd"]\n' + SOURCES)
+    before = config.read_bytes()
+
+    assert main(["rename", *argv]) == 1
+
+    out, err = capsys.readouterr()
+    assert (out, config.read_bytes()) == ("", before)
+    assert named in err
+
+
+def test_rename_to_the_current_name(home: Path, capsys: Capsys) -> None:
+    mp_skills(home, "tdd")
+    config = write_config(
+        'entries = ["mp/tdd"]\n' + SOURCES + '[rename]\n"mp/tdd" = "mp-tdd"\n'
+    )
+    before = (config.read_bytes(), config.stat().st_mtime_ns)
+
+    assert main(["rename", "mp/tdd", "mp-tdd"]) == 0
+
+    out, err = capsys.readouterr()
+    assert out == ""
+    assert "`mp/tdd` already deploys as `mp-tdd`" in err
+    assert (config.read_bytes(), config.stat().st_mtime_ns) == before
+
+
+def test_rename_undone(home: Path, capsys: Capsys) -> None:
+    mp_skills(home, "code-review")
+    config = write_config(
+        'entries = ["mp/code-review"]\n'
+        + SOURCES
+        + '[rename]\n"mp/code-review" = "mp-code-review"  # avoid the built-in\n'
+    )
+
+    assert main(["rename", "mp/code-review", "code-review"]) == 0
+
+    out, err = capsys.readouterr()
+    assert (
+        config.read_text() == 'entries = ["mp/code-review"]\n' + SOURCES + "[rename]\n"
+    )
+    assert out == "mp/code-review\n"
+    assert "`code-review`, a name the harness already uses" in err
+
+
+def test_rename_keeps_comments(home: Path, capsys: Capsys) -> None:
+    mp_skills(home, "tdd")
+    text = (
+        "# my skills\n"
+        'entries = ["mp/tdd"]  # one\n'
+        + SOURCES
+        + '\n[rename]\n"mp/tdd" = "mp-tdd"  # clashes otherwise\n'
+    )
+    config = write_config(text)
+
+    assert main(["rename", "mp/tdd", "mp-tdd2"]) == 0
+
+    assert config.read_text() == text.replace('"mp-tdd"', '"mp-tdd2"')
+
+
+def test_rename_outside_the_hull(home: Path, capsys: Capsys) -> None:
+    mp_skills(home, "tdd", "notes")
+    write_config('entries = ["mp/tdd"]\n' + SOURCES)
+
+    assert main(["rename", "mp/notes", "n"]) == 0
+
+    err = capsys.readouterr().err
+    assert '"mp/notes" = "n"' in (package(home) / "skill-graft.toml").read_text()
+    assert "warning" in err and "mp/notes" in err
+
+
+@pytest.mark.parametrize(
+    ("extra", "argv", "named"),
+    [
+        ("", ["own/x", "tdd"], "mp/tdd"),
+        ('reserved = ["review"]\n', ["mp/check", "review"], "review"),
+    ],
+)
+def test_rename_clashes(
+    home: Path, capsys: Capsys, extra: str, argv: list[str], named: str
+) -> None:
+    mp_skills(home, "tdd", "check")
+    skill(home / "own" / "x")
+    config = write_config(
+        extra
+        + 'entries = ["mp/tdd", "mp/check", "own/x"]\n'
+        + SOURCES
+        + '[sources.own]\npath = "~/own"\n'
+    )
+    before = config.read_bytes()
+
+    assert main(["rename", *argv]) == 1
+
+    out, err = capsys.readouterr()
+    assert (out, config.read_bytes()) == ("", before)
+    assert named in err
+
+
+def test_rename_onto_a_shipped_reserved_name(home: Path, capsys: Capsys) -> None:
+    mp_skills(home, "check")
+    write_config('entries = ["mp/check"]\n' + SOURCES)
+
+    assert main(["rename", "mp/check", "code-review"]) == 0
+
+    toml = (package(home) / "skill-graft.toml").read_text()
+    assert '"mp/check" = "code-review"' in toml
+    assert "`code-review`, a name the harness already uses" in capsys.readouterr().err
+
+
+def test_rename_missing_argument(home: Path, capsys: Capsys) -> None:
+    with pytest.raises(SystemExit) as exit:
+        main(["rename", "mp/tdd"])
+
+    assert exit.value.code == 2
+    assert "name" in capsys.readouterr().err
+
+
 def test_edit_fails_to_resolve(home: Path, capsys: Capsys) -> None:
     skill(home / "mp" / "tdd")
     skill(home / "mp" / "notes", "/x\n")

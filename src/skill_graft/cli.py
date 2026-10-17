@@ -11,7 +11,6 @@ from typing import Any, NoReturn
 from skill_graft import (
     apm,
     config,
-    discovery,
     edit,
     explain,
     init,
@@ -22,7 +21,6 @@ from skill_graft import (
     vendor,
 )
 from skill_graft.cache import Cache
-from skill_graft.config import SkillId
 from skill_graft.errors import SkillGraftError, warn
 from skill_graft.hull import Hull
 
@@ -188,6 +186,18 @@ def _parser() -> tuple[_Parser, dict[str, argparse.ArgumentParser]]:
     remove.add_argument(
         "skills", nargs="+", metavar="skill-id", help="an entry to remove"
     )
+    rename = commands.add_parser(
+        "rename",
+        help="give a skill a new deployed name, then resolve",
+        description=(
+            "Set the skill's value in [rename] of skill-graft.toml, keeping its "
+            "comments and formatting, as add does. The new deployed name is carried "
+            "into every reference to the skill. Renaming a skill to its own name "
+            "undoes its rename. Never builds."
+        ),
+    )
+    rename.add_argument("skill", metavar="skill-id", help="<source alias>/<name>")
+    rename.add_argument("name", help="the name it deploys as")
     help_parser = commands.add_parser(
         "help",
         help="show the help of skill-graft or of a command",
@@ -225,12 +235,14 @@ def main(argv: list[str] | None = None) -> int:
             edit.add(args.skills)
         elif args.command == "remove":
             edit.remove(args.skills)
+        elif args.command == "rename":
+            edit.rename(args.skill, args.name)
         elif args.command == "why":
             with tempfile.TemporaryDirectory(prefix="skill-graft-") as work:
                 loaded, resolved = _resolve(Path(work))
             warn(resolved.warnings)
             target = explain.find(
-                resolved, args.skill, lambda text: _known(loaded, "why", text)
+                resolved, args.skill, lambda text: resolve.known(loaded, "why", text)
             )
             print(explain.why(resolved, target), end="")
         elif args.command == "tree":
@@ -273,15 +285,6 @@ def _load() -> config.Config:
     loaded = config.load()
     warn(loaded.warnings)
     return loaded
-
-
-def _known(loaded: config.Config, where: str, text: str) -> SkillId:
-    """The skill ID `text`, its source declared and holding that skill."""
-    skill = config.parse_skill_id(where, text, loaded.sources)
-    folder = resolve.folders(loaded, Cache(paths.cache()), {})[skill.alias]
-    index = resolve.indexes(loaded, {skill.alias: folder})[skill.alias]
-    discovery.find(index, skill, f"{where}: `{skill}`")
-    return skill
 
 
 def _resolve(work: Path) -> tuple[config.Config, Hull]:

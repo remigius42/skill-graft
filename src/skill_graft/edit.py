@@ -9,7 +9,7 @@ from pathlib import Path
 from typing import cast
 
 import tomlkit
-from tomlkit.items import Array
+from tomlkit.items import Array, Table
 
 from skill_graft import config, files, lock, paths, resolve
 from skill_graft.cache import Cache
@@ -65,6 +65,28 @@ def remove(skills: list[str]) -> None:
     for skill, parent in parents.items():
         if str(skill) in skills:
             notice(f"`{skill}` stays in the hull, via `{parent}`")
+
+
+def rename(text: str, name: str) -> None:
+    """Sets the skill's `[rename]` value to `name`."""
+    document = read()
+    loaded = config.parse(tomlkit.dumps(document), paths.config_file())
+    skill = resolve.known(loaded, "rename", text)
+    if not config.NAME.fullmatch(name):
+        raise SkillGraftError(
+            f"rename: {name!r} is not a skill name: {config.NAME.pattern}"
+        )
+    if config.deployed(loaded, skill) == name:
+        notice(f"`{skill}` already deploys as `{name}`")
+        return
+    if "rename" not in document:
+        document.add("rename", tomlkit.table())
+    table = cast(Table, document["rename"])
+    if name == skill.name:  # its own name: the rename is undone
+        del table[text]
+    else:
+        table[text] = name
+    _finish(document)
 
 
 def _reach(hull: Hull, seeds: list[SkillId]) -> dict[SkillId, SkillId]:

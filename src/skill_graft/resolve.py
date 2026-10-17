@@ -4,9 +4,9 @@ from collections.abc import Iterable
 from dataclasses import replace
 from pathlib import Path
 
-from skill_graft import discovery, hull, patch, rename
+from skill_graft import discovery, hull, patch, paths, rename
 from skill_graft.cache import Cache
-from skill_graft.config import Config, GitSource, deployed
+from skill_graft.config import Config, GitSource, SkillId, deployed, parse_skill_id
 from skill_graft.errors import SkillGraftError
 from skill_graft.hull import Hull
 
@@ -36,6 +36,15 @@ def folders(config: Config, cache: Cache, refs: dict[str, str]) -> dict[str, Pat
         else:
             result[alias] = source.folder
     return result
+
+
+def known(config: Config, where: str, text: str) -> SkillId:
+    """The skill ID `text`, its source declared and holding that skill."""
+    skill = parse_skill_id(where, text, config.sources)
+    folder = folders(config, Cache(paths.cache()), {})[skill.alias]
+    index = indexes(config, {skill.alias: folder})[skill.alias]
+    discovery.find(index, skill, f"{where}: `{skill}`")
+    return skill
 
 
 def indexes(config: Config, folders: dict[str, Path]) -> dict[str, discovery.Index]:
