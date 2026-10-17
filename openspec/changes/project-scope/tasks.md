@@ -77,5 +77,5 @@ for what it ships.
 
 ## 7. Wrap-up
 
-- [ ] 7.1 `docs/design.md` paths, commands and lock mention both scopes; ADR 0003 note and ADR 0004 already
+- [x] 7.1 `docs/design.md` paths, commands and lock mention both scopes; ADR 0003 note and ADR 0004 already
   written. Verify: `pre-commit run --all-files` green and `openspec validate project-scope --strict` passes.

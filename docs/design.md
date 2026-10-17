@@ -5,7 +5,9 @@ reasons for the less obvious choices in `docs/adr/`. OpenSpec specs replace this
 
 ## Files
 
-All under `~/.apm/skill-graft/`:
+All in the package: `~/.apm/skill-graft/` (user scope), or `<project>/.apm/skill-graft/` (project scope, made by
+`init --project`). Every command but `init` uses the nearest `.apm/skill-graft/` above the working folder, up
+to the home folder, else the user scope's (ADR 0004).
 
 | File                  | Written by                                              | Holds                                                       |
 | --------------------- | ------------------------------------------------------- | ----------------------------------------------------------- |
@@ -50,6 +52,8 @@ path = "~/Documents/sync/2_areas/software/chisel_skill"
 
 - `init`: creates `~/.apm/skill-graft/` with a commented `skill-graft.toml` and the two-line `apm.yml`, then
   registers it with `apm install -g <absolute path of ~/.apm/skill-graft>`. Refuses if the folder exists.
+  `init --project` does the same in `./.apm/skill-graft/`, registering it with `apm install ./.apm/skill-graft`
+  run there; refused in the home folder, and if APM leaves it unregistered, the folder is removed again.
 - `add <skill-id>…`, `remove <skill-id>…`, `rename <skill-id> <name>`: resolve the edited config in memory and
   only if that succeeds write the TOML (in place, as `update` does), then the lock, and print what `resolve`
   prints. Notices go to stderr with the warnings. Never build. An edit that changes nothing (every skill ID
@@ -68,8 +72,11 @@ path = "~/Documents/sync/2_areas/software/chisel_skill"
   warnings, an error writing nothing.
 - `resolve`: computes the hull from the TOML, writes the lock, prints the tree, warnings and suggestions.
   Reads every declared source, each git one at its `ref`, fetching only when that commit is not cached.
-- `build`: resolves, writes `.apm/skills/`, then the lock, then runs the same `apm install -g` as `init`.
-  `--no-install` stops before APM. Fails unless `apm` exits 0 and `~/.apm/apm.yml` lists `~/.apm/skill-graft`.
+- `build`: resolves, writes `.apm/skills/`, then the lock, then runs the same `apm install` as `init`, in the
+  project root for a project package. `--no-install` stops before APM. Fails unless `apm` exits 0 and the
+  scope's `apm.yml` (`~/.apm/apm.yml`, or the project's) lists the package.
+- Writing commands (`init`, `resolve`, `build`, `update`, `add`, `remove`, `rename`) first print
+  `skill-graft: package: <path>`.
 - `update [source…]`: fetches, resolves at each branch tip, and only if that succeeds writes the lock, and the
   tips' shas into `ref` when one moved; prints the hull diff (`+` added, `-` removed, `~` changed, against the
   hull at the current refs if those are cached, never fetching for it) and any failing patch hunks. `--dry-run`
@@ -179,7 +186,7 @@ deployed file as `modified` drift.
   error in `resolve`, `build` and `update`, nothing is written, and the unused-key warnings (`[rename]`,
   `[patches]`, `[bind]`) are left out, since the hull is incomplete.
 - No command writes patches; `README.md` gives the recipe. After a `resolve`, which re-exports a deleted cache,
-  the user copies the skill's `upstream` folder from the lock with `cp -rL` (links become files, as in
+  the user copies the skill's upstream folder, the last line of `why <skill>`, with `cp -rL` (links become files, as in
   skill-graft's own copy) to `base/` in a fresh `mktemp -d`, outside any repository, deletes `base/.git` if there
   is one, and in `base/`, with no `apply.*` git settings of its own, applies the skill's earlier patches with
   `git apply -p1`; then copies that to `edited/`, edits it and runs
@@ -194,13 +201,13 @@ deployed file as `modified` drift.
 
 ## Feedback
 
-The lock (TOML, sorted except `patches`, never read back; its `upstream` paths depend on where the cache is)
-records each source's `ref` or folder, each hull
-skill with a SHA-256 of its folder as vendored (patches and rewrites applied), its `upstream` folder (absolute:
-the cache export or the path source's folder, plus the skill's path), its `deployed` name when renamed and its
-`patches` in apply order when patched, each edge with its kind (`slash`, `skill-tool`, `prose`) plus
-`bind = true` when a bind decided it, and each prose suggestion with the skills mentioning it, so the
-explanation is a view of it:
+The lock (TOML, sorted except `patches`, never read back, the same on every machine for a project package whose path
+sources lie inside the project) records each source's `ref` or folder (in project scope relative to the package when
+inside the project), each hull skill with a SHA-256 of its folder as vendored (patches and rewrites applied), its
+`upstream` folder (relative to its source: the cache export or the path source's folder; `why` prints it absolute), its
+`deployed` name when renamed and its `patches` in apply order when patched, each edge with its kind (`slash`,
+`skill-tool`, `prose`) plus `bind = true` when a bind decided it, and each prose suggestion with the skills mentioning
+it, so the explanation is a view of it:
 
 - `resolve` prints a tree in the style of `cargo tree`: one line per edge naming the reference as written
   upstream, each skill expanded once and later lines marked `(*)`, a renamed skill as `<id> as <deployed name>`,
