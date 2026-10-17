@@ -150,6 +150,22 @@ def test_project_package_not_registered(
     assert f"{home}/repo/apm.yml does not list {home}/repo/.apm/skill-graft" in err
 
 
+def test_undecodable_project_manifest(
+    home: Path,
+    monkeypatch: pytest.MonkeyPatch,
+    fake_apm: FakeApm,
+    capsys: pytest.CaptureFixture[str],
+) -> None:
+    project(home / "repo")
+    (home / "repo" / "apm.yml").write_bytes(b"dependencies:\n  apm:\n    - \xff\n")
+    monkeypatch.chdir(home / "repo")
+    fake_apm.register = False
+
+    assert main(["build"]) == 1
+
+    assert f"skill-graft: {home}/repo/apm.yml:" in capsys.readouterr().err
+
+
 def test_no_install_reads_no_project_manifest(
     home: Path, monkeypatch: pytest.MonkeyPatch, fake_apm: FakeApm
 ) -> None:

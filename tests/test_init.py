@@ -1,3 +1,4 @@
+import shutil
 import tomllib
 from pathlib import Path
 
@@ -105,6 +106,46 @@ def test_no_harness_in_the_project(
 
     assert "fix that, then run: skill-graft init --project" in capsys.readouterr().err
     assert not (repo / ".apm").exists()
+
+
+def test_project_cleanup_despite_an_undecodable_manifest(
+    home: Path,
+    fake_apm: FakeApm,
+    monkeypatch: pytest.MonkeyPatch,
+    capsys: pytest.CaptureFixture[str],
+) -> None:
+    repo = project_root(home, monkeypatch)
+    (repo / "apm.yml").write_bytes(b"\xff\n")
+    fake_apm.exit_code = 2
+    fake_apm.register = False
+
+    assert main(["init", "--project"]) == 1
+
+    assert "fix that, then run: skill-graft init --project" in capsys.readouterr().err
+    assert not (repo / ".apm").exists()
+
+
+def test_project_cleanup_failure_keeps_the_hint(
+    home: Path,
+    fake_apm: FakeApm,
+    monkeypatch: pytest.MonkeyPatch,
+    capsys: pytest.CaptureFixture[str],
+) -> None:
+    project_root(home, monkeypatch)
+    fake_apm.exit_code = 2
+    fake_apm.register = False
+
+    def refuse(path: object) -> None:
+        raise PermissionError(13, "Permission denied", str(path))
+
+    monkeypatch.setattr(shutil, "rmtree", refuse)
+
+    assert main(["init", "--project"]) == 1
+
+    err = capsys.readouterr().err
+    assert "failed with exit code 2" in err
+    assert "cannot remove" in err and "Permission denied" in err
+    assert "skill-graft init --project" in err
 
 
 def test_project_apm_fails_keeps_existing_apm_folder(

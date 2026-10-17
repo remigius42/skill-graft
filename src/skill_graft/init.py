@@ -49,11 +49,24 @@ def init(project: bool = False) -> None:
         if not project:
             retry = f"apm install -g {package.absolute()}"
             raise SkillGraftError(f"{error}\nto retry, run: {retry}") from None
-        if apm.registered():
+        if _listed():
             raise SkillGraftError(
                 f"{error}\nfix that, then run: skill-graft build"
             ) from None
         # A package left behind would be found by every command below it.
-        shutil.rmtree(made)
+        try:
+            shutil.rmtree(made)
+        except OSError as failure:
+            error = SkillGraftError(
+                f"{error}\ncannot remove {made}: {failure.strerror}"
+            )
         retry = "skill-graft init --project"
         raise SkillGraftError(f"{error}\nfix that, then run: {retry}") from None
+
+
+def _listed() -> bool:
+    """Whether the project's `apm.yml` lists the package; not when unreadable."""
+    try:
+        return apm.registered()
+    except (SkillGraftError, OSError):
+        return False

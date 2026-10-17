@@ -49,7 +49,11 @@ def registered() -> bool:
     if not manifest.exists():
         return False
     package = paths.package().resolve()
-    for line in manifest.read_text().splitlines():
+    try:
+        text = manifest.read_bytes().decode()
+    except UnicodeDecodeError as error:
+        raise SkillGraftError(f"{manifest}: {error}") from None
+    for line in text.splitlines():
         item = line.strip()
         if not item.startswith("- "):
             continue
