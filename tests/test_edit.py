@@ -36,6 +36,126 @@ def test_add_succeeds(home: Path, capsys: Capsys) -> None:
     assert not (package(home) / ".apm").exists()
 
 
+def mp_skills(home: Path, *names: str) -> None:
+    for name in names:
+        skill(home / "mp" / name)
+
+
+SOURCES = '[sources.mp]\npath = "~/mp"\n'
+
+
+def test_add_appends_in_order(home: Path, capsys: Capsys) -> None:
+    mp_skills(home, "tdd", "notes", "chisel")
+    write_config('entries = ["mp/tdd"]\n' + SOURCES)
+
+    assert main(["add", "mp/chisel", "mp/notes", "mp/chisel"]) == 0
+
+    assert entries(home) == ["mp/tdd", "mp/chisel", "mp/notes"]
+
+
+def test_add_to_a_multi_line_array(home: Path, capsys: Capsys) -> None:
+    mp_skills(home, "tdd", "grilling", "notes")
+    config = write_config(
+        'entries = [\n  "mp/tdd",  # first\n  "mp/grilling",\n]\n' + SOURCES
+    )
+
+    assert main(["add", "mp/notes"]) == 0
+
+    assert config.read_text() == (
+        'entries = [\n  "mp/tdd",  # first\n  "mp/grilling",\n  "mp/notes",\n]\n'
+        + SOURCES
+    )
+
+
+def test_add_without_entries(home: Path, capsys: Capsys) -> None:
+    mp_skills(home, "tdd")
+    config = write_config("# my skills\n" + SOURCES)
+
+    assert main(["add", "mp/tdd"]) == 0
+
+    assert config.read_text() == '# my skills\nentries = ["mp/tdd"]\n\n' + SOURCES
+
+
+@pytest.mark.parametrize(
+    ("skill_id", "named"),
+    [("mp/nope", "nope"), ("zz/tdd", "'zz'"), ("no-alias", "no-alias")],
+)
+def test_add_refuses(home: Path, capsys: Capsys, skill_id: str, named: str) -> None:
+    mp_skills(home, "tdd", "notes")
+    config = write_config('entries = ["mp/tdd"]\n' + SOURCES)
+    before = config.read_bytes()
+
+    assert main(["add", "mp/notes", skill_id]) == 1
+
+    out, err = capsys.readouterr()
+    assert (out, config.read_bytes()) == ("", before)
+    assert named in err
+
+
+def test_add_an_entry_again(home: Path, capsys: Capsys) -> None:
+    mp_skills(home, "tdd")
+    config = write_config('entries = ["mp/tdd"]\n' + SOURCES)
+    before = (config.read_bytes(), config.stat().st_mtime_ns)
+
+    assert main(["add", "mp/tdd"]) == 0
+
+    out, err = capsys.readouterr()
+    assert out == ""  # nothing resolved, nothing printed
+    assert "`mp/tdd` is already an entry" in err
+    assert (config.read_bytes(), config.stat().st_mtime_ns) == before
+    assert not (package(home) / "skill-graft.lock").exists()
+
+
+def test_add_partly_again(home: Path, capsys: Capsys) -> None:
+    mp_skills(home, "tdd", "notes")
+    write_config('entries = ["mp/tdd"]\n' + SOURCES)
+
+    assert main(["add", "mp/tdd", "mp/notes"]) == 0
+
+    out, err = capsys.readouterr()
+    assert entries(home) == ["mp/tdd", "mp/notes"]
+    assert "`mp/tdd` is already an entry" in err
+    assert out == "mp/tdd\nmp/notes\n"
+
+
+def test_add_already_reachable(home: Path, capsys: Capsys) -> None:
+    skill(home / "mp" / "tdd", "/grilling\n")
+    mp_skills(home, "grilling")
+    write_config('entries = ["mp/tdd"]\n' + SOURCES)
+
+    assert main(["add", "mp/grilling"]) == 0
+
+    assert entries(home) == ["mp/tdd", "mp/grilling"]
+    assert "`mp/grilling` was already in the hull, via `mp/tdd`" in (
+        capsys.readouterr().err
+    )
+
+
+def test_add_together(home: Path, capsys: Capsys) -> None:
+    mp_skills(home, "tdd", "b")
+    skill(home / "mp" / "a", "/b\n")
+    write_config('entries = ["mp/tdd"]\n' + SOURCES)
+
+    assert main(["add", "mp/a", "mp/b"]) == 0
+
+    out, err = capsys.readouterr()
+    assert entries(home) == ["mp/tdd", "mp/a", "mp/b"]
+    assert err == ""
+    assert "already" not in out
+
+
+def test_add_reached_only_through_itself(home: Path, capsys: Capsys) -> None:
+    skill(home / "mp" / "tdd", "see `x`\n")
+    skill(home / "mp" / "x", "/y\n")
+    skill(home / "mp" / "y", "/x\n")
+    write_config('entries = ["mp/tdd"]\n' + SOURCES)
+
+    assert main(["add", "mp/x"]) == 0
+
+    assert entries(home) == ["mp/tdd", "mp/x"]
+    assert capsys.readouterr().err == ""
+
+
 def test_edit_fails_to_resolve(home: Path, capsys: Capsys) -> None:
     skill(home / "mp" / "tdd")
     skill(home / "mp" / "notes", "/x\n")

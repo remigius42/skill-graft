@@ -47,7 +47,7 @@ synthetic **Skills** and git repositories. Each group updates `README.md` for wh
   kept, untouched when unchanged, relative paths from the unresolved config path) and lock, print as `resolve`;
   `update._write_refs` uses the same write. Verify: every update test green, plus edit-fails-to-resolve and
   symlinked-config (with a relative path source) through 5.2.
-- [ ] 5.2 `add <skill-id>…`. Verify: edit-succeeds, appended, multi-line-array, no-entries-key, unknown-skill,
+- [x] 5.2 `add <skill-id>…`. Verify: edit-succeeds, appended, multi-line-array, no-entries-key, unknown-skill,
   undeclared-alias, already-an-entry (bytes and mtime kept), already-reachable, reached-only-through-itself,
   added-together, notice-stream, no-op (nothing resolved, lock untouched, nothing on stdout).
 - [ ] 5.3 `remove <skill-id>…`. Verify: removed, not-an-entry, still-reachable, last-entry, other comments kept,
