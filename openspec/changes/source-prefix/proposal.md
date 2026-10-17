@@ -45,7 +45,7 @@ None.
 ## Impact
 
 - Changed: `config.py` (`prefix` on both source kinds, `deployed`), `rename.py` (hints), `edit.py` (`rename`'s
-  removal rule), `init.py` (template comment), with tests.
+  removal rule), `cli.py` (`rename`'s description), `init.py` (template comment), with tests.
 - `docs/design.md`, `README.md`: **Prefix** in the TOML example, the names section and `rename`.
 - Once this lands, the user can replace the nine `[rename]` keys in their own `skill-graft.toml` with
   `prefix = "mp-"` and `prefix = "hl-"`; that edit is not part of this change.

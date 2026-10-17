@@ -46,7 +46,8 @@ The **Entries** plus every **Skill** reachable from them through slash and Skill
 _Avoid_: Closure, graph, dependency tree
 
 **Rename**:
-A user rule that gives one **Skill** a new **Deployed name**, carried into every **Reference** to it.
+A user rule that sets one **Skill**'s **Deployed name**, carried into every **Reference** to it. It overrides its
+**Source**'s **Prefix**, so it may restore the **Skill**'s own name.
 _Avoid_: Alias, bind
 
 **Prefix**:
