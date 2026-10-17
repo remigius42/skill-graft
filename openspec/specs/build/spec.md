@@ -10,9 +10,10 @@ would fail quietly.
 ### Requirement: Vendor entries
 
 `skill-graft build` SHALL make `~/.apm/skill-graft/.apm/skills/` hold exactly one folder per **Hull** **Skill**,
-named after the **Skill**'s name and holding a copy of the **Skill**'s whole folder. Nothing outside that folder
-is vendored. Folders from earlier builds that are no longer in the **Hull** SHALL be removed. The folder SHALL be
-replaced only once every copy succeeded; a failed copy SHALL leave it as it was.
+named after the **Skill**'s **Deployed name** and holding a copy of the **Skill**'s whole folder, renamed and
+rewritten as the `renames` capability says and otherwise byte for byte. Nothing outside that folder is vendored.
+Folders from earlier builds that are no longer in the **Hull** SHALL be removed. The folder SHALL be replaced only
+once every copy succeeded; a failed copy SHALL leave it as it was.
 
 #### Scenario: Whole folder copied
 
@@ -23,6 +24,11 @@ replaced only once every copy succeeded; a failed copy SHALL leave it as it was.
 
 - **WHEN** **Entry** `mp/tdd` calls `/grilling`, and `mp` has `grilling`
 - **THEN** `.apm/skills/` holds `tdd/` and `grilling/`
+
+#### Scenario: Renamed skill vendored
+
+- **WHEN** **Entry** `mp/tdd` is renamed to `mp-tdd`
+- **THEN** `.apm/skills/` holds `mp-tdd/` and no `tdd/`
 
 #### Scenario: Removed entry
 
@@ -56,22 +62,6 @@ Symlinks under `.git`, which is never vendored, are not checked.
 
 - **WHEN** a **Hull** **Skill**'s folder holds a symlink to a file inside it
 - **THEN** the vendored copy holds that file's content as a regular file
-
-### Requirement: Deployed names are unique
-
-Since this version has no **Renames**, each **Hull** **Skill**'s **Deployed name** is its name. Two **Hull**
-**Skills** with the same **Deployed name**, compared ignoring case, SHALL be an error naming both, and `build`
-SHALL then write nothing.
-
-#### Scenario: Clash across sources
-
-- **WHEN** `mp/tdd` and `own/tdd` are both **Entries**
-- **THEN** `build` exits non-zero naming both and leaves `.apm/skills/` unchanged
-
-#### Scenario: Clash through a reference
-
-- **WHEN** **Entry** `own/grilling` exists, and **Entry** `mp/tdd` calls `/grilling`, resolved to `mp/grilling`
-- **THEN** `build` exits non-zero naming `mp/grilling` and `own/grilling`
 
 ### Requirement: Deploy through APM
 
