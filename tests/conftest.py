@@ -78,6 +78,9 @@ def home(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> Path:
     home = tmp_path / "home"
     home.mkdir()
     monkeypatch.setenv("HOME", str(home))
+    # Discovery walks up from the working folder and stops at home; from anywhere
+    # else it could reach the developer's real ~/.apm/skill-graft.
+    monkeypatch.chdir(home)
     # No developer git config (signing, insteadOf, default branch) reaches a test,
     # and no GIT_DIR or GIT_INDEX_FILE from a git hook running pytest: with those,
     # a test's git commands would write to this repository.

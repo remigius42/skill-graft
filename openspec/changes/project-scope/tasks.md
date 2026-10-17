@@ -7,7 +7,7 @@ for what it ships.
 
 ## 1. Scope discovery
 
-- [ ] 1.1 `conftest.py`: the autouse `home` fixture also `monkeypatch.chdir(home)`, so the walk up stops at once
+- [x] 1.1 `conftest.py`: the autouse `home` fixture also `monkeypatch.chdir(home)`, so the walk up stops at once
   and never reaches the developer's real home. Verify: every existing test green, unchanged.
 - [ ] 1.2 `paths.discover(start)` and the module-level root (`paths.use(root)`, `paths.root()`,
   `paths.scope()`); `package()` derives from the root, the home folder while unset; `cli.main` sets it after
