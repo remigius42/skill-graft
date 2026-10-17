@@ -2,6 +2,8 @@
 
 import argparse
 import sys
+import tempfile
+from pathlib import Path
 
 from skill_graft import apm, config, init, lock, paths, resolve, update, vendor
 from skill_graft.cache import Cache
@@ -41,14 +43,16 @@ def main(argv: list[str] | None = None) -> int:
         elif args.command == "update":
             update.update(_load(), args.aliases, args.dry_run)
         elif args.command == "resolve":
-            loaded, resolved = _resolve()
-            lock.write(lock.render(loaded, {}, resolved))
+            with tempfile.TemporaryDirectory(prefix="skill-graft-") as work:
+                loaded, resolved = _resolve(Path(work))
+                lock.write(lock.render(loaded, {}, resolved))
             print(lock.tree(resolved) + lock.suggestions(resolved), end="")
             warn(resolved.warnings)
         elif args.command == "build":
-            loaded, resolved = _resolve()
-            warn(resolved.warnings)
-            vendor.vendor(resolved)
+            with tempfile.TemporaryDirectory(prefix="skill-graft-") as work:
+                loaded, resolved = _resolve(Path(work))
+                warn(resolved.warnings)
+                vendor.vendor(resolved)
             # Hashes the vendored copies, so the lock holds exactly what was vendored.
             copies = {
                 s: lock.folder_hash(paths.skills() / resolved.deployed[s])
@@ -70,11 +74,11 @@ def _load() -> config.Config:
     return loaded
 
 
-def _resolve() -> tuple[config.Config, Hull]:
-    """The config and its hull, every source at its ref."""
+def _resolve(work: Path) -> tuple[config.Config, Hull]:
+    """The config and its hull, every source at its ref, patched copies in `work`."""
     loaded = _load()
     folders = resolve.folders(loaded, Cache(paths.cache()), {})
-    return loaded, resolve.resolve(loaded, folders)
+    return loaded, resolve.resolve(loaded, folders, work)
 
 
 if __name__ == "__main__":

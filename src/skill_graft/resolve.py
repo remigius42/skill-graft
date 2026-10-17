@@ -38,10 +38,11 @@ def folders(config: Config, cache: Cache, refs: dict[str, str]) -> dict[str, Pat
     return result
 
 
-def resolve(config: Config, folders: dict[str, Path]) -> Hull:
+def resolve(config: Config, folders: dict[str, Path], work: Path) -> Hull:
     """The hull, its skills found and checked for stray symlinks and name clashes.
 
-    Clashing entries are reported before anything is searched.
+    Clashing entries are reported before anything is searched. Patched copies
+    go under `work`, which must outlive the hull.
     """
     rename.check_unique(
         config, {entry: deployed(config, entry) for entry in config.entries}
@@ -50,7 +51,7 @@ def resolve(config: Config, folders: dict[str, Path]) -> Hull:
         alias: discovery.index(folder, isinstance(config.sources[alias], GitSource))
         for alias, folder in folders.items()
     }
-    result = hull.walk(config, indexes)
+    result = hull.walk(config, indexes, work)
     rename.check_unique(config, result.deployed)
     warnings = rename.unused(config, result.skills)
     warnings += rename.check_reserved(config, result.deployed)

@@ -75,7 +75,8 @@ def test_name_yaml_would_misread(name: str, written: str) -> None:
 def resolved(**renames: str) -> Hull:
     """The hull, with these skill IDs (`alias__name`) deployed under new names."""
     loaded = config.load()
-    hull = resolve.resolve(loaded, resolve.folders(loaded, Cache(paths.cache()), {}))
+    folders = resolve.folders(loaded, Cache(paths.cache()), {})
+    hull = resolve.resolve(loaded, folders, Path.home() / "work")
     deployed = {SkillId(*key.split("__")): name for key, name in renames.items()}
     return replace(hull, deployed=hull.deployed | deployed)
 

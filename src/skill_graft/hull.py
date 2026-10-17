@@ -4,7 +4,7 @@ from collections import deque
 from dataclasses import dataclass
 from pathlib import Path
 
-from skill_graft import discovery, files, references
+from skill_graft import discovery, files, patch, references
 from skill_graft.config import Config, SkillId, deployed
 from skill_graft.errors import SkillGraftError
 
@@ -31,10 +31,17 @@ class Hull:
     suggestions: dict[SkillId, set[SkillId]]
     # Each skill's deployed name.
     deployed: dict[SkillId, str]
+    # Each skill's folder as its source has it; `skills` holds the patched copy.
+    upstream: dict[SkillId, Path]
+    # Each patched skill's patch files, as written, in apply order.
+    patches: dict[SkillId, list[str]]
 
 
-def walk(config: Config, indexes: dict[str, discovery.Index]) -> Hull:
-    """Breadth-first from the entries, each skill checked and scanned once."""
+def walk(config: Config, indexes: dict[str, discovery.Index], work: Path) -> Hull:
+    """Breadth-first from the entries, each skill checked, patched and scanned once.
+
+    A patched skill is copied under `work`, which must outlive the hull.
+    """
     skills = {
         entry: discovery.find(indexes[entry.alias], entry) for entry in config.entries
     }
@@ -44,12 +51,21 @@ def walk(config: Config, indexes: dict[str, discovery.Index]) -> Hull:
     prose: list[tuple[SkillId, references.Reference, SkillId, bool, SkillId]] = []
     unmatched: set[tuple[SkillId, str]] = set()  # warned once per skill and name
     used: set[SkillId] = set()  # bind keys some reference used
+    upstream: dict[SkillId, Path] = {}
     queue = deque(skills)
     while queue:
         current = queue.popleft()
+        upstream[current] = skills[current]
         files.check_files(skills[current])  # before reading any file in it
+        if current in config.patches:
+            skills[current] = patch.apply(
+                current, upstream[current], config.patches[current], work
+            )
         found, file_warnings = references.scan(skills[current])
-        warnings += file_warnings
+        warnings += [  # naming the upstream file, not the copy, which goes away
+            w.replace(str(skills[current]), str(upstream[current]))
+            for w in file_warnings
+        ]
         for ref in found:
             key = SkillId(current.alias, ref.name)
             bound = key in config.binds
@@ -105,8 +121,21 @@ def walk(config: Config, indexes: dict[str, discovery.Index]) -> Hull:
         if key not in used
     ]
     names = {skill: deployed(config, skill) for skill in skills}
+    patched = {
+        skill: [file.path for file in config.patches[skill]]
+        for skill in skills
+        if skill in config.patches
+    }
     return Hull(
-        skills, list(config.entries), edges, warnings, occurrences, suggestions, names
+        skills,
+        list(config.entries),
+        edges,
+        warnings,
+        occurrences,
+        suggestions,
+        names,
+        upstream,
+        patched,
     )
 
 

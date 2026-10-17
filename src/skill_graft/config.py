@@ -61,6 +61,8 @@ class Config:
     renames: dict[SkillId, str]
     # Names no skill may deploy as.
     reserved: list[str]
+    # Each patched skill's patches, in apply order.
+    patches: dict[SkillId, list[PatchFile]]
 
 
 def deployed(config: Config, skill: SkillId) -> str:
@@ -76,7 +78,7 @@ def load() -> Config:
         raise SkillGraftError(f"{file} not found: run `skill-graft init`") from None
     except (tomllib.TOMLDecodeError, UnicodeDecodeError) as error:
         raise SkillGraftError(f"{file}: {error}") from None
-    known = {"sources", "entries", "bind", "rename", "reserved"}
+    known = {"sources", "entries", "bind", "rename", "reserved", "patches"}
     if unknown := sorted(data.keys() - known):
         raise SkillGraftError(f"{unknown[0]!r} is unsupported in skill-graft.toml")
     sources = _sources(data.get("sources", {}), file.parent)
@@ -84,8 +86,15 @@ def load() -> Config:
     binds = _binds(data.get("bind", {}), sources)
     renames = _renames(data.get("rename", {}), sources)
     reserved = _reserved(data.get("reserved", []))
+    patches = _patches(data.get("patches", {}), sources, file.parent)
     return Config(
-        sources, entries, _overlap_warnings(sources), binds, renames, reserved
+        sources,
+        entries,
+        _overlap_warnings(sources),
+        binds,
+        renames,
+        reserved,
+        patches,
     )
 
 
@@ -216,6 +225,52 @@ def _reserved(raw: object) -> list[str]:
     ):
         raise SkillGraftError(f"'reserved' must be a list of names: {NAME.pattern}")
     return raw
+
+
+def _patches(
+    raw: object, sources: dict[str, Source], base: Path
+) -> dict[SkillId, list[PatchFile]]:
+    """Each key's patch files, read now: a missing one is an error, used or not."""
+    if not isinstance(raw, dict):
+        raise SkillGraftError("'patches' must be a table of \"<alias>/<name>\" keys")
+    patches: dict[SkillId, list[PatchFile]] = {}
+    for key, value in raw.items():
+        where = f'patches."{key}"'
+        if not (
+            isinstance(value, list)
+            and value
+            and all(isinstance(path, str) for path in value)
+        ):
+            raise SkillGraftError(f"{where} must be a non-empty list of patch files")
+        skill_id = _skill_id(where, key, sources)
+        seen: set[Path] = set()
+        patches[skill_id] = []
+        for path in value:
+            file = (base / Path(path).expanduser()).resolve()
+            if file in seen:
+                raise SkillGraftError(f"{where} lists {path} twice")
+            seen.add(file)
+            patches[skill_id].append(PatchFile(path, _patch_data(where, path, file)))
+    return patches
+
+
+def _patch_data(where: str, path: str, file: Path) -> bytes:
+    """A patch file's bytes, refused if `git apply` would skip a change silently."""
+    try:
+        data = file.read_bytes()
+    except OSError as error:
+        raise SkillGraftError(f"{where}: cannot read {path}: {error}") from None
+    for line in data.splitlines():
+        if line.startswith(b"Binary files ") and line.endswith(b" differ"):
+            reason = "a `Binary files … differ` line: binary changes are unsupported"
+        elif line.startswith(b"GIT binary patch"):
+            reason = "a binary hunk: binary changes are unsupported"
+        elif line.startswith(b"Only in "):
+            reason = "an `Only in` line: write it with `diff -ruN`, -N included"
+        else:
+            continue
+        raise SkillGraftError(f"{where}: {path} holds {reason}")
+    return data
 
 
 def _skill_id(where: str, text: str, sources: dict[str, Source]) -> SkillId:

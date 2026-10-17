@@ -16,7 +16,9 @@ from skill_graft.cli import main
 def render() -> str:
     loaded = config.load()
     folders = resolve.folders(loaded, Cache(paths.cache()), {})
-    return lock.render(loaded, {}, resolve.resolve(loaded, folders))
+    return lock.render(
+        loaded, {}, resolve.resolve(loaded, folders, Path.home() / "work")
+    )
 
 
 def parsed() -> dict[str, Any]:

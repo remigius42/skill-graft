@@ -29,7 +29,7 @@ ignores.
 
 ## 2. Patches in the hull
 
-- [ ] 2.1 `[patches]` end to end: `Config.patches` (`PatchFile`, paths against the config's folder, bytes read at
+- [x] 2.1 `[patches]` end to end: `Config.patches` (`PatchFile`, paths against the config's folder, bytes read at
   load, `Binary files … differ`, `Only in` and `GIT binary patch` lines rejected, duplicates by resolved path);
   `walk` patches before the scan, `Hull.upstream` and `Hull.patches`, scan warnings naming the **Upstream** path;
   `resolve.resolve(..., work)` with the temporary folder opened in `cli` and `update` (existing callers and tests

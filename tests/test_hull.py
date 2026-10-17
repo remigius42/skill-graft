@@ -301,7 +301,8 @@ def test_prose_never_extends_the_hull(home: Path, capsys: Capsys) -> None:
 
 def resolved() -> Hull:
     loaded = config.load()
-    return resolve.resolve(loaded, resolve.folders(loaded, Cache(paths.cache()), {}))
+    folders = resolve.folders(loaded, Cache(paths.cache()), {})
+    return resolve.resolve(loaded, folders, Path.home() / "work")
 
 
 def prose_edges(hull: Hull) -> set[tuple[str, str, bool]]:

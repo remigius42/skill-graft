@@ -83,7 +83,6 @@ def test_not_initialized(capsys: Capsys) -> None:
         ),
         ('[sources.mp]\ngit = "/srv/s"\nbranch = ""\n', ["'sources.mp.branch'"]),
         ('[sources.mp]\ngit = "/srv/s"\nbranch = "-x"\n', ["'sources.mp.branch'"]),
-        ('[patches]\n"mp/a" = ["x.patch"]\n', ["'patches'", "unsupported"]),
         ("entries = [\n", ["skill-graft.toml"]),
         ('entries = "own/chisel"\n', ["'entries'", "list"]),
         ("entries = [1]\n", ["'entries'", "list of strings"]),
@@ -259,6 +258,97 @@ def test_bad_rename(
     assert code == 1
     for text in expected:
         assert text in err
+
+
+def test_valid_patches_load(home: Path) -> None:
+    (home / "a").mkdir()
+    folder = home / ".apm" / "skill-graft" / "patches"
+    folder.mkdir(parents=True)
+    (folder / "tdd.patch").write_bytes(b"--- a/SKILL.md\n")
+    write_config(
+        '[sources.mp]\npath = "~/a"\n[patches]\n"mp/tdd" = ["patches/tdd.patch"]\n'
+    )
+
+    assert config.load().patches == {
+        config.SkillId("mp", "tdd"): [
+            config.PatchFile("patches/tdd.patch", b"--- a/SKILL.md\n")
+        ]
+    }
+
+
+BINARY = b"Binary files base/x.png and edited/x.png differ\n"
+GIT_BINARY = b"diff --git a/x.png b/x.png\nGIT binary patch\nliteral 1\n"
+ONLY_IN = b"Only in edited/refs: new.md\n"
+
+
+@pytest.mark.parametrize(
+    ("patches", "expected"),
+    [
+        ('"mp/tdd" = "patches/a.patch"', ['patches."mp/tdd"']),
+        ('"mp/tdd" = []', ['patches."mp/tdd"']),
+        ('"mp/tdd" = [1]', ['patches."mp/tdd"']),
+        ('"nope/tdd" = ["patches/a.patch"]', ['patches."nope/tdd"', "'nope'"]),
+        (
+            '"mp/tdd" = ["patches/gone.patch"]',
+            ['patches."mp/tdd"', "patches/gone.patch"],
+        ),
+        ('"mp/tdd" = ["patches"]', ['patches."mp/tdd"', "patches"]),
+        (
+            '"mp/tdd" = ["patches/a.patch", "./patches/a.patch"]',
+            ['patches."mp/tdd"', "./patches/a.patch", "twice"],
+        ),
+        (
+            '"mp/tdd" = ["patches/binary.patch"]',
+            ["patches/binary.patch", "Binary files"],
+        ),
+        (
+            '"mp/tdd" = ["patches/git-binary.patch"]',
+            ["patches/git-binary.patch", "binary"],
+        ),
+        (
+            '"mp/tdd" = ["patches/only-in.patch"]',
+            ["patches/only-in.patch", "Only in", "-N"],
+        ),
+    ],
+)
+def test_bad_patches(
+    home: Path, capsys: Capsys, patches: str, expected: list[str]
+) -> None:
+    (home / "a").mkdir()
+    folder = home / ".apm" / "skill-graft" / "patches"
+    folder.mkdir(parents=True)
+    (folder / "a.patch").write_bytes(b"--- a/SKILL.md\n")
+    (folder / "binary.patch").write_bytes(b"--- a/SKILL.md\n" + BINARY)
+    (folder / "git-binary.patch").write_bytes(GIT_BINARY)
+    (folder / "only-in.patch").write_bytes(ONLY_IN)
+    write_config(f'[sources.mp]\npath = "~/a"\n[patches]\n{patches}\n')
+
+    code, err = build(capsys)
+
+    assert code == 1
+    for text in expected:
+        assert text in err
+
+
+def test_shared_patch_loads(home: Path) -> None:
+    (home / "a").mkdir()
+    folder = home / ".apm" / "skill-graft" / "patches"
+    folder.mkdir(parents=True)
+    (folder / "common.patch").write_bytes(b"--- a/SKILL.md\n")
+    write_config(
+        '[sources.mp]\npath = "~/a"\n[patches]\n'
+        '"mp/tdd" = ["patches/common.patch"]\n"mp/notes" = ["patches/common.patch"]\n'
+    )
+
+    assert len(config.load().patches) == 2
+
+
+def test_patches_not_a_table(capsys: Capsys) -> None:
+    write_config('patches = "x"\n')
+
+    code, err = build(capsys)
+
+    assert code == 1 and "'patches'" in err
 
 
 def test_valid_reserved_list_loads() -> None:
