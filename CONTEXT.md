@@ -49,6 +49,12 @@ _Avoid_: Closure, graph, dependency tree
 A user rule that gives one **Skill** a new **Deployed name**, carried into every **Reference** to it.
 _Avoid_: Alias, bind
 
+**Prefix**:
+A user rule that puts one string before the name of every **Skill** of one **Source**, giving each **Hull**
+**Skill** of it a new **Deployed name**, carried into every **Reference** as a **Rename** is. A **Rename** of
+the **Skill** overrides it.
+_Avoid_: Namespace, glob rename
+
 **Patch**:
 A user's unified diff against a **Skill**'s upstream text. Applied before **References** resolve and before
 **Renames**, so it never mentions a **Deployed name**.
@@ -61,7 +67,8 @@ commit upstream"); as a noun it is never the **Source** itself.
 _Avoid_: Original, pristine, vanilla
 
 **Deployed name**:
-The name a **Skill** carries once installed: its name after **Renames**. Unique across the **Hull**.
+The name a **Skill** carries once installed: its **Rename**, else its **Source**'s **Prefix** before its name,
+else its name. Unique across the **Hull**.
 _Avoid_: Target name, alias
 
 **Reserved name**:
