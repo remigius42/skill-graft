@@ -2,55 +2,75 @@
 
 Apply with the `tdd` skill: each task red-green-refactor (failing test first, then code), one commit, and
 `pre-commit run --all-files` green. New words go into `.cspell.yaml`. Tests set `HOME` to `tmp_path/home`, run in
-`tmp_path`, and build synthetic **Skills**, projects and git repositories. Each group updates `README.md` for what
-it ships.
+it, and build synthetic **Skills**, projects (under `home`) and git repositories. Each group updates `README.md`
+for what it ships.
 
 ## 1. Scope discovery
 
-- [ ] 1.1 `conftest.py`: the autouse `home` fixture also `monkeypatch.chdir(tmp_path)`, so no test's working
-  folder lies in the developer's real home. Verify: every existing test green, unchanged.
+- [ ] 1.1 `conftest.py`: the autouse `home` fixture also `monkeypatch.chdir(home)`, so the walk up stops at once
+  and never reaches the developer's real home. Verify: every existing test green, unchanged.
 - [ ] 1.2 `paths.discover(start)` and the module-level root (`paths.use(root)`, `paths.root()`,
-  `paths.scope()`); `package()` derives from the root; `cli.main` sets it from the working folder for every
-  command but `init`. Verify: inside-a-project (from a subfolder), project-without-a-package, nested-projects,
-  package-above-the-home-folder, working-folder-outside-home, project-build (`--no-install` writes only under the
-  project), not-initialized names the user scope's `skill-graft.toml`.
+  `paths.scope()`); `package()` derives from the root; `cli.main` sets it after parsing, inside its error
+  handling, for every command but `init`. Verify: inside-a-project (from a subfolder), project-without-a-package,
+  nested-projects, package-above-the-home-folder, working-folder-outside-home, project-build (`--no-install`
+  leaves `~/.apm/skill-graft/` absent), not-initialized, deleted-working-folder.
+- [ ] 1.3 `config.text()`: in project scope a missing `skill-graft.toml` names `skill-graft init --project` and
+  not plain `init`. Verify: project-package-without-config, and the user-scope not-initialized test unchanged.
 
 ## 2. APM per scope
 
 - [ ] 2.1 Fake `apm` in `conftest.py`: without `-g`, lists `<arg>` under `dependencies.apm` in `./apm.yml` in its
-  working folder, creating it as APM does, and logs its working folder. `paths.manifest()` per scope; `apm.install()`
-  runs `apm install ./.apm/skill-graft` with `cwd=root` in project scope; `registered()` resolves relative entries
-  against the manifest's folder. Verify: project-build-from-a-subfolder, project-package-not-registered, every
-  user-scope deploy test unchanged, and `build --no-install` in project scope reads no `apm.yml`.
+  working folder, creating it as APM does, and logs its working folder. `paths.manifest()` per scope;
+  `apm.install()` runs `apm install ./.apm/skill-graft` with `cwd=root` in project scope; `registered()` resolves
+  relative entries against the manifest's folder. Verify: project-build-from-a-subfolder,
+  project-package-not-registered, every user-scope deploy test unchanged, and `build --no-install` in project
+  scope reads no `apm.yml`.
 - [ ] 2.2 Real-APM integration test (skipped without `apm`): a project with `.claude/`, `init --project`, a path
   **Source**, `build`; the skill lands in `<project>/.claude/skills/`, `<project>/apm.yml` lists
-  `./.apm/skill-graft`, and nothing under `~/.apm/` changes. `docs/design.md`: the measured project-scope APM
-  behavior beside the user-scope list. Verify: the test passes with `uv run --group dev pytest`.
+  `./.apm/skill-graft`, `~/.apm/skill-graft/` is absent, and `~/.apm/apm.yml`, if any, does not list the project
+  package. `docs/design.md`: the measured project-scope APM behavior beside the user-scope list. Verify: the test
+  passes with `uv run --group dev pytest`.
 
 ## 3. Init --project
 
-- [ ] 3.1 `init --project`: creates `<cwd>/.apm/skill-graft/` and registers it; refuses an existing folder and
-  the home folder; retry hint `in <root>, run: apm install ./.apm/skill-graft`; `init`'s help describes the flag.
-  Verify: project-package, project-registration-succeeds, no-harness-in-the-project (fake APM exits 2),
-  project-folder-exists, project-init-at-home, project-init-inside-another-project, and the user-scope init tests
-  unchanged. README: a project-scope section, recommending committing the whole **Package** (vendored skills
-  included), `apm.yml` and `apm.lock.yaml`, so teammates need only APM.
+- [ ] 3.1 `init --project`: creates `<cwd>/.apm/skill-graft/` and registers it; refuses an existing folder and the
+  home folder (compared resolved, before the package line); on any APM failure removes the folder it created and
+  says to fix the problem and rerun `skill-graft init --project`; `init`'s help describes the flag. Verify:
+  project-package, project-registration-succeeds, no-harness-in-the-project (fake APM exits 2; folder gone),
+  project-folder-exists, project-init-at-home (also through a symlink), project-init-inside-another-project, and
+  the user-scope init tests unchanged. README: a project-scope section, recommending committing the whole
+  **Package** (vendored skills included), `apm.yml` and `apm.lock.yaml`, so teammates need only APM.
 
-## 4. Overlap checks
+## 4. Overlap checks and discovery
 
-- [ ] 4.1 `paths.deploy_folders()` adds `PROJECT_DEPLOY_FOLDERS` under the root in project scope, beside the
-  user ones. Verify: source-is-the-project's-deploy-folder, project-source-is-a-user-deploy-folder,
-  source-contains-the-project-package, and the user-scope overlap tests unchanged.
+- [ ] 4.1 `config.py`: a **Source** inside or containing either scope's **Package** is an error;
+  `paths.deploy_folders()` adds `PROJECT_DEPLOY_FOLDERS` under the root in project scope, beside the user ones.
+  Verify: source-is-the-project's-deploy-folder, project-source-is-a-user-deploy-folder,
+  source-contains-the-project-package, project-source-contains-the-user-package, and the user-scope overlap
+  tests unchanged.
+- [ ] 4.2 `discovery.py` skips every folder named `skill-graft` inside a folder named `.apm`. Verify:
+  another-project's-package, symlink-into-the-package unchanged.
 
-## 5. Naming the package
+## 5. Portable lock
 
-- [ ] 5.1 `cli.main` prints `skill-graft: package: <absolute package>` via `errors.notice` before dispatching
-  `init`, `resolve`, `build`, `update`, `add`, `remove` and `rename`; not for `tree`, `why` or `help`. Top-level
-  and per-command help texts say the **Package** is the nearest `.apm/skill-graft/`, else `~/.apm/skill-graft/`.
-  Verify: build-names-the-package (project), user-scope line, printed when the command fails (no config),
-  read-only-command (`tree`, `why`), help text tests updated.
+- [ ] 5.1 `lock.render`: `upstream` relative to its **Source**'s root (`.` for a **Skill** at the root), in both
+  scopes. Verify: upstream-recorded, skill-at-the-source-root, patch-changes-the-hash, every lock test updated to
+  the relative form, and `update`'s and the patch errors still name absolute folders.
+- [ ] 5.2 In project scope, a path **Source** inside the project root is written relative to the **Package**.
+  Verify: project-source-inside-the-project, project-source-outside-the-project, same-lock-on-another-machine
+  (two `HOME`s, one project copied between them, byte-equal locks). README: what makes a committed **Package**
+  machine-independent.
 
-## 6. Wrap-up
+## 6. Naming the package
 
-- [ ] 6.1 `docs/design.md` paths and commands mention both scopes; ADR 0003 note and ADR 0004 already written.
-  Verify: `pre-commit run --all-files` green and `openspec validate project-scope --strict` passes.
+- [ ] 6.1 `cli.main` prints `skill-graft: package: <absolute package>` via `errors.notice` after parsing and
+  before dispatching `init`, `resolve`, `build`, `update`, `add`, `remove` and `rename`; not for `tree`, `why`,
+  `help` or a usage error. Top-level and per-command help texts say the **Package** is the nearest
+  `.apm/skill-graft/`, else `~/.apm/skill-graft/`. Verify: build-names-the-package (project), user-scope line,
+  printed when the command fails (no config), read-only-command (`tree`, `why`), none on a usage error, help text
+  tests updated.
+
+## 7. Wrap-up
+
+- [ ] 7.1 `docs/design.md` paths, commands and lock mention both scopes; ADR 0003 note and ADR 0004 already
+  written. Verify: `pre-commit run --all-files` green and `openspec validate project-scope --strict` passes.

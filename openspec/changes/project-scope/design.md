@@ -35,36 +35,51 @@ Measured with APM 0.33.0, `HOME` a scratch folder, in a scratch git repository:
 
 - **A subpackage, `<root>/.apm/skill-graft/`**, not the project's own `.apm/`: the same layout in both scopes,
   and skill-graft never owns files the project has. Rejected: vendoring into `<root>/.apm/skills/` (see Context).
-- **The root is fixed once per invocation.** `paths` gains a module-level root that `cli.main` sets before
-  dispatch: `paths.discover(Path.cwd())` for every command but `init`, which sets the home folder or, with
+- **The root is fixed once per invocation.** `paths` gains a module-level root that `cli.main` sets after
+  parsing, inside its `SkillGraftError` handling: `paths.discover(Path.cwd())` for every command but `init`
+  (a deleted working folder becomes an error, not a traceback), which sets the home folder or, with
   `--project`, the working folder. `paths.scope()` says `user` when the root is the home folder. The existing
   functions keep their signatures and derive from the root. Rejected: threading a root argument through every
   caller (about twenty call sites, no behavior gained); discovering on every call (`init --project` would then
   need another override anyway).
 - **Discovery** walks `cwd` and its parents, resolved, returning the first holding `.apm/skill-graft/` as a
   folder, and stops after the home folder; none found means the home folder. Only the folder's presence counts,
-  so a missing `skill-graft.toml` still yields "run `skill-graft init`" for the right **Package**.
+  so a missing `skill-graft.toml` is reported for the right **Package**: `config.text()` suggests
+  `init --project` in project scope.
 - **APM per scope.** User scope: unchanged, `apm install -g <absolute>`, manifest `~/.apm/apm.yml`. Project
   scope: `apm install ./.apm/skill-graft` with `cwd=root`, manifest `<root>/apm.yml`. The relative argument keeps
   the committed `apm.yml` portable. `registered()` resolves a relative entry against the manifest's folder,
   not the working folder; at user scope this changes nothing, since APM rejects relative paths there.
 - **Deploy folders.** User scope keeps `DEPLOY_FOLDERS`. Project scope adds `PROJECT_DEPLOY_FOLDERS`
   (`.agents/skills`, `.claude/skills`, `.grok/skills`, `.kiro/skills`) under the root, to the user ones.
-- **Package line.** `cli.main` prints `skill-graft: package: <absolute package>` to stderr through `errors.notice`
-  for the writing commands only, before dispatch.
-- **Retry hint** for `init --project` names the folder and the command: `in <root>, run: apm install ./.apm/skill-graft`.
+- **Package line.** `cli.main` prints `skill-graft: package: <absolute package>` to stderr through
+  `errors.notice` for the writing commands only, after parsing and before dispatch; `init --project` prints it
+  only after its home-folder check passes.
+- **Failed `init --project` removes its folder** (`shutil.rmtree` of what it created), because a kept folder would
+  be found by every later command below it. User scope keeps the folder and the `apm install -g` retry hint,
+  since discovery never finds the user package by accident.
+- **Lock paths.** `upstream` is written relative to its **Source**'s root (the cache export or the path
+  **Source**'s folder) in both scopes; the absolute folder stays in memory, where `update`'s error filter and the
+  patch messages use it. In project scope a path **Source** inside the root is written relative to the package
+  folder, else absolute. Rejected: per-scope `upstream` (a branch for no reader of the absolute cache path).
+- **Discovery skips every `.apm/skill-graft`**, besides the resolved package: vendored copies in a committed
+  project **Package** must never be read back as a **Source**'s **Skills**, wherever the **Source** points.
 
 ## Risks / Trade-offs
 
-- \[Tests run with the working folder inside the developer's real home, while `HOME` points at `tmp_path`; the
-  walk up would find the real `~/.apm/skill-graft` as a project\] → `conftest.py`'s autouse `home` fixture also
-  changes into `tmp_path` (`monkeypatch.chdir`), so no test walks outside it. Added before any discovery code.
+- \[Tests run with the working folder inside the developer's real home, while `HOME` points at `tmp_path/home`;
+  the walk up would find the real `~/.apm/skill-graft` as a project\] → `conftest.py`'s autouse `home` fixture
+  also changes into `home` (`monkeypatch.chdir`), where the walk stops at once; tests needing a project build it
+  under `home`. Changing into `tmp_path` would not do: `home` is below it, so the walk would pass on to `/`.
 - \[Implicit discovery acts on an unexpected **Package**\] → writing commands name it; errors name it.
 - [APM changes its project-scope folders or harness detection] → measured list in `docs/design.md`; the real-APM
   integration test covers `.claude/skills`.
 - \[The fake `apm` diverges from the real one\] → it mimics only the measured behavior: without `-g`, it appends
   the argument verbatim to `./apm.yml` in its working folder.
+- \[APM writes its own state under `~/.apm` even at project scope (seen while measuring)\] → tests assert only that
+  `~/.apm/skill-graft/` is absent and `~/.apm/apm.yml`, if any, does not list the project package.
 
 ## Migration Plan
 
-None: user scope behaves as before, except the new `package:` line on stderr.
+None: user scope behaves as before, except the new `package:` line on stderr and relative `upstream` in the
+lock, which nothing reads.

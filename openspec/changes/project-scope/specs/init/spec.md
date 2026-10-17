@@ -23,14 +23,15 @@ exactly two lines: `name: skill-graft` and `version: 0.1.0`.
 #### Scenario: Project package
 
 - **WHEN** the user runs `skill-graft init --project` in `~/repo`, which has a `.claude/` folder
-- **THEN** `~/repo/.apm/skill-graft/` exists with the same two files, and nothing under `~/.apm/` changes
+- **THEN** `~/repo/.apm/skill-graft/` exists with the same two files, and `~/.apm/skill-graft/` is not created
 
 ### Requirement: Init registers the package with APM
 
 After creating the folder, `init` SHALL run `apm install -g <absolute path of ~/.apm/skill-graft>` and succeed
 only if APM exits 0 and `~/.apm/apm.yml` then lists the package. `init --project` SHALL instead run
 `apm install ./.apm/skill-graft` in the working folder and succeed only if APM exits 0 and `apm.yml` there lists
-the package. skill-graft SHALL NOT write either `apm.yml` itself.
+the package; if not, it SHALL remove the folder it created, so no unregistered **Package** is left for commands
+to find. skill-graft SHALL NOT write either `apm.yml` itself.
 
 #### Scenario: Registration succeeds
 
@@ -51,8 +52,8 @@ the package. skill-graft SHALL NOT write either `apm.yml` itself.
 #### Scenario: No harness in the project
 
 - **WHEN** `init --project` runs in a folder with no harness marker, and APM exits 2
-- **THEN** APM's message reaches the user, and `init` exits non-zero, keeps the created folder, and prints the
-  folder and the `apm install ./.apm/skill-graft` command to retry there
+- **THEN** APM's message reaches the user, and `init` exits non-zero, removes the created folder, and says to fix
+  the problem and run `skill-graft init --project` again
 
 ### Requirement: Init refuses an existing folder
 
@@ -72,12 +73,12 @@ the package. skill-graft SHALL NOT write either `apm.yml` itself.
 
 ### Requirement: No project package in the home folder
 
-`init --project` in the home folder SHALL exit non-zero, create nothing, run no `apm`, and tell the user that
-`skill-graft init` creates the user scope's **Package**.
+`init --project` in the home folder, compared resolved, SHALL exit non-zero, create nothing, run no `apm`, print
+no package line, and tell the user that `skill-graft init` creates the user scope's **Package**.
 
 #### Scenario: Project init at home
 
-- **WHEN** the user runs `skill-graft init --project` in the home folder
+- **WHEN** the user runs `skill-graft init --project` in the home folder, or through a symlink to it
 - **THEN** it exits non-zero naming `skill-graft init`, and `~/.apm/skill-graft/` is not created
 
 #### Scenario: Project init inside another project

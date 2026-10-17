@@ -51,6 +51,7 @@ words:
   - pyproject
   - pytest
   - pytestmark
+  - rmtree
   - shutil
   - statusline
   - stdlib

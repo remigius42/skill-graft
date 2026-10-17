@@ -4,11 +4,11 @@
 
 ### Requirement: Sources stay clear of the package and deploy folders
 
-A source whose folder is inside `~/.apm/skill-graft/` or contains it SHALL be an error. A source inside or
-containing an APM deploy folder (`~/.agents/skills`, `~/.claude/skills`, and the other harness skill folders)
-SHALL be a warning naming the alias and the folder. In project scope the deploy folders are the user scope's
-plus `.agents/skills`, `.claude/skills`, `.grok/skills` and `.kiro/skills` under the project root. Paths are
-compared resolved.
+A source whose folder is inside, or contains, the **Package** in effect or the user scope's **Package** SHALL
+be an error. A source inside or containing an APM deploy folder
+(`~/.agents/skills`, `~/.claude/skills`, and the other harness skill folders) SHALL be a warning naming the
+alias and the folder; in project scope, also `.agents/skills`, `.claude/skills`, `.grok/skills` and
+`.kiro/skills` under the project root. Paths are compared resolved.
 
 #### Scenario: Source is the package
 
@@ -34,3 +34,8 @@ compared resolved.
 
 - **WHEN** in project scope `[sources.own]` has `path = "../.."` (the project root)
 - **THEN** the command exits non-zero naming `own` and writes nothing
+
+#### Scenario: Project source contains the user package
+
+- **WHEN** in project scope `[sources.own]` has `path = "~/.apm"`
+- **THEN** the command exits non-zero naming `own` and `~/.apm/skill-graft`, and writes nothing
