@@ -199,7 +199,11 @@ so `resolve` and `build` write the same lock for the same input.
 ### Requirement: Prose suggestions
 
 `resolve` SHALL print, after the tree, each suggested **Skill** with the **Skills** mentioning it and how to accept it
-(`skill-graft add <skill id>`, named in the header), sorted, on standard output. `build` SHALL NOT print suggestions.
+(`skill-graft add <skill id>`, named in the header), sorted, on standard output. `build` and `update` SHALL NOT
+print them, but when there are any SHALL print one line on standard error,
+`skill-graft: <n> prose suggestion(s): run skill-graft resolve`; `update` counts those of the new tips, and
+after `--dry-run`, whose tips `resolve` cannot see yet, prints
+`skill-graft: <n> prose suggestion(s) at the new tips: update, then run skill-graft resolve` instead.
 
 #### Scenario: Suggestion printed
 
@@ -210,7 +214,24 @@ so `resolve` and `build` write the same lock for the same input.
 #### Scenario: No suggestions
 
 - **WHEN** no prose **Reference** points outside the **Hull**
-- **THEN** `resolve` prints the tree alone
+- **THEN** `resolve` prints the tree alone, and `build` prints no suggestion line
+
+#### Scenario: Build announces suggestions
+
+- **WHEN** `mp` has `diagnosing-bugs` and `notes`, **Entry** `mp/tdd` mentions `diagnosing-bugs` and
+  `` `notes` `` but calls neither, and the user runs `build`
+- **THEN** stderr holds `skill-graft: 2 prose suggestion(s): run skill-graft resolve`, and stdout no suggestion
+  block
+
+#### Scenario: Update announces suggestions
+
+- **WHEN** at the new tip `mp/tdd` mentions `diagnosing-bugs`, not in the **Hull**, and the user runs `update`
+- **THEN** stderr holds `skill-graft: 1 prose suggestion(s): run skill-graft resolve`
+
+#### Scenario: Dry run announces suggestions
+
+- **WHEN** the same, with `update --dry-run`
+- **THEN** stderr holds `skill-graft: 1 prose suggestion(s) at the new tips: update, then run skill-graft resolve`
 
 ### Requirement: Lock records upstream folders and patches
 
