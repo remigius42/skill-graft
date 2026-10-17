@@ -90,6 +90,8 @@ def walk(config: Config, indexes: dict[str, discovery.Index], work: Path) -> Hul
                 else:
                     target = _target(current, ref, indexes)
                     if target is None:
+                        if ref.sentence:  # a quoted word, not a call: not a reference
+                            continue
                         if (current, ref.name) not in unmatched:
                             unmatched.add((current, ref.name))
                             warnings.append(

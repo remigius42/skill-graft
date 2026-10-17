@@ -19,7 +19,7 @@ skill text is copied in. Each group updates `README.md` or `docs/design.md` for 
   not-a-sentence-end (`e.g.`, period inside the quotes), one-reference-per-name (two `Skill tool`s, a
   `Skill(...)` inside the sentence), unquoted-name, call-forms unchanged, and a file with `/a` before a sentence
   naming `"b"` lists `a` first.
-- [ ] 2.2 `hull.walk`: a sentence candidate that resolves to nothing is dropped without a warning; one that resolves
+- [x] 2.2 `hull.walk`: a sentence candidate that resolves to nothing is dropped without a warning; one that resolves
   is an edge of kind `skill-tool`, shown as `(Skill tool "grilling")` in `tree`. Verify: unresolved-name,
   tree label.
 - [ ] 2.3 Renames and binds carry into the sentence form. Verify: renamed (vendored text reads `"mp-grilling"`,

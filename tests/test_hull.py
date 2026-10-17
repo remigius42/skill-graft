@@ -413,3 +413,15 @@ def test_prose_bound_to_nothing(home: Path) -> None:
 
 def vendored_dir(home: Path) -> Path:
     return home / ".apm" / "skill-graft" / ".apm" / "skills"
+
+
+def test_skill_tool_sentence_pulls_in_a_skill(home: Path, capsys: Capsys) -> None:
+    skill(home / "mp" / "tdd", 'Call the Skill tool with "grilling" and set "fast".\n')
+    skill(home / "mp" / "grilling")
+    configure(["mp/tdd"], mp="~/mp")
+
+    assert build(capsys) == (0, "")  # no warning for the unresolved "fast"
+    assert vendored() == {"tdd", "grilling"}
+
+    assert main(["tree"]) == 0
+    assert '(Skill tool "grilling")' in capsys.readouterr().out
