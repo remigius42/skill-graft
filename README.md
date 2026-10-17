@@ -17,14 +17,16 @@ one skill by hand misses the other skills that call it by name.
 Status: early. `skill-graft init` and `skill-graft build` vendor entries from local folders and from git repositories,
 read at the commit `ref` names, and deploy them through APM; `skill-graft update` moves each git source's `ref` to its
 branch tip. `build` follows slash references and Skill tool calls (`Skill(x)`, or "call the Skill tool with `x`")
-to the whole hull (prose mentions only become suggestions), applies `[rename]` to folders,
-`name:` and every reference, and checks deployed names against reserved ones; it applies `[patches]` before any of that,
-so a patch can change what a skill calls. `skill-graft resolve` shows the tree and writes the lock, then lists the
-skills prose mentions outside the hull (`build` and `update` only count them); `skill-graft tree`
+to the whole hull (prose mentions only become suggestions), applies `[rename]` and each source's `prefix`
+(`prefix = "mp-"` deploys every skill of `mp` as `mp-<name>`, dependencies included; a `[rename]` key wins) to
+folders, `name:` and every reference, and checks deployed names against reserved ones; it applies `[patches]`
+before any of that, so a patch can change what a skill calls. `skill-graft resolve` shows the tree and writes the
+lock, then lists the skills prose mentions outside the hull (`build` and `update` only count them); `skill-graft tree`
 shows it and writes nothing, as text or, with `--format mermaid`, as a Mermaid flowchart (`--link` prints a mermaid.live
 URL that holds it); `skill-graft why <skill>` shows the paths from the entries that reach a skill.
 `skill-graft add` and `remove <skill-id>…` change the entries in `skill-graft.toml`, and `rename <skill-id> <name>` a
-skill's deployed name (its own name undoes it), keeping the file's comments, once the result resolves.
+skill's deployed name (the name it would deploy as without a key, prefix included, undoes it), keeping the
+file's comments, once the result resolves.
 `skill-graft help [command]`, or `--help` on any command, explains each.
 
 ## Installation

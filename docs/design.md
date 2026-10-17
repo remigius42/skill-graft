@@ -33,12 +33,14 @@ reserved = ["review"]
 git = "https://github.com/mattpocock/skills.git"
 branch = "main"  # optional; defaults to the remote's default branch
 ref = "<sha>"
+prefix = "mp-"  # optional; every skill of `mp` deploys as mp-<name>
 
 [sources.own]
 path = "~/Documents/sync/2_areas/software/chisel_skill"
 
 [rename]
-"mp/code-review" = "mp-code-review"
+"own/chisel" = "own-chisel"
+"mp/tdd" = "tdd"  # wins over the prefix
 
 [bind]
 "mp/grilling" = "own/grilling"
@@ -66,10 +68,11 @@ path = "~/Documents/sync/2_areas/software/chisel_skill"
   from one breadth-first walk of the edited hull's slash and Skill tool edges, so the parent named is never
   reached only through the skill itself. No command edits binds, patches or `reserved`, and only
   `update` edits sources (their `ref`).
-- `rename` sets the skill's `[rename]` value (appending the table if absent); renaming to the upstream name
-  removes the key, which is how a rename is undone, and the current deployed name is a notice. An unknown alias or
-  skill is an error; a skill outside the hull gets the unused-rename warning; clashes are the usual errors and
-  warnings, an error writing nothing.
+- `rename` sets the skill's `[rename]` value (appending the table if absent); renaming to the name it deploys as
+  without a key (its source's `prefix`, if any, before its upstream name) removes the key, which is how a rename
+  is undone, so under a prefix the upstream name is written as a key; the current deployed name is a notice. An
+  unknown alias or skill is an error; a skill outside the hull gets the unused-rename warning; clashes are the
+  usual errors and warnings, an error writing nothing.
 - `resolve`: computes the hull from the TOML, writes the lock, prints the tree, warnings and suggestions.
   Reads every declared source, each git one at its `ref`, fetching only when that commit is not cached.
 - `build`: resolves, writes `.apm/skills/`, then the lock, then runs the same `apm install` as `init`, in the
@@ -85,9 +88,10 @@ path = "~/Documents/sync/2_areas/software/chisel_skill"
   root, each child a skill whose slash or Skill tool reference reaches it, joined by `├─←` and `└─←`, labels and
   `(*)` as in `resolve`'s tree, an entry below the root marked `(entry)` and not expanded (the root always
   expands, marked `(entry)` if it is one); children in hull order; prose and self-references omitted.
-  `<skill>` is a skill ID if it holds a `/`, else a deployed name. A bare name that is only a renamed skill's
-  upstream name is an error naming its skill ID and deployed name. A skill outside the hull, by skill ID or by the
-  bare name of a prose suggestion, is an error saying so, plus who mentions it in prose and the `add` hint.
+  `<skill>` is a skill ID if it holds a `/`, else a deployed name. A bare name that is only the upstream name
+  of a skill renamed or prefixed is an error naming its skill ID and deployed name. A skill outside the hull, by
+  skill ID or by the bare name of a prose suggestion, is an error saying so, plus who mentions it in prose and
+  the `add` hint.
 - `tree [--format text|mermaid] [--link]`: the hull as `resolve`'s tree (without the suggestions), or as a
   Mermaid `flowchart TD`: nodes `n0…` in hull order labelled as tree lines are (`as <deployed>`, `(patched)`),
   entries in `classDef entry`, one edge per source, target, kind and bind labelled with the reference as written
@@ -126,13 +130,17 @@ path = "~/Documents/sync/2_areas/software/chisel_skill"
 
 ## Names
 
-A skill's deployed name is its `[rename]` value, else its name. `build` vendors it to
-`.apm/skills/<deployed name>/`, sets a renamed skill's `name:` (quoted when YAML would misread it plain), and
-rewrites every reference, in every UTF-8 Markdown file of every hull skill, whose target's deployed name differs
-from the name written. A rename that names no hull skill is a warning.
+A skill's deployed name is its `[rename]` value, else its source's `prefix` before its name, else its name. A
+prefix covers every hull skill of its source, dependencies a later `update` pulls in included, and is used as
+written (`prefix = "mp"` gives `mptdd`). `build` vendors a skill to `.apm/skills/<deployed name>/`, sets the
+`name:` of one whose deployed name differs from its name (quoted when YAML would misread it plain), and rewrites
+every reference, in every UTF-8 Markdown file of every hull skill, whose target's deployed name differs from the
+name written. A rename that names no hull skill is a warning.
 
-Deployed names must be unique across the hull and avoid reserved names, both compared ignoring case. The shipped
-list is the built-in commands, bundled skills and aliases of Claude Code and Codex, taken from their docs:
+Deployed names must be unique across the hull and avoid reserved names, both compared ignoring case. A hint
+suggests a `[rename]` line only for a skill with neither a key nor a prefix; for one with a key it names the value
+to change, for a prefixed one the key to add or the `prefix` to change. The shipped list is the built-in
+commands, bundled skills and aliases of Claude Code and Codex, taken from their docs:
 
 | Clash                                       | Severity                           |
 | ------------------------------------------- | ---------------------------------- |

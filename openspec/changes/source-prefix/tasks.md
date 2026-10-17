@@ -21,7 +21,7 @@ build, hints and `rename` alike, so no commit accepts intent it ignores or misha
 
 ## 2. Docs
 
-- [ ] 2.1 `docs/design.md` (TOML example, the names section, the `rename` paragraph, and `why`'s upstream-name
+- [x] 2.1 `docs/design.md` (TOML example, the names section, the `rename` paragraph, and `why`'s upstream-name
   error) and `README.md` (the **Prefix**, its precedence, and `rename`'s "its own name undoes it"). Verify:
   `pre-commit run --all-files` green, the documented TOML example parses through `config.parse`, and
   `grep -n "own name" README.md docs/design.md src/skill_graft/cli.py` finds no claim that the upstream name
