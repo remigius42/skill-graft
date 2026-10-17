@@ -7,13 +7,13 @@ reasons for the less obvious choices in `docs/adr/`. OpenSpec specs replace this
 
 All under `~/.apm/skill-graft/`:
 
-| File                  | Written by                                    | Holds                                                       |
-| --------------------- | --------------------------------------------- | ----------------------------------------------------------- |
-| `skill-graft.toml`    | the user; `add`, `remove`, `rename`, `update` | intent: sources, entries, renames, binds, patches, reserved |
-| `skill-graft.lock`    | `resolve`, `build`, `update`                  | provenance: resolved shas, the hull and its edges, hashes   |
-| `patches/`            | the user                                      | unified diffs for content changes                           |
-| `apm.yml`             | `init`                                        | `name` and `version`, nothing else                          |
-| `.apm/skills/<name>/` | `build`                                       | the vendored, patched, renamed skills                       |
+| File                  | Written by                                              | Holds                                                       |
+| --------------------- | ------------------------------------------------------- | ----------------------------------------------------------- |
+| `skill-graft.toml`    | the user; `add`, `remove`, `rename`, `update`           | intent: sources, entries, renames, binds, patches, reserved |
+| `skill-graft.lock`    | `resolve`, `build`, `update`, `add`, `remove`, `rename` | provenance: resolved shas, the hull and its edges, hashes   |
+| `patches/`            | the user                                                | unified diffs for content changes                           |
+| `apm.yml`             | `init`                                                  | `name` and `version`, nothing else                          |
+| `.apm/skills/<name>/` | `build`                                                 | the vendored, patched, renamed skills                       |
 
 `resolve` never rewrites `skill-graft.toml`. Commands that edit it on purpose use `tomlkit`, so comments and
 formatting survive. The lock is output only: never an input that overrides the TOML.
@@ -57,7 +57,8 @@ path = "~/Documents/sync/2_areas/software/chisel_skill"
   or skill is an error; one already an entry is a notice and left alone; one already in the hull is added with a
   notice naming the skill that reaches it.
 - `remove` deletes each skill ID from `entries`. One that is no entry is an error; one still in the hull is
-  removed with a notice naming the skill that reaches it. No command edits binds, patches, sources or `reserved`.
+  removed with a notice naming the skill that reaches it. No command edits binds, patches or `reserved`, and only
+  `update` edits sources (their `ref`).
 - `rename` sets the skill's `[rename]` value (appending the table if absent); renaming to the upstream name
   removes the key, which is how a rename is undone, and the current deployed name is a notice. An unknown alias or
   skill is an error; a skill outside the hull gets the unused-rename warning; clashes are the usual errors and

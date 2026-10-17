@@ -26,9 +26,10 @@ anything. Only if that succeeds SHALL they write `skill-graft.toml`, then `skill
 
 ### Requirement: Edit the TOML in place
 
-An edit SHALL change only the values it is about, keeping every comment, blank line, key order and other
+An edit SHALL change only the values it is about, keeping every other comment, blank line, key order and other
 formatting, and SHALL replace the file atomically. A symlinked `skill-graft.toml` SHALL stay a symlink: its
-target is what changes. A command that changes no value SHALL NOT rewrite the file.
+target is what changes, and relative paths in it resolve as `load` resolves them. A command that changes no value
+SHALL NOT rewrite the file. A removed value's own trailing comment goes with it.
 
 #### Scenario: Comments survive
 
@@ -48,7 +49,7 @@ Notices SHALL go to standard error with the warnings and SHALL NOT change the ex
 #### Scenario: Notice stream
 
 - **WHEN** `skill-graft add mp/tdd` finds `mp/tdd` already an **Entry**
-- **THEN** standard error names `mp/tdd` as already an **Entry**, and standard output holds only the tree
+- **THEN** standard error names `mp/tdd` as already an **Entry**, and standard output holds no notice
 
 ### Requirement: Add entries
 
@@ -75,8 +76,8 @@ SHALL create `entries` before the first table when it is absent. A **Skill ID** 
 
 `add` SHALL refuse a **Skill ID** that is malformed, has an undeclared alias, or names no **Skill** in its
 **Source**, writing nothing. A **Skill ID** already an **Entry** SHALL be a notice and left alone. A **Skill**
-already in the **Hull** through another **Entry** SHALL be added, with a notice naming a **Skill** whose
-**Reference** reaches it.
+already in the **Hull** before the edit SHALL be added, with a notice naming a **Skill** whose slash or Skill tool
+**Reference** reached it then.
 
 #### Scenario: Unknown skill
 
@@ -98,11 +99,17 @@ already in the **Hull** through another **Entry** SHALL be added, with a notice 
 - **WHEN** **Entry** `mp/tdd` calls `/grilling` and the user runs `skill-graft add mp/grilling`
 - **THEN** `entries` holds `mp/grilling`, and a notice says it was already in the **Hull** via `mp/tdd`
 
+#### Scenario: Reached only through itself
+
+- **WHEN** `mp/x` calls `/y`, `mp/y` calls `/x`, no **Entry** reaches either, an **Entry** mentions `x` in prose,
+  and the user runs `skill-graft add mp/x`
+- **THEN** `entries` holds `mp/x` and no notice is printed
+
 ### Requirement: Remove entries
 
 `remove <skill-id>…` SHALL delete each **Skill ID** from `entries`, keeping the array's style. A **Skill ID** that
 is no **Entry** SHALL be an error, writing nothing. A removed **Skill** still in the **Hull** SHALL be a notice
-naming a **Skill** whose **Reference** reaches it.
+naming a **Skill** whose slash or Skill tool **Reference** reaches it.
 
 #### Scenario: Removed
 
@@ -150,7 +157,7 @@ leaving the table in place even if empty.
 
 #### Scenario: Undone
 
-- **WHEN** `[rename]` has `"mp/code-review" = "mp-code-review"` and the user runs
+- **WHEN** **Entry** `mp/code-review` is renamed to `mp-code-review` and the user runs
   `skill-graft rename mp/code-review code-review`
 - **THEN** `[rename]` no longer holds `mp/code-review`, and the shipped reserved-name warning for `code-review`
   is printed
@@ -179,7 +186,8 @@ nothing; one in the shipped reserved list SHALL be written, with the usual warni
 
 #### Scenario: User's reserved name
 
-- **WHEN** `reserved = ["review"]` and the user runs `skill-graft rename mp/check review`
+- **WHEN** `reserved = ["review"]`, `mp/check` is in the **Hull**, and the user runs
+  `skill-graft rename mp/check review`
 - **THEN** it exits non-zero naming `review`, and `skill-graft.toml` is unchanged
 
 #### Scenario: Shipped reserved name

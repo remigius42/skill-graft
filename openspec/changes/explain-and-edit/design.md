@@ -37,23 +37,30 @@ every edge with its `text`; the lock does not, which is one reason `why` and `tr
   `deflate` (zlib format) and js-base64's url-safe form, as mermaid-live-editor decodes them. The test
   decodes it back. One manual check during apply: paste a generated link into a browser.
 - **Edits: `config.load` splits into `load()` and `parse(text, file)`.** `edit.py` reads the TOML bytes, edits a
-  `tomlkit` document, then `config.parse(tomlkit.dumps(doc), file)` gives the **Config** that is resolved. Only on
-  success does it write those same bytes, then the lock. The alternative, mutating a loaded `Config`, could
-  resolve something other than what gets written.
+  `tomlkit` document, then `config.parse(tomlkit.dumps(doc), paths.config_file())` gives the **Config** that is
+  resolved: relative paths resolve from the unresolved config path, as `load()` does, even when the file is a
+  symlink. Only on success does it write those same bytes to the resolved file, then the lock. The alternative,
+  mutating a loaded `Config`, could resolve something other than what gets written.
+- **Reachability notices come from the edited Hull.** The edges of a **Skill** do not depend on the **Entries**,
+  so the **Hull** before `add` is what the other **Entries** reach over slash and Skill tool edges of the edited
+  **Hull**; no second resolution. A notice names the first such parent of the skill. For `remove`, any such
+  in-edge from another **Skill** of the edited **Hull** names a parent.
 - **The in-place write is shared.** `update._write_refs`' read/parse/atomic-write moves to an `edit` helper used
   by both, so the symlink and byte rules live once.
 - **Skill existence** for `add`/`rename`/`why <id>` uses `discovery.find` on the index of the alias.
   `resolve.resolve` exposes its indexes (it returns them beside the **Hull**), so no **Source** is indexed twice.
 - **Array style.** tomlkit's `Array.append` keeps a multi-line array multi-line when the existing items each
   have their own line; the trailing-comma case is pinned by a test, and where tomlkit falls short the item is
-  added with explicit `Whitespace`/`Comment` trivia. A new `entries` key is inserted before the first table by
-  rebuilding the document body order (tomlkit `container` insert at index).
+  added with explicit `Whitespace`/`Comment` trivia. A new top-level `entries` key needs nothing special: tomlkit
+  inserts it before the first table (checked with tomlkit 0.15.2); a test pins it.
 - **Notices** go through the existing `warn` path's stream (stderr) but without the `warning:` prefix: a new
   `notice()` in `errors.py`.
-- **Help.** Every `add_parser` gets `help=` (list summary) and `description=` (page). The `help` subcommand
-  re-invokes the parser with `[command, "--help"]`, or `["--help"]`. A custom `ArgumentParser.error` override on
-  the top-level parser appends the command list for no or unknown command. argparse already exits 2 on usage
-  errors. `--link` without `--format mermaid` is checked after parsing via `parser.error`, which also exits 2.
+- **Help.** Every `add_parser` gets `help=` (list summary) and `description=` (page). The `help` subcommand's
+  argument uses its own `dest` (`topic`): the top-level `dest="command"` would otherwise be overwritten, and
+  `help tree` would run `tree`. It re-invokes the parser with `[topic, "--help"]`, or `["--help"]`. A custom
+  `ArgumentParser.error` override on the top-level parser appends the command list for no or unknown command.
+  argparse already exits 2 on usage errors. `--link` without `--format mermaid` is checked after parsing via
+  `parser.error`, which also exits 2.
 
 ## Risks / Trade-offs
 

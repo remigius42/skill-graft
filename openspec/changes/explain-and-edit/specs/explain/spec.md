@@ -34,7 +34,9 @@ same errors. They SHALL NOT read or write `skill-graft.lock`, write `skill-graft
 `why <skill>` SHALL print the **Skill** on the first line, then, as a tree whose lines join with `├─←` and
 `└─←`, each **Skill** with a slash or Skill tool **Reference** resolved to it, labelled as in `resolve`'s tree.
 Children SHALL be in the order the walk reached them. A **Skill** SHALL be expanded once; its later lines end in
-`(*)`. An **Entry** SHALL be marked `(entry)` and not expanded. Prose edges and self-references SHALL be left out.
+`(*)`. An **Entry** below the first line SHALL be marked `(entry)` and not expanded; the first line SHALL be
+expanded, and marked `(entry)` when the **Skill** is an **Entry**. Prose edges and self-references SHALL be left
+out.
 
 #### Scenario: Two paths
 
@@ -64,7 +66,7 @@ Children SHALL be in the order the walk reached them. A **Skill** SHALL be expan
 
 #### Scenario: Renamed, patched and bound
 
-- **WHEN** `mp/tdd` is renamed to `mp-tdd` and patched, and calls `/notes`, bound to `own/notes`
+- **WHEN** **Entry** `mp/tdd` is renamed to `mp-tdd` and patched, and calls `/notes`, bound to `own/notes`
 - **THEN** `skill-graft why own/notes` prints `└─← mp/tdd as mp-tdd (patched) (/notes, bind) (entry)` under
   `own/notes`
 
@@ -136,7 +138,8 @@ the prose suggestions.
 **Skill** labelled as on its tree line (`as <deployed name>`, `(patched)`), the **Entries** in a class `entry`
 drawn with a thicker border, and one arrow per pair of **Skills**, kind and **Bind** that has a tree line,
 labelled with the **Reference** as written (`, bind` when a **Bind** decided it). Prose arrows SHALL be dotted.
-The output SHALL be deterministic. Mermaid syntax in a label SHALL be quoted so the diagram parses.
+The output SHALL be deterministic. Every label SHALL stand in double quotes, so
+parentheses and backticks in it do not break the diagram.
 
 #### Scenario: Diagram
 
@@ -153,10 +156,10 @@ The output SHALL be deterministic. Mermaid syntax in a label SHALL be quoted so 
     classDef entry stroke-width:3px
   ```
 
-#### Scenario: Quotes in a label
+#### Scenario: Labels quoted
 
-- **WHEN** a **Reference** is written `Skill(skill="grilling")`
-- **THEN** its arrow's label holds `#quot;` in place of each `"`
+- **WHEN** a **Reference** is written `Skill(grilling)` or `` `grilling` ``
+- **THEN** every node and arrow label in the diagram stands in double quotes
 
 #### Scenario: No source links
 

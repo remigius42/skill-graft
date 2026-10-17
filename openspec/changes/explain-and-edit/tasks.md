@@ -7,9 +7,11 @@ synthetic **Skills** and git repositories. Each group updates `README.md` for wh
 ## 1. Help and usage errors
 
 - [ ] 1.1 `cli.py`: `help=`/`description=` on the top level and on `init`, `resolve`, `build` and `update` and
-  their arguments; the `help [command]` subcommand; no or unknown command (top level or in `help`) prints the
-  command list on stderr and exits 2. Verify: top-level-help, command-help (no package folder), same-text,
-  unknown-topic, unknown-command, no-command.
+  their arguments; the `help [command]` subcommand (argument `dest="topic"`); no or unknown command (top level
+  or in `help`) prints the command list on stderr and exits 2. Verify: top-level-help for the commands that exist
+  so far, extended by each later task that adds a command, which also gives it `help=`/`description=` and its own
+  command-help test; command-help (no package folder), same-text (`help tree` does not run `tree`, checked once
+  3.1 lands), unknown-topic, unknown-command, no-command.
 
 ## 2. Shared resolution
 
@@ -23,7 +25,7 @@ synthetic **Skills** and git repositories. Each group updates `README.md` for wh
 
 - [ ] 3.1 `tree [--format text]`: `_resolve` then `lock.tree`, writing nothing. Verify: same-tree, no-lock, stale
   lock unchanged (byte compare), failing-patch.
-- [ ] 3.2 `explain.mermaid(hull)` and `--format mermaid`. Verify: diagram, quotes-in-a-label, no-source-links,
+- [ ] 3.2 `explain.mermaid(hull)` and `--format mermaid`. Verify: diagram, labels-quoted, no-source-links,
   output identical across two runs.
 - [ ] 3.3 `explain.link(source)` and `--link`; `--link` without `--format mermaid` exits 2. Verify:
   link-decodes-to-the-diagram, link-without-mermaid; once by hand, the printed URL opens the diagram on
@@ -42,11 +44,12 @@ synthetic **Skills** and git repositories. Each group updates `README.md` for wh
 ## 5. Edits
 
 - [ ] 5.1 `edit.py`: read, edit a `tomlkit` document, `config.parse`, resolve, then write TOML (atomic, symlink
-  kept, untouched when unchanged) and lock, print as `resolve`; `update._write_refs` uses the same write. Verify:
-  every update test green, plus edit-fails-to-resolve and symlinked-config through 5.2.
+  kept, untouched when unchanged, relative paths from the unresolved config path) and lock, print as `resolve`;
+  `update._write_refs` uses the same write. Verify: every update test green, plus edit-fails-to-resolve and
+  symlinked-config (with a relative path source) through 5.2.
 - [ ] 5.2 `add <skill-id>…`. Verify: edit-succeeds, appended, multi-line-array, no-entries-key, unknown-skill,
-  undeclared-alias, already-an-entry (bytes and mtime kept), already-reachable, notice-stream.
-- [ ] 5.3 `remove <skill-id>…`. Verify: removed, not-an-entry, still-reachable.
+  undeclared-alias, already-an-entry (bytes and mtime kept), already-reachable, reached-only-through-itself, notice-stream.
+- [ ] 5.3 `remove <skill-id>…`. Verify: removed, not-an-entry, still-reachable, other comments kept.
 - [ ] 5.4 `rename <skill-id> <name>`, undo by upstream name. Verify: new-rename, comments-survive,
   already-that-name, invalid-name, undone, outside-the-hull, clash, user's-reserved-name,
   shipped-reserved-name, unknown-skill-to-rename, missing-argument (exit 2).
