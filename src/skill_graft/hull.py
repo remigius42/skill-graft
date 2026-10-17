@@ -111,7 +111,7 @@ def walk(config: Config, indexes: dict[str, discovery.Index], work: Path) -> Hul
                     )
                     skills[target] = discovery.find(indexes[target.alias], target, who)
                     queue.append(target)
-    except SkillGraftError as error:
+    except (SkillGraftError, OSError) as error:
         if not failed:
             raise
         raise patch.PatchError(failed, str(error)) from None

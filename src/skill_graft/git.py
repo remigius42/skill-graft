@@ -88,6 +88,7 @@ def apply(folder: Path, patch: bytes, home: Path) -> tuple[bool, str]:
             "HOME": str(home),
             "XDG_CONFIG_HOME": str(home),
             "GIT_CONFIG_NOSYSTEM": "1",
+            "GIT_ATTR_NOSYSTEM": "1",  # no system gitattributes converting line ends
             "GIT_CEILING_DIRECTORIES": str(folder.parent),
         },
         no_config=True,

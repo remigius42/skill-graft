@@ -709,6 +709,35 @@ def test_patch_fails_at_the_tip(
     assert lock_file().read_bytes() != before
 
 
+def test_other_error_at_the_current_refs_shown(
+    upstream: Upstream, tmp_path: Path, capsys: Capsys
+) -> None:
+    old = upstream.commit({"tdd/SKILL.md": LINES, "notes/SKILL.md": "Run /y.\n"})
+    tip_text = LINES.replace("line 5\n", "line 5 upstream\n")
+    upstream.commit({"tdd/SKILL.md": tip_text, "x/SKILL.md": "# x\n"})
+    main(["update"])  # caches both commits; then back to the old ref
+    file = patched_source(
+        upstream,
+        old,
+        make_patch(
+            tmp_path,
+            {"SKILL.md": tip_text},
+            {"SKILL.md": tip_text.replace("upstream", "edited")},
+        ),
+    )
+    file.write_text(
+        file.read_text().replace('"mp/tdd"]', '"mp/tdd", "mp/notes"]', 1)
+        + '[bind]\n"mp/y" = "mp/x"\n'
+    )
+    capsys.readouterr()
+
+    code, out, _ = update(capsys)
+
+    assert code == 0
+    assert "no previous hull to compare (the current refs do not resolve:" in out
+    assert "mp/x" in out
+
+
 def test_dry_run_with_a_failing_patch(
     upstream: Upstream, tmp_path: Path, capsys: Capsys
 ) -> None:

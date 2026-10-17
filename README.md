@@ -29,7 +29,7 @@ cp -rL "$upstream" base && rm -rf base/.git
 (cd base && git apply -p1 ~/.apm/skill-graft/patches/first.patch)
 cp -r base edited
 "$EDITOR" edited/SKILL.md
-diff -ruN base/ edited/ > ~/.apm/skill-graft/patches/second.patch
+LC_ALL=C diff -ruN base/ edited/ > ~/.apm/skill-graft/patches/second.patch
 ```
 
 Then list it, after the skill's earlier patches:
@@ -39,7 +39,8 @@ Then list it, after the skill's earlier patches:
 "mp/implement" = ["patches/first.patch", "patches/second.patch"]
 ```
 
-`diff` needs `-N`, or added and deleted files are lost; skill-graft refuses such a patch, and binary changes. A
+`diff` needs `-N`, or added and deleted files are lost; skill-graft refuses such a patch, and binary changes,
+by the lines `diff` writes for them in English: hence `LC_ALL=C`. A
 patch must not change the skill's `name:`: use `[rename]`. When `update` finds that a patch no longer applies at
 a new commit, it keeps the old `ref` and names the upstream folder at the new commit: redo the patch against
 it, then run `update` again.

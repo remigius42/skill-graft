@@ -29,21 +29,19 @@ def update(loaded: Config, aliases: list[str], dry_run: bool = False) -> None:
             try:
                 _update(loaded, aliases, git_cache, write=False)
             except patch.PatchError as error:
-                raise SkillGraftError(_fetch_hint(error, Path(tmp))) from None
+                raise _fetch_hint(error, Path(tmp)) from None
     finally:
         print("dry run: skill-graft.toml and skill-graft.lock not written")
 
 
-def _fetch_hint(error: patch.PatchError, tmp: Path) -> str:
+def _fetch_hint(error: patch.PatchError, tmp: Path) -> patch.PatchError:
     """The error, pointing at no upstream folder that goes away with `tmp`."""
-    message = str(error)
-    for skill, upstream, _ in error.failures:
-        if upstream.is_relative_to(tmp):
-            message = message.replace(
-                f"{skill}: redo it against {upstream}",
-                f"{skill}: run `update` without `--dry-run` to fetch the tip",
-            )
-    return message
+    hints = {
+        skill: "run `update` without `--dry-run` to fetch the tip"
+        for skill, upstream, _ in error.failures
+        if upstream.is_relative_to(tmp)
+    }
+    return patch.PatchError(error.failures, error.other, hints)
 
 
 def _update(loaded: Config, aliases: list[str], git_cache: Cache, write: bool) -> None:
@@ -95,7 +93,9 @@ def _previous(
         with tempfile.TemporaryDirectory(prefix="skill-graft-") as work:
             folders = resolve.folders(loaded, git_cache, {})
             return lock.skill_hashes(resolve.resolve(loaded, folders, Path(work)))
-    except patch.PatchError:  # likely rewritten for the tips; its hunks say nothing
+    except patch.PatchError as error:  # likely rewritten for the tips
+        if error.other:  # an error that is no patch's: that one matters
+            return f"the current refs do not resolve: {error.other}"
         return "patches fail at the current refs"
     except (SkillGraftError, OSError) as error:  # the update itself is still fine
         return f"the current refs do not resolve: {error}"

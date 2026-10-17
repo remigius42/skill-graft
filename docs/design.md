@@ -152,7 +152,7 @@ deployed file as `modified` drift.
   skill-graft's own copy) to `base/` in a fresh `mktemp -d`, outside any repository, deletes `base/.git` if there
   is one, and in `base/`, with no `apply.*` git settings of its own, applies the skill's earlier patches with
   `git apply -p1`; then copies that to `edited/`, edits it and runs
-  `diff -ruN base/ edited/ > patches/<name>.patch`, then adds the patch to the key's list.
+  `LC_ALL=C diff -ruN base/ edited/ > patches/<name>.patch`, then adds the patch to the key's list.
 - When `update` fails on a hunk, it names each failing skill's upstream folder at the tip (its export in the
   cache) to redo the patch against, after the skill's earlier patches, as above; `ref` stays, and the next
   `update` moves it once the patches apply. Until then `build` at the old `ref` fails too. `--dry-run` writes no

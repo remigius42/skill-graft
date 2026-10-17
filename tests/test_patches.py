@@ -1,5 +1,6 @@
 """The `patches` spec end to end: a skill's patches apply before its references are read."""
 
+import os
 from pathlib import Path
 from typing import TypeAlias
 
@@ -179,6 +180,31 @@ def test_another_error_after_a_patch_failure(
 
     assert code == 1
     assert err.index("patches/tdd.patch") < err.index("own/x")
+
+
+@pytest.mark.skipif(os.geteuid() == 0, reason="root reads any file")
+def test_copy_error_after_a_patch_failure(
+    home: Path, tmp_path: Path, capsys: Capsys
+) -> None:
+    tdd_patched(home, tmp_path)
+    (home / "mp" / "tdd" / "SKILL.md").write_text("# changed\n")
+    notes = skill(home / "mp" / "notes", "# tdd\n")
+    secret = notes / "data.bin"
+    secret.write_text("x")
+    secret.chmod(0)
+    configure_patched(
+        '"mp/tdd", "mp/notes"',
+        '"mp/tdd" = ["patches/tdd.patch"]\n"mp/notes" = ["patches/tdd.patch"]',
+    )
+
+    try:
+        code, err = build(capsys)
+    finally:
+        secret.chmod(0o644)
+
+    assert code == 1
+    assert err.index("patches/tdd.patch: SKILL.md: hunk") < err.index(str(secret))
+    assert "skill-graft-" not in err
 
 
 def test_reached_only_through_a_failed_skill(

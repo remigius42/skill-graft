@@ -1,6 +1,7 @@
 """Applies a skill's patches to a copy of its folder, before its references are read."""
 
 import re
+import shutil
 import stat
 from pathlib import Path
 
@@ -36,27 +37,44 @@ class PatchError(SkillGraftError):
     """
 
     def __init__(
-        self, failures: list[tuple[SkillId, Path, list[str]]], other: str = ""
+        self,
+        failures: list[tuple[SkillId, Path, list[str]]],
+        other: str = "",
+        hints: dict[SkillId, str] | None = None,
     ) -> None:
+        """`hints` replaces, per skill, the hint to redo it against its upstream."""
+        hints = hints or {}
         lines = ["patches do not apply:"]
         for skill, upstream, failed in failures:
             lines += [f"  {skill}: {line}" for line in failed]
-            lines.append(f"  {skill}: redo it against {upstream}")
+            lines.append(
+                f"  {skill}: {hints.get(skill, f'redo it against {upstream}')}"
+            )
         super().__init__("\n".join(lines + ([other] if other else [])))
         self.failures = failures
+        self.other = other
 
 
 def apply(skill: SkillId, upstream: Path, patches: list[PatchFile], work: Path) -> Path:
     """A copy of `upstream` under `work`, `patches` applied in order; returns it.
 
     The copy keeps the upstream folder's name, so a skill without `name:` keeps its
-    name. Raises `PatchFailed` at the first patch that does not apply.
+    name. Raises `PatchFailed` at the first patch that does not apply, or keeps
+    neither `SKILL.md` nor the name; the copy's files are checked after the last.
     """
     copy = work / skill.alias / skill.name / upstream.name
-    files.copy_skill(upstream, copy)
-    for path in [copy, *files.skill_entries(copy)]:  # git rewrites read-only ones
-        path.chmod(path.stat().st_mode | stat.S_IWUSR)
-    home = work / "home"  # an empty stand-in for the user's, so git reads no config
+    try:
+        files.copy_skill(upstream, copy)
+        for path in [copy, *files.skill_entries(copy)]:  # git rewrites read-only ones
+            path.chmod(path.stat().st_mode | stat.S_IWUSR)
+    except shutil.Error as error:  # one (source, copy, reason) per file it missed
+        reasons = "; ".join(f"{source}: {why}" for source, _, why in error.args[0])
+        raise SkillGraftError(f"cannot copy {upstream}: {reasons}") from None
+    except OSError as error:
+        raise SkillGraftError(f"cannot copy {upstream}: {error.strerror}") from None
+    # An empty stand-in for the user's home, so git reads no config. No alias
+    # starts with a dot, so no copy ever lands in it.
+    home = work / ".home"
     home.mkdir(exist_ok=True)
     name = discovery.read_name(upstream)
     for i, patch in enumerate(patches):
@@ -64,18 +82,27 @@ def apply(skill: SkillId, upstream: Path, patches: list[PatchFile], work: Path) 
         ok, stderr = git.apply(copy, patch.data, home)
         failures = [] if ok else _failures(patch.path, copy, before, stderr)
         if not failures:
-            failures = _check(patch.path, copy, name)
+            failures = _check_name(patch.path, copy, name)
         if failures:
             raise PatchFailed(
                 failures + [f"{later.path}: not tried" for later in patches[i + 1 :]]
             )
+    try:  # a series may pass through states that fail, such as a link made first
+        files.check_files(copy)
+    except SkillGraftError as error:
+        paths = ", ".join(patch.path for patch in patches)
+        raise PatchFailed([f"{paths}: {_relative(error, copy)}"]) from None
     return copy
 
 
-def _check(path: str, copy: Path, name: str) -> list[str]:
+def _check_name(path: str, copy: Path, name: str) -> list[str]:
     """What is wrong with the patched copy: the skill must stay the same skill."""
+    if not (copy / "SKILL.md").is_file():
+        return [
+            f"{path}: deletes SKILL.md: a skill needs one; give it a new name with "
+            "[rename], never by deleting it"
+        ]
     try:
-        files.check_files(copy)
         patched = discovery.read_name(copy)
     except SkillGraftError as error:
         return [f"{path}: {_relative(error, copy)}"]
@@ -88,8 +115,14 @@ def _check(path: str, copy: Path, name: str) -> list[str]:
 
 
 def _relative(error: SkillGraftError, copy: Path) -> str:
-    """The error's message, paths in the copy given relative to the skill."""
-    return str(error).replace(f"{copy}/", "")
+    """The error's message, paths in the copy given relative to the skill.
+
+    Resolved paths too, which a link's target is named by.
+    """
+    message = str(error)
+    for prefix in {f"{copy}/", f"{copy.resolve()}/"}:
+        message = message.replace(prefix, "")
+    return message
 
 
 def _rejects(folder: Path) -> dict[Path, bytes]:

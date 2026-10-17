@@ -51,6 +51,7 @@ words:
   - shutil
   - statusline
   - stdlib
+  - strerror
   - symref
   - testpaths
   - tomlkit

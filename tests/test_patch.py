@@ -175,19 +175,6 @@ def test_unsupported_name_form(tmp_path: Path) -> None:
     assert failed.value.lines == ["p.patch: SKILL.md: unsupported form of `name:`"]
 
 
-def test_skill_md_deleted(tmp_path: Path) -> None:
-    files = {"SKILL.md": LINES, "notes.md": "notes\n"}
-    data = make_patch(tmp_path, files, {"notes.md": "notes\n"})
-    upstream = upstream_with(tmp_path, dict(files))
-
-    with pytest.raises(patch.PatchFailed) as failed:
-        patch.apply(TDD, upstream, [PatchFile("p.patch", data)], work_in(tmp_path))
-
-    [line] = failed.value.lines
-    assert line.startswith("p.patch: SKILL.md: cannot be read")
-    assert str(tmp_path / "work") not in line
-
-
 def new_link(path: str, target: str) -> bytes:
     """A git patch creating `path` as a symlink to `target`."""
     return (
@@ -273,3 +260,63 @@ def test_source_is_a_repository(tmp_path: Path) -> None:
 
     assert (copy / "SKILL.md").read_text() == LINES + "more\n"
     assert not (copy / ".git").exists()
+
+
+def test_alias_home(tmp_path: Path) -> None:
+    """A copy never lands where git looks for config: `<home>/git/config`."""
+    text = "---\nname: git\n---\n"
+    upstream = skill(tmp_path / "src" / "config", text)
+    data = make_patch(tmp_path, {"SKILL.md": text}, {"SKILL.md": text + "more\n"})
+
+    copy = patch.apply(
+        SkillId("home", "git"),
+        upstream,
+        [PatchFile("p.patch", data)],
+        work_in(tmp_path),
+    )
+
+    assert (copy / "SKILL.md").read_text() == text + "more\n"
+
+
+def test_files_checked_after_the_last_patch(tmp_path: Path) -> None:
+    upstream = upstream_with(tmp_path, {})
+    a = new_link("link.md", "ref.md")
+    b = make_patch(tmp_path, {}, {"ref.md": "ref\n"})
+    patches = [PatchFile("a.patch", a), PatchFile("b.patch", b)]
+
+    copy = patch.apply(TDD, upstream, patches, work_in(tmp_path))
+
+    assert (copy / "link.md").read_text() == "ref\n"
+
+
+def test_no_temporary_path_behind_a_symlink(tmp_path: Path) -> None:
+    upstream = upstream_with(tmp_path, {})
+    real = tmp_path / "real"
+    real.mkdir()
+    (tmp_path / "work").symlink_to(real)
+
+    with pytest.raises(patch.PatchFailed) as failed:
+        patch.apply(
+            TDD,
+            upstream,
+            [PatchFile("p.patch", new_link("link.md", "missing.md"))],
+            tmp_path / "work",
+        )
+
+    [line] = failed.value.lines
+    assert "link.md points to missing.md, which is missing" in line
+    assert str(real) not in line
+
+
+def test_skill_md_deleted_says_so(tmp_path: Path) -> None:
+    files = {"SKILL.md": LINES, "notes.md": "notes\n"}
+    data = make_patch(tmp_path, files, {"notes.md": "notes\n"})
+    upstream = upstream_with(tmp_path, dict(files))
+
+    with pytest.raises(patch.PatchFailed) as failed:
+        patch.apply(TDD, upstream, [PatchFile("p.patch", data)], work_in(tmp_path))
+
+    assert failed.value.lines == [
+        "p.patch: deletes SKILL.md: a skill needs one; give it a new name with "
+        "[rename], never by deleting it"
+    ]
