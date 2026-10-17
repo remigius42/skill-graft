@@ -9,14 +9,15 @@ to deploy into Claude Code, opencode, and the other harnesses APM supports.
 Skills call each other (`/grilling`, "call the Skill tool with `domain-modeling`"), so taking one skill means
 taking every skill it reaches. Installing a whole collection is fine for a large model, but on a smaller one the
 full skill set crowds the context, and taking only a subset by hand means tracing those calls yourself, skill by
-skill. skill-graft computes that transitive hull for the skills you ask for, and deploys nothing more. Renames
+skill. skill-graft computes that hull, the skills you ask for plus every skill they call, and deploys only those
+skills. Renames
 come with it: a skill named like a harness built-in (`code-review`) shadows it or is shadowed by it, and renaming
 one skill by hand misses the other skills that call it by name.
 
 Status: early. `skill-graft init` and `skill-graft build` vendor entries from local folders and from git repositories,
 read at the commit `ref` names, and deploy them through APM; `skill-graft update` moves each git source's `ref` to its
-branch tip. `build` follows slash references, Skill tool calls (`Skill(x)`, or "call the Skill tool with `x`")
-and prose references to the whole hull, applies `[rename]` to folders,
+branch tip. `build` follows slash references and Skill tool calls (`Skill(x)`, or "call the Skill tool with `x`")
+to the whole hull (prose mentions only become suggestions), applies `[rename]` to folders,
 `name:` and every reference, and checks deployed names against reserved ones; it applies `[patches]` before any of that,
 so a patch can change what a skill calls. `skill-graft resolve` shows the tree and writes the lock, then lists the
 skills prose mentions outside the hull (`build` and `update` only count them); `skill-graft tree`
@@ -32,13 +33,17 @@ skill-graft needs Python 3.11 or later. It is not on PyPI; install it from the r
 
 ```sh
 uv tool install git+https://github.com/remigius42/skill-graft
-pipx install git+https://github.com/remigius42/skill-graft
+pipx install --python python3.11 git+https://github.com/remigius42/skill-graft
 pip install git+https://github.com/remigius42/skill-graft      # into the active environment
-pipenv install "git+https://github.com/remigius42/skill-graft#egg=skill-graft"
+pipenv install "skill-graft @ git+https://github.com/remigius42/skill-graft"
 ```
 
-skill-graft runs APM as a command, so `apm` must be on `PATH` as well, in the version it is tested against:
-`uv tool install apm-cli==0.33.0` or `pipx install apm-cli==0.33.0`.
+uv picks a suitable Python itself; pipx and pip use theirs, so point them at 3.11 or later. pipenv installs into
+that project's environment: run it as `pipenv run skill-graft`.
+
+skill-graft runs APM as a command, so `apm` must be on `PATH` as well, in version 0.33.0: the folders APM deploys
+to were measured on it, and another version may deploy elsewhere. Install it the same way, e.g.
+`uv tool install apm-cli==0.33.0`, `pipx install apm-cli==0.33.0` or `pip install apm-cli==0.33.0`.
 
 ## A package for one project
 
