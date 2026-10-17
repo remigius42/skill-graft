@@ -298,6 +298,7 @@ def test_sentence_form(
         "Use the Skill tool. `notes` holds them.\n",
         "**Use the Skill tool.** Then see `notes`.\n",
         "(Use the Skill tool.) Then `notes`.\n",
+        'Use the Skill tool. "Hello" he said, `notes`.\n',
         'Use the Skill tool:\n```json\n{"skill": "x"}\n```\n`notes`\n',
         'Use the Skill tool:\n| "x" |\n\n`notes`\n',
     ],
@@ -333,6 +334,7 @@ def test_sentence_text_and_order(tmp_path: Path) -> None:
         'Run "/tdd", "/grilling" in order.\n',
         "运行`/tdd`和`/grilling`\n",
         "step1`/tdd` `/grilling`\n",
+        "Run ``/tdd`` and ``/grilling`` now\n",
     ],
 )
 def test_commands_in_lists_and_without_spaces(tmp_path: Path, text: str) -> None:
@@ -345,6 +347,10 @@ def test_commands_in_lists_and_without_spaces(tmp_path: Path, text: str) -> None
         ('Use the `Skill` tool with "grilling".\n', [("grilling", "skill-tool")]),
         ('MySkill tool with "grilling".\n', []),
         ('Skill tooling with "grilling".\n', []),
+        (
+            'Use the Skill tool with "a-b" or the `Skill` tool with "c-d".\n',
+            [("a-b", "skill-tool"), ("c-d", "skill-tool")],
+        ),
     ],
 )
 def test_skill_tool_words(

@@ -39,8 +39,9 @@ SKILL_TOOL = re.compile(r"(?<!\w)(?:`Skill`|Skill) tool\b")
 SENTENCE_END = re.compile(
     r"\n[ \t]*\n|\n[ \t]*(?:(?:[-*+]|\d+\.|#+)[ \t]|```|~~~|\|)"
     r"|(?<!\be\.g)(?<!\bi\.e)(?P<stop>[.!?][\"'`*)\]]*)"
-    r"(?:\s+(?=[A-Z`*(\[])|\s*\Z)"
+    r"(?:\s+(?=[A-Z`*(\[\"'])|\s*\Z)"
 )
+BACKTICK_RUN = re.compile(r"`+")
 QUOTED_NAME = re.compile(
     r'(?P<open>["`])(?P<name>[A-Za-z0-9][A-Za-z0-9._-]*+)(?P=open)'
 )
@@ -80,13 +81,13 @@ def scan(folder: Path) -> tuple[list[Reference], list[str]]:
         except OSError as error:
             raise SkillGraftError(f"{file} cannot be read: {error}") from None
         skip = name_line(text) if file == folder / "SKILL.md" else None
+        tool_words = [m.span() for m in SKILL_TOOL.finditer(text)]  # `` `Skill` tool ``
         named = [
             ref
-            for ref in _sentence_names(text, file)
+            for ref in _sentence_names(text, file, tool_words)
             if not (skip and skip[0] <= ref.span[0] < skip[1])
         ]
         taken = {ref.span for ref in named}
-        tool_words = [m.span() for m in SKILL_TOOL.finditer(text)]  # `` `Skill` tool ``
         here, calls = [], []
         for match in REFERENCE.finditer(text):
             if skip and skip[0] <= match.start() < skip[1]:
@@ -113,13 +114,15 @@ def scan(folder: Path) -> tuple[list[Reference], list[str]]:
     return found, warnings
 
 
-def _sentence_names(text: str, file: Path) -> list[Reference]:
-    """The names a Skill tool sentence quotes after `Skill tool`, one trailing `.`
-    dropped; each window ends where its sentence does, or at the next `Skill tool`."""
+def _sentence_names(
+    text: str, file: Path, tool_words: list[tuple[int, int]]
+) -> list[Reference]:
+    """The names a Skill tool sentence quotes after `Skill tool` (`tool_words`, its
+    spans), one trailing `.` dropped; each window ends where its sentence does, or
+    where the next `Skill tool` starts."""
     names = []
-    starts = [m.end() for m in SKILL_TOOL.finditer(text)]
-    for i, start in enumerate(starts):
-        limit = starts[i + 1] if i + 1 < len(starts) else len(text)
+    for i, (_, start) in enumerate(tool_words):
+        limit = tool_words[i + 1][0] if i + 1 < len(tool_words) else len(text)
         end = SENTENCE_END.search(text, start, limit)
         stop = limit if end is None else end.start() + len(end["stop"] or "")
         for match in QUOTED_NAME.finditer(text, start, stop):
@@ -140,12 +143,13 @@ def _sentence_names(text: str, file: Path) -> list[Reference]:
 
 
 def _after_code_span(text: str, slash: int) -> bool:
-    """Whether the `/` at `slash` follows a backtick that closes a code span: one
-    with an odd number of backticks before it on its line."""
+    """Whether the `/` at `slash` follows backticks that close a code span: an odd
+    number of backtick runs (`` ` `` or ``` `` ```) before them on their line."""
     if text[slash - 1 : slash] != "`":
         return False
     line_start = text.rfind("\n", 0, slash - 1) + 1
-    return text.count("`", line_start, slash - 1) % 2 == 1
+    before = text[line_start:slash].rstrip("`")
+    return len(BACKTICK_RUN.findall(before)) % 2 == 1
 
 
 def _inside(span: tuple[int, int], outer: tuple[int, int]) -> bool:
