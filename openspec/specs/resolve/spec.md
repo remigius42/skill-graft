@@ -187,13 +187,14 @@ so `resolve` and `build` write the same lock for the same input.
 
 ### Requirement: Prose suggestions
 
-`resolve` SHALL print, after the tree, each suggested **Skill** with the **Skills** mentioning it and how to
-accept it (add its **Skill ID** to `entries`), sorted, on standard output. `build` SHALL NOT print suggestions.
+`resolve` SHALL print, after the tree, each suggested **Skill** with the **Skills** mentioning it and how to accept it
+(`skill-graft add <skill id>`, named in the header), sorted, on standard output. `build` SHALL NOT print suggestions.
 
 #### Scenario: Suggestion printed
 
 - **WHEN** `mp/tdd` mentions `diagnosing-bugs`, and `mp/diagnosing-bugs` is not in the **Hull**
-- **THEN** `resolve` prints, after the tree, a line naming `mp/diagnosing-bugs`, `mp/tdd`, and `entries`
+- **THEN** `resolve` prints, after the tree, a header naming `skill-graft add`, then a line naming
+  `mp/diagnosing-bugs` and `mp/tdd`
 
 #### Scenario: No suggestions
 
