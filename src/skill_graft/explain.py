@@ -3,10 +3,45 @@
 import base64
 import json
 import zlib
+from collections.abc import Callable
 
 from skill_graft import lock
 from skill_graft.config import SkillId
+from skill_graft.errors import SkillGraftError
 from skill_graft.hull import Edge, Hull
+
+
+def find(hull: Hull, text: str, parse: Callable[[str], SkillId]) -> SkillId:
+    """The hull skill `text` names: a skill ID if it holds `/`, else a deployed name.
+
+    `parse` reads a skill ID, raising unless its source has that skill.
+    """
+    if "/" in text:
+        skill = parse(text)
+        if skill in hull.skills:
+            return skill
+        raise SkillGraftError(outside(hull, skill))
+    for skill, deployed in hull.deployed.items():
+        if deployed == text:
+            return skill
+    for skill, deployed in hull.deployed.items():
+        if skill.name == text:
+            raise SkillGraftError(
+                f"no skill deploys as `{text}`: `{skill}` is deployed as "
+                f"`{deployed}`; try `skill-graft why {skill}`"
+            )
+    if suggested := sorted(s for s in hull.suggestions if s.name == text):
+        raise SkillGraftError("; ".join(outside(hull, s) for s in suggested))
+    raise SkillGraftError(f"no skill in the hull deploys as `{text}`")
+
+
+def outside(hull: Hull, skill: SkillId) -> str:
+    """Why `skill` is not in the hull, and how to add it."""
+    mentions = ""
+    if skill in hull.suggestions:
+        by = ", ".join(f"`{s}`" for s in sorted(hull.suggestions[skill]))
+        mentions = f"; {by} mention it in prose, which never pulls a skill in"
+    return f"`{skill}` is not in the hull{mentions}: `skill-graft add {skill}`"
 
 
 def why(hull: Hull, skill: SkillId) -> str:

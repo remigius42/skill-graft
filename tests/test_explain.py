@@ -213,6 +213,87 @@ def test_why_leaves_prose_out(home: Path, capsys: Capsys) -> None:
     )
 
 
+def test_why_by_deployed_name(home: Path, capsys: Capsys) -> None:
+    skill(home / "mp" / "tdd", "/code-review and /grilling\n")
+    skill(home / "mp" / "code-review")
+    skill(home / "mp" / "grilling")
+    write_config(
+        'entries = ["mp/tdd"]\n[sources.mp]\npath = "~/mp"\n'
+        '[rename]\n"mp/code-review" = "mp-code-review"\n'
+    )
+
+    assert main(["why", "mp-code-review"]) == 0
+    assert capsys.readouterr().out == (
+        "mp/code-review as mp-code-review\n└─← mp/tdd (/code-review) (entry)\n"
+    )
+    assert main(["why", "grilling"]) == 0
+    assert capsys.readouterr().out == "mp/grilling\n└─← mp/tdd (/grilling) (entry)\n"
+
+
+def why_fails(argv: list[str], capsys: Capsys) -> str:
+    """Runs `why`, which must fail with nothing on stdout; returns stderr."""
+    assert main(argv) == 1
+    out, err = capsys.readouterr()
+    assert out == ""
+    return err
+
+
+def test_why_upstream_name_of_a_renamed_skill(home: Path, capsys: Capsys) -> None:
+    skill(home / "mp" / "tdd", "/code-review\n")
+    skill(home / "mp" / "code-review")
+    write_config(
+        'entries = ["mp/tdd"]\n[sources.mp]\npath = "~/mp"\n'
+        '[rename]\n"mp/code-review" = "mp-code-review"\n'
+    )
+
+    err = why_fails(["why", "code-review"], capsys)
+
+    assert "mp/code-review" in err and "mp-code-review" in err
+
+
+def test_why_outside_the_hull_mentioned_in_prose(home: Path, capsys: Capsys) -> None:
+    skill(home / "mp" / "tdd", "then diagnosing-bugs\n")
+    skill(home / "mp" / "diagnosing-bugs")
+    configure(["mp/tdd"], mp="~/mp")
+
+    for argv in (["why", "mp/diagnosing-bugs"], ["why", "diagnosing-bugs"]):
+        err = why_fails(argv, capsys)
+
+        assert "`mp/diagnosing-bugs` is not in the hull" in err
+        assert "mp/tdd" in err
+        assert "skill-graft add mp/diagnosing-bugs" in err
+
+
+def test_why_outside_the_hull_not_mentioned(home: Path, capsys: Capsys) -> None:
+    skill(home / "mp" / "tdd")
+    skill(home / "mp" / "notes")
+    configure(["mp/tdd"], mp="~/mp")
+
+    err = why_fails(["why", "mp/notes"], capsys)
+
+    assert "`mp/notes` is not in the hull: `skill-graft add mp/notes`" in err
+
+
+def test_why_unknown(home: Path, capsys: Capsys) -> None:
+    skill(home / "mp" / "tdd")
+    configure(["mp/tdd"], mp="~/mp")
+
+    for argv in (["why", "mp/nope"], ["why", "nope"]):
+        err = why_fails(argv, capsys)
+
+        assert "nope" in err
+        assert "skill-graft add" not in err
+
+
+def test_why_undeclared_alias(home: Path, capsys: Capsys) -> None:
+    skill(home / "mp" / "tdd")
+    configure(["mp/tdd"], mp="~/mp")
+
+    err = why_fails(["why", "zz/tdd"], capsys)
+
+    assert "no source 'zz' is declared" in err
+
+
 def test_tree_writes_no_lock(home: Path, capsys: Capsys) -> None:
     skill(home / "mp" / "tdd")
     configure(["mp/tdd"], mp="~/mp")

@@ -11,6 +11,7 @@ from typing import Any, NoReturn
 from skill_graft import (
     apm,
     config,
+    discovery,
     explain,
     init,
     lock,
@@ -157,7 +158,10 @@ def _parser() -> tuple[_Parser, dict[str, argparse.ArgumentParser]]:
             "slash or Skill tool reference reaches it, up to the entries."
         ),
     )
-    why.add_argument("skill", help="a skill ID (<source alias>/<name>)")
+    why.add_argument(
+        "skill",
+        help="a skill ID (<source alias>/<name>), or the name a hull skill deploys as",
+    )
     help_parser = commands.add_parser(
         "help",
         help="show the help of skill-graft or of a command",
@@ -193,10 +197,12 @@ def main(argv: list[str] | None = None) -> int:
             update.update(_load(), args.aliases, args.dry_run)
         elif args.command == "why":
             with tempfile.TemporaryDirectory(prefix="skill-graft-") as work:
-                _, resolved = _resolve(Path(work))
-            alias, _, name = args.skill.partition("/")
-            print(explain.why(resolved, SkillId(alias, name)), end="")
+                loaded, resolved = _resolve(Path(work))
             warn(resolved.warnings)
+            target = explain.find(
+                resolved, args.skill, lambda text: _known(loaded, "why", text)
+            )
+            print(explain.why(resolved, target), end="")
         elif args.command == "tree":
             with tempfile.TemporaryDirectory(prefix="skill-graft-") as work:
                 _, resolved = _resolve(Path(work))
@@ -237,6 +243,15 @@ def _load() -> config.Config:
     loaded = config.load()
     warn(loaded.warnings)
     return loaded
+
+
+def _known(loaded: config.Config, where: str, text: str) -> SkillId:
+    """The skill ID `text`, its source declared and holding that skill."""
+    skill = config.parse_skill_id(where, text, loaded.sources)
+    folder = resolve.folders(loaded, Cache(paths.cache()), {})[skill.alias]
+    index = resolve.indexes(loaded, {skill.alias: folder})[skill.alias]
+    discovery.find(index, skill, f"{where}: `{skill}`")
+    return skill
 
 
 def _resolve(work: Path) -> tuple[config.Config, Hull]:

@@ -209,10 +209,10 @@ def _binds(raw: object, sources: dict[str, Source]) -> dict[SkillId, SkillId | N
         if value is False:
             target = None
         elif isinstance(value, str):
-            target = _skill_id(where, value, sources)
+            target = parse_skill_id(where, value, sources)
         else:
             raise SkillGraftError(f"{where} must be a skill ID or false")
-        binds[_skill_id(where, key, sources)] = target
+        binds[parse_skill_id(where, key, sources)] = target
     return binds
 
 
@@ -224,7 +224,7 @@ def _renames(raw: object, sources: dict[str, Source]) -> dict[SkillId, str]:
         where = f'rename."{key}"'
         if not (isinstance(value, str) and NAME.fullmatch(value)):
             raise SkillGraftError(f"{where} must be a name: {NAME.pattern}")
-        renames[_skill_id(where, key, sources)] = value
+        renames[parse_skill_id(where, key, sources)] = value
     return renames
 
 
@@ -251,7 +251,7 @@ def _patches(
             and all(isinstance(path, str) for path in value)
         ):
             raise SkillGraftError(f"{where} must be a non-empty list of patch files")
-        skill_id = _skill_id(where, key, sources)
+        skill_id = parse_skill_id(where, key, sources)
         seen: set[Path] = set()
         patches[skill_id] = []
         for path in value:
@@ -282,7 +282,7 @@ def _patch_data(where: str, path: str, file: Path) -> bytes:
     return data
 
 
-def _skill_id(where: str, text: str, sources: dict[str, Source]) -> SkillId:
+def parse_skill_id(where: str, text: str, sources: dict[str, Source]) -> SkillId:
     """`<alias>/<name>`, both one path segment, the alias declared."""
     alias, _, name = text.partition("/")
     if not (NAME.fullmatch(alias) and NAME.fullmatch(name)):

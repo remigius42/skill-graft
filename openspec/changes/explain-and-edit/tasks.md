@@ -36,7 +36,7 @@ synthetic **Skills** and git repositories. Each group updates `README.md` for wh
 - [x] 4.1 `explain.why(hull, skill)`: the inverted tree with `├─←`/`└─←`, `(entry)`, `(*)`, labels as in
   `resolve`'s tree, prose and self-edges left out; `why` command. Verify: two-paths, repeated-skill,
   an-entry-asked-about, renamed-patched-and-bound, prose-not-shown.
-- [ ] 4.2 `<skill>` lookup and errors: **Skill ID** or **Deployed name**; upstream name of a renamed **Skill**;
+- [x] 4.2 `<skill>` lookup and errors: **Skill ID** or **Deployed name**; upstream name of a renamed **Skill**;
   outside the **Hull** with and without prose mentions; unknown; undeclared alias. Verify: deployed-name,
   unrenamed-skill-by-name, upstream-name-of-a-renamed-skill, outside-the-hull-mentioned-in-prose,
   outside-the-hull-not-mentioned, bare-name-outside-the-hull-mentioned-in-prose, unknown, undeclared-alias.
