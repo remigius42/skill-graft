@@ -167,6 +167,26 @@ def test_project_init_at_home(
     assert fake_apm.calls == []
 
 
+@pytest.mark.parametrize(
+    "inside", [".apm", ".apm/skill-graft", "repo/.apm/skill-graft"]
+)
+def test_project_init_inside_an_apm_folder(
+    home: Path,
+    fake_apm: FakeApm,
+    monkeypatch: pytest.MonkeyPatch,
+    capsys: pytest.CaptureFixture[str],
+    inside: str,
+) -> None:
+    (home / inside).mkdir(parents=True)
+    monkeypatch.chdir(home / inside)
+
+    assert main(["init", "--project"]) == 1
+
+    assert ".apm" in capsys.readouterr().err
+    assert not (home / inside / ".apm").exists()
+    assert fake_apm.calls == []
+
+
 def test_project_init_inside_another_project(
     home: Path, fake_apm: FakeApm, monkeypatch: pytest.MonkeyPatch
 ) -> None:

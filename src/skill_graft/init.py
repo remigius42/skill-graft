@@ -1,7 +1,6 @@
 """Creates a package, `~/.apm/skill-graft/` or a project's, and registers it with APM."""
 
 import shutil
-from pathlib import Path
 
 from skill_graft import apm, paths
 from skill_graft.errors import SkillGraftError, notice
@@ -26,9 +25,14 @@ APM_YML = "name: skill-graft\nversion: 0.1.0\n"
 def init(project: bool = False) -> None:
     """Creates and registers the user scope's package, or with `project` the one in
     the root `cli` set: the working folder."""
-    if project and paths.root().resolve() == Path.home().resolve():
+    if project and paths.scope() == "user":
         raise SkillGraftError(
             "the home folder is user scope: `skill-graft init` creates its package"
+        )
+    if project and ".apm" in paths.root().resolve().parts:
+        # APM's or a package's own folder: its apm.yml is not a project's.
+        raise SkillGraftError(
+            f"{paths.root()} is inside an .apm folder; run init --project in a project"
         )
     package = paths.package()
     notice(f"package: {package.absolute()}")

@@ -93,3 +93,13 @@ no package line, and tell the user that `skill-graft init` creates the user scop
 
 - **WHEN** `~/a/.apm/skill-graft/` exists and the user runs `skill-graft init --project` in `~/a/b`
 - **THEN** `~/a/b/.apm/skill-graft/` is created, and commands run in `~/a/b` act on it
+
+### Requirement: No project package inside an .apm folder
+
+`init --project` in a folder inside a folder named `.apm`, compared resolved, SHALL exit non-zero, create nothing
+and run no `apm`: that `apm.yml` belongs to APM or to a **Package**, not to a project.
+
+#### Scenario: Project init in the user's APM folder
+
+- **WHEN** the user runs `skill-graft init --project` in `~/.apm` or in `~/.apm/skill-graft`
+- **THEN** it exits non-zero naming the folder, and nothing is created
