@@ -68,7 +68,7 @@ for what it ships.
 
 ## 6. Naming the package
 
-- [ ] 6.1 `cli.main` prints `skill-graft: package: <absolute package>` via `errors.notice` after parsing and
+- [x] 6.1 `cli.main` prints `skill-graft: package: <absolute package>` via `errors.notice` after parsing and
   before dispatching `init`, `resolve`, `build`, `update`, `add`, `remove` and `rename`; not for `tree`, `why`,
   `help` or a usage error. Top-level and per-command help texts say the **Package** is the nearest
   `.apm/skill-graft/`, else `~/.apm/skill-graft/`. Verify: build-names-the-package (project), user-scope line,

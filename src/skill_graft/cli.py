@@ -22,8 +22,12 @@ from skill_graft import (
     vendor,
 )
 from skill_graft.cache import Cache
-from skill_graft.errors import SkillGraftError, warn
+from skill_graft.errors import SkillGraftError, notice, warn
 from skill_graft.hull import Hull
+
+
+# Commands that write: they name the package they act on before anything else.
+WRITERS = ("resolve", "build", "update", "add", "remove", "rename")
 
 
 class _Formatter(argparse.HelpFormatter):
@@ -70,8 +74,10 @@ def _parser() -> tuple[_Parser, dict[str, argparse.ArgumentParser]]:
         prog="skill-graft",
         description=(
             "Build your agent skills from other people's repositories: the entries "
-            "you ask for, every skill they reach, renamed and patched as "
-            "~/.apm/skill-graft/skill-graft.toml declares, deployed through APM."
+            "you ask for, every skill they reach, renamed and patched as the "
+            "package's skill-graft.toml declares, deployed through APM. The package "
+            "is the nearest .apm/skill-graft/ above the working folder, else "
+            "~/.apm/skill-graft/."
         ),
     )
     commands = parser.add_subparsers(
@@ -109,8 +115,9 @@ def _parser() -> tuple[_Parser, dict[str, argparse.ArgumentParser]]:
         help="vendor the hull and deploy it through APM",
         description=(
             "Resolve, vendor the hull's skills under their deployed names into "
-            "~/.apm/skill-graft/.apm/skills/, patched and renamed, write the lock, "
-            "and deploy through `apm install -g`."
+            "the package's .apm/skills/, patched and renamed, write the lock, and "
+            "deploy through `apm install`: with -g for ~/.apm/skill-graft/, in the "
+            "project root for a project's package."
         ),
     )
     build.add_argument(
@@ -240,6 +247,8 @@ def main(argv: list[str] | None = None) -> int:
             paths.use(paths.discover(_working_folder()))
         elif args.project:
             paths.use(_working_folder())
+        if args.command in WRITERS:  # init names it once its own checks pass
+            notice(f"package: {paths.package().absolute()}")
         if args.command == "init":
             init.init(args.project)
         elif args.command == "update":

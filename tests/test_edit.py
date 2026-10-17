@@ -5,7 +5,7 @@ from pathlib import Path
 from typing import TypeAlias
 
 import pytest
-from conftest import skill, write_config
+from conftest import after_package_line, skill, write_config
 
 from skill_graft.cli import main
 
@@ -140,7 +140,7 @@ def test_add_together(home: Path, capsys: Capsys) -> None:
 
     out, err = capsys.readouterr()
     assert entries(home) == ["mp/tdd", "mp/a", "mp/b"]
-    assert err == ""
+    assert after_package_line(err) == ""
     assert "already" not in out
 
 
@@ -153,7 +153,7 @@ def test_add_reached_only_through_itself(home: Path, capsys: Capsys) -> None:
     assert main(["add", "mp/x"]) == 0
 
     assert entries(home) == ["mp/tdd", "mp/x"]
-    assert capsys.readouterr().err == ""
+    assert after_package_line(capsys.readouterr().err) == ""
 
 
 def test_remove(home: Path, capsys: Capsys) -> None:

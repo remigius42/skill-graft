@@ -4,7 +4,7 @@ import shutil
 from pathlib import Path
 
 from skill_graft import apm, paths
-from skill_graft.errors import SkillGraftError
+from skill_graft.errors import SkillGraftError, notice
 
 CONFIG_TEMPLATE = """\
 # skill-graft.toml: the skills you want and where they come from.
@@ -31,6 +31,7 @@ def init(project: bool = False) -> None:
             "the home folder is user scope: `skill-graft init` creates its package"
         )
     package = paths.package()
+    notice(f"package: {package.absolute()}")
     made = package.parent if not package.parent.exists() else package
     try:
         package.mkdir(parents=True)

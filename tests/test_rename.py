@@ -5,7 +5,7 @@ from dataclasses import replace
 from pathlib import Path
 
 import pytest
-from conftest import Upstream, configure, skill, write_config
+from conftest import Upstream, after_package_line, configure, skill, write_config
 
 from skill_graft import config, paths, rename, resolve, vendor
 from skill_graft.cache import Cache
@@ -278,7 +278,7 @@ def test_renamed_skill_vendored(home: Path, capsys: pytest.CaptureFixture[str]) 
 
     assert main(["build", "--no-install"]) == 0
 
-    assert capsys.readouterr().err == ""
+    assert after_package_line(capsys.readouterr().err) == ""
     assert {p.name for p in skills_dir().iterdir()} == {"mp-tdd", "mp-grilling"}
     assert (skills_dir() / "mp-tdd" / "SKILL.md").read_text() == (
         "---\nname: mp-tdd\n---\n/mp-grilling and `mp-grilling`\n"
@@ -347,7 +347,7 @@ def test_renamed_out_of_the_way(home: Path, capsys: pytest.CaptureFixture[str]) 
     file.write_text('reserved = ["review"]\n' + file.read_text())
 
     assert main(["build", "--no-install"]) == 0
-    assert capsys.readouterr().err == ""
+    assert after_package_line(capsys.readouterr().err) == ""
 
 
 def test_shipped_clash(home: Path, capsys: pytest.CaptureFixture[str]) -> None:

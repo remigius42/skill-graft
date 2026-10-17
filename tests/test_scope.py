@@ -2,6 +2,7 @@
 
 import shutil
 import tomllib
+from contextlib import nullcontext
 from pathlib import Path
 
 import pytest
@@ -210,6 +211,42 @@ def test_project_source_overlapping_a_package_fails(
     err = capsys.readouterr().err
     assert "'own'" in err and f"overlaps {home / package}" in err
     assert not (home / "repo" / ".apm" / "skill-graft" / "skill-graft.lock").exists()
+
+
+def test_build_names_the_package(
+    home: Path, monkeypatch: pytest.MonkeyPatch, capsys: pytest.CaptureFixture[str]
+) -> None:
+    package = project(home / "repo")
+    monkeypatch.chdir(home / "repo" / "src")
+
+    assert main(["build", "--no-install"]) == 0
+
+    assert capsys.readouterr().err.startswith(f"skill-graft: package: {package}\n")
+
+
+def test_user_scope_names_the_package_even_on_failure(
+    home: Path, capsys: pytest.CaptureFixture[str]
+) -> None:
+    assert main(["resolve"]) == 1
+
+    err = capsys.readouterr().err
+    assert err.startswith(f"skill-graft: package: {home}/.apm/skill-graft\n")
+
+
+@pytest.mark.parametrize("argv", [["tree"], ["why", "own/chisel"], ["rename", "x"]])
+def test_no_package_line(
+    home: Path,
+    monkeypatch: pytest.MonkeyPatch,
+    capsys: pytest.CaptureFixture[str],
+    argv: list[str],
+) -> None:
+    project(home / "repo")
+    monkeypatch.chdir(home / "repo")
+
+    with pytest.raises(SystemExit) if argv[0] == "rename" else nullcontext():
+        main(argv)
+
+    assert "package:" not in capsys.readouterr().err
 
 
 def lock_sources(package: Path) -> object:

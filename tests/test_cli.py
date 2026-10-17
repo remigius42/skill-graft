@@ -83,3 +83,12 @@ def test_no_command(capsys: pytest.CaptureFixture[str]) -> None:
     code, out, err = run([], capsys)
     assert (code, out) == (2, "")
     assert all(command in err for command in COMMANDS)
+
+
+def test_help_names_where_the_package_is(capsys: pytest.CaptureFixture[str]) -> None:
+    with pytest.raises(SystemExit):
+        main(["--help"])
+
+    out = " ".join(capsys.readouterr().out.split())
+    assert "nearest .apm/skill-graft/ above the working folder" in out
+    assert "~/.apm/skill-graft/" in out

@@ -198,9 +198,16 @@ def configure(entries: list[str], **sources: str) -> None:
 
 
 def build(capsys: pytest.CaptureFixture[str]) -> tuple[int, str]:
-    """Runs `skill-graft build --no-install`; returns its exit code and stderr."""
+    """Runs `skill-graft build --no-install`; returns its exit code and stderr,
+    without the package line (`test_scope.py` checks that)."""
     code = main(["build", "--no-install"])
-    return code, capsys.readouterr().err
+    return code, after_package_line(capsys.readouterr().err)
+
+
+def after_package_line(err: str) -> str:
+    """`err` without the `skill-graft: package: …` line a writing command starts with."""
+    first, _, rest = err.partition("\n")
+    return rest if first.startswith("skill-graft: package: ") else err
 
 
 def vendored() -> set[str]:

@@ -5,7 +5,7 @@ from pathlib import Path
 from typing import TypeAlias
 
 import pytest
-from conftest import build, configure, skill, vendored
+from conftest import after_package_line, build, configure, skill, vendored
 
 from skill_graft import config, paths, resolve
 from skill_graft.cache import Cache
@@ -363,7 +363,7 @@ def test_prose_is_no_reference(home: Path, capsys: Capsys, layout: str) -> None:
 
     assert prose_edges(hull) == set() and hull.suggestions == {}
     assert main(["resolve"]) == 0
-    assert capsys.readouterr().err == ""
+    assert after_package_line(capsys.readouterr().err) == ""
 
 
 def test_bound_prose(home: Path) -> None:
