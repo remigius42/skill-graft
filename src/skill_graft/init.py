@@ -41,11 +41,11 @@ def init(project: bool = False) -> None:
         package.mkdir(parents=True)
     except FileExistsError:
         raise SkillGraftError(f"{package} already exists; init does nothing") from None
-    paths.config_file().write_text(CONFIG_TEMPLATE)
-    (package / "apm.yml").write_text(APM_YML)
     try:
+        paths.config_file().write_text(CONFIG_TEMPLATE)
+        (package / "apm.yml").write_text(APM_YML)
         apm.install()
-    except SkillGraftError as error:
+    except (SkillGraftError, OSError) as error:
         if not project:
             retry = f"apm install -g {package.absolute()}"
             raise SkillGraftError(f"{error}\nto retry, run: {retry}") from None

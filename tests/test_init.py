@@ -125,6 +125,22 @@ def test_project_cleanup_despite_an_undecodable_manifest(
     assert not (repo / ".apm").exists()
 
 
+def test_project_cleanup_when_the_manifest_cannot_be_read(
+    home: Path,
+    fake_apm: FakeApm,
+    monkeypatch: pytest.MonkeyPatch,
+    capsys: pytest.CaptureFixture[str],
+) -> None:
+    repo = project_root(home, monkeypatch)
+    (repo / "apm.yml").mkdir()  # reading it raises an OSError, not a SkillGraftError
+    fake_apm.register = False
+
+    assert main(["init", "--project"]) == 1
+
+    assert "skill-graft init --project" in capsys.readouterr().err
+    assert not (repo / ".apm").exists()
+
+
 def test_project_cleanup_failure_keeps_the_hint(
     home: Path,
     fake_apm: FakeApm,
