@@ -68,6 +68,17 @@ A name a **Deployed name** must not take because a harness already uses it, such
 the list skill-graft ships, plus the user's own.
 _Avoid_: Built-in, blocklist
 
+**Package**:
+The folder skill-graft builds the **Hull** into and APM deploys from, holding the user's `skill-graft.toml`.
+One per **Scope**.
+_Avoid_: Bundle, output
+
+**Scope**:
+Where a **Package** lives and deploys: user scope (the home folder, for every project) or project scope (one
+project, for everyone working in it). A command acts on the nearest **Package** above the working folder, and
+on the user scope's when there is none.
+_Avoid_: Level, mode, global/local
+
 ## Example dialogue
 
 > **Dev:** I added `mp/tdd` as an **Entry**. Why is `mp/grilling` in the **Hull**?

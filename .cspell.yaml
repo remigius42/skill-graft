@@ -10,6 +10,7 @@ words:
   - capfd
   - capsys
   - casefold
+  - chdir
   - commitlint
   - conftest
   - copymode
@@ -31,6 +32,7 @@ words:
   - mkfifo
   - mktemp
   - mktree
+  - monkeypatch
   - monkeypatched
   - mypy
   - nosystem
