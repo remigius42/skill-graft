@@ -5,7 +5,7 @@ from pathlib import Path
 from typing import TypeAlias
 
 import pytest
-from conftest import after_package_line, build, configure, skill, vendored
+from conftest import after_package_line, build, configure, skill, vendored, write_config
 
 from skill_graft import config, paths, resolve
 from skill_graft.cache import Cache
@@ -429,3 +429,20 @@ def test_skill_tool_sentence_pulls_in_a_skill(home: Path, capsys: Capsys) -> Non
 
     assert main(["tree"]) == 0
     assert '(Skill tool "grilling")' in capsys.readouterr().out
+
+
+def test_skill_tool_sentence_never_fails_on_a_quoted_word(
+    home: Path, capsys: Capsys
+) -> None:
+    # "fast" is ambiguous across two other sources, "slow" unreadable in its own.
+    skill(home / "mp" / "tdd", 'Call the Skill tool with "fast" or "slow".\n')
+    skill(home / "mp" / "slow", "---\nname: [x]\n---\n")
+    skill(home / "a" / "fast")
+    skill(home / "b" / "fast")
+    write_config(
+        'entries = ["mp/tdd"]\n[sources.mp]\npath = "~/mp"\n'
+        '[sources.a]\npath = "~/a"\n[sources.b]\npath = "~/b"\n'
+    )
+
+    assert build(capsys) == (0, "")
+    assert vendored() == {"tdd"}

@@ -87,11 +87,13 @@ def walk(config: Config, indexes: dict[str, discovery.Index], work: Path) -> Hul
                     target = _prose_target(current, ref, indexes[current.alias])
                     if target is None:  # matches nothing: not a reference
                         continue
+                elif ref.sentence:
+                    target = _sentence_target(current, ref, indexes)
+                    if target is None:  # a quoted word, not a call: not a reference
+                        continue
                 else:
                     target = _target(current, ref, indexes)
                     if target is None:
-                        if ref.sentence:  # a quoted word, not a call: not a reference
-                            continue
                         if (current, ref.name) not in unmatched:
                             unmatched.add((current, ref.name))
                             warnings.append(
@@ -187,6 +189,20 @@ def _target(
             f'choose one under [bind]: "{current.alias}/{ref.name}" = "<source>/<name>"'
         )
     return others[0] if others else None
+
+
+def _sentence_target(
+    current: SkillId, ref: references.Reference, indexes: dict[str, discovery.Index]
+) -> SkillId | None:
+    """A Skill tool sentence's quoted word, resolved as a call is, but never
+    raising: an ambiguous or unreadable match is a word, not a reference."""
+    sources = [current.alias] + [a for a in indexes if a != current.alias]
+    found = [a for a in sources if _prose_target(SkillId(a, ref.name), ref, indexes[a])]
+    if current.alias in found:
+        return SkillId(current.alias, ref.name)
+    if _has(indexes[current.alias], ref.name) or len(found) != 1:
+        return None
+    return SkillId(found[0], ref.name)
 
 
 def _has(index: discovery.Index, name: str) -> bool:
