@@ -29,6 +29,7 @@ words:
   - mattpocock
   - mkfifo
   - mktree
+  - mktemp
   - monkeypatched
   - mypy
   - nosystem
