@@ -24,6 +24,7 @@ words:
   - geteuid
   - gitdir
   - heapdump
+  - ignorewhitespace
   - keepends
   - kiro
   - mattpocock

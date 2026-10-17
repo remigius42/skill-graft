@@ -1,4 +1,5 @@
-"""Runs `git`. The user's git config applies, and git and ssh prompt as usual."""
+"""Runs `git`. The user's git config applies, and git and ssh prompt as usual,
+except for `apply`, which reads no config at all."""
 
 import os
 import subprocess
@@ -29,18 +30,70 @@ def run(
     input: bytes | None = None,
 ) -> bytes:
     """Runs `git [--git-dir repo] args`; a failure names `context` and git's error."""
-    command = ["git", *(["--git-dir", str(repo)] if repo else []), *args]
-    env = {k: v for k, v in os.environ.items() if k not in REDIRECTS}
-    try:
-        result = subprocess.run(command, capture_output=True, input=input, env=env)
-    except FileNotFoundError:
-        raise SkillGraftError("git is not installed: no `git` on PATH") from None
-    except OSError as error:
-        raise SkillGraftError(f"cannot run `git`: {error}") from None
+    result = call(*(["--git-dir", str(repo)] if repo else []), *args, input=input)
     if result.returncode != 0:
         stderr = result.stderr.decode(errors="replace").strip()
         raise SkillGraftError(f"{context}: `git {_subcommand(args)}` failed: {stderr}")
     return result.stdout
+
+
+def call(
+    *args: str,
+    input: bytes | None = None,
+    cwd: Path | None = None,
+    env: dict[str, str] | None = None,
+    no_config: bool = False,
+    missing: str = "git is not installed: no `git` on PATH",
+) -> "subprocess.CompletedProcess[bytes]":
+    """Runs `git args` without the variables in REDIRECTS, `env` on top.
+
+    With `no_config`, also without the `GIT_CONFIG*` ones, which pass config in.
+    Raises `missing` if there is no git; any exit code is the caller's to check.
+    """
+    base = {
+        k: v
+        for k, v in os.environ.items()
+        if k not in REDIRECTS and not (no_config and k.startswith("GIT_CONFIG"))
+    }
+    try:
+        return subprocess.run(
+            ["git", *args],
+            capture_output=True,
+            input=input,
+            cwd=cwd,
+            env=base | (env or {}),
+        )
+    except FileNotFoundError:
+        raise SkillGraftError(missing) from None
+    except OSError as error:
+        raise SkillGraftError(f"cannot run `git`: {error}") from None
+
+
+def apply(folder: Path, patch: bytes, home: Path) -> tuple[bool, str]:
+    """Applies `patch` in `folder` as `git apply -p1 --reject`; whether it all applied.
+
+    No git config is read: not the user's (`home` is an empty folder standing in
+    for theirs), the system's or any passed in the environment; and no repository
+    above `folder` is looked for. A hunk that fails leaves a `.rej` file.
+    """
+    result = call(
+        "apply",
+        "-p1",
+        "--reject",
+        "--whitespace=nowarn",
+        "-",
+        input=patch,
+        cwd=folder,
+        env={
+            "HOME": str(home),
+            "XDG_CONFIG_HOME": str(home),
+            "GIT_CONFIG_NOSYSTEM": "1",
+            "GIT_CEILING_DIRECTORIES": str(folder.parent),
+        },
+        no_config=True,
+        missing="[patches] needs git: no `git` on PATH",
+    )
+    return result.returncode == 0, result.stderr.decode(errors="replace").strip()
 
 
 def _subcommand(args: tuple[str, ...]) -> str:

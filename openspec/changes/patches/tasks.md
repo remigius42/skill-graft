@@ -8,7 +8,7 @@ ignores.
 
 ## 1. Applying a patch
 
-- [ ] 1.1 `git.call` split out of `git.run` (environment without `REDIRECTS`, missing `git` mapped to an error;
+- [x] 1.1 `git.call` split out of `git.run` (environment without `REDIRECTS`, missing `git` mapped to an error;
   `git.run` unchanged in behavior); `git.apply(folder, patch, home)`: `git apply -p1 --reject --whitespace=nowarn -`
   in `folder`, `GIT_CONFIG*` variables removed, `HOME` and `XDG_CONFIG_HOME` at the empty `home`,
   `GIT_CONFIG_NOSYSTEM=1`, `GIT_CEILING_DIRECTORIES` at the parent, `(ok, stderr)` back, a missing `git` naming
