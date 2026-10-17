@@ -7,7 +7,7 @@ skill those reach, renamed and patched as the user declares.
 
 **Source**:
 A repository or local folder that skills are taken from, known by the alias the user gives it.
-_Avoid_: Pack, repo, upstream
+_Avoid_: Pack, repo, upstream (that is a **Skill**'s text)
 
 **Ref**:
 The commit a git **Source** is read at. Only `update` moves it.
@@ -52,6 +52,10 @@ _Avoid_: Alias, bind
 A user's unified diff against a **Skill**'s upstream text. Applied before **References** resolve and before
 **Renames**, so it never mentions a **Deployed name**.
 _Avoid_: Override, fix
+
+**Upstream**:
+A **Skill** as its **Source** has it, at the **Ref**, before any **Patch**. Never the **Source** itself.
+_Avoid_: Original, pristine, vanilla
 
 **Deployed name**:
 The name a **Skill** carries once installed: its name after **Renames**. Unique across the **Hull**.
