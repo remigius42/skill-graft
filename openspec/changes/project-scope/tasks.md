@@ -56,7 +56,7 @@ for what it ships.
 
 ## 5. Portable lock
 
-- [ ] 5.1 `why <skill>` prints `upstream: <absolute folder>` after the tree. README's patch recipe takes the base
+- [x] 5.1 `why <skill>` prints `upstream: <absolute folder>` after the tree. README's patch recipe takes the base
   from it instead of the lock. Verify: path-source and remote-source upstream lines, existing `why` tests updated.
 - [ ] 5.2 `lock.render`: `upstream` relative to its **Source**'s root (`.` for a **Skill** at the root), in both
   scopes. Verify: upstream-recorded, skill-at-the-source-root, patch-changes-the-hash, every lock test updated to

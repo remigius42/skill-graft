@@ -76,6 +76,8 @@ def why(hull: Hull, skill: SkillId) -> str:
                 expand(edge.source, prefix + ("    " if last else "│   "))
 
     expand(skill, "")
+    # The base a new patch is written against; the lock records it only relative.
+    lines.append(f"upstream: {hull.upstream[skill]}")
     return "".join(f"{line}\n" for line in lines)
 
 

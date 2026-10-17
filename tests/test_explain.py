@@ -19,6 +19,11 @@ def lock_file(home: Path) -> Path:
     return home / ".apm" / "skill-graft" / "skill-graft.lock"
 
 
+def upstream(folder: Path) -> str:
+    """`why`'s last line, naming the asked skill's upstream folder."""
+    return f"upstream: {folder.resolve()}\n"
+
+
 def test_tree_is_resolves_tree(home: Path, capsys: Capsys) -> None:
     skill(home / "mp" / "tdd", "/grilling, then diagnosing-bugs\n")
     skill(home / "mp" / "grilling", "/notes\n")
@@ -136,7 +141,7 @@ def test_why_two_paths(home: Path, capsys: Capsys) -> None:
         "├─← mp/tdd (/grilling) (entry)\n"
         "└─← mp/implement (Skill(grilling))\n"
         "    └─← mp/tdd (/implement) (entry)\n"
-    )
+    ) + upstream(home / "mp" / "grilling")
 
 
 def test_why_repeated_skill(home: Path, capsys: Capsys) -> None:
@@ -158,7 +163,7 @@ def test_why_repeated_skill(home: Path, capsys: Capsys) -> None:
         "│       └─← mp/b (/mid) (entry)\n"
         "└─← mp/y (/leaf)\n"
         "    └─← mp/mid (/y) (*)\n"
-    )
+    ) + upstream(home / "mp" / "leaf")
 
 
 def test_why_an_entry(home: Path, capsys: Capsys) -> None:
@@ -170,7 +175,7 @@ def test_why_an_entry(home: Path, capsys: Capsys) -> None:
 
     assert capsys.readouterr().out == (
         "mp/tdd (entry)\n└─← mp/grilling (/tdd)\n    └─← mp/tdd (/grilling) (entry)\n"
-    )
+    ) + upstream(home / "mp" / "tdd")
 
 
 def test_why_renamed_patched_and_bound(
@@ -195,7 +200,7 @@ def test_why_renamed_patched_and_bound(
 
     assert capsys.readouterr().out == (
         "own/notes\n└─← mp/tdd as mp-tdd (patched) (/notes, bind) (entry)\n"
-    )
+    ) + upstream(home / "own" / "notes")
 
 
 def test_why_leaves_prose_out(home: Path, capsys: Capsys) -> None:
@@ -210,7 +215,7 @@ def test_why_leaves_prose_out(home: Path, capsys: Capsys) -> None:
 
     assert capsys.readouterr().out == (
         "mp/grilling as mp-grilling\n└─← mp/tdd (/grilling) (entry)\n"
-    )
+    ) + upstream(home / "mp" / "grilling")
 
 
 def test_why_by_deployed_name(home: Path, capsys: Capsys) -> None:
@@ -225,9 +230,12 @@ def test_why_by_deployed_name(home: Path, capsys: Capsys) -> None:
     assert main(["why", "mp-code-review"]) == 0
     assert capsys.readouterr().out == (
         "mp/code-review as mp-code-review\n└─← mp/tdd (/code-review) (entry)\n"
-    )
+    ) + upstream(home / "mp" / "code-review")
     assert main(["why", "grilling"]) == 0
-    assert capsys.readouterr().out == "mp/grilling\n└─← mp/tdd (/grilling) (entry)\n"
+    assert capsys.readouterr().out == (
+        "mp/grilling\n└─← mp/tdd (/grilling) (entry)\n"
+        + upstream(home / "mp" / "grilling")
+    )
 
 
 def why_fails(argv: list[str], capsys: Capsys) -> str:
@@ -320,7 +328,7 @@ def test_stale_lock_left_alone(home: Path, capsys: Capsys) -> None:
 
     assert main(["why", "own/b"]) == 0
 
-    assert capsys.readouterr().out == "own/b (entry)\n"
+    assert capsys.readouterr().out == "own/b (entry)\n" + upstream(home / "own" / "b")
     assert lock_file(home).read_bytes() == before
 
 
@@ -343,3 +351,32 @@ def test_tree_fails_on_a_failing_patch(
     out, err = capsys.readouterr()
     assert out == ""
     assert "patches/tdd.patch: SKILL.md: hunk" in err
+
+
+def test_why_names_a_path_sources_upstream_folder(home: Path, capsys: Capsys) -> None:
+    skill(home / "src" / "chisel")
+    configure(["own/chisel"], own="~/src")
+
+    assert main(["why", "own/chisel"]) == 0
+
+    out = capsys.readouterr().out
+    assert out.splitlines()[-1] == f"upstream: {(home / 'src' / 'chisel').resolve()}"
+
+
+def test_why_names_a_remote_sources_upstream_folder(
+    home: Path, tmp_path: Path, capsys: Capsys
+) -> None:
+    upstream = Upstream(tmp_path / "up")
+    sha = upstream.commit(
+        {"skills/tdd/SKILL.md": "---\nname: tdd\n---\nupstream text\n"}
+    )
+    write_config(
+        f'entries = ["mp/tdd"]\n[sources.mp]\ngit = "{upstream.url}"\nref = "{sha}"\n'
+    )
+
+    assert main(["why", "mp/tdd"]) == 0
+
+    line = capsys.readouterr().out.splitlines()[-1]
+    folder = Path(line.removeprefix("upstream: "))
+    assert line.startswith("upstream: ") and folder.is_absolute()
+    assert (folder / "SKILL.md").read_text().endswith("upstream text\n")

@@ -34,10 +34,11 @@ then need only APM: `apm install` deploys the skills, and only whoever changes t
 
 ## Writing a patch
 
-A patch is a unified diff against the skill's upstream folder, which the lock records as `upstream`. No command
-writes one; in a shell, with `upstream` set to that folder:
+A patch is a unified diff against the skill's upstream folder, which `skill-graft why <skill>` prints on its last
+line. No command writes one; in a shell (a project package keeps its patches in its own `.apm/skill-graft/`):
 
 ```sh
+upstream="$(skill-graft why mp/implement | sed -n 's/^upstream: //p')"
 cd "$(mktemp -d)"
 cp -rL "$upstream" base && rm -rf base/.git
 # Only for a skill that already has patches: apply them first, in order.
