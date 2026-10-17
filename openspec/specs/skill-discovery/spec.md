@@ -11,7 +11,8 @@ Finds the **Skills** in a **Source** and gives each its **Skill ID**, so **Entri
 Every folder under a **Source** that holds a file named `SKILL.md` SHALL be a **Skill**, at any depth,
 including inside hidden folders other than `.git` and through symlinked folders, each resolved folder visited
 once. A **Skill** is its whole folder, so discovery SHALL NOT look for further **Skills** inside one. Discovery
-SHALL NOT enter a folder that resolves into `~/.apm/skill-graft/`, so a build never reads its own output.
+SHALL NOT enter a folder that resolves into `~/.apm/skill-graft/`, nor any folder whose path, as reached or
+resolved, runs through `.apm/skill-graft`, so a build never reads its own output or another **Package**'s.
 
 #### Scenario: Nested layout
 
@@ -42,6 +43,22 @@ SHALL NOT enter a folder that resolves into `~/.apm/skill-graft/`, so a build ne
 
 - **WHEN** a source holds a symlink to `~/.apm`, and a previous build vendored skills there
 - **THEN** discovery does not look inside `~/.apm/skill-graft/`, so the vendored copies are not **Skills**
+
+#### Scenario: Another project's package
+
+- **WHEN** a source holds `repo/.apm/skill-graft/.apm/skills/tdd/SKILL.md`, a project **Package** committed there
+- **THEN** `tdd` is not a **Skill** of that source
+
+#### Scenario: Symlink into another package's skills
+
+- **WHEN** a source holds `team -> ~/team-repo/.apm/skill-graft/.apm/skills`, which holds `tdd/SKILL.md`
+- **THEN** `tdd` is not a **Skill** of that source
+
+#### Scenario: Symlink to another project's package
+
+- **WHEN** a source holds `team -> ~/team-repo/.apm`, and `~/team-repo/.apm/skill-graft/.apm/skills/tdd/SKILL.md`
+  exists
+- **THEN** `tdd` is not a **Skill** of that source
 
 ### Requirement: Skill name
 

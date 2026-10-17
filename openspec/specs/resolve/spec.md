@@ -36,10 +36,11 @@ missing from the cache.
 ### Requirement: Lock content
 
 `skill-graft.lock`, a TOML file at `~/.apm/skill-graft/skill-graft.lock` even when `skill-graft.toml` is a
-symlink, SHALL record: each declared **Source**'s alias with
-its URL and `ref`, or its resolved folder; each **Hull** **Skill**'s **Skill ID**, whether it is an **Entry**,
-and a SHA-256 hash of its folder as vendored; and each edge: from, to, kind (`slash`, `skill-tool` or `prose`),
-and `bind = true` when a **Bind** decided it. One edge per from, to, kind and `bind`.
+symlink, SHALL record: each declared **Source**'s alias with its URL and `ref`, or its resolved folder (in
+project scope relative to the **Package** when inside the project root, else absolute); each **Hull**
+**Skill**'s **Skill ID**, whether it is an **Entry**, and a SHA-256 hash of its folder as vendored; and each
+edge: from, to, kind (`slash`, `skill-tool` or `prose`), and `bind = true` when a **Bind** decided it. One edge
+per from, to, kind and `bind`.
 
 #### Scenario: Edges with kinds
 
@@ -68,6 +69,16 @@ and `bind = true` when a **Bind** decided it. One edge per from, to, kind and `b
 
 - **WHEN** `resolve` runs twice and only a file inside `own/notes` changed in between
 - **THEN** only the hash of `own/notes` differs between the two locks
+
+#### Scenario: Project source inside the project
+
+- **WHEN** in project scope `[sources.own]` has `path = "../../skills"`
+- **THEN** the lock records `own`'s path as `../../skills`, the same on every machine
+
+#### Scenario: Project source outside the project
+
+- **WHEN** in project scope `[sources.own]` has `path = "~/skills"`
+- **THEN** the lock records `own`'s path as the absolute folder
 
 ### Requirement: Lock is deterministic
 
@@ -203,17 +214,27 @@ so `resolve` and `build` write the same lock for the same input.
 
 ### Requirement: Lock records upstream folders and patches
 
-The lock SHALL record each **Hull** **Skill**'s `upstream` folder, absolute: the folder its **Patches** apply to,
-in the cache export at the `ref` or in a path **Source**. A patched **Skill** SHALL also record its `patches`,
-as written in the TOML, in apply order. Each hash SHALL cover the folder as vendored, **Patches** applied, so
-`resolve` and `build` write the same lock for the same input.
+The lock SHALL record each **Hull** **Skill**'s `upstream` folder relative to its **Source**'s root, in either
+**Scope**: the folder its **Patches** apply to, in the cache export at the `ref` or in a path **Source**. A
+patched **Skill** SHALL also record its `patches`, as written in the TOML, in apply order. Each hash SHALL cover
+the folder as vendored, **Patches** applied, so `resolve` and `build` write the same lock for the same input.
 
 #### Scenario: Upstream recorded
 
-- **WHEN** `mp` is a git **Source** at `ref` A and `own` a path **Source**, and `mp/tdd` and `own/chisel` are in
-  the **Hull**
-- **THEN** `mp/tdd`'s `upstream` is its folder in the cache export of A, and `own/chisel`'s its folder under
-  `own`'s path
+- **WHEN** `mp` is a git **Source** at `ref` A and `own` a path **Source**, `mp/tdd` is at `skills/tdd` in `mp`
+  and `own/chisel` at `chisel` in `own`, and both are in the **Hull**
+- **THEN** `mp/tdd`'s `upstream` is `skills/tdd` and `own/chisel`'s is `chisel`
+
+#### Scenario: Skill at the source root
+
+- **WHEN** a path **Source**'s folder itself holds `SKILL.md`
+- **THEN** that **Skill**'s `upstream` is `.`
+
+#### Scenario: Same lock on another machine
+
+- **WHEN** two users with different home folders run `resolve` on the same project **Package**, whose **Sources**
+  are git **Sources** and path **Sources** inside the project
+- **THEN** both locks are byte for byte equal
 
 #### Scenario: Patches recorded
 
