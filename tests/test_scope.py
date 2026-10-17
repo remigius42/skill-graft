@@ -265,6 +265,24 @@ def test_no_package_line(
     assert "package:" not in capsys.readouterr().err
 
 
+def test_project_source_linking_into_the_user_package(
+    home: Path, monkeypatch: pytest.MonkeyPatch, capsys: pytest.CaptureFixture[str]
+) -> None:
+    vendored_skills = home / ".apm" / "skill-graft" / ".apm" / "skills"
+    skill(vendored_skills / "tdd")
+    (home / "skills").mkdir()
+    (home / "skills" / "vendored").symlink_to(vendored_skills)
+    package = project(home / "repo", '["own/tdd"]')
+    (package / "skill-graft.toml").write_text(
+        'entries = ["own/tdd"]\n[sources.own]\npath = "~/skills"\n'
+    )
+    monkeypatch.chdir(home / "repo")
+
+    assert main(["resolve"]) == 1
+
+    assert "own/tdd" in capsys.readouterr().err
+
+
 def lock_sources(package: Path) -> object:
     return tomllib.loads((package / "skill-graft.lock").read_text())["sources"]
 

@@ -38,19 +38,14 @@ def skill_folders(source: Path, confined: bool = False) -> list[Path]:
                 name != ".git"
                 and real not in visited
                 and not real.is_relative_to(package)
-                and not _package(Path(dirpath) / name)
-                and not _package(real)
+                and not paths.in_package(Path(dirpath) / name)
+                and not paths.in_package(real)
                 and (not confined or real.is_relative_to(root))
             ):
                 visited.add(real)
                 keep.append(name)
         dirnames[:] = keep
     return found
-
-
-def _package(folder: Path) -> bool:
-    """Whether `folder` is named as a package: `skill-graft` inside `.apm`."""
-    return folder.name == "skill-graft" and folder.parent.name == ".apm"
 
 
 def read_name(folder: Path) -> str:

@@ -41,6 +41,12 @@ def package_in(folder: Path) -> Path:
     return folder / ".apm" / "skill-graft"
 
 
+def in_package(path: Path) -> bool:
+    """Whether `path` is a package (`.apm/skill-graft`) or inside one, by its parts."""
+    parts = path.parts
+    return any(parts[i : i + 2] == (".apm", "skill-graft") for i in range(len(parts)))
+
+
 def package() -> Path:
     return package_in(root())
 
