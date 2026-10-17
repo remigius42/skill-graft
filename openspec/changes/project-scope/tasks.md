@@ -46,7 +46,7 @@ for what it ships.
 
 ## 4. Overlap checks and discovery
 
-- [ ] 4.1 `config.py`: a **Source** inside or containing either scope's **Package** is an error;
+- [x] 4.1 `config.py`: a **Source** inside or containing either scope's **Package** is an error;
   `paths.deploy_folders()` adds `PROJECT_DEPLOY_FOLDERS` under the root in project scope, beside the user ones.
   Verify: source-is-the-project's-deploy-folder, project-source-is-a-user-deploy-folder,
   source-contains-the-project-package, project-source-contains-the-user-package, and the user-scope overlap

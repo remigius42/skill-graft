@@ -64,8 +64,27 @@ DEPLOY_FOLDERS = (
 )
 
 
+# Where APM 0.33.0 deploys skills at project scope, under the project root.
+PROJECT_DEPLOY_FOLDERS = (
+    ".agents/skills",
+    ".claude/skills",
+    ".grok/skills",
+    ".kiro/skills",
+)
+
+
 def deploy_folders() -> list[Path]:
-    return [Path.home() / folder for folder in DEPLOY_FOLDERS]
+    """The user scope's deploy folders, and in project scope the project's too."""
+    folders = [Path.home() / folder for folder in DEPLOY_FOLDERS]
+    if scope() == "project":
+        folders += [root() / folder for folder in PROJECT_DEPLOY_FOLDERS]
+    return folders
+
+
+def packages() -> list[Path]:
+    """The package in effect, and in project scope the user scope's too."""
+    user = Path.home() / ".apm" / "skill-graft"
+    return [package()] if scope() == "user" else [package(), user]
 
 
 def overlap(a: Path, b: Path) -> bool:

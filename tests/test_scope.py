@@ -157,3 +157,54 @@ def test_no_install_reads_no_project_manifest(
     assert main(["build", "--no-install"]) == 0
 
     assert fake_apm.calls == []
+
+
+def project_source(home: Path, monkeypatch: pytest.MonkeyPatch, path: str) -> None:
+    """A project package in `~/repo` with source `own` at `path`, entered."""
+    package = project(home / "repo", "[]")
+    (package / "skill-graft.toml").write_text(f'[sources.own]\npath = "{path}"\n')
+    monkeypatch.chdir(home / "repo")
+
+
+@pytest.mark.parametrize(
+    ("path", "deploy"),
+    [
+        ("../../.claude/skills", "repo/.claude/skills"),
+        ("~/.claude/skills", ".claude/skills"),
+    ],
+)
+def test_project_source_overlapping_a_deploy_folder_warns(
+    home: Path,
+    monkeypatch: pytest.MonkeyPatch,
+    capsys: pytest.CaptureFixture[str],
+    path: str,
+    deploy: str,
+) -> None:
+    (home / deploy).mkdir(parents=True)
+    project_source(home, monkeypatch, path)
+
+    assert main(["resolve"]) == 0
+
+    err = capsys.readouterr().err
+    assert "'own'" in err and f"{home / deploy}, where APM deploys skills" in err
+
+
+@pytest.mark.parametrize(
+    ("path", "package"),
+    [("../..", "repo/.apm/skill-graft"), ("~/.apm", ".apm/skill-graft")],
+)
+def test_project_source_overlapping_a_package_fails(
+    home: Path,
+    monkeypatch: pytest.MonkeyPatch,
+    capsys: pytest.CaptureFixture[str],
+    path: str,
+    package: str,
+) -> None:
+    (home / ".apm" / "skill-graft").mkdir(parents=True)
+    project_source(home, monkeypatch, path)
+
+    assert main(["resolve"]) == 1
+
+    err = capsys.readouterr().err
+    assert "'own'" in err and f"overlaps {home / package}" in err
+    assert not (home / "repo" / ".apm" / "skill-graft" / "skill-graft.lock").exists()

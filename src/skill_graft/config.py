@@ -180,10 +180,11 @@ def _source_folder(alias: str, raw: str, base: Path) -> Path:
     folder = (base / Path(raw).expanduser()).resolve()
     if not folder.is_dir():
         raise SkillGraftError(f"source {alias!r}: {raw} is not a folder")
-    if paths.overlap(folder, paths.package().resolve()):
-        raise SkillGraftError(
-            f"source {alias!r}: {raw} overlaps {paths.package()}, which build rewrites"
-        )
+    for package in paths.packages():
+        if paths.overlap(folder, package.resolve()):
+            raise SkillGraftError(
+                f"source {alias!r}: {raw} overlaps {package}, which build rewrites"
+            )
     return folder
 
 
