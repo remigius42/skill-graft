@@ -24,7 +24,8 @@ _Avoid_: Path, slug
 
 **Reference**:
 A mention of a **Skill** by name in any Markdown file of another **Skill**: a slash command (`/grilling`), a
-Skill tool call, or prose (`grilling` in backticks, or a hyphenated name). A slash or Skill tool **Reference**
+Skill tool call (`Skill(grilling)`, or a sentence telling the reader to call the Skill tool with `"grilling"`),
+or prose (`grilling` in backticks, or a hyphenated name). A slash or Skill tool **Reference**
 resolves in its own **Source** first, else in exactly one other **Source**; a prose **Reference** resolves only
 in its own **Source**.
 _Avoid_: Dependency, link, import
