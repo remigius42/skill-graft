@@ -5,7 +5,7 @@ from pathlib import Path
 from typing import TypeAlias
 
 import pytest
-from conftest import Upstream, configure, skill, write_config
+from conftest import Upstream, configure, make_patch, skill, write_config
 
 from skill_graft import lock, vendor
 from skill_graft.cli import main
@@ -81,6 +81,27 @@ def test_renames_marked(home: Path, capsys: Capsys) -> None:
         "├── mp/grilling as mp-grilling (/grilling)\n"
         "└── mp/grilling as mp-grilling (`grilling`, prose) (*)\n"
         "mp/notes\n"
+    )
+
+
+def test_patches_marked(home: Path, tmp_path: Path, capsys: Capsys) -> None:
+    skill(home / "mp" / "tdd", "/grilling\n")
+    skill(home / "mp" / "grilling", "# grilling\n")
+    folder = home / ".apm" / "skill-graft" / "patches"
+    folder.mkdir(parents=True)
+    for name, text in [("tdd", "/grilling\n"), ("grilling", "# grilling\n")]:
+        data = make_patch(tmp_path, {"SKILL.md": text}, {"SKILL.md": text + "more\n"})
+        (folder / f"{name}.patch").write_bytes(data)
+    write_config(
+        'entries = ["mp/tdd"]\n[sources.mp]\npath = "~/mp"\n'
+        '[rename]\n"mp/grilling" = "mp-grilling"\n[patches]\n'
+        '"mp/tdd" = ["patches/tdd.patch"]\n"mp/grilling" = ["patches/grilling.patch"]\n'
+    )
+
+    assert main(["resolve"]) == 0
+
+    assert capsys.readouterr().out == (
+        "mp/tdd (patched)\n└── mp/grilling as mp-grilling (patched) (/grilling)\n"
     )
 
 
