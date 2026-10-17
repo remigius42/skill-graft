@@ -43,10 +43,12 @@ a pure function of the **Source** folders, the TOML and the patch files, whateve
 - **`patch.apply(skill, upstream, files, work) -> Path`**: `files.copy_skill(upstream, copy)` (`check_files` has
   made sure links lead to files inside), then owner write permission added to every file and folder of the copy,
   so a read-only **Upstream** folder (a Nix store, `0555` folders) never blocks `git apply`; the exec bit is kept.
-  Then per file, `git.apply(copy, data)`. After the last, `SKILL.md` must be a file, `check_files(copy)` must
-  pass, and `discovery.read_name(copy)` must equal `read_name(upstream)`; any `SkillGraftError` from these (a
-  link out, an unsupported `name:` form, non-UTF-8) is re-raised as `PatchFailed` naming the patch, a changed name
-  pointing at `[rename]`. Paths in these messages are relative to the **Skill**, never the copy's.
+  Then per file, `git.apply(copy, data)`. After each, `SKILL.md` must be a file and no link, and
+  `discovery.read_name(copy)` must equal `read_name(upstream)`, so the error blames the patch that broke it.
+  After the last, `check_files(copy)` must pass: a series may pass through states it would refuse, such as a link
+  made before its target. Any `SkillGraftError` from these (a link out, an unsupported `name:` form, non-UTF-8)
+  is re-raised as `PatchFailed` naming the patch, or the series for `check_files`, a changed name pointing at
+  `[rename]`. Paths in these messages are relative to the **Skill**, never the copy's.
   `PatchFailed` is a `SkillGraftError`, so one that escapes is still a clean error.
 
 - **`git.call(*args, cwd, env, input) -> CompletedProcess`**: the part of `git.run` that builds the environment
