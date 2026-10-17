@@ -196,13 +196,14 @@ def _sentence_target(
 ) -> SkillId | None:
     """A Skill tool sentence's quoted word, resolved as a call is, but never
     raising: an ambiguous or unreadable match is a word, not a reference."""
-    sources = [current.alias] + [a for a in indexes if a != current.alias]
-    found = [a for a in sources if _prose_target(SkillId(a, ref.name), ref, indexes[a])]
-    if current.alias in found:
-        return SkillId(current.alias, ref.name)
-    if _has(indexes[current.alias], ref.name) or len(found) != 1:
+    try:
+        target = _target(current, ref, indexes)
+    except SkillGraftError:  # several sources have it
         return None
-    return SkillId(found[0], ref.name)
+    if target is None:
+        return None
+    # The source chosen must hold exactly one readable skill of that name.
+    return _prose_target(target, ref, indexes[target.alias])
 
 
 def _has(index: discovery.Index, name: str) -> bool:

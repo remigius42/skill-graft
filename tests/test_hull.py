@@ -446,3 +446,20 @@ def test_skill_tool_sentence_never_fails_on_a_quoted_word(
 
     assert build(capsys) == (0, "")
     assert vendored() == {"tdd"}
+
+
+def test_skill_tool_sentence_ambiguous_when_another_source_has_two(
+    home: Path, capsys: Capsys
+) -> None:
+    # `a` holds "deploy" twice, so `b`'s single one must not win.
+    skill(home / "mp" / "tdd", 'Call the Skill tool with "deploy".\n')
+    skill(home / "a" / "x" / "deploy")
+    skill(home / "a" / "y" / "deploy")
+    skill(home / "b" / "deploy")
+    write_config(
+        'entries = ["mp/tdd"]\n[sources.mp]\npath = "~/mp"\n'
+        '[sources.a]\npath = "~/a"\n[sources.b]\npath = "~/b"\n'
+    )
+
+    assert build(capsys) == (0, "")
+    assert vendored() == {"tdd"}
