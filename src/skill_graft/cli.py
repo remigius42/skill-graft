@@ -27,7 +27,7 @@ from skill_graft.hull import Hull
 
 
 # Commands that write: they name the package they act on before anything else.
-WRITERS = ("resolve", "build", "update", "add", "remove", "rename", "bind")
+WRITERS = ("resolve", "build", "update", "add", "remove", "rename", "bind", "unbind")
 
 
 class _Formatter(argparse.HelpFormatter):

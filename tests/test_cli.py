@@ -14,6 +14,7 @@ COMMANDS = [
     "add",
     "remove",
     "bind",
+    "unbind",
     "help",
 ]
 
@@ -105,3 +106,15 @@ def test_bind_missing_argument(capsys: pytest.CaptureFixture[str]) -> None:
     code, out, err = run(["bind", "mp/tmp"], capsys)
     assert (code, out) == (2, "")
     assert "target" in err
+
+
+def test_unbind_help(capsys: pytest.CaptureFixture[str]) -> None:
+    code, out, _ = run(["unbind", "--help"], capsys)
+    assert code == 0
+    assert "resolve by default" in out
+
+
+def test_unbind_missing_argument(capsys: pytest.CaptureFixture[str]) -> None:
+    code, out, err = run(["unbind"], capsys)
+    assert (code, out) == (2, "")
+    assert "alias/name" in err

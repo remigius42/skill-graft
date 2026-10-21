@@ -31,6 +31,7 @@ Status: beta.
 - `add <skill-id>…`, `remove <skill-id>…`: change `entries`, keeping the file's comments, once the result resolves.
 - `rename <skill-id> <name>`: set a skill's deployed name; the name it would deploy as without a key undoes it.
 - `bind <alias>/<name> <skill-id>|false`: resolve `<name>` from that source to the skill, or to no reference.
+- `unbind <alias>/<name>`: remove that bind, so `<name>` resolves by default again.
 - `help [command]`, or `--help` on any command: explain it.
 
 ## Config

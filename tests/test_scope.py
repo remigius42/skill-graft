@@ -249,13 +249,17 @@ def test_user_scope_names_the_package_even_on_failure(
     assert err.startswith(f"skill-graft: package: {home}/.apm/skill-graft\n")
 
 
-def test_bind_names_the_package(
-    home: Path, monkeypatch: pytest.MonkeyPatch, capsys: pytest.CaptureFixture[str]
+@pytest.mark.parametrize("argv", [["bind", "own/tmp", "false"], ["unbind", "own/tmp"]])
+def test_bind_and_unbind_name_the_package(
+    home: Path,
+    monkeypatch: pytest.MonkeyPatch,
+    capsys: pytest.CaptureFixture[str],
+    argv: list[str],
 ) -> None:
     package = project(home / "repo")
     monkeypatch.chdir(home / "repo")
 
-    main(["bind", "own/tmp", "false"])
+    main(argv)
 
     assert capsys.readouterr().err.startswith(f"skill-graft: package: {package}\n")
 

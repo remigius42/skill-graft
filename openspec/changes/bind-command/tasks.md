@@ -23,7 +23,7 @@ synthetic **Skills** and **Sources**.
 - [x] 2.1 `edit.unbind` parses its key as `bind` does, deletes it from `[bind]`, leaving the table, and errors on
   a key that is not there; verify tests for the "Unbind a name" scenarios pass, including the one where
   resolution fails and the undeclared alias
-- [ ] 2.2 Wire `unbind` into the CLI and list it in `README.md` and `docs/design.md`, adding `unbind` to `words`
+- [x] 2.2 Wire `unbind` into the CLI and list it in `README.md` and `docs/design.md`, adding `unbind` to `words`
   in `.cspell.yaml`; verify the CLI tests for top-level help, `unbind --help`, a missing argument (exit 2) and
   the `package:` line pass and `pre-commit run --all-files` is green
 
