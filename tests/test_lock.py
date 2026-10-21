@@ -281,3 +281,13 @@ def test_write_replaces_the_lock(home: Path) -> None:
     file = home / ".apm" / "skill-graft" / "skill-graft.lock"
     assert file.read_text() == "two\n"
     assert [p.name for p in file.parent.iterdir() if "lock" in p.name] == [file.name]
+
+
+def test_header_first_when_empty(home: Path) -> None:
+    skill(home / "own" / "tdd")
+    configure(["own/tdd"], own="~/own")
+
+    lines = render().splitlines()
+
+    assert lines[0] == "# Written by skill-graft; never read. Do not edit."
+    assert parsed()["edges"] == parsed()["suggestions"] == []

@@ -52,18 +52,19 @@ def render(
         if skill_id in hull.patches:  # in apply order, never sorted
             item["patches"] = hull.patches[skill_id]
         skills.append(tomlkit.item(item | {"hash": hashes[skill_id]}))
-    document["skills"] = skills
+    # Empty, a plain array: tomlkit hoists an empty array of tables above the header.
+    document["skills"] = skills or tomlkit.array()
     edges = tomlkit.aot()
     for edge in sorted({(e.source, e.target, e.kind, e.bind) for e in hull.edges}):
         source_id, target, kind, bind = edge
         item = {"from": str(source_id), "to": str(target), "kind": kind}
         edges.append(tomlkit.item(item | ({"bind": True} if bind else {})))
-    document["edges"] = edges
+    document["edges"] = edges or tomlkit.array()
     suggestions = tomlkit.aot()
     for skill_id in sorted(hull.suggestions):
         mentions = sorted(str(s) for s in hull.suggestions[skill_id])
         suggestions.append(tomlkit.item({"id": str(skill_id), "from": mentions}))
-    document["suggestions"] = suggestions
+    document["suggestions"] = suggestions or tomlkit.array()
     return tomlkit.dumps(document)
 
 
