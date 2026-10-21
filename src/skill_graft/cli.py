@@ -215,6 +215,20 @@ def _parser() -> tuple[_Parser, dict[str, argparse.ArgumentParser]]:
     )
     rename.add_argument("skill", metavar="skill-id", help="<source alias>/<name>")
     rename.add_argument("name", help="the name it deploys as")
+    bind = commands.add_parser(
+        "bind",
+        help="bind a name to a skill or to nothing, then resolve",
+        description=(
+            "Set `[bind]` key <source alias>/<name> in skill-graft.toml to a skill "
+            "ID, so every reference to <name> from that source resolves to it, or "
+            "to false, so <name> from that source is no reference. Keeps comments "
+            "and formatting, as add does. Never builds."
+        ),
+    )
+    bind.add_argument("key", metavar="alias/name", help="<source alias>/<name>")
+    bind.add_argument(
+        "target", help="a skill ID (<source alias>/<name>), or the word false"
+    )
     help_parser = commands.add_parser(
         "help",
         help="show the help of skill-graft or of a command",
@@ -260,6 +274,8 @@ def main(argv: list[str] | None = None) -> int:
             edit.remove(args.skills)
         elif args.command == "rename":
             edit.rename(args.skill, args.name)
+        elif args.command == "bind":
+            edit.bind(args.key, args.target)
         elif args.command == "why":
             with tempfile.TemporaryDirectory(prefix="skill-graft-") as work:
                 loaded, resolved = _resolve(Path(work))

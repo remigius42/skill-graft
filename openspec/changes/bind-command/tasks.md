@@ -6,7 +6,7 @@ synthetic **Skills** and **Sources**.
 
 ## 1. bind
 
-- [ ] 1.1 `edit.bind` sets a new or existing `[bind]` key to a **Skill ID** or `false`, appending the table when
+- [x] 1.1 `edit.bind` sets a new or existing `[bind]` key to a **Skill ID** or `false`, appending the table when
   absent and keeping a replaced value's comment; verify tests for the edit spec's "New bind", "Bind to nothing"
   and "Replaced" scenarios pass
 - [ ] 1.2 `bind` with the current value, `false` included, is a notice that leaves the file's bytes, after the

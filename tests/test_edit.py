@@ -1,4 +1,4 @@
-"""The `edit` spec: `add`, `remove` and `rename` change skill-graft.toml in place."""
+"""The `edit` spec: `add`, `remove`, `rename`, `bind` and `unbind` change skill-graft.toml in place."""
 
 import tomllib
 from pathlib import Path
@@ -487,3 +487,46 @@ def test_symlinked_config(home: Path, capsys: Capsys) -> None:
 
     assert link.is_symlink()
     assert 'entries = ["s/tdd", "s/notes"]' in target.read_text()
+
+
+TWO_SOURCES = SOURCES + '[sources.own]\npath = "~/own"\n'
+
+
+def test_bind_new(home: Path, capsys: Capsys) -> None:
+    skill(home / "mp" / "tdd", "/grilling\n")
+    mp_skills(home, "grilling")
+    skill(home / "own" / "grill")
+    config = write_config('entries = ["mp/tdd"]\n' + TWO_SOURCES)
+
+    assert main(["bind", "mp/grilling", "own/grill"]) == 0
+
+    assert config.read_text() == (
+        'entries = ["mp/tdd"]\n'
+        + TWO_SOURCES
+        + '\n[bind]\n"mp/grilling" = "own/grill"\n'
+    )
+    assert capsys.readouterr().out == "mp/tdd\n└── own/grill (/grilling, bind)\n"
+
+
+def test_bind_to_nothing(home: Path, capsys: Capsys) -> None:
+    skill(home / "mp" / "tdd", "/tmp\n")
+    config = write_config('entries = ["mp/tdd"]\n' + SOURCES)
+    assert main(["resolve"]) == 0
+    assert "no declared source has a skill `tmp`" in capsys.readouterr().err
+
+    assert main(["bind", "mp/tmp", "false"]) == 0
+
+    assert tomllib.loads(config.read_text())["bind"] == {"mp/tmp": False}
+    assert "tmp" not in after_package_line(capsys.readouterr().err)
+
+
+def test_bind_replaced(home: Path, capsys: Capsys) -> None:
+    skill(home / "mp" / "tdd", "/grilling\n")
+    mp_skills(home, "grilling")
+    skill(home / "own" / "grill")
+    text = 'entries = ["mp/tdd"]\n' + TWO_SOURCES + "[bind]\n"
+    config = write_config(text + '"mp/grilling" = "own/grill"  # mine\n')
+
+    assert main(["bind", "mp/grilling", "false"]) == 0
+
+    assert config.read_text() == text + '"mp/grilling" = false  # mine\n'

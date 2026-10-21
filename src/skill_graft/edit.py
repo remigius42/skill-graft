@@ -95,6 +95,15 @@ def rename(text: str, name: str) -> None:
     _finish(document, before)
 
 
+def bind(key: str, target: str) -> None:
+    """Sets `[bind]` key `key` to the skill ID `target`, or to `false`."""
+    document, _, before = read()
+    if "bind" not in document:
+        document.add("bind", tomlkit.table())
+    cast(Table, document["bind"])[key] = False if target == "false" else target
+    _finish(document, before)
+
+
 def _reach(hull: Hull, seeds: list[SkillId]) -> dict[SkillId, SkillId]:
     """What `seeds` reach over slash and Skill tool edges: each skill's parent.
 
