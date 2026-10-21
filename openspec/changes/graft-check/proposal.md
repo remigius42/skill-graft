@@ -44,4 +44,5 @@ config the user accepts.
 
 - New `skills/graft-check/` and `evals/graft-check/`; `src/skill_graft/init.py` (template only).
 - Tests in `tests/test_init.py`, `tests/test_lock.py` and a new `tests/test_check.py`.
+- Depends on the `source-subdirectory` change: the install uses its `subdirectory = "skills"`.
 - `README.md`; `.cspell.yaml` for new words. No change to resolution, the config format or the lock's content.

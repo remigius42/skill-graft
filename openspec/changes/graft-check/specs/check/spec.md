@@ -14,7 +14,8 @@ warning and no suggestion.
 
 #### Scenario: Alone in its hull
 
-- **WHEN** a **Source** `sg` holds every file this repository tracks and `entries = ["sg/graft-check"]`
+- **WHEN** a **Source** `sg` holds the files this repository tracks under `skills/` and
+  `entries = ["sg/graft-check"]`
 - **THEN** `skill-graft resolve` succeeds, the **Hull** is `sg/graft-check` alone, and it prints no warning and
   no suggestion
 

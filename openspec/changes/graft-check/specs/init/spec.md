@@ -22,8 +22,9 @@ the `graft-check` skill, and an `apm.yml` of exactly two lines: `name: skill-gra
 
 - **WHEN** the user runs `skill-graft init`
 - **THEN** `skill-graft.toml` holds, commented out, a **Source** `skill-graft` of
-  `https://github.com/remigius42/skill-graft.git`, followed by `skill-graft update skill-graft` and
-  `skill-graft add skill-graft/graft-check`, and uncommenting the **Source** alone gives a config that loads
+  `https://github.com/remigius42/skill-graft.git` with `subdirectory = "skills"`, followed by
+  `skill-graft update skill-graft` and `skill-graft add skill-graft/graft-check`, and uncommenting the **Source**
+  alone gives a config that loads
 
 #### Scenario: Project package
 

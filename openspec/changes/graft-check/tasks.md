@@ -10,8 +10,8 @@
 
 - [ ] 2.1 Add `skills/graft-check/SKILL.md` with front matter (`name: graft-check`,
   `disable-model-invocation: true`, a description saying it runs only when the user asks) and a body stub; add
-  `tests/test_check.py` asserting the front matter, and that a temporary path **Source** holding every tracked
-  file (`git ls-files`) with `entries = ["sg/graft-check"]` resolves to
+  `tests/test_check.py` asserting the front matter, and that a temporary path **Source** holding the tracked
+  files under `skills/` (`git ls-files skills`) with `entries = ["sg/graft-check"]` resolves to
   `sg/graft-check` alone with no warning and no suggestion; verify the tests pass
 - [ ] 2.2 Write the skill's body with the mp-writing-for-agents skill:
   - build with `--no-install`, read the **Package** line, stop on a lock `version` other than 1 (a higher one with
@@ -29,8 +29,9 @@
 
 ## 3. Installing it
 
-- [ ] 3.1 Add the commented `[sources.skill-graft]` block and the `update`/`add` commands to the `init` template;
-  verify a test for the "Template shows graft-check" scenario passes, uncommenting the block and loading it
+- [ ] 3.1 Add the commented `[sources.skill-graft]` block (with `subdirectory = "skills"`) and the `update`/`add`
+  commands to the `init` template; verify a test for the "Template shows graft-check" scenario passes,
+  uncommenting the block and loading it
 - [ ] 3.2 Document installing and running `graft-check` in `README.md`; verify the documented commands match the
   template and `pre-commit run --all-files` is green
 
