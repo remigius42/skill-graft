@@ -1,28 +1,43 @@
 # Tasks
 
-## 1. The skill
+## 1. Lock version
 
-- [ ] 1.1 Add `skills/graft-check/SKILL.md` with front matter (`name: graft-check`,
+- [ ] 1.1 Pin the lock's version 1 keys in `tests/test_lock.py` (a renamed, patched **Skill**, a bound edge, a
+  suggestion), its failure message saying to raise `version`; verify the test passes against today's lock
+  writer
+
+## 2. The skill
+
+- [ ] 2.1 Add `skills/graft-check/SKILL.md` with front matter (`name: graft-check`,
   `disable-model-invocation: true`, a description saying it runs only when the user asks) and a body stub; add
-  `tests/test_check.py` asserting the front matter and that a path **Source** of `skills/` with
-  `entries = ["sg/graft-check"]` resolves to `sg/graft-check` alone with no warning; verify the tests pass
-- [ ] 1.2 Write the skill's body with the mp-writing-for-agents skill: build with `--no-install` and read the
-  **Package** line, the lock `version` check with its two messages, the inputs (lock, `skill-graft why`, vendored
-  copy), optional **Skill ID** arguments, the five kinds with an example each, the per-skill subagent fan-out and
-  report shape, fixes one at a time after the user's yes through `add`/`bind`/`unbind` or the README patch recipe
-  with its undo, the rebuild after each, and the closing `skill-graft build` advice; verify `tests/test_check.py`
-  still passes (no **Reference** crept in) and `pre-commit run --all-files` is green
+  `tests/test_check.py` asserting the front matter, and that a temporary path **Source** holding the tracked
+  `skills/` and `.claude/skills/` files (`git ls-files`) with `entries = ["sg/graft-check"]` resolves to
+  `sg/graft-check` alone with no warning and no suggestion; verify the tests pass
+- [ ] 2.2 Write the skill's body with the mp-writing-for-agents skill:
+  - keep the lock, build with `--no-install`, read the **Package** line, check the lock `version` (its two
+    messages, the upgrade one not tied to `uv`)
+  - inputs: the lock, one `skill-graft why` per **Source** joined with the lock's `upstream`, the vendored copy;
+    optional **Skill ID** arguments
+  - the five kinds with a placeholder example each; the per-skill subagent fan-out and its report shape
+  - fixes one at a time after the user's yes: a **Bind** only when every **Reference** to the name from that
+    **Source** needs it, else a **Patch**; `add`/`bind`/`unbind`, or the README recipe with the **Package**
+    path; rebuild after each and name **Skills** that left or joined the **Hull**; undo a failed **Patch**'s file
+    and own list item only
+  - close with the `skill-graft build` advice whenever the lock differs from the one kept
+  - verify `tests/test_check.py` still passes (no **Reference** crept in) and `pre-commit run --all-files` is
+    green
 
-## 2. Installing it
+## 3. Installing it
 
-- [ ] 2.1 Add the commented `[sources.skill-graft]` block and the `update`/`add` commands to the `init` template;
+- [ ] 3.1 Add the commented `[sources.skill-graft]` block and the `update`/`add` commands to the `init` template;
   verify a test for the "Template shows graft-check" scenario passes, uncommenting the block and loading it
-- [ ] 2.2 Document installing and running `graft-check` in `README.md`; verify the documented commands match the
+- [ ] 3.2 Document installing and running `graft-check` in `README.md`; verify the documented commands match the
   template and `pre-commit run --all-files` is green
 
-## 3. Eval
+## 4. Eval
 
-- [ ] 3.1 Write `evals/graft-check/run.sh` and its README: a temporary project **Package** over a local git
-  **Source** with one planted defect per kind, the skill copied into the project's `.claude/skills/`,
-  `claude -p "/graft-check"` run there, and a grep per defect; verify a manual run reports all five and touches
-  nothing under `~/.apm`
+- [ ] 4.1 Write `evals/graft-check/run.sh` and its README: a temporary project **Package** over a local git
+  **Source** with one planted defect per kind, the working copy installed in the project's `.claude/skills/`
+  under a unique name (folder and `name:`), `claude -p` run there with `--allowedTools` for
+  `Bash(skill-graft:*)`, reads, searches and subagents, and a grep per defect; verify a manual run reports all
+  five, also with a `graft-check` deployed in `~/.claude/skills/`, and touches nothing under `~/.apm`

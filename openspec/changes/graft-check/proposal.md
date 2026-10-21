@@ -18,9 +18,12 @@ config the user accepts.
   to the wrong **Skill**, rewrites that changed the wrong text or missed a name, and relative links vendoring
   broke. Stale **Patches** are out of scope.
 - For each finding it proposes a fix (`skill-graft add`, `bind`, `unbind`, or a **Patch** written by the README's
-  recipe) and applies it only once the user accepts it, then rebuilds with `--no-install` to show the effect. It
-  never deploys: it ends by telling the user to run `skill-graft build`.
+  recipe), a **Bind** only where every **Reference** to that name from that **Source** needs it, and applies it
+  only once the user accepts it, then rebuilds with `--no-install` and names **Skills** that left or joined the
+  **Hull**. A failed **Patch** is undone without touching earlier ones. It never deploys: whenever the lock
+  changed, it ends by telling the user to run `skill-graft build`.
 - A lock `version` it does not know stops it, with the update that fixes it (the skill's **Source** or the CLI).
+  The lock's version 1 keys are pinned by a test, so a layout change has to raise `version`.
 - `skill-graft init` writes the lines that install it into its commented template; `README.md` explains them.
 - An opt-in eval script plants one defect of each kind in a synthetic **Package** and runs the skill headless,
   outside pre-commit and CI.
@@ -35,9 +38,10 @@ config the user accepts.
 ### Modified Capabilities
 
 - `init`: the template also shows, commented out, how to install `graft-check`.
+- `resolve`: the lock's layout is tied to its `version`.
 
 ## Impact
 
 - New `skills/graft-check/` and `evals/graft-check/`; `src/skill_graft/init.py` (template only).
-- Tests in `tests/test_init.py` and a new `tests/test_check.py`.
-- `README.md`; `.cspell.yaml` for new words. No change to resolution, the config format or the lock.
+- Tests in `tests/test_init.py`, `tests/test_lock.py` and a new `tests/test_check.py`.
+- `README.md`; `.cspell.yaml` for new words. No change to resolution, the config format or the lock's content.
