@@ -32,3 +32,14 @@ venv/
 
 ### Claude Code ###
 .claude/settings.local.json
+
+
+# APM dependencies
+apm_modules/
+
+# skill-graft run on itself: kept out of git for now
+/.apm/
+/apm.yml
+/apm.lock.yaml
+.claude/skills/mp-*/
+.claude/skills/hl-*/
