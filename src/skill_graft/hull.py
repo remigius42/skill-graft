@@ -117,6 +117,13 @@ def walk(config: Config, indexes: dict[str, discovery.Index], work: Path) -> Hul
                     )
                     skills[target] = discovery.find(indexes[target.alias], target, who)
                     queue.append(target)
+        # Every bind's target must exist, used or not: a typo should not wait for a
+        # use. After the walk, so a patch failure is reported with it.
+        for key, bound_to in config.binds.items():
+            if bound_to is not None:
+                discovery.find(
+                    indexes[bound_to.alias], bound_to, f'[bind] "{key}" = "{bound_to}"'
+                )
     except (SkillGraftError, OSError) as error:
         if not failed:
             raise
@@ -130,21 +137,13 @@ def walk(config: Config, indexes: dict[str, discovery.Index], work: Path) -> Hul
             if target != current:
                 edges.append(Edge(current, target, "prose", bound, ref.text, ref.name))
         else:
-            if bound:  # a bound target must exist, whatever the form
-                discovery.find(indexes[target.alias], target, f'[bind] "{key}"')
             suggestions.setdefault(target, set()).add(current)
-    for key in config.binds:
-        if key in used:  # its target found above
-            continue
-        # Unused, a target must exist all the same: a typo should not wait for a use.
-        if (target := config.binds[key]) is not None:
-            discovery.find(
-                indexes[target.alias], target, f'[bind] "{key}" = "{target}"'
-            )
-        warnings.append(
-            f'[bind] "{key}" binds no reference: no skill in the hull from '
-            f"{key.alias!r} calls {key.name!r}"
-        )
+    warnings += [
+        f'[bind] "{key}" binds no reference: no skill in the hull from '
+        f"{key.alias!r} calls {key.name!r}"
+        for key in config.binds
+        if key not in used
+    ]
     names = {skill: deployed(config, skill) for skill in skills}
     patched = {
         skill: [file.path for file in config.patches[skill]]

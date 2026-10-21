@@ -84,8 +84,7 @@ path = "~/Documents/sync/2_areas/software/chisel_skill"
   project root for a project package. `--no-install` stops before APM. Fails unless `apm` exits 0 and the
   scope's `apm.yml` (`~/.apm/apm.yml`, or the project's) lists the package.
 - Writing commands (`init`, `resolve`, `build`, `update`, `add`, `remove`, `rename`, `bind`, `unbind`) first
-  print
-  `skill-graft: package: <path>`.
+  print `skill-graft: package: <path>`.
 - `update [source…]`: fetches, resolves at each branch tip, and only if that succeeds writes the lock, and the
   tips' shas into `ref` when one moved; prints the hull diff (`+` added, `-` removed, `~` changed, against the
   hull at the current refs if those are cached, never fetching for it) and any failing patch hunks. `--dry-run`

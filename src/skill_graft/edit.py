@@ -99,12 +99,13 @@ def bind(key: str, target: str) -> None:
     """Sets `[bind]` key `key` to the skill ID `target`, or to `false`."""
     document, loaded, before = read()
     skill = config.parse_skill_id("bind", key, loaded.sources)
-    # The target before the no-op test: one gone upstream is no longer bound.
-    bound = None if target == "false" else resolve.known(loaded, "bind", target)
-    # Present too: a missing key reads as None, as `false` does.
-    if skill in loaded.binds and loaded.binds[skill] == bound:
-        notice(f"`{key}` is already bound to `{target}`")
-        return
+    # Resolving checks the target; a no-op skips that, so it is checked here first:
+    # one gone upstream is no longer bound. Present too: a missing key reads as None.
+    if skill in loaded.binds:
+        bound = None if target == "false" else resolve.known(loaded, "bind", target)
+        if loaded.binds[skill] == bound:
+            notice(f"`{key}` is already bound to `{target}`")
+            return
     if "bind" not in document:
         document.add("bind", tomlkit.table())
     cast(Table, document["bind"])[key] = False if target == "false" else target

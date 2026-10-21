@@ -24,10 +24,11 @@ missing or ambiguous, and warns about an unused **Bind**.
 - **`false` is a word on the command line.** A **Skill ID** always holds a `/`, so the bare word `false` cannot
   be one; it is written as the TOML boolean. Alternative: a `--none` flag. Rejected: the command line would then
   differ from the TOML the user reads.
-- **The target is checked before resolving**, with `resolve.known` as `rename` checks its **Skill**, so the error
-  names the target the user typed, not the **Bind** key. As in `rename`, the check comes before the no-op test, so
-  `bind` with a value already set but whose target is gone upstream is an error, not a notice. The key's `<name>` is
-  only parsed, not looked up: `mp/tmp` binds a word that is no **Skill**.
+- **Resolving checks the target**, as it checks every **Bind**'s, so a new or changed **Bind** to a missing
+  **Skill** fails with an error naming the key and the target the user typed. Only when the key is already set
+  does `bind` check the target first, with `resolve.known` as `rename` checks its **Skill**: the no-op test
+  skips resolving, and a value already set whose target is gone upstream is an error, not a notice. The key's
+  `<name>` is only parsed, not looked up: `mp/tmp` binds a word that is no **Skill**.
 - **`unbind`, not `bind --clear` or a default value.** `rename` undoes itself by taking the default name, but a
   **Bind** has no value that means "resolve by default". A separate command mirrors `add`/`remove`, and `remove`
   is already about **Entries**.
@@ -40,9 +41,10 @@ missing or ambiguous, and warns about an unused **Bind**.
 - **Messages suggest the command.** The unmatched-**Reference** warning ends with
   `skill-graft bind <key> false`, and the ambiguity error with `skill-graft bind <key> <source>/<name>`, so
   the fix they propose is checked when applied.
-- **Every Bind's target is checked**, in `hull.walk` after the walk, with `discovery.find` on the indexes it
-  already holds: no extra I/O. Rejected: a warning for an unused one. A used **Bind** to a missing **Skill** is
-  already an error, and an unused one is the typo `bind` exists to catch.
+- **Every Bind's target is checked**, in `hull.walk` once the walk is done, with `discovery.find` on the
+  indexes it already holds: no extra I/O, one message for every use, and a patch failure is still reported with
+  it. Rejected: a warning for an unused one. A used **Bind** to a missing **Skill** is already an error, and an
+  unused one is the typo `bind` exists to catch.
 - **`unbind` parses its key** as `bind` does, so a malformed key or undeclared alias gets the same error, not
   "not bound".
 
@@ -50,8 +52,7 @@ missing or ambiguous, and warns about an unused **Bind**.
 
 - \[`unbind` can break resolution when the default is ambiguous\] → `_finish` already refuses to write, and the
   error names the ambiguous **Reference**, so the user sees why the **Bind** was there.
-- \[`resolve.known` fetches every declared **Source** to check the target, and `_finish` fetches them again\] →
-  accepted, as for `rename`: `_finish` needs them all anyway, so the second pass hits the cache, and a broken
-  remote fails the command either way. Narrowing `known` to one **Source** changes neither.
+- \[`bind` of a key already set fetches every declared **Source** in `resolve.known`, and `_finish` does again\]
+  → accepted, as for `rename`: `_finish` needs them all anyway, so the second pass hits the cache.
 - \[A stale unused **Bind** (its target removed upstream) now stops `resolve` and `build`\] → the error names the
   **Bind**, and `skill-graft unbind` removes it.
