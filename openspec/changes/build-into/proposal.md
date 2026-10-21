@@ -15,9 +15,9 @@ look without changing anything. The **Check** needs a throwaway build.
 - The lock in `<dir>` holds the same bytes an in-place build would write; paths of project-scope path **Sources**
   stay relative to the **Package**, not to `<dir>`.
 - `<dir>` must be an existing, empty folder (as `mktemp -d` makes), and must not lie in a **Package** (any
-  `.apm/skill-graft` path), a path **Source**'s folder or the git cache. Otherwise `build` exits 1 before
+  `.apm/skill-graft` path), a path **Source**'s folder, or in or around the git cache. Otherwise `build` exits 1 before
   resolving. `build` never creates or deletes `<dir>` itself.
-- `--into` with `--no-install` is a usage error (exit 2), as is `--into` without a value.
+- `--into` with `--no-install` is a usage error (exit 2), as is `--into` without a value or with an empty one.
 - After the `skill-graft: package: <path>` line, `build --into` prints `skill-graft: into: <absolute dir>`.
 - The cache is written as usual: an uncached **Ref** is fetched.
 - `build --help`, `README.md` and `docs/design.md` describe `--into`.
@@ -36,7 +36,7 @@ None.
 ### Modified Capabilities
 
 - `build`: new requirements for building into a folder other than the **Package**, without APM; "Vendor
-  entries" and "Deploy through APM" exempt `--into`.
+  entries", "Deploy through APM" and "Build resolves first" exempt `--into`.
 
 ## Impact
 

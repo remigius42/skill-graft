@@ -14,13 +14,15 @@ synthetic **Skills** and **Sources**; `<dir>` is a `tmp_path` subfolder.
 
 - [ ] 2.1 Add `--into <dir>` to `build`'s parser with help text, in a mutually exclusive group with
   `--no-install` (exit 2 with `build`'s usage, before discovery, no `package:` line); verify CLI tests for
-  "With no-install", "Without a value" and `build --help` listing `--into` pass
+  "With no-install", "Without a value", "Empty value" and `build --help` listing `--into` pass
 - [ ] 2.2 Wire `build --into` to vendor into `<dir>/.apm/skills/`, hash those copies, write
   `<dir>/skill-graft.lock`, never run APM, and print the `into:` line after `package:`; verify tests for "Throwaway
   build", "Package untouched", "Package never built", "Same lock", "Project path source" and "Both lines" pass,
   with `apm` absent from `PATH`
-- [ ] 2.3 Any failure while vendoring, hashing or writing the lock during `build --into` leaves `<dir>` empty;
-  verify the "Vendoring fails" and "Lock write fails" tests pass
+- [ ] 2.3 Any failure or interrupt while vendoring, hashing or writing the lock during `build --into` removes
+  exactly what `build` wrote under `<dir>`, after the temporary work folder is gone; verify the "Vendoring
+  into the folder fails", "Lock write fails", "Interrupted", "Foreign file kept" and "Temporary folder inside
+  it" tests pass
 - [ ] 2.4 A git **Source** at an uncached `ref` is fetched into the cache by `build --into`; verify the "Uncached
   ref" test passes in `tests/test_git_build.py`
 
@@ -28,10 +30,10 @@ synthetic **Skills** and **Sources**; `<dir>` is a `tmp_path` subfolder.
 
 - [ ] 3.1 Refuse a missing `<dir>`, a file, or a non-empty folder, before loading the config; verify tests for
   "Missing folder", "Not empty", "Refused folder" and "Symlink to an empty folder" pass
-- [ ] 3.2 Refuse a `<dir>` in a **Package** (as given, resolved, or the same folder as the **Package** in effect
-  or the user scope's) and in or around the git cache, before loading the config; verify tests for "Inside a
-  package" (the case-variant path faked by a symlink if the test filesystem is case-sensitive), "Inside the
-  cache" and "Cache inside the folder" pass and the cache and **Package** are unchanged
+- [ ] 3.2 Refuse a `<dir>` under a path through `.apm/skill-graft` (as given or resolved, ignoring case) and in
+  or around the git cache (both resolved), before loading the config; verify tests for "Inside a package"
+  (including `.APM/Skill-Graft/`), "Inside the cache" (including a symlinked `XDG_CACHE_HOME`) and "Cache
+  inside the folder" pass and the cache and **Package** are unchanged
 - [ ] 3.3 Refuse a `<dir>` in a path **Source**'s folder, after loading the config and before resolving; verify
   the "Inside a source" test passes
 

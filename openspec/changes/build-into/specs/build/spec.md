@@ -86,6 +86,27 @@ project root's `apm.yml`, where a relative path is relative to the project root.
 - **WHEN** in project scope APM exits 0 but `<project>/apm.yml` does not list the package
 - **THEN** `build` exits non-zero naming `<project>/apm.yml` and the expected path
 
+### Requirement: Build resolves first
+
+`build` SHALL resolve the **Hull** as `resolve` does and print its warnings before vendoring, and write
+`skill-graft.lock` once vendoring succeeded, before running APM. A resolution or vendoring error SHALL leave the
+lock unchanged. `build --into` writes its lock into another folder instead, as "Build into a folder" says.
+
+#### Scenario: Lock written
+
+- **WHEN** the user runs `build --no-install`
+- **THEN** `skill-graft.lock` records the vendored **Hull**
+
+#### Scenario: Vendoring fails
+
+- **WHEN** a copy fails during `build`
+- **THEN** `skill-graft.lock` is unchanged
+
+#### Scenario: Warning does not stop build
+
+- **WHEN** an **Entry** calls `/foo` and no **Source** has `foo`
+- **THEN** `build` prints the warning and exits 0
+
 ## ADDED Requirements
 
 ### Requirement: Build into a folder
@@ -119,7 +140,7 @@ cache is written as by any `build`. A relative `<dir>` is relative to the workin
 - **WHEN** a git **Source**'s `ref` is not in the cache and the user runs `build --into <dir>`
 - **THEN** the commit is fetched into the cache and vendored into `<dir>`
 
-#### Scenario: Vendoring fails
+#### Scenario: Vendoring into the folder fails
 
 - **WHEN** a copy fails during `build --into <dir>`
 - **THEN** `build` exits non-zero naming the file, and `<dir>` is empty
@@ -127,6 +148,21 @@ cache is written as by any `build`. A relative `<dir>` is relative to the workin
 #### Scenario: Lock write fails
 
 - **WHEN** vendoring into `<dir>` succeeded and writing `<dir>/skill-graft.lock` fails
+- **THEN** `build` exits non-zero, and `<dir>` is empty
+
+#### Scenario: Interrupted
+
+- **WHEN** the user interrupts `build --into <dir>` (Ctrl-C) while it vendors
+- **THEN** `<dir>` is empty
+
+#### Scenario: Foreign file kept
+
+- **WHEN** another process writes `<dir>/.apm/x` while `build --into <dir>` fetches, and vendoring then fails
+- **THEN** `<dir>/.apm/x` is still there, and nothing `build` wrote is
+
+#### Scenario: Temporary folder inside it
+
+- **WHEN** `TMPDIR` is `<dir>` and vendoring fails
 - **THEN** `build` exits non-zero, and `<dir>` is empty
 
 ### Requirement: Into lock matches an in-place lock
@@ -148,9 +184,9 @@ from the same input. Paths a project-scope lock records relative to the **Packag
 
 ### Requirement: Into folder is empty and apart
 
-`<dir>` SHALL be an existing, empty folder, compared resolved. It SHALL NOT lie in a **Package** (the one in
-effect, the user scope's, or any path through `.apm/skill-graft`), in a path **Source**'s folder, or in or around
-the git cache. Otherwise `build` SHALL exit 1 naming `<dir>` and why, before resolving; the **Source** check
+`<dir>` SHALL be an existing, empty folder, compared resolved. It SHALL NOT lie in a **Package** (any path
+through `.apm/skill-graft`, as given or resolved, ignoring case), in a path **Source**'s folder, or in or around
+the git cache, both resolved. Otherwise `build` SHALL exit 1 naming `<dir>` and why, before resolving; the **Source** check
 follows loading the config, the others precede it. `build` SHALL never create or delete `<dir>` itself.
 
 #### Scenario: Missing folder
@@ -165,8 +201,8 @@ follows loading the config, the others precede it. `build` SHALL never create or
 
 #### Scenario: Inside a package
 
-- **WHEN** `<dir>` is an empty folder inside the **Package**, inside another `.apm/skill-graft/`, or reached
-  through a path that differs from the **Package**'s only in case on a case-insensitive filesystem
+- **WHEN** `<dir>` is an empty folder inside the **Package**, inside another `.apm/skill-graft/`, or under a
+  path such as `.APM/Skill-Graft/` that differs from one only in case
 - **THEN** `build --into <dir>` exits 1 naming `<dir>`, and the **Package** is unchanged
 
 #### Scenario: Inside a source
@@ -176,7 +212,8 @@ follows loading the config, the others precede it. `build` SHALL never create or
 
 #### Scenario: Inside the cache
 
-- **WHEN** `<dir>` is an empty folder inside the git cache
+- **WHEN** `<dir>` is an empty folder inside the git cache, reached directly or through a symlinked
+  `XDG_CACHE_HOME`
 - **THEN** `build --into <dir>` exits 1 naming `<dir>`
 
 #### Scenario: Cache inside the folder
@@ -192,7 +229,7 @@ follows loading the config, the others precede it. `build` SHALL never create or
 ### Requirement: Into never installs
 
 `--into` SHALL imply not running APM, so `--into` together with `--no-install` SHALL be a usage error (exit 2),
-as SHALL `--into` without a value. Both are reported before the **Package** is looked for.
+as SHALL `--into` without a value or with an empty one. All are reported before the **Package** is looked for.
 
 #### Scenario: With no-install
 
@@ -203,6 +240,11 @@ as SHALL `--into` without a value. Both are reported before the **Package** is l
 
 - **WHEN** the user runs `skill-graft build --into`
 - **THEN** it exits 2 naming `--into`
+
+#### Scenario: Empty value
+
+- **WHEN** the user runs `skill-graft build --into ""`, as `--into "$(mktemp -d)"` does when `mktemp` fails
+- **THEN** it exits 2 naming `--into`, and nothing is written, not even in the working folder
 
 ### Requirement: Into names the folder
 

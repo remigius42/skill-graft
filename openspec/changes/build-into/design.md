@@ -33,22 +33,29 @@ they overlap any **Package** (`config._source_folder`), and discovery skips `.ap
   reads `<dir>` by swapping the prefix. A flatter layout was rejected for that reason.
 - **Existing, empty folder only.** The one caller makes it with `mktemp -d`. Creating a missing `<dir>` was
   rejected: a typo would quietly create a tree, and a failure would then have to delete a folder `build` made.
-  Since `build` neither creates nor deletes `<dir>`, a failed run only has to empty it: vendoring, hashing the
-  copies and writing the lock run in one `try`, and on any error the `--into` path removes everything it wrote
-  under `<dir>` (its `.apm/`, a lock or the lock's temporary file) before re-raising, so `<dir>` is empty again.
+  Since `build` neither creates nor deletes `<dir>`, a failed run only has to undo its own writes: vendoring,
+  hashing the copies and writing the lock run in one `try` that catches `BaseException` (Ctrl-C included) and
+  removes exactly the paths `build` created under `<dir>` (`.apm/` only if it created it and it is then empty,
+  `.apm/skills.new/`, `.apm/skills/`, the lock and its temporary file), then re-raises. A file another process
+  put there meanwhile stays. The cleanup runs after the `with` that owns the temporary work folder has closed,
+  so a `TMPDIR` inside `<dir>` is gone by then and `<dir>` ends empty; refusing such a `TMPDIR` was rejected as
+  one more check for a case the ordering already handles.
 - **Checked before resolving.** The checks that need no config run right after the `package:` and `into:` lines,
   before the config loads, so a bad folder fails fast and writes nothing, the cache included: empty (following
-  symlinks; `<dir>` is used resolved), `paths.in_package` on `<dir>` as given and resolved (any **Package**, as
-  discovery treats it), `paths.overlap` of the resolved `<dir>` with each of `paths.packages()` resolved (on a
-  case-insensitive filesystem `resolve` keeps a case-variant path's case, so the check also compares each
-  ancestor of `<dir>` with the **Package** by `os.path.samefile`), and `paths.overlap` both ways with
-  `paths.cache()` (an `XDG_CACHE_HOME` inside `<dir>` would put the cache there). The **Source** check,
+  symlinks; `<dir>` is used resolved); a path through `.apm/skill-graft` in `<dir>` as given or resolved,
+  compared ignoring case (every **Package** lies at such a path, and on a case-insensitive filesystem `resolve`
+  keeps a case-variant path's case, so the case-sensitive `paths.in_package` alone would miss `.APM/Skill-Graft`;
+  on a case-sensitive one refusing that harmless name costs nothing, and no stat of a possibly missing
+  **Package** is needed); and `paths.overlap` both ways between the resolved `<dir>` and `paths.cache()`
+  resolved (a symlinked `XDG_CACHE_HOME` must not hide the cache, and one inside `<dir>` would put the cache
+  there). The **Source** check,
   `<dir>` inside a path **Source**'s folder, needs the loaded config, so it runs after loading, still before
   resolving; a config error is reported first. The reverse, a **Source** inside `<dir>`, cannot happen: `<dir>`
   is empty and a path **Source** must be an existing folder.
 - **`--into` and `--no-install` are an argparse mutually exclusive group** on `build`'s parser, so the clash
   exits 2 with `build`'s usage before `paths.discover` (no `package:` line, as the scope spec requires), and the
-  usage reads `[--no-install | --into DIR]`.
+  usage reads `[--no-install | --into DIR]`. An empty value is refused there too (an argparse `type` that raises
+  `ArgumentTypeError`), since `Path("")` is the working folder.
 - **`into:` line** printed with `notice`, right after `package:`, absolute but not resolved (as `package:`).
 
 ## Risks / Trade-offs
