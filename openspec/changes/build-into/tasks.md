@@ -12,7 +12,7 @@ synthetic **Skills** and **Sources**; `<dir>` is a `tmp_path` subfolder.
 
 ## 2. The option
 
-- [ ] 2.1 Add `--into <dir>` to `build`'s parser with help text, in a mutually exclusive group with
+- [x] 2.1 Add `--into <dir>` to `build`'s parser with help text, in a mutually exclusive group with
   `--no-install` (exit 2 with `build`'s usage, before discovery, no `package:` line); verify CLI tests for
   "With no-install", "Without a value", "Empty value" and `build --help` listing `--into` pass
 - [ ] 2.2 Wire `build --into` to vendor into `<dir>/.apm/skills/`, hash those copies, write

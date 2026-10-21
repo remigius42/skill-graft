@@ -1,4 +1,5 @@
 import subprocess
+from pathlib import Path
 
 import pytest
 
@@ -119,3 +120,32 @@ def test_unbind_missing_argument(capsys: pytest.CaptureFixture[str]) -> None:
     code, out, err = run(["unbind"], capsys)
     assert (code, out) == (2, "")
     assert "alias/name" in err
+
+
+def test_build_help_lists_into(capsys: pytest.CaptureFixture[str]) -> None:
+    code, out, _ = run(["build", "--help"], capsys)
+    assert code == 0
+    assert "[--no-install | --into DIR]" in out
+
+
+def test_into_with_no_install(capsys: pytest.CaptureFixture[str]) -> None:
+    code, out, err = run(["build", "--into", "d", "--no-install"], capsys)
+    assert (code, out) == (2, "")
+    assert err.startswith("usage: skill-graft build")
+    assert "--into" in err and "--no-install" in err and "package:" not in err
+
+
+def test_into_without_a_value(capsys: pytest.CaptureFixture[str]) -> None:
+    code, out, err = run(["build", "--into"], capsys)
+    assert (code, out) == (2, "")
+    assert "--into" in err
+
+
+def test_into_with_an_empty_value(
+    home: Path, capsys: pytest.CaptureFixture[str]
+) -> None:
+    before = sorted(home.iterdir())
+    code, out, err = run(["build", "--into", ""], capsys)
+    assert (code, out) == (2, "")
+    assert "--into" in err and "package:" not in err
+    assert sorted(home.iterdir()) == before

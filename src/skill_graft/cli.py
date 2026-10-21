@@ -120,8 +120,19 @@ def _parser() -> tuple[_Parser, dict[str, argparse.ArgumentParser]]:
             "project root for a project's package."
         ),
     )
-    build.add_argument(
+    install = build.add_mutually_exclusive_group()
+    install.add_argument(
         "--no-install", action="store_true", help="stop before running APM"
+    )
+    install.add_argument(
+        "--into",
+        type=_into,
+        metavar="DIR",
+        help=(
+            "vendor into DIR/.apm/skills/ and write DIR/skill-graft.lock instead, "
+            "leaving the package as it is; never runs APM. DIR must be an existing, "
+            "empty folder outside any package, source and the cache"
+        ),
     )
     update_parser = commands.add_parser(
         "update",
@@ -336,6 +347,13 @@ def main(argv: list[str] | None = None) -> int:
     finally:
         paths.use(None)
     return 0
+
+
+def _into(value: str) -> Path:
+    """`--into`'s folder; an empty value would mean the working folder."""
+    if not value:
+        raise argparse.ArgumentTypeError("must not be empty")
+    return Path(value)
 
 
 def _working_folder() -> Path:
