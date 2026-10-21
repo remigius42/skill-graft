@@ -24,7 +24,9 @@ Status: beta.
 
 - `init [--project]`: create the package, `~/.apm/skill-graft/` (or `./.apm/skill-graft/`), and register it with APM.
 - `resolve`: compute the hull, write the lock, print the tree and the skills prose mentions outside the hull.
-- `build [--no-install]`: resolve, vendor the hull patched and renamed into `.apm/skills/`, deploy through APM.
+- `build [--no-install | --into <dir>]`: resolve, vendor the hull patched and renamed into `.apm/skills/`, deploy
+  through APM. `--into <dir>` writes the skills and the lock into an empty `<dir>` instead, never touching the
+  package or APM.
 - `update [source…] [--dry-run]`: move each git source's `ref` to its branch tip, if the hull still resolves there.
 - `tree [--format text|mermaid] [--link]`: print the hull, writing nothing; `--link` gives a mermaid.live URL.
 - `why <skill>`: print the paths from the entries that reach a skill, and its upstream folder.

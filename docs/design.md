@@ -17,6 +17,8 @@ to the home folder, else the user scope's (ADR 0004).
 | `apm.yml`             | `init`                                                 | `name` and `version`, nothing else                          |
 | `.apm/skills/<name>/` | `build`                                                | the vendored, patched, renamed skills                       |
 
+`build --into <dir>` writes the lock and `.apm/skills/` into `<dir>` instead, leaving the package as it is.
+
 `resolve` never rewrites `skill-graft.toml`. Commands that edit it on purpose use `tomlkit`, so comments and
 formatting survive. The lock is output only: never an input that overrides the TOML.
 
@@ -92,7 +94,11 @@ path = "~/Documents/sync/2_areas/software/chisel_skill"
   empty parts, `.git`, control characters or `.apm/skill-graft`; a path source points `path` at the folder instead.
 - `build`: resolves, writes `.apm/skills/`, then the lock, then runs the same `apm install` as `init`, in the
   project root for a project package. `--no-install` stops before APM. Fails unless `apm` exits 0 and the
-  scope's `apm.yml` (`~/.apm/apm.yml`, or the project's) lists the package.
+  scope's `apm.yml` (`~/.apm/apm.yml`, or the project's) lists the package. `--into <dir>` (not with
+  `--no-install`) writes `<dir>/.apm/skills/` and `<dir>/skill-graft.lock` instead, the same lock bytes an
+  in-place build writes, and never runs APM or changes the package. `<dir>` must be an existing, empty folder,
+  not in a package (any `.apm/skill-graft` path, ignoring case), a path source's folder, or in or around the
+  cache; a failed build removes what it wrote there.
 - Writing commands (`init`, `resolve`, `build`, `update`, `add`, `remove`, `rename`, `bind`, `unbind`) first
   print `skill-graft: package: <path>`.
 - `update [source…]`: fetches, resolves at each branch tip, and only if that succeeds writes the lock, and the

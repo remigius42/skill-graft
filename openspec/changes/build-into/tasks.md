@@ -39,6 +39,6 @@ synthetic **Skills** and **Sources**; `<dir>` is a `tmp_path` subfolder.
 
 ## 4. Docs
 
-- [ ] 4.1 Describe `build [--no-install | --into <dir>]` in `README.md`'s commands list and `docs/design.md`'s
+- [x] 4.1 Describe `build [--no-install | --into <dir>]` in `README.md`'s commands list and `docs/design.md`'s
   `build` entry (layout, empty folder, never APM, same lock), and its file table, where `.apm/skills/<name>/` and
   `skill-graft.lock` are also written into `<dir>` by `build --into`; verify `pre-commit run --all-files` is green
