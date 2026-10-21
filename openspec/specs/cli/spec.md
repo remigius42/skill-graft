@@ -16,8 +16,8 @@ exit 0 without reading `skill-graft.toml`. The top level SHALL list every comman
 #### Scenario: Top-level help
 
 - **WHEN** the user runs `skill-graft --help`
-- **THEN** it exits 0 and lists `init`, `resolve`, `build`, `update`, `why`, `tree`, `add`, `remove`, `rename` and
-  `help`, each with a summary
+- **THEN** it exits 0 and lists `init`, `resolve`, `build`, `update`, `why`, `tree`, `add`, `remove`, `rename`,
+  `bind`, `unbind` and `help`, each with a summary
 
 #### Scenario: Command help
 
