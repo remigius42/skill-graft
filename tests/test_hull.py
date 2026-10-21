@@ -59,8 +59,9 @@ def test_several_other_sources(home: Path, capsys: Capsys) -> None:
     code, err = build(capsys)
 
     assert code == 1
-    for text in ["mp/tdd", "/notes", "own/notes", "x/notes", '"mp/notes"', "[bind]"]:
+    for text in ["mp/tdd", "/notes", "own/notes", "x/notes"]:
         assert text in err
+    assert "skill-graft bind mp/notes <source>/<name>" in err
     assert vendored() == set()
 
 
@@ -72,7 +73,7 @@ def test_no_such_skill(home: Path, capsys: Capsys) -> None:
     assert code == 0 and vendored() == {"tdd"}
     warning = "`mp/tdd` calls `/foo`: no declared source has a skill `foo`"
     assert err.count(warning) == 1
-    assert '"mp/foo" = false' in err
+    assert "skill-graft bind mp/foo false" in err
 
 
 def test_skill_tool_form_named(home: Path, capsys: Capsys) -> None:

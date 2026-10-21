@@ -98,7 +98,7 @@ def walk(config: Config, indexes: dict[str, discovery.Index], work: Path) -> Hul
                             unmatched.add((current, ref.name))
                             warnings.append(
                                 f"`{current}` calls `{ref.text}`: no declared source has "
-                                f'a skill `{ref.name}` (to ignore it: [bind] "{key}" = '
+                                f"a skill `{ref.name}` (to ignore it: skill-graft bind {key} "
                                 "false)"
                             )
                         continue
@@ -186,7 +186,7 @@ def _target(
         ids = ", ".join(sorted(str(other) for other in others))
         raise SkillGraftError(
             f"'{current}' calls {ref.text}, which several sources have: {ids}; "
-            f'choose one under [bind]: "{current.alias}/{ref.name}" = "<source>/<name>"'
+            f"choose one: skill-graft bind {current.alias}/{ref.name} <source>/<name>"
         )
     return others[0] if others else None
 
