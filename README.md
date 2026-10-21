@@ -48,6 +48,11 @@ branch = "main"  # optional; defaults to the remote's default branch
 ref = "<sha>"
 prefix = "mp-"   # optional; every skill of `mp` deploys as mp-<name>
 
+[sources.cp]
+git = "https://github.com/cursor/plugins.git"
+ref = "<sha>"
+subdirectory = "pstack/skills"  # optional; read only this folder of the repository
+
 [sources.own]
 path = "~/skills"
 
@@ -66,6 +71,10 @@ path = "~/skills"
 - `entries`: the skills you ask for. Slash references and Skill tool calls (`Skill(x)`, or "call the Skill tool
   with `x`") pull in the rest of the hull; prose mentions only become suggestions.
 - `sources`: local folders (`path`) and git repositories (`git`), read at the commit `ref` names.
+- `subdirectory`: a git source is read only in this folder, as if it were the repository's root, for a repository
+  holding several plugins whose skills share names. It must be a real folder at the commit read, or the command
+  fails; `update` then leaves `ref` where it is. The lock still records each skill's `upstream` relative to the
+  repository's root.
 - `prefix` and `[rename]`: a skill deploys as its `[rename]` value, else its source's prefix before its name,
   else its name. Carried into its folder, `name:` and every reference.
 - `[bind]`: settles which skill a reference means when several sources have one of that name, or with `false`

@@ -17,6 +17,7 @@ CONFIG_TEMPLATE = """\
 # git = "https://example.com/skills.git"   # a URL, user@host:path, or an absolute path
 # branch = "main"            # optional; defaults to the remote's default branch
 # ref = "<sha>"              # the commit build reads; `skill-graft update` sets it
+# subdirectory = "skills"    # optional; read only this folder of the repository
 # prefix = "mp-"             # optional; each skill deploys as mp-<name> unless [rename] says otherwise
 """
 

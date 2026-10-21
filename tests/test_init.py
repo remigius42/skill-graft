@@ -24,7 +24,7 @@ def test_template_shows_a_git_source(home: Path, fake_apm: FakeApm) -> None:
     assert main(["init"]) == 0
 
     text = (home / ".apm" / "skill-graft" / "skill-graft.toml").read_text()
-    for word in ("git =", "branch =", "ref =", "skill-graft update"):
+    for word in ("git =", "branch =", "ref =", "subdirectory =", "skill-graft update"):
         assert word in text
 
 

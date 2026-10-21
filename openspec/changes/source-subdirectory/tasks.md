@@ -24,7 +24,7 @@ full (read, checked, locked), so no commit accepts intent it ignores or mishandl
 
 ## 2. Docs
 
-- [ ] 2.1 `init.py`'s template gains a commented `subdirectory = "skills"` line under `[sources.mp]`, marked
+- [x] 2.1 `init.py`'s template gains a commented `subdirectory = "skills"` line under `[sources.mp]`, marked
   optional: read only this folder of the repository. `README.md`'s config section and `docs/design.md` (the TOML
   example, the `resolve` and `update` bullets, the lock paragraph under Feedback) document the key, its
   missing-at-ref error and `upstream` relative to the repository root. Verify: the init test that reads the

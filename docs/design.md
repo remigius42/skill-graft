@@ -35,6 +35,11 @@ branch = "main"  # optional; defaults to the remote's default branch
 ref = "<sha>"
 prefix = "mp-"  # optional; every skill of `mp` deploys as mp-<name>
 
+[sources.cp]
+git = "https://github.com/cursor/plugins.git"
+ref = "<sha>"
+subdirectory = "pstack/skills"  # optional; read only this folder of the repository
+
 [sources.own]
 path = "~/Documents/sync/2_areas/software/chisel_skill"
 
@@ -80,7 +85,11 @@ path = "~/Documents/sync/2_areas/software/chisel_skill"
   current value is a notice only while its target exists. An unused bind gets the usual warning.
 - `unbind` deletes the key, leaving the table; its key is parsed as `bind`'s, and one not in `[bind]` is an error.
 - `resolve`: computes the hull from the TOML, writes the lock, prints the tree, warnings and suggestions.
-  Reads every declared source, each git one at its `ref`, fetching only when that commit is not cached.
+  Reads every declared source, each git one at its `ref`, fetching only when that commit is not cached. A git
+  source with `subdirectory` is read only in that folder of the commit, as if it were the root, confined to it as
+  discovery confines a tree; it must be a folder of exactly that name there, with no symlink on the way, else the
+  command fails naming the alias, the subdirectory and the commit. `subdirectory` is relative, without `.`, `..`,
+  empty parts, control characters or `.apm/skill-graft`; a path source points `path` at the folder instead.
 - `build`: resolves, writes `.apm/skills/`, then the lock, then runs the same `apm install` as `init`, in the
   project root for a project package. `--no-install` stops before APM. Fails unless `apm` exits 0 and the
   scope's `apm.yml` (`~/.apm/apm.yml`, or the project's) lists the package.
@@ -89,7 +98,8 @@ path = "~/Documents/sync/2_areas/software/chisel_skill"
 - `update [source…]`: fetches, resolves at each branch tip, and only if that succeeds writes the lock, and the
   tips' shas into `ref` when one moved; prints the hull diff (`+` added, `-` removed, `~` changed, against the
   hull at the current refs if those are cached, never fetching for it) and any failing patch hunks. `--dry-run`
-  does all of it without writing the TOML, the lock or the cache.
+  does all of it without writing the TOML, the lock or the cache. A tip without a source's `subdirectory` fails
+  resolution, so `ref` stays.
 - `why <skill>`: the reverse paths from the entries, as an inverted tree (`cargo tree -i`): the skill at the
   root, each child a skill whose slash or Skill tool reference reaches it, joined by `├─←` and `└─←`, labels and
   `(*)` as in `resolve`'s tree, an entry below the root marked `(entry)` and not expanded (the root always
@@ -220,9 +230,10 @@ deployed file as `modified` drift.
 ## Feedback
 
 The lock (TOML, sorted except `patches`, never read back, the same on every machine for a project package whose path
-sources lie inside the project) records each source's `ref` or folder (in project scope relative to the package when
-inside the project), each hull skill with a SHA-256 of its folder as vendored (patches and rewrites applied), its
-`upstream` folder (relative to its source: the cache export or the path source's folder; `why` prints it absolute), its
+sources lie inside the project) records each source's `ref` and `subdirectory`, or folder (in project scope relative to
+the package when inside the project), each hull skill with a SHA-256 of its folder as vendored (patches and rewrites
+applied), its `upstream` folder (relative to its source's root: the cache export, `subdirectory` included, or the path
+source's folder; `why` prints it absolute), its
 `deployed` name when renamed or prefixed and its `patches` in apply order when patched, each edge with its kind
 (`slash`, `skill-tool`, `prose`) plus `bind = true` when a bind decided it, and each prose suggestion with the skills mentioning
 it, so the explanation is a view of it:
