@@ -88,6 +88,12 @@ project, for everyone working in it). A command acts on the nearest **Package** 
 on the user scope's when there is none.
 _Avoid_: Level, mode, global/local
 
+**Check**:
+A review, invoked by the user and done by an agent, of how a built **Package** reads its **Skills**: missed,
+false or misdirected **References**, rewrites that changed the wrong text, and links vendoring broke. It only
+proposes **Binds**, **Entries** and **Patches**; the user accepts each, and resolution stays skill-graft's alone.
+_Avoid_: Audit, verify, validation
+
 ## Example dialogue
 
 > **Dev:** I added `mp/tdd` as an **Entry**. Why is `mp/grilling` in the **Hull**?
