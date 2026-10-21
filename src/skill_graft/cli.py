@@ -338,7 +338,7 @@ def main(argv: list[str] | None = None) -> int:
             skills = paths.skills() if into is None else into / ".apm" / "skills"
             try:
                 with tempfile.TemporaryDirectory(prefix="skill-graft-") as work:
-                    loaded, resolved = _resolve(Path(work))
+                    loaded, resolved = _resolve(Path(work), into)
                     warn(resolved.warnings)
                     vendor.vendor(resolved, skills)
                 # Hashes the vendored copies, so the lock holds what was vendored.
@@ -415,9 +415,16 @@ def _load() -> config.Config:
     return loaded
 
 
-def _resolve(work: Path) -> tuple[config.Config, Hull]:
-    """The config and its hull, every source at its ref, patched copies in `work`."""
+def _resolve(work: Path, into: Path | None = None) -> tuple[config.Config, Hull]:
+    """The config and its hull, every source at its ref, patched copies in `work`;
+    first refusing an `into` folder inside a path source, as `build --into` must."""
     loaded = _load()
+    if into is not None:
+        for alias, source in sorted(loaded.sources.items()):
+            if isinstance(source, config.PathSource) and into.is_relative_to(
+                source.folder
+            ):
+                raise SkillGraftError(f"--into {into}: inside source {alias!r}")
     folders = resolve.folders(loaded, Cache(paths.cache()), {})
     return loaded, resolve.resolve(loaded, folders, work)
 

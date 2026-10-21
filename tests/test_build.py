@@ -726,3 +726,24 @@ def test_cache_inside_the_folder(
 
     assert f"skill-graft: --into {into}: overlaps the cache" in capsys.readouterr().err
     assert list(into.iterdir()) == []
+
+
+@pytest.mark.parametrize("where", ["src/tmp", "empty"])
+def test_into_a_source(
+    home: Path, capsys: pytest.CaptureFixture[str], where: str
+) -> None:
+    skill(home / "src" / "chisel")
+    (home / "empty").mkdir()
+    write_config(
+        'entries = ["own/chisel"]\n[sources.own]\npath = "~/src"\n'
+        '[sources.none]\npath = "~/empty"\n'
+    )
+    into = home / where
+    into.mkdir(exist_ok=True)
+
+    assert main(["build", "--into", str(into)]) == 1
+
+    alias = "own" if where == "src/tmp" else "none"
+    err = capsys.readouterr().err
+    assert f"skill-graft: --into {into}: inside source '{alias}'" in err
+    assert list(into.iterdir()) == []

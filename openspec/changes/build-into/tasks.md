@@ -34,7 +34,7 @@ synthetic **Skills** and **Sources**; `<dir>` is a `tmp_path` subfolder.
   or around the git cache (both resolved), before loading the config; verify tests for "Inside a package"
   (including `.APM/Skill-Graft/`), "Inside the cache" (including a symlinked `XDG_CACHE_HOME`) and "Cache
   inside the folder" pass and the cache and **Package** are unchanged
-- [ ] 3.3 Refuse a `<dir>` in a path **Source**'s folder, after loading the config and before resolving; verify
+- [x] 3.3 Refuse a `<dir>` in a path **Source**'s folder, after loading the config and before resolving; verify
   the "Inside a source" test passes
 
 ## 4. Docs
