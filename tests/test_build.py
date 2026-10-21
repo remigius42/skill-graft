@@ -592,3 +592,70 @@ def test_temporary_folder_inside_it(
     assert main(["build", "--into", str(into)]) == 1
 
     assert list(into.iterdir()) == []
+
+
+def chisel_config(home: Path) -> None:
+    skill(home / "src" / "chisel")
+    write_config('entries = ["own/chisel"]\n[sources.own]\npath = "~/src"\n')
+
+
+def test_into_a_missing_folder(
+    home: Path, tmp_path: Path, capsys: pytest.CaptureFixture[str]
+) -> None:
+    chisel_config(home)
+    into = tmp_path / "into"
+
+    assert main(["build", "--into", str(into)]) == 1
+
+    assert f"skill-graft: --into {into}: no such folder" in capsys.readouterr().err
+    assert not into.exists()
+
+
+@pytest.mark.parametrize("kind", ["file", "folder holding a file"])
+def test_into_not_empty(
+    home: Path, tmp_path: Path, capsys: pytest.CaptureFixture[str], kind: str
+) -> None:
+    chisel_config(home)
+    into = tmp_path / "into"
+    if kind == "file":
+        into.write_text("mine\n")
+    else:
+        into.mkdir()
+        (into / "mine").write_text("mine\n")
+
+    assert main(["build", "--into", str(into)]) == 1
+
+    err = capsys.readouterr().err
+    assert f"skill-graft: --into {into}: " in err
+    assert "not a folder" in err if kind == "file" else "not empty" in err
+    if kind == "file":
+        assert into.read_text() == "mine\n"
+    else:
+        assert snapshot(into) == {"mine": b"mine\n"}
+
+
+def test_into_refused_before_the_config_loads(
+    tmp_path: Path, capsys: pytest.CaptureFixture[str]
+) -> None:
+    write_config("not toml [\n")
+    into = tmp_path / "into"
+    into.mkdir()
+    (into / "mine").write_text("mine\n")
+
+    assert main(["build", "--into", str(into)]) == 1
+
+    lines = capsys.readouterr().err.splitlines()
+    assert lines[0].startswith("skill-graft: package: ")
+    assert lines[1] == f"skill-graft: into: {into}"
+    assert lines[2].startswith(f"skill-graft: --into {into}: ")
+
+
+def test_into_a_symlink_to_an_empty_folder(home: Path, tmp_path: Path) -> None:
+    chisel_config(home)
+    target = empty_folder(tmp_path)
+    link = tmp_path / "link"
+    link.symlink_to(target)
+
+    assert main(["build", "--into", str(link)]) == 0
+
+    assert (target / ".apm" / "skills" / "chisel" / "SKILL.md").is_file()

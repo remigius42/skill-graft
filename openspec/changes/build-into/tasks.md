@@ -28,7 +28,7 @@ synthetic **Skills** and **Sources**; `<dir>` is a `tmp_path` subfolder.
 
 ## 3. Folder checks
 
-- [ ] 3.1 Refuse a missing `<dir>`, a file, or a non-empty folder, before loading the config; verify tests for
+- [x] 3.1 Refuse a missing `<dir>`, a file, or a non-empty folder, before loading the config; verify tests for
   "Missing folder", "Not empty", "Refused folder" and "Symlink to an empty folder" pass
 - [ ] 3.2 Refuse a `<dir>` under a path through `.apm/skill-graft` (as given or resolved, ignoring case) and in
   or around the git cache (both resolved), before loading the config; verify tests for "Inside a package"

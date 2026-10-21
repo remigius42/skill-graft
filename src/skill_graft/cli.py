@@ -289,6 +289,7 @@ def main(argv: list[str] | None = None) -> int:
             notice(f"package: {paths.package().absolute()}")
         if args.command == "build" and args.into is not None:
             notice(f"into: {args.into.absolute()}")
+            _check_into(args.into)
         if args.command == "init":
             init.init(args.project)
         elif args.command == "update":
@@ -368,6 +369,17 @@ def _into(value: str) -> Path:
     if not value:
         raise argparse.ArgumentTypeError("must not be empty")
     return Path(value)
+
+
+def _check_into(into: Path) -> None:
+    """Refuses an `--into` folder `build` could not use without harm: anything but an
+    existing, empty folder."""
+    if not into.exists():
+        raise SkillGraftError(f"--into {into}: no such folder")
+    if not into.is_dir():
+        raise SkillGraftError(f"--into {into}: not a folder")
+    if any(into.iterdir()):
+        raise SkillGraftError(f"--into {into}: not empty")
 
 
 def _undo_into(into: Path) -> None:
