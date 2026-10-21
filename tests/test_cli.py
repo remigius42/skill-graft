@@ -13,6 +13,7 @@ COMMANDS = [
     "tree",
     "add",
     "remove",
+    "rename",
     "bind",
     "unbind",
     "help",
