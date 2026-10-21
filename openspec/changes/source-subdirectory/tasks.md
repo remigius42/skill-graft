@@ -8,13 +8,15 @@ full (read, checked, locked), so no commit accepts intent it ignores or mishandl
 ## 1. Subdirectory
 
 - [ ] 1.1 `subdirectory` end to end. `config.py`: a supported key beside `git` only, a string validated
-  lexically, into `GitSource.subdirectory`. `resolve.folders`: returns `export / subdirectory` after the `lstat`
-  walk, which fails naming the alias, the subdirectory and the commit when it is missing, not a folder, or runs
-  through a symlink. `lock.render`: the source table's `subdirectory`, and `upstream` joined with it. Verify the
-  scenarios in the delta specs: config (subdirectory-not-a-string, subdirectory-key, subdirectory-on-a-path-source,
-  valid-subdirectory, subdirectory-leaving-the-repository), git-sources (one-plugin-of-many, skill-outside-the-
-  subdirectory, link-out-of-the-subdirectory, skill-at-the-subdirectory, missing-at-ref for `resolve` and `build`,
-  a-file-not-a-folder, symlinked-subdirectory, shared-export), resolve (subdirectory-recorded,
+  lexically, into `GitSource.subdirectory`. `resolve.folders`: returns `export / subdirectory` after the
+  exact-name walk, which fails naming the alias, the whole subdirectory and the commit when it is missing, not a
+  folder, or runs through a symlink. `Hull.roots`: each **Source**'s root, the export for a git one, so
+  `lock.render` is unchanged but for the source table's `subdirectory`. Verify the scenarios in the delta specs:
+  config (subdirectory-not-a-string, subdirectory-key, subdirectory-on-a-path-source, valid-subdirectory,
+  subdirectory-leaving-the-repository, control-character, subdirectory-into-a-package), git-sources
+  (one-plugin-of-many, skill-outside-the-subdirectory, link-out-of-the-subdirectory, skill-at-the-subdirectory,
+  missing-at-ref for `resolve` and `build`, a-file-not-a-folder, symlinked-subdirectory, case-differs,
+  shared-export, and the modified requirement's scenarios), resolve (subdirectory-recorded,
   upstream-under-a-subdirectory), update (subdirectory-gone-upstream, also with `--dry-run`). Also: `why` on a
   subdirectory **Source**'s skill prints an `upstream:` folder ending in `pstack/skills/tdd`. Every existing test
   passes, and a lock without `subdirectory` is byte for byte unchanged.
@@ -23,6 +25,7 @@ full (read, checked, locked), so no commit accepts intent it ignores or mishandl
 
 - [ ] 2.1 `init.py`'s template gains a commented `subdirectory = "skills"` line under `[sources.mp]`, marked
   optional: read only this folder of the repository. `README.md`'s config section and `docs/design.md` (the TOML
-  example, the `resolve` and `update` bullets, the lock paragraph under Feedback) document the key, its missing-at-ref error
-  and `upstream` relative to the repository root. Verify: the init test that reads the template still passes,
-  the documented TOML examples parse through `config.parse`, and `pre-commit run --all-files` is green.
+  example, the `resolve` and `update` bullets, the lock paragraph under Feedback) document the key, its
+  missing-at-ref error and `upstream` relative to the repository root. Verify: the init test that reads the
+  template still passes, the documented TOML examples parse through `config.parse`, and
+  `pre-commit run --all-files` is green.

@@ -59,6 +59,7 @@ words:
   - pytestmark
   - Remigius
   - rmtree
+  - scandir
   - shutil
   - statusline
   - stdlib

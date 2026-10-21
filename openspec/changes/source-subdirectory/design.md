@@ -20,12 +20,19 @@ must say more.
 
 - **`GitSource.subdirectory: str | None`**, validated in `config._git_source`, kept as written. A field on the
   source, unlike `prefix` (`Config.prefixes`), because the code that reads a git **Source**'s tree needs it, and a
-  path **Source** cannot have it. Validation is lexical (split on `/`, refuse empty, `.` and `..`), so a bad value
-  fails before git runs.
+  path **Source** cannot have it. Validation is lexical, so a bad value fails before git runs: split on `/`, refuse
+  empty, `.` and `..` segments, NUL and other control characters (a NUL would make the later file system call
+  raise `ValueError`, which no caller catches), and an `.apm` segment followed by `skill-graft`. Discovery checks
+  `paths.in_package` only for the folders it descends into, never for its walk root, so a subdirectory inside a
+  committed **Package** would read its vendored copies.
 - **`folders` returns `export / subdirectory` after a check (`_subdirectory(alias, export, sub, ref)`).** It walks
-  the segments from the export with `lstat`: each must exist, be a directory and not be a symlink. Otherwise it
-  raises `source 'cp': subdirectory 'pstack/skills' is not a folder at <sha>`, or `… is a symlink at <sha>`, naming
-  the first bad segment's path. Refusing symlinks outright is simpler than resolving and confining them, and a
+  the segments from the export. Each must be the exact name of an entry in its parent folder (`os.scandir`), and
+  that entry must be a directory and not a symlink (`is_dir(follow_symlinks=False)`). Comparing names, rather than
+  calling `lstat` on the joined path, makes a case-insensitive file system refuse `PStack/skills` as Linux does, so
+  the lock stays the same on every machine. Otherwise it raises
+  `source 'cp': subdirectory 'pstack/skills' is not a folder at <sha>`, or `… runs through a symlink at <sha>`. The
+  error always names the whole subdirectory as written, never only the segment that failed. Refusing symlinks
+  outright is simpler than resolving and confining them, and a
   committed symlink as a plugin folder is far more likely a mistake than intent. Alternative: check inside
   `Cache.checkout`. Rejected: the export is the whole tree, shared by aliases with different subdirectories, so
   the cache has no business knowing about any one of them.
@@ -33,11 +40,14 @@ must say more.
   takes its `root` from the folder it walks, so a link leaving the subdirectory is not followed, even one that
   stays inside the repository. That keeps "as if it were the repository root" literal, and keeps the other
   plugins' skills out, which is the point of the key. No discovery code changes.
-- **The lock's `upstream` is relative to the repository root.** `Hull.roots` stays the walked folder, as discovery
-  needs it. `lock.render` prefixes the relative path with the source's `subdirectory`
-  (`PurePosixPath(sub) / rel`, collapsing `rel == "."`), so `pstack/skills/tdd`, or `plugins/chisel` for a skill
-  at the subdirectory itself. Export joined with `upstream` is then the skill's folder for any reader, and
-  graft-check needs no second key. The source table gains `subdirectory` when set. `version` stays 1: there are
+- **The lock's `upstream` is relative to the repository root.** `Hull.roots[alias]`, which only `lock.render`
+  reads, becomes the **Source**'s root, not the walked folder: the export for a git **Source**, the folder for a
+  path one. `Index.root` stays the walked folder, as discovery needs it. `resolve` passes the roots to the hull
+  separately from the indexes, so `lock.render` keeps `upstream.relative_to(root)` unchanged. That gives
+  `pstack/skills/tdd`, or `plugins/chisel` for a skill at the subdirectory itself. Alternative: `lock.render` joins
+  `subdirectory` with the path relative to the walked folder. Rejected: then both places must know that the root is
+  not the root. Export joined with `upstream` is then the skill's folder for any reader, and graft-check needs no
+  second key. The source table gains `subdirectory` when set. `version` stays 1: there are
   no users to migrate, and every lock written without a subdirectory is byte for byte as before.
 - **`update` needs no code of its own.** `_update` prints each tip, then calls `resolve.folders(..., tips)`, which
   raises before any write. `_previous`, at the current refs, catches the same error and prints "no previous hull
@@ -52,6 +62,9 @@ must say more.
 - \[Two aliases on one URL with nested subdirectories (`a`, `a/b`) list the same **Skills** twice\] → Each is its own
   **Source** with its own **Skill IDs**; cross-source resolution reports the ambiguity it would for any two
   **Sources** sharing a name, and a **Bind** settles it. Not worth a check.
+- \[A bad subdirectory in one **Source** fails `add`, `bind` and the other edits for a **Skill** of another\] →
+  Already true of a missing `ref`: `folders` reads every **Source**, because a **Reference** may resolve in any.
+  The error names the **Source** to fix.
 
 ## Migration Plan
 

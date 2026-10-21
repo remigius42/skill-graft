@@ -16,13 +16,16 @@ would become candidates for cross-source resolution in the user's **Hull**.
   reads the **Source** walks only that folder of the export at `ref` (or at the tip during `update`), as if it
   were the repository root. Discovery follows only symlinked folders that stay inside it. The name follows
   uv's `{ git, subdirectory }` and pip's `#subdirectory=`.
-- **Validation at load**: a non-empty relative path of `/`-separated segments, none empty, `.` or `..`. Anything
-  else is an error naming `sources.<alias>.subdirectory`. On a path **Source** the key is unsupported, as `ref` is
-  there: point `path` at the folder instead.
-- **Checked at the commit read**: a subdirectory missing at that commit, one that is not a folder there, or one
-  with a symlink anywhere in its path is an error naming the alias, the subdirectory and the commit. This
-  happens in `resolve`, `build`, `update` and every other command that reads the **Source**. `update` therefore
-  refuses to move `ref` to a tip where the subdirectory is gone, and leaves the TOML and the lock unchanged.
+- **Validation at load**: a non-empty relative path of `/`-separated segments, none empty, `.` or `..`, with no
+  control characters and no `.apm/skill-graft` in it. Anything else is an error naming
+  `sources.<alias>.subdirectory`. On a path **Source** the key is unsupported, as `ref` is there: point `path` at
+  the folder instead.
+- **Checked at the commit read**: a subdirectory missing at that commit (names compared exactly, case included),
+  one that is not a folder there, or one with a symlink anywhere in its path is an error naming the alias, the
+  subdirectory and the commit. This happens in `resolve`, `build`, `update` and every other command that reads the
+  **Source**, including `add` and `bind` for a **Skill** of another **Source**, since every **Source** is read, as
+  with a missing `ref`. `update` therefore refuses to move `ref` to a tip where the subdirectory is gone, and
+  leaves the TOML and the lock unchanged.
 - **Lock**: a git **Source**'s table records `subdirectory` when it is set. A **Skill**'s `upstream` stays a path
   relative to the repository root, the subdirectory included (`pstack/skills/tdd`), so the export at `ref` joined
   with `upstream` is the **Skill**'s folder without knowing the subdirectory. The lock `version` stays 1.
@@ -48,7 +51,8 @@ None.
 ## Impact
 
 - Code: `config.py` (key, validation, `GitSource.subdirectory`), `resolve.py` (`folders` returns the checked
-  subdirectory), `lock.py` (source `subdirectory`, `upstream` joined with it), `init.py` (template), with tests.
+  subdirectory; the hull's roots are the repository's), `hull.py`, `lock.py` (source `subdirectory`), `init.py`
+  (template), with tests.
   `cache.py` is unchanged: exports stay one per URL and commit, shared by aliases that differ only in
   subdirectory.
 - Docs: `README.md`, `docs/design.md`, `CONTEXT.md`.
