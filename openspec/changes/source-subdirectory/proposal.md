@@ -16,7 +16,7 @@ would become candidates for cross-source resolution in the user's **Hull**.
   reads the **Source** walks only that folder of the export at `ref` (or at the tip during `update`), as if it
   were the repository root. Discovery follows only symlinked folders that stay inside it. The name follows
   uv's `{ git, subdirectory }` and pip's `#subdirectory=`.
-- **Validation at load**: a non-empty relative path of `/`-separated segments, none empty, `.` or `..`, with no
+- **Validation at load**: a non-empty relative path of `/`-separated segments, none empty, `.`, `..` or `.git`, with no
   control characters and no `.apm/skill-graft` in it. Anything else is an error naming
   `sources.<alias>.subdirectory`. On a path **Source** the key is unsupported, as `ref` is there: point `path` at
   the folder instead.

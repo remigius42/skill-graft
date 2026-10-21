@@ -89,7 +89,7 @@ path = "~/Documents/sync/2_areas/software/chisel_skill"
   source with `subdirectory` is read only in that folder of the commit, as if it were the root, confined to it as
   discovery confines a tree; it must be a folder of exactly that name there, with no symlink on the way, else the
   command fails naming the alias, the subdirectory and the commit. `subdirectory` is relative, without `.`, `..`,
-  empty parts, control characters or `.apm/skill-graft`; a path source points `path` at the folder instead.
+  empty parts, `.git`, control characters or `.apm/skill-graft`; a path source points `path` at the folder instead.
 - `build`: resolves, writes `.apm/skills/`, then the lock, then runs the same `apm install` as `init`, in the
   project root for a project package. `--no-install` stops before APM. Fails unless `apm` exits 0 and the
   scope's `apm.yml` (`~/.apm/apm.yml`, or the project's) lists the package.

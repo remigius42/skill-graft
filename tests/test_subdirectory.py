@@ -38,7 +38,8 @@ def test_subdirectory_not_a_string(capsys: Capsys) -> None:
 
 
 @pytest.mark.parametrize(
-    "value", ["../x", "a/../../x", "/etc", ".", "a/./b", "", "a//b", "a/"]
+    "value",
+    ["../x", "a/../../x", "/etc", ".", "a/./b", "", "a//b", "a/", "a/.git/b", ".GIT"],
 )
 def test_subdirectory_leaving_the_repository(capsys: Capsys, value: str) -> None:
     assert "'sources.cp.subdirectory'" in refused(capsys, f'"{value}"')

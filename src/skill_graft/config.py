@@ -207,10 +207,14 @@ def _git_source(alias: str, table: dict[str, object]) -> GitSource:
 
 
 def _relative_folder(path: str) -> bool:
-    """`path` as `a/b`: no empty, `.` or `..` segment, no control character, and
-    not into a package, whose vendored copies a source never offers."""
+    """`path` as `a/b`: no empty, `.`, `..` or `.git` segment (the export never
+    writes `.git`), no control character, and not into a package, whose vendored
+    copies a source never offers."""
     return (
-        all(part not in ("", ".", "..") for part in path.split("/"))
+        all(
+            part not in ("", ".", "..") and part.lower() != ".git"
+            for part in path.split("/")
+        )
         and not any(ord(c) < 32 or c == "\x7f" for c in path)
         and not paths.in_package(Path(path))
     )

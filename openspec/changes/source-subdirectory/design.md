@@ -21,9 +21,10 @@ must say more.
 - **`GitSource.subdirectory: str | None`**, validated in `config._git_source`, kept as written. A field on the
   source, unlike `prefix` (`Config.prefixes`), because the code that reads a git **Source**'s tree needs it, and a
   path **Source** cannot have it. Validation is lexical, so a bad value fails before git runs: split on `/`, refuse
-  empty, `.` and `..` segments, NUL and other control characters (a NUL would make the later file system call
-  raise `ValueError`, which no caller catches), and an `.apm` segment followed by `skill-graft`. Discovery checks
-  `paths.in_package` for every folder it descends into, but never for its walk root. A subdirectory inside a
+  empty, `.` and `..` segments, `.git` in any case (the export never writes it), NUL and other control characters
+  (a NUL would make the later file system call raise `ValueError`, which no caller catches), and an `.apm`
+  segment followed by `skill-graft`. Discovery checks `paths.in_package` for every folder it descends into, but
+  never for its walk root. A subdirectory inside a
   committed **Package** would therefore find nothing below it, yet would read a `SKILL.md` directly in it. Refusing
   the value says so at load instead of a silent empty or stray **Source**.
 - **`folders` returns `export / subdirectory` after a check (`_subdirectory(alias, export, sub, ref)`).** It walks

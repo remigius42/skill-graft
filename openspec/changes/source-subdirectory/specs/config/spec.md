@@ -89,8 +89,8 @@ naming the source. `branch`, `ref` and `subdirectory` SHALL be allowed only besi
 ### Requirement: Git source subdirectory
 
 A git source's `subdirectory`, if present, SHALL be a relative path of segments separated by `/`, each non-empty
-and neither `.` nor `..`, with no control character and no segment `.apm` followed by `skill-graft`. Anything
-else, the empty string, a leading or trailing `/` and `//` included, SHALL be an error naming
+and neither `.`, `..` nor `.git` in any case, with no control character and no segment `.apm` followed by
+`skill-graft`. Anything else, the empty string, a leading or trailing `/` and `//` included, SHALL be an error naming
 `sources.<alias>.subdirectory`, never a crash. Loading SHALL NOT read the repository; the commit read checks the
 folder.
 
@@ -102,7 +102,7 @@ folder.
 #### Scenario: Subdirectory leaving the repository
 
 - **WHEN** `[sources.cp]` has `subdirectory` set to `"../x"`, `"a/../../x"`, `"/etc"`, `"."`, `"a/./b"`, `""`,
-  `"a//b"` or `"a/"`
+  `"a//b"`, `"a/"`, `"a/.git/b"` or `".GIT"`
 - **THEN** the command exits non-zero naming `sources.cp.subdirectory`, and git is never run
 
 #### Scenario: Control character
