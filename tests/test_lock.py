@@ -291,3 +291,11 @@ def test_header_first_when_empty(home: Path) -> None:
 
     assert lines[0] == "# Written by skill-graft; never read. Do not edit."
     assert parsed()["edges"] == parsed()["suggestions"] == []
+
+
+def test_header_first_when_the_hull_is_empty(home: Path) -> None:
+    (home / "own").mkdir()
+    configure([], own="~/own")
+
+    assert render().startswith("# Written by skill-graft; never read. Do not edit.\n")
+    assert parsed()["skills"] == []

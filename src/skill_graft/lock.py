@@ -25,7 +25,6 @@ def render(
     """
     hashes = skill_hashes(hull) if hashes is None else hashes
     document = tomlkit.document()
-    document.add(tomlkit.comment("Written by skill-graft; never read. Do not edit."))
     document["version"] = 1
     sources = tomlkit.table()
     for alias in sorted(config.sources):
@@ -52,20 +51,21 @@ def render(
         if skill_id in hull.patches:  # in apply order, never sorted
             item["patches"] = hull.patches[skill_id]
         skills.append(tomlkit.item(item | {"hash": hashes[skill_id]}))
-    # Empty, a plain array: tomlkit hoists an empty array of tables above the header.
-    document["skills"] = skills or tomlkit.array()
+    document["skills"] = skills
     edges = tomlkit.aot()
     for edge in sorted({(e.source, e.target, e.kind, e.bind) for e in hull.edges}):
         source_id, target, kind, bind = edge
         item = {"from": str(source_id), "to": str(target), "kind": kind}
         edges.append(tomlkit.item(item | ({"bind": True} if bind else {})))
-    document["edges"] = edges or tomlkit.array()
+    document["edges"] = edges
     suggestions = tomlkit.aot()
     for skill_id in sorted(hull.suggestions):
         mentions = sorted(str(s) for s in hull.suggestions[skill_id])
         suggestions.append(tomlkit.item({"id": str(skill_id), "from": mentions}))
-    document["suggestions"] = suggestions or tomlkit.array()
-    return tomlkit.dumps(document)
+    document["suggestions"] = suggestions
+    # A string, not a tomlkit comment: tomlkit hoists an empty section above that.
+    header = "# Written by skill-graft; never read. Do not edit.\n"
+    return header + tomlkit.dumps(document)
 
 
 def _source_path(folder: Path) -> str:
