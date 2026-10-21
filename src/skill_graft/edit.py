@@ -1,4 +1,4 @@
-"""Edits skill-graft.toml in place: `add`, `remove` and `rename`.
+"""Edits skill-graft.toml in place: `add`, `remove`, `rename`, `bind` and `unbind`.
 
 Each edit resolves the edited text first and writes nothing unless it resolves.
 """

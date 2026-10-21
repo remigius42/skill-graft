@@ -2,8 +2,8 @@
 
 ## Purpose
 
-`skill-graft add`, `remove` and `rename` change the **Entries** and **Renames** in `skill-graft.toml` for the
-user, checking that the result resolves before anything is written.
+`skill-graft add`, `remove`, `rename`, `bind` and `unbind` change the **Entries**, **Renames** and **Binds** in
+`skill-graft.toml` for the user, checking that the result resolves before anything is written.
 
 ## Requirements
 

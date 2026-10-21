@@ -126,13 +126,14 @@ path = "~/Documents/sync/2_areas/software/chisel_skill"
 - Slash and Skill tool references extend the hull. They resolve in their own source first, else in exactly
   one other source; several other sources is an error until a bind settles it. One that matches no skill in
   any declared source is a warning: "`mp/tdd` calls `/foo`: no declared source has a skill `foo`", naming the
-  `"mp/foo" = false` bind that silences it. A bind no reference uses is a warning too.
+  `skill-graft bind mp/foo false` that silences it. A bind no reference uses is a warning too.
 - Prose references resolve only in their own source, to the one skill of that name there, and never extend
   the hull. One inside the hull is an edge of kind `prose` and is rewritten on rename; one outside it is
   suggested (`add` it to accept); one that matches nothing, or several skills, is
   not a reference and says nothing.
 - A bind overrides all of this, for every form. A bind to `false` makes the name no reference at all. A
-  reference bound to a skill of another name is rewritten to that skill's deployed name.
+  reference bound to a skill of another name is rewritten to that skill's deployed name. Every bind's target
+  must exist, used or not, so a typo fails the next `resolve`.
 
 ## Names
 

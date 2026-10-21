@@ -38,7 +38,7 @@ synthetic **Skills** and **Sources**.
 
 ## 4. Wrap-up
 
-- [ ] 4.1 Mention `bind` and `unbind` in the `edit` spec's Purpose and the `edit.py` docstring, and update
+- [x] 4.1 Mention `bind` and `unbind` in the `edit` spec's Purpose and the `edit.py` docstring, and update
   `docs/design.md` where it says no command edits binds, lists the no-op edits, quotes the unmatched-**Reference**
   warning and describes when a **Bind**'s target is checked; verify `openspec validate bind-command --strict`
   passes
