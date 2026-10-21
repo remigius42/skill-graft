@@ -1,0 +1,58 @@
+# Design
+
+## Context
+
+Every command reads its **Sources** through `resolve.folders`, which maps each alias to a folder: a path
+**Source**'s own folder, or `cache.checkout(alias, url, ref)` for a git one. `resolve.indexes` hands each folder to
+`discovery.index(folder, confined)`. That index's `root` becomes `Hull.roots[alias]`, which `lock.render` uses to
+write `upstream` as a relative path. `Hull.upstream` stays absolute, and `why` prints it. `update` calls `folders`
+with the tips, so whatever `folders` checks also applies to `update`. The cache keys exports by URL and commit
+alone.
+
+## Goals / Non-Goals
+
+**Goals:** narrow what `folders` returns for a git **Source** and check it there. The lock is the only output that
+must say more.
+
+**Non-Goals:** a sparse fetch or export of only the subdirectory; any change to the cache layout.
+
+## Decisions
+
+- **`GitSource.subdirectory: str | None`**, validated in `config._git_source`, kept as written. A field on the
+  source, unlike `prefix` (`Config.prefixes`), because the code that reads a git **Source**'s tree needs it, and a
+  path **Source** cannot have it. Validation is lexical (split on `/`, refuse empty, `.` and `..`), so a bad value
+  fails before git runs.
+- **`folders` returns `export / subdirectory` after a check (`_subdirectory(alias, export, sub, ref)`).** It walks
+  the segments from the export with `lstat`: each must exist, be a directory and not be a symlink. Otherwise it
+  raises `source 'cp': subdirectory 'pstack/skills' is not a folder at <sha>`, or `… is a symlink at <sha>`, naming
+  the first bad segment's path. Refusing symlinks outright is simpler than resolving and confining them, and a
+  committed symlink as a plugin folder is far more likely a mistake than intent. Alternative: check inside
+  `Cache.checkout`. Rejected: the export is the whole tree, shared by aliases with different subdirectories, so
+  the cache has no business knowing about any one of them.
+- **Discovery is confined to the subdirectory, not the export.** `discovery.index(folder, confined=True)` already
+  takes its `root` from the folder it walks, so a link leaving the subdirectory is not followed, even one that
+  stays inside the repository. That keeps "as if it were the repository root" literal, and keeps the other
+  plugins' skills out, which is the point of the key. No discovery code changes.
+- **The lock's `upstream` is relative to the repository root.** `Hull.roots` stays the walked folder, as discovery
+  needs it. `lock.render` prefixes the relative path with the source's `subdirectory`
+  (`PurePosixPath(sub) / rel`, collapsing `rel == "."`), so `pstack/skills/tdd`, or `plugins/chisel` for a skill
+  at the subdirectory itself. Export joined with `upstream` is then the skill's folder for any reader, and
+  graft-check needs no second key. The source table gains `subdirectory` when set. `version` stays 1: there are
+  no users to migrate, and every lock written without a subdirectory is byte for byte as before.
+- **`update` needs no code of its own.** `_update` prints each tip, then calls `resolve.folders(..., tips)`, which
+  raises before any write. `_previous`, at the current refs, catches the same error and prints "no previous hull
+  to compare (the current refs do not resolve: …)". A dry run reads tips from its temporary cache just as before.
+- **`why` needs no change**: `Hull.upstream` is already the absolute folder inside the export, which now
+  includes the subdirectory. A scenario in the tests pins that down.
+
+## Risks / Trade-offs
+
+- \[A subdirectory renamed upstream fails every `update` of that **Source**\] → The error names alias, subdirectory
+  and tip sha; the user edits `subdirectory`, and since `ref` has not moved, `build` keeps working meanwhile.
+- \[Two aliases on one URL with nested subdirectories (`a`, `a/b`) list the same **Skills** twice\] → Each is its own
+  **Source** with its own **Skill IDs**; cross-source resolution reports the ambiguity it would for any two
+  **Sources** sharing a name, and a **Bind** settles it. Not worth a check.
+
+## Migration Plan
+
+None. Configs without `subdirectory` load, resolve and lock exactly as before.

@@ -52,6 +52,7 @@ words:
   - pocock
   - popleft
   - powerup
+  - pstack
   - pycache
   - pyproject
   - pytest

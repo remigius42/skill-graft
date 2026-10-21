@@ -6,7 +6,8 @@ skill those reach, renamed and patched as the user declares.
 ## Language
 
 **Source**:
-A repository or local folder that skills are taken from, known by the alias the user gives it.
+A repository or local folder that skills are taken from, known by the alias the user gives it. A repository
+**Source** may name a `subdirectory`, read as if it were the repository root.
 _Avoid_: Pack, repo, upstream (that is a **Skill**'s text)
 
 **Ref**:
