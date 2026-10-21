@@ -373,13 +373,19 @@ def _into(value: str) -> Path:
 
 def _check_into(into: Path) -> None:
     """Refuses an `--into` folder `build` could not use without harm: anything but an
-    existing, empty folder."""
+    existing, empty folder, or one in a package or in or around the cache."""
     if not into.exists():
         raise SkillGraftError(f"--into {into}: no such folder")
     if not into.is_dir():
         raise SkillGraftError(f"--into {into}: not a folder")
     if any(into.iterdir()):
         raise SkillGraftError(f"--into {into}: not empty")
+    resolved = into.resolve()
+    # Ignoring case: on a case-insensitive filesystem `.APM/Skill-Graft` is a package.
+    if any(paths.in_package(Path(str(p).lower())) for p in (into.absolute(), resolved)):
+        raise SkillGraftError(f"--into {into}: inside a package (.apm/skill-graft)")
+    if paths.overlap(resolved, cache := paths.cache().resolve()):
+        raise SkillGraftError(f"--into {into}: overlaps the cache {cache}")
 
 
 def _undo_into(into: Path) -> None:

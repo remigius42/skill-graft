@@ -659,3 +659,70 @@ def test_into_a_symlink_to_an_empty_folder(home: Path, tmp_path: Path) -> None:
     assert main(["build", "--into", str(link)]) == 0
 
     assert (target / ".apm" / "skills" / "chisel" / "SKILL.md").is_file()
+
+
+@pytest.mark.parametrize(
+    "where",
+    [
+        "home/.apm/skill-graft/tmp",
+        "other/.apm/skill-graft/tmp",
+        "other/.APM/Skill-Graft/tmp",
+        "link/tmp",  # `link` leads into the package
+    ],
+)
+def test_into_a_package(
+    home: Path, tmp_path: Path, capsys: pytest.CaptureFixture[str], where: str
+) -> None:
+    chisel_config(home)
+    package = home / ".apm" / "skill-graft"
+    (tmp_path / "link").symlink_to(package)
+    into = tmp_path / where
+    into.mkdir(parents=True)
+    before = snapshot(package)
+
+    assert main(["build", "--into", str(into)]) == 1
+
+    err = capsys.readouterr().err
+    assert f"skill-graft: --into {into}: inside a package" in err
+    assert snapshot(package) == before and list(into.iterdir()) == []
+
+
+@pytest.mark.parametrize("linked", [False, True])
+def test_into_the_cache(
+    home: Path,
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+    capsys: pytest.CaptureFixture[str],
+    linked: bool,
+) -> None:
+    chisel_config(home)
+    cache = tmp_path / "cache"
+    cache.mkdir()
+    if linked:
+        (tmp_path / "cache-link").symlink_to(cache)
+    monkeypatch.setenv(
+        "XDG_CACHE_HOME", str(tmp_path / ("cache-link" if linked else "cache"))
+    )
+    into = cache / "skill-graft" / "tmp"
+    into.mkdir(parents=True)
+
+    assert main(["build", "--into", str(into)]) == 1
+
+    assert f"skill-graft: --into {into}: overlaps the cache" in capsys.readouterr().err
+    assert list(into.iterdir()) == []
+
+
+def test_cache_inside_the_folder(
+    home: Path,
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+    capsys: pytest.CaptureFixture[str],
+) -> None:
+    chisel_config(home)
+    into = empty_folder(tmp_path)
+    monkeypatch.setenv("XDG_CACHE_HOME", str(into / "cache"))
+
+    assert main(["build", "--into", str(into)]) == 1
+
+    assert f"skill-graft: --into {into}: overlaps the cache" in capsys.readouterr().err
+    assert list(into.iterdir()) == []
