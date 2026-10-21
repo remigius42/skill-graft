@@ -14,7 +14,7 @@ synthetic **Skills** and **Sources**.
   skill gone upstream" pass
 - [x] 1.3 `bind` refuses an unknown or malformed target and a malformed or undeclared key, and writes an unused
   **Bind** with its warning; verify tests for the "Bind checks its key and target" scenarios pass
-- [ ] 1.4 Wire `bind` into the CLI (parser with help text, `WRITERS`) and list it in `README.md` and
+- [x] 1.4 Wire `bind` into the CLI (parser with help text, `WRITERS`) and list it in `README.md` and
   `docs/design.md`; verify the CLI tests for top-level help, `bind --help`, a missing argument (exit 2) and the
   `package:` line pass
 

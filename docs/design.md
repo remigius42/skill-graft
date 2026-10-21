@@ -9,13 +9,13 @@ All in the package: `~/.apm/skill-graft/` (user scope), or `<project>/.apm/skill
 `init --project`). Every command but `init` uses the nearest `.apm/skill-graft/` above the working folder, up
 to the home folder, else the user scope's (ADR 0004).
 
-| File                  | Written by                                              | Holds                                                       |
-| --------------------- | ------------------------------------------------------- | ----------------------------------------------------------- |
-| `skill-graft.toml`    | the user; `add`, `remove`, `rename`, `update`           | intent: sources, entries, renames, binds, patches, reserved |
-| `skill-graft.lock`    | `resolve`, `build`, `update`, `add`, `remove`, `rename` | provenance: resolved shas, the hull and its edges, hashes   |
-| `patches/`            | the user                                                | unified diffs for content changes                           |
-| `apm.yml`             | `init`                                                  | `name` and `version`, nothing else                          |
-| `.apm/skills/<name>/` | `build`                                                 | the vendored, patched, renamed skills                       |
+| File                  | Written by                                             | Holds                                                       |
+| --------------------- | ------------------------------------------------------ | ----------------------------------------------------------- |
+| `skill-graft.toml`    | the user; `add`, `remove`, `rename`, `bind`, `update`  | intent: sources, entries, renames, binds, patches, reserved |
+| `skill-graft.lock`    | `resolve`, `build`, `update`, and the editing commands | provenance: resolved shas, the hull and its edges, hashes   |
+| `patches/`            | the user                                               | unified diffs for content changes                           |
+| `apm.yml`             | `init`                                                 | `name` and `version`, nothing else                          |
+| `.apm/skills/<name>/` | `build`                                                | the vendored, patched, renamed skills                       |
 
 `resolve` never rewrites `skill-graft.toml`. Commands that edit it on purpose use `tomlkit`, so comments and
 formatting survive. The lock is output only: never an input that overrides the TOML.
@@ -56,29 +56,33 @@ path = "~/Documents/sync/2_areas/software/chisel_skill"
   registers it with `apm install -g <absolute path of ~/.apm/skill-graft>`. Refuses if the folder exists.
   `init --project` does the same in `./.apm/skill-graft/`, registering it with `apm install ./.apm/skill-graft`
   run there; refused in the home folder, and if APM leaves it unregistered, the folder is removed again.
-- `add <skill-id>…`, `remove <skill-id>…`, `rename <skill-id> <name>`: resolve the edited config in memory and
+- `add <skill-id>…`, `remove <skill-id>…`, `rename <skill-id> <name>`, `bind <alias>/<name> <target>`: resolve
+  the edited config in memory and
   only if that succeeds write the TOML (in place, as `update` does), then the lock, and print what `resolve`
   prints. Notices go to stderr with the warnings. Never build. An edit that changes nothing (every skill ID
-  already an entry, the current deployed name) prints only its notices and neither resolves nor writes.
+  already an entry, the current deployed name, the current bind) prints only its notices and neither resolves nor writes.
 - `add` appends each skill ID to `entries` (creating the key before the first table if absent). An unknown alias
   or skill is an error; one already an entry is a notice and left alone; one already in the hull is added with a
   notice naming the skill that reaches it from the other entries.
 - `remove` deletes each skill ID from `entries`, the last one too. One that is no entry is an error; one still in
   the hull is removed with a notice naming the skill that reaches it from the remaining entries. Both notices come
   from one breadth-first walk of the edited hull's slash and Skill tool edges, so the parent named is never
-  reached only through the skill itself. No command edits binds, patches or `reserved`, and only
+  reached only through the skill itself. No command edits patches or `reserved`, and only
   `update` edits sources (their `ref`).
 - `rename` sets the skill's `[rename]` value (appending the table if absent); renaming to the name it deploys as
   without a key (its source's `prefix`, if any, before its upstream name) removes the key, which is how a rename
   is undone, so under a prefix the upstream name is written as a key; the current deployed name is a notice. An
   unknown alias or skill is an error; a skill outside the hull gets the unused-rename warning; clashes are the
   usual errors and warnings, an error writing nothing.
+- `bind` sets `[bind]` key `<alias>/<name>` to a skill ID, or to `false` for the word `false` (appending the
+  table if absent). The key's alias must be declared, its name need not be a skill; the target is checked as
+  `rename` checks its skill, before the current value is a notice. An unused bind gets the usual warning.
 - `resolve`: computes the hull from the TOML, writes the lock, prints the tree, warnings and suggestions.
   Reads every declared source, each git one at its `ref`, fetching only when that commit is not cached.
 - `build`: resolves, writes `.apm/skills/`, then the lock, then runs the same `apm install` as `init`, in the
   project root for a project package. `--no-install` stops before APM. Fails unless `apm` exits 0 and the
   scope's `apm.yml` (`~/.apm/apm.yml`, or the project's) lists the package.
-- Writing commands (`init`, `resolve`, `build`, `update`, `add`, `remove`, `rename`) first print
+- Writing commands (`init`, `resolve`, `build`, `update`, `add`, `remove`, `rename`, `bind`) first print
   `skill-graft: package: <path>`.
 - `update [source…]`: fetches, resolves at each branch tip, and only if that succeeds writes the lock, and the
   tips' shas into `ref` when one moved; prints the hull diff (`+` added, `-` removed, `~` changed, against the

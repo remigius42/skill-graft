@@ -13,6 +13,7 @@ COMMANDS = [
     "tree",
     "add",
     "remove",
+    "bind",
     "help",
 ]
 
@@ -92,3 +93,15 @@ def test_help_names_where_the_package_is(capsys: pytest.CaptureFixture[str]) -> 
     out = " ".join(capsys.readouterr().out.split())
     assert "nearest .apm/skill-graft/ above the working folder" in out
     assert "~/.apm/skill-graft/" in out
+
+
+def test_bind_help(capsys: pytest.CaptureFixture[str]) -> None:
+    code, out, _ = run(["bind", "--help"], capsys)
+    assert code == 0
+    assert "skill ID" in out and "false" in out
+
+
+def test_bind_missing_argument(capsys: pytest.CaptureFixture[str]) -> None:
+    code, out, err = run(["bind", "mp/tmp"], capsys)
+    assert (code, out) == (2, "")
+    assert "target" in err

@@ -30,6 +30,7 @@ Status: beta.
 - `why <skill>`: print the paths from the entries that reach a skill, and its upstream folder.
 - `add <skill-id>…`, `remove <skill-id>…`: change `entries`, keeping the file's comments, once the result resolves.
 - `rename <skill-id> <name>`: set a skill's deployed name; the name it would deploy as without a key undoes it.
+- `bind <alias>/<name> <skill-id>|false`: resolve `<name>` from that source to the skill, or to no reference.
 - `help [command]`, or `--help` on any command: explain it.
 
 ## Config
