@@ -6,6 +6,8 @@ from typing import TypeAlias
 import pytest
 from conftest import Upstream, build, configure, skill, vendored, write_config
 
+from skill_graft.cli import main
+
 Capsys: TypeAlias = pytest.CaptureFixture[str]
 
 
@@ -105,3 +107,18 @@ def test_git_source_without_ref(
     assert "'mp'" in err and "skill-graft update mp" in err
     assert vendored() == {"chisel"}
     assert not (home / ".cache").exists()
+
+
+def test_build_into_fetches_an_uncached_ref(home: Path, tmp_path: Path) -> None:
+    upstream = Upstream(tmp_path / "up")
+    sha = upstream.commit({"tdd/SKILL.md": "# tdd\n"})
+    write_config(
+        f'entries = ["mp/tdd"]\n[sources.mp]\ngit = "{upstream.url}"\nref = "{sha}"\n'
+    )
+    into = tmp_path / "into"
+    into.mkdir()
+
+    assert main(["build", "--into", str(into)]) == 0
+
+    assert (home / ".cache" / "skill-graft" / "repos").is_dir()
+    assert (into / ".apm" / "skills" / "tdd" / "SKILL.md").read_text() == "# tdd\n"

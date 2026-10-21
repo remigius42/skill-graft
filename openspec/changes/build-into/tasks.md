@@ -23,7 +23,7 @@ synthetic **Skills** and **Sources**; `<dir>` is a `tmp_path` subfolder.
   exactly what `build` wrote under `<dir>`, after the temporary work folder is gone; verify the "Vendoring
   into the folder fails", "Lock write fails", "Interrupted", "Foreign file kept" and "Temporary folder inside
   it" tests pass
-- [ ] 2.4 A git **Source** at an uncached `ref` is fetched into the cache by `build --into`; verify the "Uncached
+- [x] 2.4 A git **Source** at an uncached `ref` is fetched into the cache by `build --into`; verify the "Uncached
   ref" test passes in `tests/test_git_build.py`
 
 ## 3. Folder checks
