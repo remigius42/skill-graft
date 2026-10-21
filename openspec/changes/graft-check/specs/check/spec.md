@@ -37,15 +37,22 @@ without arguments, the whole **Hull**.
 
 ### Requirement: Builds before reading
 
-The skill SHALL first run `skill-graft build --no-install` and read the **Package** from its `package:` line. A
-failing build SHALL end the **Check** with the build's error. It SHALL then read the lock, each **Skill**'s
-**Upstream** folder and its vendored copy, finding each **Source**'s folder once (through `skill-graft why` on
-one of its **Skills**) and joining it with the lock's relative `upstream`.
+The skill SHALL first run `skill-graft build --into <folder>`, a new folder under the system's temporary folder,
+and read the **Package** from its `package:` line. A failing build SHALL end the **Check** with the build's
+error. It SHALL then read the lock and the vendored copies in that folder, and each **Skill**'s **Upstream**
+folder, finding each **Source**'s folder once (through `skill-graft why` on one of its **Skills**) and joining it
+with the lock's relative `upstream`. The **Package**'s own `.apm/skills/` and lock SHALL change only through
+accepted fixes.
 
 #### Scenario: Build fails
 
-- **WHEN** `skill-graft build --no-install` exits non-zero
+- **WHEN** `skill-graft build --into <folder>` exits non-zero
 - **THEN** the skill reports its error and checks nothing
+
+#### Scenario: Looking changes nothing
+
+- **WHEN** the user runs `/graft-check` and declines every fix
+- **THEN** the **Package**'s `skill-graft.toml`, `skill-graft.lock` and `.apm/skills/` keep their bytes
 
 ### Requirement: Lock version
 
@@ -90,9 +97,9 @@ SHALL propose a **Patch** of the **Skill** that holds the wrong one.
 
 The skill SHALL apply a fix only after the user accepts it, one fix at a time, through `skill-graft add`,
 `skill-graft bind` or `skill-graft unbind`, or as a **Patch** written by the README's recipe with the **Package**
-from the `package:` line in place of its `~/.apm/skill-graft/`. After each it SHALL run
-`skill-graft build --no-install` and name every **Skill** that left or joined the **Hull**. It SHALL NOT edit the
-vendored **Skills**.
+from the `package:` line in place of its `~/.apm/skill-graft/`. After each it SHALL build again with `--into` a
+new folder and name every **Skill** that left or joined the **Hull** since the previous build. It SHALL NOT edit
+the vendored **Skills**.
 
 #### Scenario: Declined
 
@@ -117,16 +124,22 @@ the **Skill**'s `[patches]` list, and the key only if the skill created it, leav
 
 ### Requirement: Never deploys
 
-The skill SHALL NOT run `skill-graft build` without `--no-install`, nor `apm`. It SHALL always end by telling the
-user to run `skill-graft build` to deploy what it built: an accepted fix, a **Source** changed since the last
-deploy, or an earlier `--no-install` build, which the skill cannot tell apart from nothing.
+The skill SHALL NOT run `skill-graft build` without `--into`, nor `apm`. It SHALL end by telling the user to run
+`skill-graft build` when a fix was accepted, or when its first build's lock differs from the **Package**'s, so an
+in-place build would change the vendored copies. Otherwise it SHALL say the **Package** is as the config builds
+it, and that it cannot tell whether APM deployed that.
 
 #### Scenario: After a fix
 
 - **WHEN** the user accepted a fix
 - **THEN** the skill's last message tells the user to run `skill-graft build`
 
-#### Scenario: Every fix declined
+#### Scenario: Source changed, every fix declined
 
-- **WHEN** the user declines every fix
-- **THEN** the skill's last message still tells the user to run `skill-graft build`
+- **WHEN** a path **Source**'s **Skill** changed since the last in-place build, and the user declines every fix
+- **THEN** the skill's last message tells the user to run `skill-graft build`
+
+#### Scenario: Nothing to build
+
+- **WHEN** the first build's lock equals the **Package**'s and the user declines every fix
+- **THEN** the skill does not tell the user to run `skill-graft build`

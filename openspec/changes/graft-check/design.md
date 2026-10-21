@@ -5,7 +5,10 @@
 ADR 0006 and the **Check** entry in `CONTEXT.md` settle the boundary: the agent advises, skill-graft resolves.
 What the skill can lean on already exists:
 
-- `build --no-install` vendors and writes the lock without running APM, and prints `skill-graft: package: <path>`.
+- `build --into <folder>` (the `build-into` change, which lands first) vendors and writes the lock into that folder,
+  never runs APM, leaves the **Package** byte-identical, and prints `skill-graft: package: <path>`. Assumed here: it
+  creates a missing folder and lays it out as the **Package** is (`skill-graft.lock`, `.apm/skills/<name>/`), and
+  its lock has the bytes an in-place build would write. Recheck once `build-into` is settled.
 - The lock (`version = 1`) lists each **Hull** **Skill** with `deployed`, `upstream` (relative to its **Source**)
   and `patches`, and each edge with its kind and `bind`. `skill-graft why <id>` prints the absolute **Upstream**
   folder.
@@ -26,7 +29,6 @@ What the skill can lean on already exists:
 
 - Stale **Patches** after `update`.
 - Any new CLI output (JSON, near-miss lists); the agent reads the text itself.
-- Isolating the build in a temporary folder.
 
 ## Decisions
 
@@ -57,10 +59,14 @@ What the skill can lean on already exists:
   diffed against the previous lock's **Skills**, so a fix that drops one says so.
 - **The README recipe, with the real Package.** The recipe spells out the user **Package**; the skill puts the
   `package:` line's path in its place, so project scope writes its own `patches/`.
-- **The `skill-graft build` advice comes always.** The first `build --no-install` can change the vendored copies
-  (a path **Source**'s edits, a `ref` the user changed), and an earlier `--no-install` build may never have been
-  deployed. Comparing locks misses the second case and needs a copy the eval's tools forbid; nothing local says
-  what APM deployed. So the skill always ends with the advice.
+- **Every build goes `--into` a new temporary folder.** Looking must not change the **Package**: a committed
+  project **Package** would show a dirty tree, and the user could not just look. A new folder per build because
+  `--into` will not write into a used one, and successive locks are what the hull comparison diffs. The folders
+  are left to the system's temporary-folder cleanup, so the skill needs no delete permission.
+- **The `skill-graft build` advice when a build would change something.** The lock is deterministic, so the first
+  throwaway lock differing from the **Package**'s means an in-place build would change the vendored copies (a path
+  **Source**'s edits, a `ref` the user changed); an accepted fix means the same. Whether APM deployed what the
+  **Package** holds stays unknowable locally, so the skill says so instead of advising a build it cannot justify.
 - **Only version 1 is read.** It is the first lock version, so no lock can be older; the CLI-upgrade advice comes
   with a skill that reads a version 2.
 - **One subagent per checked Skill**, each reporting findings of the per-skill kinds (missed, false, rewrite,
@@ -79,7 +85,8 @@ What the skill can lean on already exists:
     working copy in the project's `.claude/skills/` is the only `graft-check`. `claude` then logs in through
     `ANTHROPIC_API_KEY`, which the script requires.
   - `--allowedTools` grants `Bash(skill-graft:*)`, file reads and searches, and subagents; headless, any other
-    tool call is denied, not asked.
+    tool call is denied, not asked. `TMPDIR` also points into the temporary folder, so the throwaway builds go
+    with it.
 
 ## Risks / Trade-offs
 
