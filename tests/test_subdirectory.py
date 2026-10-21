@@ -42,7 +42,10 @@ def test_subdirectory_not_a_string(capsys: Capsys) -> None:
     ["../x", "a/../../x", "/etc", ".", "a/./b", "", "a//b", "a/", "a/.git/b", ".GIT"],
 )
 def test_subdirectory_leaving_the_repository(capsys: Capsys, value: str) -> None:
-    assert "'sources.cp.subdirectory'" in refused(capsys, f'"{value}"')
+    err = refused(capsys, f'"{value}"')
+
+    assert "'sources.cp.subdirectory'" in err
+    assert "no empty, '.', '..' or '.git' part" in err
 
 
 @pytest.mark.parametrize("value", ['"a\\u0000b"', '"a\\nb"'])
@@ -50,12 +53,14 @@ def test_control_character(capsys: Capsys, value: str) -> None:
     err = refused(capsys, value)
 
     assert "'sources.cp.subdirectory'" in err and "Traceback" not in err
+    assert "no control character" in err
 
 
 def test_subdirectory_into_a_package(capsys: Capsys) -> None:
-    value = '"proj/.apm/skill-graft/.apm/skills"'
+    err = refused(capsys, '"proj/.apm/skill-graft/.apm/skills"')
 
-    assert "'sources.cp.subdirectory'" in refused(capsys, value)
+    assert "'sources.cp.subdirectory'" in err
+    assert "not into a package (.apm/skill-graft)" in err
 
 
 def test_subdirectory_on_a_path_source(home: Path, capsys: Capsys) -> None:

@@ -53,17 +53,18 @@ def _subdirectory(alias: str, tree: Path, subdirectory: str, ref: str) -> Path:
     for part in subdirectory.split("/"):
         with os.scandir(folder) as entries:
             entry = next((e for e in entries if e.name == part), None)
-        if entry is None or not entry.is_dir(follow_symlinks=False):
-            if entry is None:
-                how = "does not exist"
-            elif entry.is_symlink():
-                how = "runs through a symlink"
-            else:
-                how = "is not a folder"
-            raise SkillGraftError(
-                f"source {alias!r}: subdirectory {subdirectory!r} {how} at {ref}"
-            )
-        folder /= part
+        if entry is None:
+            how = "does not exist"
+        elif entry.is_symlink():
+            how = "runs through a symlink"
+        elif not entry.is_dir(follow_symlinks=False):
+            how = "is not a folder"
+        else:
+            folder /= part
+            continue
+        raise SkillGraftError(
+            f"source {alias!r}: subdirectory {subdirectory!r} {how} at {ref}"
+        )
     return folder
 
 

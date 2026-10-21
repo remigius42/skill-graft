@@ -201,7 +201,8 @@ def _git_source(alias: str, table: dict[str, object]) -> GitSource:
     if subdirectory is not None and not _relative_folder(subdirectory):
         raise SkillGraftError(
             f"'sources.{alias}.subdirectory' = {subdirectory!r}: expected a folder "
-            "relative to the repository root, like 'skills', with no '.' or '..'"
+            "relative to the repository root, like 'skills': no empty, '.', '..' or "
+            "'.git' part, no control character, not into a package (.apm/skill-graft)"
         )
     return GitSource(url, branch, ref, subdirectory)
 
