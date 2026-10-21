@@ -111,6 +111,16 @@ def bind(key: str, target: str) -> None:
     _finish(document, before)
 
 
+def unbind(key: str) -> None:
+    """Deletes `[bind]` key `key`, leaving the table."""
+    document, loaded, before = read()
+    # Parsed first, so a malformed key or undeclared alias is said so, as by `bind`.
+    if config.parse_skill_id("unbind", key, loaded.sources) not in loaded.binds:
+        raise SkillGraftError(f"`{key}` is not bound")
+    del cast(Table, document["bind"])[key]
+    _finish(document, before)
+
+
 def _reach(hull: Hull, seeds: list[SkillId]) -> dict[SkillId, SkillId]:
     """What `seeds` reach over slash and Skill tool edges: each skill's parent.
 

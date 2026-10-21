@@ -597,3 +597,58 @@ def test_bind_unused(home: Path, capsys: Capsys) -> None:
 
     assert tomllib.loads(config.read_text())["bind"] == {"mp/grill": "own/grill"}
     assert '[bind] "mp/grill" binds no reference' in capsys.readouterr().err
+
+
+def test_unbind(home: Path, capsys: Capsys) -> None:
+    skill(home / "mp" / "tdd", "/grilling\n")
+    mp_skills(home, "grilling")
+    skill(home / "own" / "grill")
+    text = 'entries = ["mp/tdd"]\n' + TWO_SOURCES + "[bind]\n"
+    config = write_config(text + '"mp/grilling" = "own/grill"\n')
+
+    assert main(["unbind", "mp/grilling"]) == 0
+
+    assert config.read_text() == text
+    assert capsys.readouterr().out == "mp/tdd\n└── mp/grilling (/grilling)\n"
+
+
+@pytest.mark.parametrize(
+    ("key", "named", "bind"),
+    [
+        ("mp/grilling", "`mp/grilling` is not bound", ""),
+        ("mp/grilling", "`mp/grilling` is not bound", '[bind]\n"mp/x" = false\n'),
+        ("zz/grilling", "no source 'zz' is declared", ""),
+        ("mp", "'mp' is not", ""),
+    ],
+)
+def test_unbind_refuses(
+    home: Path, capsys: Capsys, key: str, named: str, bind: str
+) -> None:
+    mp_skills(home, "tdd")
+    config = write_config('entries = ["mp/tdd"]\n' + SOURCES + bind)
+    before = config.read_bytes()
+
+    assert main(["unbind", key]) == 1
+
+    out, err = capsys.readouterr()
+    assert (out, config.read_bytes()) == ("", before)
+    assert named in err
+
+
+def test_unbind_breaks_resolution(home: Path, capsys: Capsys) -> None:
+    skill(home / "mp" / "tdd", "/x\n")
+    skill(home / "own" / "x")
+    skill(home / "other" / "x")
+    config = write_config(
+        'entries = ["mp/tdd"]\n'
+        + TWO_SOURCES
+        + '[sources.other]\npath = "~/other"\n[bind]\n"mp/x" = "own/x"\n'
+    )
+    assert main(["resolve"]) == 0
+    lock = package(home) / "skill-graft.lock"
+    before = (config.read_bytes(), lock.read_bytes())
+
+    assert main(["unbind", "mp/x"]) == 1
+
+    assert "several sources" in capsys.readouterr().err
+    assert (config.read_bytes(), lock.read_bytes()) == before

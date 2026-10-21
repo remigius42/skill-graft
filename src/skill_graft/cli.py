@@ -229,6 +229,16 @@ def _parser() -> tuple[_Parser, dict[str, argparse.ArgumentParser]]:
     bind.add_argument(
         "target", help="a skill ID (<source alias>/<name>), or the word false"
     )
+    unbind = commands.add_parser(
+        "unbind",
+        help="remove a bind, then resolve",
+        description=(
+            "Delete `[bind]` key <source alias>/<name> from skill-graft.toml, so "
+            "references to <name> from that source resolve by default again. Keeps "
+            "comments and formatting, as add does. Never builds."
+        ),
+    )
+    unbind.add_argument("key", metavar="alias/name", help="<source alias>/<name>")
     help_parser = commands.add_parser(
         "help",
         help="show the help of skill-graft or of a command",
@@ -276,6 +286,8 @@ def main(argv: list[str] | None = None) -> int:
             edit.rename(args.skill, args.name)
         elif args.command == "bind":
             edit.bind(args.key, args.target)
+        elif args.command == "unbind":
+            edit.unbind(args.key)
         elif args.command == "why":
             with tempfile.TemporaryDirectory(prefix="skill-graft-") as work:
                 loaded, resolved = _resolve(Path(work))

@@ -20,7 +20,7 @@ synthetic **Skills** and **Sources**.
 
 ## 2. unbind
 
-- [ ] 2.1 `edit.unbind` parses its key as `bind` does, deletes it from `[bind]`, leaving the table, and errors on
+- [x] 2.1 `edit.unbind` parses its key as `bind` does, deletes it from `[bind]`, leaving the table, and errors on
   a key that is not there; verify tests for the "Unbind a name" scenarios pass, including the one where
   resolution fails and the undeclared alias
 - [ ] 2.2 Wire `unbind` into the CLI and list it in `README.md` and `docs/design.md`, adding `unbind` to `words`
