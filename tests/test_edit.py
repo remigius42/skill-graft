@@ -530,3 +530,37 @@ def test_bind_replaced(home: Path, capsys: Capsys) -> None:
     assert main(["bind", "mp/grilling", "false"]) == 0
 
     assert config.read_text() == text + '"mp/grilling" = false  # mine\n'
+
+
+@pytest.mark.parametrize(
+    ("value", "target"), [('"own/grill"', "own/grill"), ("false", "false")]
+)
+def test_bind_already_so(home: Path, capsys: Capsys, value: str, target: str) -> None:
+    skill(home / "mp" / "tdd", "/grilling\n")
+    skill(home / "own" / "grill")
+    config = write_config(
+        'entries = ["mp/tdd"]\n' + TWO_SOURCES + f'[bind]\n"mp/grilling" = {value}\n'
+    )
+    before = (config.read_bytes(), config.stat().st_mtime_ns)
+
+    assert main(["bind", "mp/grilling", target]) == 0
+
+    out, err = capsys.readouterr()
+    assert out == ""
+    assert f"`mp/grilling` is already bound to `{target}`" in err
+    assert (config.read_bytes(), config.stat().st_mtime_ns) == before
+
+
+def test_bind_already_so_but_gone(home: Path, capsys: Capsys) -> None:
+    skill(home / "mp" / "tdd")
+    (home / "own").mkdir()
+    config = write_config(
+        'entries = ["mp/tdd"]\n' + TWO_SOURCES + '[bind]\n"mp/grilling" = "own/grill"\n'
+    )
+    before = config.read_bytes()
+
+    assert main(["bind", "mp/grilling", "own/grill"]) == 1
+
+    out, err = capsys.readouterr()
+    assert (out, config.read_bytes()) == ("", before)
+    assert "own/grill" in err and "already bound" not in err

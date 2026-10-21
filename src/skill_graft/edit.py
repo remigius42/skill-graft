@@ -97,7 +97,14 @@ def rename(text: str, name: str) -> None:
 
 def bind(key: str, target: str) -> None:
     """Sets `[bind]` key `key` to the skill ID `target`, or to `false`."""
-    document, _, before = read()
+    document, loaded, before = read()
+    skill = config.parse_skill_id("bind", key, loaded.sources)
+    # The target before the no-op test: one gone upstream is no longer bound.
+    bound = None if target == "false" else resolve.known(loaded, "bind", target)
+    # Present too: a missing key reads as None, as `false` does.
+    if skill in loaded.binds and loaded.binds[skill] == bound:
+        notice(f"`{key}` is already bound to `{target}`")
+        return
     if "bind" not in document:
         document.add("bind", tomlkit.table())
     cast(Table, document["bind"])[key] = False if target == "false" else target

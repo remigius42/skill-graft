@@ -9,7 +9,7 @@ synthetic **Skills** and **Sources**.
 - [x] 1.1 `edit.bind` sets a new or existing `[bind]` key to a **Skill ID** or `false`, appending the table when
   absent and keeping a replaced value's comment; verify tests for the edit spec's "New bind", "Bind to nothing"
   and "Replaced" scenarios pass
-- [ ] 1.2 `bind` with the current value, `false` included, is a notice that leaves the file's bytes, after the
+- [x] 1.2 `bind` with the current value, `false` included, is a notice that leaves the file's bytes, after the
   target is checked; verify tests for "Already bound so", "Already bound to nothing" and "Already bound to a
   skill gone upstream" pass
 - [ ] 1.3 `bind` refuses an unknown or malformed target and a malformed or undeclared key, and writes an unused
