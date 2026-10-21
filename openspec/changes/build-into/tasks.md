@@ -6,7 +6,7 @@ synthetic **Skills** and **Sources**; `<dir>` is a `tmp_path` subfolder.
 
 ## 1. Destination as a parameter
 
-- [ ] 1.1 `vendor.vendor` and `lock.write` take an optional destination (the `skills` folder, the lock file),
+- [x] 1.1 `vendor.vendor` and `lock.write` take an optional destination (the `skills` folder, the lock file),
   defaulting to the **Package**'s; verify the existing build, lock and scope tests pass unchanged and a unit test
   vendors and writes a lock into a given folder without touching the **Package**
 

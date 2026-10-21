@@ -207,6 +207,7 @@ def folder_hash(folder: Path, overrides: dict[Path, bytes] | None = None) -> str
     return f"sha256:{digest.hexdigest()}"
 
 
-def write(text: str) -> None:
-    """Replaces the lock in the package folder atomically."""
-    files.atomic_write(paths.package() / "skill-graft.lock", text.encode())
+def write(text: str, file: Path | None = None) -> None:
+    """Replaces the lock (default: the package's) atomically."""
+    file = paths.package() / "skill-graft.lock" if file is None else file
+    files.atomic_write(file, text.encode())

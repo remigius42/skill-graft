@@ -8,14 +8,15 @@ from skill_graft.errors import SkillGraftError
 from skill_graft.hull import Hull
 
 
-def vendor(hull: Hull) -> None:
-    """Replaces `.apm/skills/` with one copy per hull skill, swapped in when complete.
+def vendor(hull: Hull, skills: Path | None = None) -> None:
+    """Replaces `skills` (default: the package's `.apm/skills/`) with one copy per
+    hull skill, swapped in when complete.
 
     Each copy is named by its deployed name and holds the rewritten bytes. The
     hull is resolved and checked before, so a failure writes nothing beyond
     undoing a run killed mid-swap.
     """
-    skills = paths.skills()
+    skills = paths.skills() if skills is None else skills
     new = skills.with_name("skills.new")
     old = skills.with_name("skills.old")
     rewrites = rename.rewrites(hull)  # may fail: before anything is written

@@ -4,6 +4,8 @@ from pathlib import Path
 import pytest
 from conftest import FakeApm, skill, write_config
 
+from skill_graft import config, lock, paths, resolve, vendor
+from skill_graft.cache import Cache
 from skill_graft.cli import main
 
 
@@ -407,3 +409,20 @@ def test_registration_removed_by_hand(home: Path, fake_apm: FakeApm) -> None:
     assert main(["build"]) == 0
 
     assert f"- {home / '.apm' / 'skill-graft'}" in manifest.read_text()
+
+
+def test_vendor_and_lock_into_a_given_folder(home: Path, tmp_path: Path) -> None:
+    skill(home / "src" / "chisel")
+    write_config('entries = ["own/chisel"]\n[sources.own]\npath = "~/src"\n')
+    loaded = config.load()
+    folders = resolve.folders(loaded, Cache(paths.cache()), {})
+    hull = resolve.resolve(loaded, folders, tmp_path / "work")
+    into = tmp_path / "into"
+
+    vendor.vendor(hull, into / ".apm" / "skills")
+    lock.write("lock\n", into / "skill-graft.lock")
+
+    assert (into / ".apm" / "skills" / "chisel" / "SKILL.md").is_file()
+    assert (into / "skill-graft.lock").read_text() == "lock\n"
+    package = home / ".apm" / "skill-graft"
+    assert sorted(p.name for p in package.iterdir()) == ["skill-graft.toml"]
