@@ -33,8 +33,6 @@ synthetic **Skills** and **Sources**.
   the hull spec's "No such skill" and "Several other sources" scenarios pass
 - [x] 3.2 `hull.walk` checks the target of every **Bind**, used or not; verify tests for "Unused bind to a missing
   skill" and "Typo in a bind" pass, with existing fixtures given the targets their binds name
-- [ ] 3.3 `resolve.known` fetches only the **Source** of the **Skill ID** it checks; verify a test where another
-  git **Source**'s remote is unreachable and `rename` and `bind` still succeed past the check
 
 ## 4. Wrap-up
 

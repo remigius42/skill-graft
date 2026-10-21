@@ -43,8 +43,6 @@ missing or ambiguous, and warns about an unused **Bind**.
 - **Every Bind's target is checked**, in `hull.walk` after the walk, with `discovery.find` on the indexes it
   already holds: no extra I/O. Rejected: a warning for an unused one. A used **Bind** to a missing **Skill** is
   already an error, and an unused one is the typo `bind` exists to catch.
-- **`resolve.known` fetches only its Source.** It calls `resolve.folders` on a config narrowed to that one
-  **Source**, so `rename` and `bind` no longer fetch every declared **Source** twice.
 - **`unbind` parses its key** as `bind` does, so a malformed key or undeclared alias gets the same error, not
   "not bound".
 
@@ -52,7 +50,8 @@ missing or ambiguous, and warns about an unused **Bind**.
 
 - \[`unbind` can break resolution when the default is ambiguous\] → `_finish` already refuses to write, and the
   error names the ambiguous **Reference**, so the user sees why the **Bind** was there.
-- \[`resolve.known` fetches and indexes the target's **Source**, and `_finish` does so again\] → accepted: the
-  second fetch hits the cache, and one index is cheap next to resolving the **Hull**.
+- \[`resolve.known` fetches every declared **Source** to check the target, and `_finish` fetches them again\] →
+  accepted, as for `rename`: `_finish` needs them all anyway, so the second pass hits the cache, and a broken
+  remote fails the command either way. Narrowing `known` to one **Source** changes neither.
 - \[A stale unused **Bind** (its target removed upstream) now stops `resolve` and `build`\] → the error names the
   **Bind**, and `skill-graft unbind` removes it.

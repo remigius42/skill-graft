@@ -22,8 +22,6 @@ editing the TOML itself.
   line to write by hand.
 - Resolution checks the target of every **Bind**, not only of those a **Reference** uses, so a hand-written
   typo fails the next `resolve` even when the **Bind** is unused.
-- `resolve.known`, which `rename` and `bind` use to check a **Skill ID**, fetches only that **Source**, so an
-  unrelated remote being down does not fail the edit.
 - Both are listed in the help and print the `package:` line, as the other writing commands do.
 
 Out of scope: the `graft-check` skill itself (a later change), and commands for **Patches**.
@@ -44,9 +42,8 @@ None.
 
 ## Impact
 
-- `src/skill_graft/edit.py`, `src/skill_graft/cli.py`, `src/skill_graft/hull.py` (messages, target check),
-  `src/skill_graft/resolve.py` (`known`); tests in `tests/test_edit.py`, `tests/test_cli.py`, `tests/test_hull.py`
-  and those pinning the messages.
+- `src/skill_graft/edit.py`, `src/skill_graft/cli.py`, `src/skill_graft/hull.py` (messages, target check);
+  tests in `tests/test_edit.py`, `tests/test_cli.py`, `tests/test_hull.py` and those pinning the messages.
 - `docs/design.md`: the command list, the passage that says no command edits binds, the no-op edits, and the
   unmatched-**Reference** warning's text.
 - `README.md` and `docs/design.md` command lists; `.cspell.yaml` gets `unbind`.
