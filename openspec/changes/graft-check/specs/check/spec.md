@@ -14,8 +14,7 @@ warning and no suggestion.
 
 #### Scenario: Alone in its hull
 
-- **WHEN** a **Source** `sg` holds this repository's tracked `skills/` and `.claude/skills/` folders and
-  `entries = ["sg/graft-check"]`
+- **WHEN** a **Source** `sg` holds every file this repository tracks and `entries = ["sg/graft-check"]`
 - **THEN** `skill-graft resolve` succeeds, the **Hull** is `sg/graft-check` alone, and it prints no warning and
   no suggestion
 
@@ -37,10 +36,10 @@ without arguments, the whole **Hull**.
 
 ### Requirement: Builds before reading
 
-The skill SHALL keep a copy of the lock, then run `skill-graft build --no-install` and read the **Package** from
-its `package:` line. A failing build SHALL end the **Check** with the build's error. It SHALL then read the lock,
-each **Skill**'s **Upstream** folder and its vendored copy, finding each **Source**'s folder once (through
-`skill-graft why` on one of its **Skills**) and joining it with the lock's relative `upstream`.
+The skill SHALL first run `skill-graft build --no-install` and read the **Package** from its `package:` line. A
+failing build SHALL end the **Check** with the build's error. It SHALL then read the lock, each **Skill**'s
+**Upstream** folder and its vendored copy, finding each **Source**'s folder once (through `skill-graft why` on
+one of its **Skills**) and joining it with the lock's relative `upstream`.
 
 #### Scenario: Build fails
 
@@ -49,10 +48,9 @@ each **Skill**'s **Upstream** folder and its vendored copy, finding each **Sourc
 
 ### Requirement: Lock version
 
-The skill SHALL read lock `version = 1` only. A newer version SHALL stop it, telling the user to run
-`skill-graft update <alias>` for the **Source** that holds the skill, `skill-graft build`, and a new session; an
-older one SHALL stop it, telling the user to upgrade skill-graft the way they installed it (such as
-`uv tool upgrade skill-graft`).
+The skill SHALL read lock `version = 1` only; any other version SHALL stop it. A higher one SHALL come with the
+advice to run `skill-graft update <alias>` for the **Source** that holds the skill, `skill-graft build`, and a new
+session.
 
 #### Scenario: Newer lock
 
@@ -78,12 +76,13 @@ rewrite of the wrong text or a missed one, and a relative link that the vendored
 ### Requirement: Fixes fit their scope
 
 A **Bind** applies to every **Reference** to its name from its **Source**. The skill SHALL propose a **Bind** only
-when that is what every such **Reference** needs, judged from the lock's edges and the **Skills**' text; when only
-some of them are wrong, it SHALL propose a **Patch** of the **Skill** that holds the wrong one.
+when that is what every such **Reference** needs, judged by searching the **Upstream** text of that **Source**'s
+**Hull** **Skills** for the name (the lock's edges name no **Reference**); when only some of them are wrong, it
+SHALL propose a **Patch** of the **Skill** that holds the wrong one.
 
 #### Scenario: One false match among real calls
 
-- **WHEN** `mp/a` calls `/grill` and `mp/b` holds a word `grill` that is no call
+- **WHEN** `mp/a` calls `/grill` and `mp/b` writes `/grill` as a URL path, not a call
 - **THEN** the skill proposes a **Patch** of `mp/b`, not `skill-graft bind mp/grill false`
 
 ### Requirement: Fixes only once accepted
@@ -117,16 +116,16 @@ the **Skill**'s `[patches]` list, and the key only if the skill created it, leav
 
 ### Requirement: Never deploys
 
-The skill SHALL NOT run `skill-graft build` without `--no-install`, nor `apm`. When the lock differs from the copy
-it kept before its first build, whether from an accepted fix or from changed **Sources**, it SHALL end by telling
-the user that what is deployed is behind and to run `skill-graft build`.
+The skill SHALL NOT run `skill-graft build` without `--no-install`, nor `apm`. It SHALL always end by telling the
+user to run `skill-graft build` to deploy what it built: an accepted fix, a **Source** changed since the last
+deploy, or an earlier `--no-install` build, which the skill cannot tell apart from nothing.
 
 #### Scenario: After a fix
 
 - **WHEN** the user accepted a fix
 - **THEN** the skill's last message tells the user to run `skill-graft build`
 
-#### Scenario: Source changed, every fix declined
+#### Scenario: Every fix declined
 
-- **WHEN** a path **Source**'s **Skill** changed since the last `build`, and the user declines every fix
+- **WHEN** the user declines every fix
 - **THEN** the skill's last message still tells the user to run `skill-graft build`

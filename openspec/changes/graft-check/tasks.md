@@ -10,20 +10,20 @@
 
 - [ ] 2.1 Add `skills/graft-check/SKILL.md` with front matter (`name: graft-check`,
   `disable-model-invocation: true`, a description saying it runs only when the user asks) and a body stub; add
-  `tests/test_check.py` asserting the front matter, and that a temporary path **Source** holding the tracked
-  `skills/` and `.claude/skills/` files (`git ls-files`) with `entries = ["sg/graft-check"]` resolves to
+  `tests/test_check.py` asserting the front matter, and that a temporary path **Source** holding every tracked
+  file (`git ls-files`) with `entries = ["sg/graft-check"]` resolves to
   `sg/graft-check` alone with no warning and no suggestion; verify the tests pass
 - [ ] 2.2 Write the skill's body with the mp-writing-for-agents skill:
-  - keep the lock, build with `--no-install`, read the **Package** line, check the lock `version` (its two
-    messages, the upgrade one not tied to `uv`)
+  - build with `--no-install`, read the **Package** line, stop on a lock `version` other than 1 (a higher one with
+    the update advice)
   - inputs: the lock, one `skill-graft why` per **Source** joined with the lock's `upstream`, the vendored copy;
     optional **Skill ID** arguments
   - the five kinds with a placeholder example each; the per-skill subagent fan-out and its report shape
-  - fixes one at a time after the user's yes: a **Bind** only when every **Reference** to the name from that
-    **Source** needs it, else a **Patch**; `add`/`bind`/`unbind`, or the README recipe with the **Package**
+  - fixes one at a time after the user's yes: a **Bind** only when every use of the name in that **Source**'s
+    **Upstream** text needs it, else a **Patch**; `add`/`bind`/`unbind`, or the README recipe with the **Package**
     path; rebuild after each and name **Skills** that left or joined the **Hull**; undo a failed **Patch**'s file
     and own list item only
-  - close with the `skill-graft build` advice whenever the lock differs from the one kept
+  - always close with the `skill-graft build` advice
   - verify `tests/test_check.py` still passes (no **Reference** crept in) and `pre-commit run --all-files` is
     green
 
@@ -37,7 +37,7 @@
 ## 4. Eval
 
 - [ ] 4.1 Write `evals/graft-check/run.sh` and its README: a temporary project **Package** over a local git
-  **Source** with one planted defect per kind, the working copy installed in the project's `.claude/skills/`
-  under a unique name (folder and `name:`), `claude -p` run there with `--allowedTools` for
-  `Bash(skill-graft:*)`, reads, searches and subagents, and a grep per defect; verify a manual run reports all
-  five, also with a `graft-check` deployed in `~/.claude/skills/`, and touches nothing under `~/.apm`
+  **Source** with one planted defect per kind, the working copy in the project's `.claude/skills/`, `HOME` and
+  `XDG_CACHE_HOME` in the temporary folder and `ANTHROPIC_API_KEY` required, `claude -p` run there with
+  `--allowedTools` for `Bash(skill-graft:*)`, reads, searches and subagents, and a grep per defect; verify a
+  manual run reports all five and leaves the real `~/.apm`, `~/.claude` and `~/.cache/skill-graft` unchanged

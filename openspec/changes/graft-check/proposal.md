@@ -20,8 +20,8 @@ config the user accepts.
 - For each finding it proposes a fix (`skill-graft add`, `bind`, `unbind`, or a **Patch** written by the README's
   recipe), a **Bind** only where every **Reference** to that name from that **Source** needs it, and applies it
   only once the user accepts it, then rebuilds with `--no-install` and names **Skills** that left or joined the
-  **Hull**. A failed **Patch** is undone without touching earlier ones. It never deploys: whenever the lock
-  changed, it ends by telling the user to run `skill-graft build`.
+  **Hull**. A failed **Patch** is undone without touching earlier ones. It never deploys: it ends by telling the
+  user to run `skill-graft build`.
 - A lock `version` it does not know stops it, with the update that fixes it (the skill's **Source** or the CLI).
   The lock's version 1 keys are pinned by a test, so a layout change has to raise `version`.
 - `skill-graft init` writes the lines that install it into its commented template; `README.md` explains them.

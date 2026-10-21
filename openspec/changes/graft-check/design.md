@@ -37,9 +37,9 @@ What the skill can lean on already exists:
   the whole repository also finds the six `openspec-*` skills there, which is harmless: only **Entries** and what
   they reach are built, and `graft-check` reaches nothing.
 - **Its text names no skill.** Examples in it use placeholders, not `/tmp` or real names, so its **Hull** stays
-  itself alone. The pytest guard copies what a git **Source** of the repository would hold that matters here, the
-  tracked `skills/` and `.claude/skills/` files (`git ls-files`), into a temporary path **Source**, so a mention
-  of an `openspec-*` name fails it too. A path **Source** of the working tree would also find the untracked,
+  itself alone. The pytest guard copies every tracked file (`git ls-files`), what a git **Source** of the
+  repository holds, into a temporary path **Source**: discovery finds a `SKILL.md` at any depth, so a mention of
+  any tracked **Skill**'s name fails it. A path **Source** of the working tree would also find the untracked,
   ignored skills a developer deploys there.
 - **Upstream folders: one `why` per Source.** The lock's `upstream` is relative to a cache export the skill cannot
   locate portably. `why` prints one **Skill**'s absolute folder; minus the lock's relative `upstream`, that gives
@@ -48,15 +48,20 @@ What the skill can lean on already exists:
 - **Fixes go through the CLI wherever one exists.** `add`, `bind` and `unbind` already refuse what does not
   resolve, so only a **Patch** needs undoing by hand when the rebuild fails: its file, its own list item, and the
   key only when the skill created it.
-- **A Bind is source-wide, so it is checked against the edges.** Before proposing `bind <alias>/<name> false` or a
-  redirect, the skill looks for other **References** to that name from that **Source**, in the lock's edges and
-  in the text; if some are right, a **Patch** of the **Skill** with the wrong one fits instead. Every rebuild is
+- **A Bind is source-wide, so it is checked against the text.** Before proposing `bind <alias>/<name> false` or a
+  redirect, the skill searches the **Upstream** text of that **Source**'s **Hull** **Skills** for the name in
+  each **Reference** form. The lock's edges cannot answer this: they hold targets, not the names written, and a
+  `false` **Bind** leaves no edge. If some uses are right, a **Patch** of the **Skill** with the wrong one fits
+  instead. Every rebuild is
   diffed against the previous lock's **Skills**, so a fix that drops one says so.
 - **The README recipe, with the real Package.** The recipe spells out the user **Package**; the skill puts the
   `package:` line's path in its place, so project scope writes its own `patches/`.
-- **Drift is reported, not just fixes.** The first `build --no-install` can change the vendored copies when a
-  **Source** moved (a path **Source**'s edits, a `ref` the user changed). The skill keeps the lock from before it
-  and ends with the `skill-graft build` advice whenever the lock differs, fix or not.
+- **The `skill-graft build` advice comes always.** The first `build --no-install` can change the vendored copies
+  (a path **Source**'s edits, a `ref` the user changed), and an earlier `--no-install` build may never have been
+  deployed. Comparing locks misses the second case and needs a copy the eval's tools forbid; nothing local says
+  what APM deployed. So the skill always ends with the advice.
+- **Only version 1 is read.** It is the first lock version, so no lock can be older; the CLI-upgrade advice comes
+  with a skill that reads a version 2.
 - **One subagent per checked Skill**, each reporting findings of the per-skill kinds (missed, false, rewrite,
   link) in a fixed shape; the main agent judges wrong targets from the lock's edges, merges, and proposes. Without
   subagents, the main agent goes through the **Skills** one by one.
@@ -66,10 +71,12 @@ What the skill can lean on already exists:
 - **Eval, not test, for the agent.** `evals/graft-check/run.sh` builds a project **Package** in a temporary folder
   (a git **Source** made with `git init`, so no network), plants one defect per kind, and runs `claude -p` there,
   then greps the report. A project **Package** is found before the user's, so the real `~/.apm` is never read or
-  written; `HOME` stays real because `claude` needs its login, and nothing in the run calls `apm`.
-  - The working copy goes into the project's `.claude/skills/` under a unique name (`graft-check-eval-<random>`,
-    folder and `name:`), because a personal skill of the same name, such as a deployed `graft-check`, wins over
-    a project one.
+  written.
+  - `HOME` and `XDG_CACHE_HOME` point into the temporary folder, as AGENTS.md asks of anything that runs `apm`,
+    though nothing here does: the real `~/.claude` and `~/.cache/skill-graft` stay untouched, the user's
+    settings, hooks and personal skills (a deployed `graft-check` among them) cannot change the run, and the
+    working copy in the project's `.claude/skills/` is the only `graft-check`. `claude` then logs in through
+    `ANTHROPIC_API_KEY`, which the script requires.
   - `--allowedTools` grants `Bash(skill-graft:*)`, file reads and searches, and subagents; headless, any other
     tool call is denied, not asked.
 
