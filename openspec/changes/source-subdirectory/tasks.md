@@ -16,8 +16,9 @@ full (read, checked, locked), so no commit accepts intent it ignores or mishandl
   config (subdirectory-not-a-string, subdirectory-key, subdirectory-on-a-path-source, valid-subdirectory,
   subdirectory-leaving-the-repository, control-character, subdirectory-into-a-package), git-sources
   (one-plugin-of-many, skill-outside-the-subdirectory, link-out-of-the-subdirectory, skill-at-the-subdirectory,
-  missing-at-ref for `resolve` and `build`, a-file-not-a-folder, symlinked-subdirectory, case-differs,
-  shared-export, and the modified requirement's scenarios), resolve (subdirectory-recorded,
+  missing-at-ref for `resolve` and `build`, a-file-not-a-folder, symlinked-subdirectory, shared-export, and the
+  modified requirement's scenarios; case-differs only by the exact-name comparison, since Linux refuses another
+  case either way and no test there can tell), resolve (subdirectory-recorded,
   upstream-under-a-subdirectory), update (subdirectory-gone-upstream, also with `--dry-run`). Also: `why` on a
   subdirectory **Source**'s skill prints an `upstream:` folder ending in `pstack/skills/tdd`. Every existing test
   passes, and a lock without `subdirectory` is byte for byte unchanged.

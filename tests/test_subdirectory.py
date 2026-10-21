@@ -103,7 +103,7 @@ def test_missing_at_ref(tmp_path: Path, capsys: Capsys, command: str) -> None:
 
     err = not_at_the_ref(tmp_path, capsys, command, files, "pstack/skills")
 
-    assert "is not a folder" in err
+    assert "does not exist" in err
 
 
 def test_a_file_not_a_folder(tmp_path: Path, capsys: Capsys) -> None:

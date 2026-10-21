@@ -94,14 +94,13 @@ class Index:
     folder gets the error, other entries never see it.
     """
 
-    root: Path  # the source's folder, as walked
     folders: dict[str, list[Path]]
     unreadable: dict[str, list[SkillGraftError]]
     invalid: dict[str, list[SkillGraftError]]
 
 
 def index(source: Path, confined: bool = False) -> Index:
-    skills = Index(source, {}, {}, {})
+    skills = Index({}, {}, {})
     for folder in skill_folders(source, confined):
         try:
             name = read_name(folder)

@@ -209,11 +209,10 @@ def _git_source(alias: str, table: dict[str, object]) -> GitSource:
 def _relative_folder(path: str) -> bool:
     """`path` as `a/b`: no empty, `.` or `..` segment, no control character, and
     not into a package, whose vendored copies a source never offers."""
-    parts = path.split("/")
     return (
-        all(part not in ("", ".", "..") for part in parts)
+        all(part not in ("", ".", "..") for part in path.split("/"))
         and not any(ord(c) < 32 or c == "\x7f" for c in path)
-        and (".apm", "skill-graft") not in zip(parts, parts[1:])
+        and not paths.in_package(Path(path))
     )
 
 
