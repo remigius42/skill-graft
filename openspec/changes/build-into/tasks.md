@@ -19,7 +19,7 @@ synthetic **Skills** and **Sources**; `<dir>` is a `tmp_path` subfolder.
   `<dir>/skill-graft.lock`, never run APM, and print the `into:` line after `package:`; verify tests for "Throwaway
   build", "Package untouched", "Package never built", "Same lock", "Project path source" and "Both lines" pass,
   with `apm` absent from `PATH`
-- [ ] 2.3 Any failure or interrupt while vendoring, hashing or writing the lock during `build --into` removes
+- [x] 2.3 Any failure or interrupt while vendoring, hashing or writing the lock during `build --into` removes
   exactly what `build` wrote under `<dir>`, after the temporary work folder is gone; verify the "Vendoring
   into the folder fails", "Lock write fails", "Interrupted", "Foreign file kept" and "Temporary folder inside
   it" tests pass

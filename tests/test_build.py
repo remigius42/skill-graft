@@ -1,4 +1,5 @@
 import os
+import tempfile
 from pathlib import Path
 
 import pytest
@@ -7,6 +8,7 @@ from conftest import FakeApm, skill, write_config
 from skill_graft import config, lock, paths, resolve, vendor
 from skill_graft.cache import Cache
 from skill_graft.cli import main
+from skill_graft.hull import Hull
 
 
 def skills_dir(home: Path) -> Path:
@@ -498,3 +500,95 @@ def test_same_lock(home: Path, tmp_path: Path) -> None:
 
     package_lock = home / ".apm" / "skill-graft" / "skill-graft.lock"
     assert (into / "skill-graft.lock").read_bytes() == package_lock.read_bytes()
+
+
+def unreadable_entry(home: Path) -> None:
+    skill(home / "src" / "chisel")
+    unreadable(skill(home / "src" / "tdd", "Run /chisel.\n"))
+    write_config('entries = ["own/tdd"]\n[sources.own]\npath = "~/src"\n')
+
+
+@pytest.mark.skipif(os.geteuid() == 0, reason="root reads any file")
+def test_vendoring_into_the_folder_fails(
+    home: Path, tmp_path: Path, capsys: pytest.CaptureFixture[str]
+) -> None:
+    unreadable_entry(home)
+    into = empty_folder(tmp_path)
+
+    assert main(["build", "--into", str(into)]) == 1
+
+    assert "secret" in capsys.readouterr().err
+    assert list(into.iterdir()) == []
+
+
+def test_lock_write_fails(
+    home: Path, tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    skill(home / "src" / "chisel")
+    write_config('entries = ["own/chisel"]\n[sources.own]\npath = "~/src"\n')
+    into = empty_folder(tmp_path)
+
+    def fail(text: str, file: Path | None = None) -> None:
+        assert file is not None
+        file.with_name(".skill-graft.lock.tmp").write_text(text)
+        raise OSError("disk full")
+
+    monkeypatch.setattr(lock, "write", fail)
+
+    assert main(["build", "--into", str(into)]) == 1
+
+    assert list(into.iterdir()) == []
+
+
+def test_interrupted(
+    home: Path, tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    skill(home / "src" / "chisel")
+    write_config('entries = ["own/chisel"]\n[sources.own]\npath = "~/src"\n')
+    into = empty_folder(tmp_path)
+    copy = vendor.vendor
+
+    def copy_then_interrupt(hull: Hull, skills: Path | None = None) -> None:
+        copy(hull, skills)
+        raise KeyboardInterrupt
+
+    monkeypatch.setattr(vendor, "vendor", copy_then_interrupt)
+
+    with pytest.raises(KeyboardInterrupt):
+        main(["build", "--into", str(into)])
+
+    assert list(into.iterdir()) == []
+
+
+@pytest.mark.skipif(os.geteuid() == 0, reason="root reads any file")
+def test_foreign_file_kept(
+    home: Path, tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    unreadable_entry(home)
+    into = empty_folder(tmp_path)
+    copy = vendor.vendor
+
+    def another_process_writes_first(hull: Hull, skills: Path | None = None) -> None:
+        (into / ".apm").mkdir()
+        (into / ".apm" / "x").write_text("theirs\n")
+        copy(hull, skills)
+
+    monkeypatch.setattr(vendor, "vendor", another_process_writes_first)
+
+    assert main(["build", "--into", str(into)]) == 1
+
+    assert snapshot(into) == {".apm/x": b"theirs\n"}
+    assert sorted(p.name for p in (into / ".apm").iterdir()) == ["x"]
+
+
+@pytest.mark.skipif(os.geteuid() == 0, reason="root reads any file")
+def test_temporary_folder_inside_it(
+    home: Path, tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    unreadable_entry(home)
+    into = empty_folder(tmp_path)
+    monkeypatch.setattr(tempfile, "tempdir", str(into))
+
+    assert main(["build", "--into", str(into)]) == 1
+
+    assert list(into.iterdir()) == []

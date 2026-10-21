@@ -1,8 +1,10 @@
 """The `skill-graft` command line."""
 
 import argparse
+import contextlib
 import os
 import re
+import shutil
 import sys
 import tempfile
 import textwrap
@@ -333,17 +335,23 @@ def main(argv: list[str] | None = None) -> int:
             # `--into` mirrors the package's layout in another folder.
             into = None if args.into is None else args.into.resolve()
             skills = paths.skills() if into is None else into / ".apm" / "skills"
-            with tempfile.TemporaryDirectory(prefix="skill-graft-") as work:
-                loaded, resolved = _resolve(Path(work))
-                warn(resolved.warnings)
-                vendor.vendor(resolved, skills)
-            # Hashes the vendored copies, so the lock holds exactly what was vendored.
-            copies = {
-                s: lock.folder_hash(skills / resolved.deployed[s])
-                for s in resolved.skills
-            }
-            lock_file = None if into is None else into / "skill-graft.lock"
-            lock.write(lock.render(loaded, {}, resolved, copies), lock_file)
+            try:
+                with tempfile.TemporaryDirectory(prefix="skill-graft-") as work:
+                    loaded, resolved = _resolve(Path(work))
+                    warn(resolved.warnings)
+                    vendor.vendor(resolved, skills)
+                # Hashes the vendored copies, so the lock holds what was vendored.
+                copies = {
+                    s: lock.folder_hash(skills / resolved.deployed[s])
+                    for s in resolved.skills
+                }
+                lock_file = None if into is None else into / "skill-graft.lock"
+                lock.write(lock.render(loaded, {}, resolved, copies), lock_file)
+            except BaseException:
+                # After the work folder is gone, which a TMPDIR may put in `into`.
+                if into is not None:
+                    _undo_into(into)
+                raise
             lock.announce_suggestions(resolved)  # once nothing before APM can fail
             if not args.no_install and into is None:
                 apm.install()
@@ -360,6 +368,17 @@ def _into(value: str) -> Path:
     if not value:
         raise argparse.ArgumentTypeError("must not be empty")
     return Path(value)
+
+
+def _undo_into(into: Path) -> None:
+    """Removes what a failed `build --into` wrote in `into`, and nothing else there."""
+    folder = into / ".apm"
+    for name in ("skills.new", "skills.old", "skills"):
+        shutil.rmtree(folder / name, ignore_errors=True)
+    for written in [into / "skill-graft.lock", *into.glob(".skill-graft.lock.*")]:
+        written.unlink(missing_ok=True)
+    with contextlib.suppress(OSError):  # kept if another process wrote into it
+        folder.rmdir()
 
 
 def _working_folder() -> Path:
