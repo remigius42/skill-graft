@@ -36,11 +36,11 @@ missing from the cache.
 ### Requirement: Lock content
 
 `skill-graft.lock`, a TOML file at `~/.apm/skill-graft/skill-graft.lock` even when `skill-graft.toml` is a
-symlink, SHALL record: each declared **Source**'s alias with its URL and `ref`, or its resolved folder (in
-project scope relative to the **Package** when inside the project root, else absolute); each **Hull**
-**Skill**'s **Skill ID**, whether it is an **Entry**, and a SHA-256 hash of its folder as vendored; and each
-edge: from, to, kind (`slash`, `skill-tool` or `prose`), and `bind = true` when a **Bind** decided it. One edge
-per from, to, kind and `bind`.
+symlink, SHALL record: each declared **Source**'s alias with its URL, `ref` and `subdirectory` when set, or its
+resolved folder (in project scope relative to the **Package** when inside the project root, else absolute); each
+**Hull** **Skill**'s **Skill ID**, whether it is an **Entry**, and a SHA-256 hash of its folder as vendored; and
+each edge: from, to, kind (`slash`, `skill-tool` or `prose`), and `bind = true` when a **Bind** decided it. One
+edge per from, to, kind and `bind`.
 
 #### Scenario: Edges with kinds
 
@@ -79,6 +79,13 @@ per from, to, kind and `bind`.
 
 - **WHEN** in project scope `[sources.own]` has `path = "~/skills"`
 - **THEN** the lock records `own`'s path as the absolute folder
+
+#### Scenario: Subdirectory recorded
+
+- **WHEN** `[sources.cp]` has `git`, `ref` and `subdirectory = "pstack/skills"`, and `[sources.mp]` has no
+  `subdirectory`
+- **THEN** the lock's table for `cp` holds `subdirectory = "pstack/skills"`, and the one for `mp` holds no
+  `subdirectory`
 
 ### Requirement: Lock is deterministic
 
@@ -236,9 +243,10 @@ after `--dry-run`, whose tips `resolve` cannot see yet, prints
 ### Requirement: Lock records upstream folders and patches
 
 The lock SHALL record each **Hull** **Skill**'s `upstream` folder relative to its **Source**'s root, in either
-**Scope**: the folder its **Patches** apply to, in the cache export at the `ref` or in a path **Source**. A
-patched **Skill** SHALL also record its `patches`, as written in the TOML, in apply order. Each hash SHALL cover
-the folder as vendored, **Patches** applied, so `resolve` and `build` write the same lock for the same input.
+**Scope**: the folder its **Patches** apply to, in the cache export at the `ref` or in a path **Source**. A git
+**Source**'s root is the repository's, so `upstream` includes any `subdirectory`. A patched **Skill** SHALL also
+record its `patches`, as written in the TOML, in apply order. Each hash SHALL cover the folder as vendored,
+**Patches** applied, so `resolve` and `build` write the same lock for the same input.
 
 #### Scenario: Upstream recorded
 
@@ -250,6 +258,12 @@ the folder as vendored, **Patches** applied, so `resolve` and `build` write the 
 
 - **WHEN** a path **Source**'s folder itself holds `SKILL.md`
 - **THEN** that **Skill**'s `upstream` is `.`
+
+#### Scenario: Upstream under a subdirectory
+
+- **WHEN** `[sources.cp]` has `subdirectory = "pstack/skills"`, `cp/tdd` is at `pstack/skills/tdd` in the
+  repository, and a **Skill** of git **Source** `pl` with `subdirectory = "plugins/chisel"` is that folder itself
+- **THEN** `cp/tdd`'s `upstream` is `pstack/skills/tdd`, and the other's is `plugins/chisel`
 
 #### Scenario: Same lock on another machine
 

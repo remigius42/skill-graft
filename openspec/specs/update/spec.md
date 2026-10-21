@@ -108,6 +108,13 @@ and the lock unchanged. `update` SHALL NOT vendor or run `apm`.
   calls `/notes`
 - **THEN** `update` exits non-zero naming `/notes` and both **Skill IDs**, and leaves the TOML and lock unchanged
 
+#### Scenario: Subdirectory gone upstream
+
+- **WHEN** `[sources.cp]` has `subdirectory = "pstack/skills"`, and the new tip of `cp` no longer has
+  `pstack/skills`
+- **THEN** `update` exits non-zero naming `cp`, `pstack/skills` and the new sha, and leaves the TOML and lock
+  unchanged
+
 #### Scenario: Lock follows the TOML
 
 - **WHEN** `update` moves `mp`'s `ref` to B
