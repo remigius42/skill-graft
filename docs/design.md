@@ -75,8 +75,9 @@ path = "~/Documents/sync/2_areas/software/chisel_skill"
   unknown alias or skill is an error; a skill outside the hull gets the unused-rename warning; clashes are the
   usual errors and warnings, an error writing nothing.
 - `bind` sets `[bind]` key `<alias>/<name>` to a skill ID, or to `false` for the word `false` (appending the
-  table if absent). The key's alias must be declared, its name need not be a skill; the target is checked as
-  `rename` checks its skill, before the current value is a notice. An unused bind gets the usual warning.
+  table if absent). The key's alias must be declared, its name need not be a skill; resolving checks the target, as
+  it checks every bind's. A key already set has its target checked first, as `rename` checks its skill, so the
+  current value is a notice only while its target exists. An unused bind gets the usual warning.
 - `unbind` deletes the key, leaving the table; its key is parsed as `bind`'s, and one not in `[bind]` is an error.
 - `resolve`: computes the hull from the TOML, writes the lock, prints the tree, warnings and suggestions.
   Reads every declared source, each git one at its `ref`, fetching only when that commit is not cached.

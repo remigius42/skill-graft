@@ -120,7 +120,7 @@ def walk(config: Config, indexes: dict[str, discovery.Index], work: Path) -> Hul
         # Every bind's target must exist, used or not: a typo should not wait for a
         # use. After the walk, so a patch failure is reported with it.
         for key, bound_to in config.binds.items():
-            if bound_to is not None:
+            if bound_to is not None and bound_to not in skills:  # else found
                 discovery.find(
                     indexes[bound_to.alias], bound_to, f'[bind] "{key}" = "{bound_to}"'
                 )
