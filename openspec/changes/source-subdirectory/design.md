@@ -32,7 +32,8 @@ must say more.
   that entry must be a directory and not a symlink (`is_dir(follow_symlinks=False)`). Comparing names, rather than
   calling `lstat` on the joined path, makes a case-insensitive file system refuse `PStack/skills` as Linux does, so
   the lock stays the same on every machine. Otherwise it raises
-  `source 'cp': subdirectory 'pstack/skills' is not a folder at <sha>`, or `… runs through a symlink at <sha>`. The
+  `source 'cp': subdirectory 'pstack/skills' does not exist at <sha>`, `… is not a folder at <sha>` (a file is in
+  the way), or `… runs through a symlink at <sha>`. The
   error always names the whole subdirectory as written, never only the segment that failed. Refusing symlinks
   outright is simpler than resolving and confining them, and a
   committed symlink as a plugin folder is far more likely a mistake than intent. Alternative: check inside
@@ -41,10 +42,10 @@ must say more.
 - **Discovery is confined to the subdirectory, not the export.** `discovery.index(folder, confined=True)` already
   takes its `root` from the folder it walks, so a link leaving the subdirectory is not followed, even one that
   stays inside the repository. That keeps "as if it were the repository root" literal, and keeps the other
-  plugins' skills out, which is the point of the key. No discovery code changes.
+  plugins' skills out, which is the point of the key. Discovery's walk is unchanged.
 - **The lock's `upstream` is relative to the repository root.** `Hull.roots[alias]`, which only `lock.render`
   reads, becomes the **Source**'s root, not the walked folder: the export for a git **Source**, the folder for a
-  path one. `Index.root` stays the walked folder, as discovery needs it. `folders` keeps returning the walked
+  path one. `Index.root`, the walked folder, which only fed `Hull.roots`, is removed. `folders` keeps returning the walked
   folders, so its callers (`cli._resolve`, `edit`, `update._update`, `update._previous`, `resolve.known`) are
   unchanged. `resolve.resolve`, which has the config, derives each root from its folder: for a git **Source**
   with `subdirectory`, the folder's ancestor one level up per segment. It hands the roots to `hull.walk` beside
