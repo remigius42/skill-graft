@@ -564,3 +564,36 @@ def test_bind_already_so_but_gone(home: Path, capsys: Capsys) -> None:
     out, err = capsys.readouterr()
     assert (out, config.read_bytes()) == ("", before)
     assert "own/grill" in err and "already bound" not in err
+
+
+@pytest.mark.parametrize(
+    ("argv", "named"),
+    [
+        (["mp/grilling", "own/nope"], "own/nope"),
+        (["zz/grilling", "own/grill"], "'zz'"),
+        (["mp/grilling", "true"], "'true'"),
+        (["mp", "own/grill"], "'mp'"),
+    ],
+)
+def test_bind_refuses(home: Path, capsys: Capsys, argv: list[str], named: str) -> None:
+    mp_skills(home, "tdd")
+    skill(home / "own" / "grill")
+    config = write_config('entries = ["mp/tdd"]\n' + TWO_SOURCES)
+    before = config.read_bytes()
+
+    assert main(["bind", *argv]) == 1
+
+    out, err = capsys.readouterr()
+    assert (out, config.read_bytes()) == ("", before)
+    assert named in err
+
+
+def test_bind_unused(home: Path, capsys: Capsys) -> None:
+    mp_skills(home, "tdd")
+    skill(home / "own" / "grill")
+    config = write_config('entries = ["mp/tdd"]\n' + TWO_SOURCES)
+
+    assert main(["bind", "mp/grill", "own/grill"]) == 0
+
+    assert tomllib.loads(config.read_text())["bind"] == {"mp/grill": "own/grill"}
+    assert '[bind] "mp/grill" binds no reference' in capsys.readouterr().err

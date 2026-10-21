@@ -12,7 +12,7 @@ synthetic **Skills** and **Sources**.
 - [x] 1.2 `bind` with the current value, `false` included, is a notice that leaves the file's bytes, after the
   target is checked; verify tests for "Already bound so", "Already bound to nothing" and "Already bound to a
   skill gone upstream" pass
-- [ ] 1.3 `bind` refuses an unknown or malformed target and a malformed or undeclared key, and writes an unused
+- [x] 1.3 `bind` refuses an unknown or malformed target and a malformed or undeclared key, and writes an unused
   **Bind** with its warning; verify tests for the "Bind checks its key and target" scenarios pass
 - [ ] 1.4 Wire `bind` into the CLI (parser with help text, `WRITERS`) and list it in `README.md` and
   `docs/design.md`; verify the CLI tests for top-level help, `bind --help`, a missing argument (exit 2) and the
