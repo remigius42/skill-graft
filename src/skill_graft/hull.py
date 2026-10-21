@@ -35,14 +35,21 @@ class Hull:
     upstream: dict[SkillId, Path]
     # Each patched skill's patch files, as written, in apply order.
     patches: dict[SkillId, list[str]]
-    # Each source's folder as walked; the lock records upstream relative to it.
+    # Each source's root, which the lock records upstream relative to: a path
+    # source's folder, a git source's tree even when only a subdirectory is walked.
     roots: dict[str, Path]
 
 
-def walk(config: Config, indexes: dict[str, discovery.Index], work: Path) -> Hull:
+def walk(
+    config: Config,
+    indexes: dict[str, discovery.Index],
+    roots: dict[str, Path],
+    work: Path,
+) -> Hull:
     """Breadth-first from the entries, each skill checked, patched and scanned once.
 
-    A patched skill is copied under `work`, which must outlive the hull.
+    `roots` are the sources' roots, kept for the lock. A patched skill is copied
+    under `work`, which must outlive the hull.
     """
     skills = {
         entry: discovery.find(indexes[entry.alias], entry) for entry in config.entries
@@ -160,7 +167,7 @@ def walk(config: Config, indexes: dict[str, discovery.Index], work: Path) -> Hul
         names,
         upstream,
         patched,
-        {alias: index.root for alias, index in indexes.items()},
+        roots,
     )
 
 

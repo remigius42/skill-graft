@@ -33,6 +33,8 @@ def render(
         if isinstance(source, GitSource):
             table["git"] = source.url
             table["ref"] = refs.get(alias) or source.ref
+            if source.subdirectory:
+                table["subdirectory"] = source.subdirectory
         else:
             table["path"] = _source_path(source.folder)
         sources[alias] = table

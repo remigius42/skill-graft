@@ -7,7 +7,7 @@ full (read, checked, locked), so no commit accepts intent it ignores or mishandl
 
 ## 1. Subdirectory
 
-- [ ] 1.1 `subdirectory` end to end. `config.py`: a supported key beside `git` only, a string validated
+- [x] 1.1 `subdirectory` end to end. `config.py`: a supported key beside `git` only, a string validated
   lexically, into `GitSource.subdirectory`. `resolve.folders`: returns `export / subdirectory` after the
   exact-name walk, which fails naming the alias, the whole subdirectory and the commit when it is missing, not a
   folder, or runs through a symlink. `Hull.roots`: each **Source**'s root, the export for a git one, derived in

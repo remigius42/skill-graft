@@ -31,6 +31,8 @@ class GitSource:
     url: str
     branch: str | None
     ref: str | None
+    # The folder of the tree read as the source's root, as written; None: the root.
+    subdirectory: str | None = None
 
 
 Source = PathSource | GitSource
@@ -145,7 +147,9 @@ def _sources(raw: object, base: Path) -> tuple[dict[str, Source], dict[str, str]
             folder = _source_folder(alias, _string(alias, table, "path"), base)
             sources[alias] = PathSource(folder)
         elif "git" in table:
-            _check_keys(alias, table, {"git", "branch", "ref", "prefix"})
+            _check_keys(
+                alias, table, {"git", "branch", "ref", "prefix", "subdirectory"}
+            )
             sources[alias] = _git_source(alias, table)
         else:
             _check_keys(alias, table, {"prefix"})
@@ -191,7 +195,26 @@ def _git_source(alias: str, table: dict[str, object]) -> GitSource:
             f"'sources.{alias}.ref' = {ref!r}: expected a full commit sha, "
             "40 or 64 lowercase hex digits"
         )
-    return GitSource(url, branch, ref)
+    subdirectory = (
+        _string(alias, table, "subdirectory") if "subdirectory" in table else None
+    )
+    if subdirectory is not None and not _relative_folder(subdirectory):
+        raise SkillGraftError(
+            f"'sources.{alias}.subdirectory' = {subdirectory!r}: expected a folder "
+            "relative to the repository root, like 'skills', with no '.' or '..'"
+        )
+    return GitSource(url, branch, ref, subdirectory)
+
+
+def _relative_folder(path: str) -> bool:
+    """`path` as `a/b`: no empty, `.` or `..` segment, no control character, and
+    not into a package, whose vendored copies a source never offers."""
+    parts = path.split("/")
+    return (
+        all(part not in ("", ".", "..") for part in parts)
+        and not any(ord(c) < 32 or c == "\x7f" for c in path)
+        and (".apm", "skill-graft") not in zip(parts, parts[1:])
+    )
 
 
 def _source_folder(alias: str, raw: str, base: Path) -> Path:
