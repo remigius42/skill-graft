@@ -10,8 +10,9 @@ full (read, checked, locked), so no commit accepts intent it ignores or mishandl
 - [ ] 1.1 `subdirectory` end to end. `config.py`: a supported key beside `git` only, a string validated
   lexically, into `GitSource.subdirectory`. `resolve.folders`: returns `export / subdirectory` after the
   exact-name walk, which fails naming the alias, the whole subdirectory and the commit when it is missing, not a
-  folder, or runs through a symlink. `Hull.roots`: each **Source**'s root, the export for a git one, so
-  `lock.render` is unchanged but for the source table's `subdirectory`. Verify the scenarios in the delta specs:
+  folder, or runs through a symlink. `Hull.roots`: each **Source**'s root, the export for a git one, derived in
+  `resolve.resolve` and passed to `hull.walk`, with its comment in `hull.py` updated, so `lock.render` is unchanged
+  but for the source table's `subdirectory`. Verify the scenarios in the delta specs:
   config (subdirectory-not-a-string, subdirectory-key, subdirectory-on-a-path-source, valid-subdirectory,
   subdirectory-leaving-the-repository, control-character, subdirectory-into-a-package), git-sources
   (one-plugin-of-many, skill-outside-the-subdirectory, link-out-of-the-subdirectory, skill-at-the-subdirectory,
