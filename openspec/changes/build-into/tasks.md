@@ -15,7 +15,7 @@ synthetic **Skills** and **Sources**; `<dir>` is a `tmp_path` subfolder.
 - [x] 2.1 Add `--into <dir>` to `build`'s parser with help text, in a mutually exclusive group with
   `--no-install` (exit 2 with `build`'s usage, before discovery, no `package:` line); verify CLI tests for
   "With no-install", "Without a value", "Empty value" and `build --help` listing `--into` pass
-- [ ] 2.2 Wire `build --into` to vendor into `<dir>/.apm/skills/`, hash those copies, write
+- [x] 2.2 Wire `build --into` to vendor into `<dir>/.apm/skills/`, hash those copies, write
   `<dir>/skill-graft.lock`, never run APM, and print the `into:` line after `package:`; verify tests for "Throwaway
   build", "Package untouched", "Package never built", "Same lock", "Project path source" and "Both lines" pass,
   with `apm` absent from `PATH`

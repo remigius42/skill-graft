@@ -341,3 +341,31 @@ def test_same_lock_on_another_machine(
 
     lock = Path(".apm") / "skill-graft" / "skill-graft.lock"
     assert (other / "repo" / lock).read_bytes() == (home / "repo" / lock).read_bytes()
+
+
+def test_build_into_keeps_project_paths(
+    home: Path, tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    project(home / "repo")
+    monkeypatch.chdir(home / "repo")
+    into = tmp_path / "into"
+    into.mkdir()
+
+    assert main(["build", "--into", str(into)]) == 0
+
+    assert lock_sources(into) == {"own": {"path": "../../src"}}
+
+
+def test_build_into_names_both(
+    home: Path, monkeypatch: pytest.MonkeyPatch, capsys: pytest.CaptureFixture[str]
+) -> None:
+    package = project(home / "repo")
+    monkeypatch.chdir(home / "repo")
+    (home / "repo" / "into").mkdir()
+
+    assert main(["build", "--into", "into"]) == 0
+
+    assert capsys.readouterr().err.startswith(
+        f"skill-graft: package: {package}\n"
+        f"skill-graft: into: {home / 'repo' / 'into'}\n"
+    )

@@ -285,6 +285,8 @@ def main(argv: list[str] | None = None) -> int:
             paths.use(_working_folder())
         if args.command in WRITERS:  # init names it once its own checks pass
             notice(f"package: {paths.package().absolute()}")
+        if args.command == "build" and args.into is not None:
+            notice(f"into: {args.into.absolute()}")
         if args.command == "init":
             init.init(args.project)
         elif args.command == "update":
@@ -328,18 +330,22 @@ def main(argv: list[str] | None = None) -> int:
             print(lock.tree(resolved) + lock.suggestions(resolved), end="")
             warn(resolved.warnings)
         elif args.command == "build":
+            # `--into` mirrors the package's layout in another folder.
+            into = None if args.into is None else args.into.resolve()
+            skills = paths.skills() if into is None else into / ".apm" / "skills"
             with tempfile.TemporaryDirectory(prefix="skill-graft-") as work:
                 loaded, resolved = _resolve(Path(work))
                 warn(resolved.warnings)
-                vendor.vendor(resolved)
+                vendor.vendor(resolved, skills)
             # Hashes the vendored copies, so the lock holds exactly what was vendored.
             copies = {
-                s: lock.folder_hash(paths.skills() / resolved.deployed[s])
+                s: lock.folder_hash(skills / resolved.deployed[s])
                 for s in resolved.skills
             }
-            lock.write(lock.render(loaded, {}, resolved, copies))
+            lock_file = None if into is None else into / "skill-graft.lock"
+            lock.write(lock.render(loaded, {}, resolved, copies), lock_file)
             lock.announce_suggestions(resolved)  # once nothing before APM can fail
-            if not args.no_install:
+            if not args.no_install and into is None:
                 apm.install()
     except (SkillGraftError, OSError) as error:
         print(f"skill-graft: {error}", file=sys.stderr)

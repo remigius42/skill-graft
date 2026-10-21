@@ -426,3 +426,75 @@ def test_vendor_and_lock_into_a_given_folder(home: Path, tmp_path: Path) -> None
     assert (into / "skill-graft.lock").read_text() == "lock\n"
     package = home / ".apm" / "skill-graft"
     assert sorted(p.name for p in package.iterdir()) == ["skill-graft.toml"]
+
+
+def snapshot(folder: Path) -> dict[str, bytes]:
+    """Each file under `folder` by relative path, with its bytes."""
+    return {
+        str(f.relative_to(folder)): f.read_bytes()
+        for f in sorted(folder.rglob("*"))
+        if f.is_file()
+    }
+
+
+def empty_folder(tmp_path: Path) -> Path:
+    into = tmp_path / "into"
+    into.mkdir()
+    return into
+
+
+def test_throwaway_build(
+    home: Path, tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    skill(home / "src" / "tdd", "Run /grilling.\n")
+    skill(home / "src" / "grilling")
+    write_config(
+        'entries = ["own/tdd"]\n[rename]\n"own/grilling" = "grill"\n'
+        '[sources.own]\npath = "~/src"\n'
+    )
+    into = empty_folder(tmp_path)
+    monkeypatch.setenv("PATH", str(tmp_path / "no-apm"))
+
+    assert main(["build", "--into", str(into)]) == 0
+
+    vendored = sorted(p.name for p in (into / ".apm" / "skills").iterdir())
+    assert vendored == ["grill", "tdd"]
+    assert 'id = "own/grilling"' in (into / "skill-graft.lock").read_text()
+
+
+def test_package_untouched(home: Path, tmp_path: Path) -> None:
+    chisel = skill(home / "src" / "chisel")
+    write_config('entries = ["own/chisel"]\n[sources.own]\npath = "~/src"\n')
+    assert main(["build", "--no-install"]) == 0
+    package = home / ".apm" / "skill-graft"
+    before = snapshot(package)
+    (chisel / "SKILL.md").write_text("# changed\n")
+    into = empty_folder(tmp_path)
+
+    assert main(["build", "--into", str(into)]) == 0
+
+    assert snapshot(package) == before
+    vendored = into / ".apm" / "skills" / "chisel" / "SKILL.md"
+    assert vendored.read_text() == "# changed\n"
+
+
+def test_package_never_built(home: Path, tmp_path: Path) -> None:
+    skill(home / "src" / "chisel")
+    write_config('entries = ["own/chisel"]\n[sources.own]\npath = "~/src"\n')
+
+    assert main(["build", "--into", str(empty_folder(tmp_path))]) == 0
+
+    package = home / ".apm" / "skill-graft"
+    assert sorted(p.name for p in package.iterdir()) == ["skill-graft.toml"]
+
+
+def test_same_lock(home: Path, tmp_path: Path) -> None:
+    skill(home / "src" / "chisel")
+    write_config('entries = ["own/chisel"]\n[sources.own]\npath = "~/src"\n')
+    into = empty_folder(tmp_path)
+
+    assert main(["build", "--into", str(into)]) == 0
+    assert main(["build", "--no-install"]) == 0
+
+    package_lock = home / ".apm" / "skill-graft" / "skill-graft.lock"
+    assert (into / "skill-graft.lock").read_bytes() == package_lock.read_bytes()
