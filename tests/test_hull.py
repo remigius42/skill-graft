@@ -255,6 +255,16 @@ def test_bind_to_a_missing_skill(home: Path, capsys: Capsys) -> None:
     assert code == 1 and "mp/grilling" in err and "own/nope" in err
 
 
+def test_unused_bind_to_a_missing_skill(home: Path, capsys: Capsys) -> None:
+    two_sources(home, "nothing\n")
+    with_binds('"mp/grill" = "own/nope"')
+
+    code, err = build(capsys)
+
+    assert code == 1 and "mp/grill" in err and "own/nope" in err
+    assert vendored() == set()
+
+
 def test_path_in_a_code_block(home: Path, capsys: Capsys) -> None:
     two_sources(home, "```sh\ncd /tmp\n```\n")
     with_binds('"mp/tmp" = false')

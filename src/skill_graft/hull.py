@@ -133,12 +133,18 @@ def walk(config: Config, indexes: dict[str, discovery.Index], work: Path) -> Hul
             if bound:  # a bound target must exist, whatever the form
                 discovery.find(indexes[target.alias], target, f'[bind] "{key}"')
             suggestions.setdefault(target, set()).add(current)
-    warnings += [
-        f'[bind] "{key}" binds no reference: no skill in the hull from '
-        f"{key.alias!r} calls {key.name!r}"
-        for key in config.binds
-        if key not in used
-    ]
+    for key in config.binds:
+        if key in used:  # its target found above
+            continue
+        # Unused, a target must exist all the same: a typo should not wait for a use.
+        if (target := config.binds[key]) is not None:
+            discovery.find(
+                indexes[target.alias], target, f'[bind] "{key}" = "{target}"'
+            )
+        warnings.append(
+            f'[bind] "{key}" binds no reference: no skill in the hull from '
+            f"{key.alias!r} calls {key.name!r}"
+        )
     names = {skill: deployed(config, skill) for skill in skills}
     patched = {
         skill: [file.path for file in config.patches[skill]]
