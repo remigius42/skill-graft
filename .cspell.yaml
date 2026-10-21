@@ -20,6 +20,7 @@ words:
   - copytree
   - dataviz
   - delenv
+  - evals
   - fcntl
   - followlinks
   - frontmatter
