@@ -35,13 +35,14 @@ None.
 
 ### Modified Capabilities
 
-- `build`: a new requirement, building into a folder other than the **Package**, without APM.
+- `build`: new requirements for building into a folder other than the **Package**, without APM; "Vendor
+  entries" and "Deploy through APM" exempt `--into`.
 
 ## Impact
 
 - `src/skill_graft/cli.py` (option, checks, wiring), `src/skill_graft/vendor.py` and `src/skill_graft/lock.py`
   (target folder as a parameter instead of always the **Package**'s).
-- Tests in `tests/test_build.py`, `tests/test_scope.py` and `tests/test_cli.py`.
+- Tests in `tests/test_build.py`, `tests/test_git_build.py`, `tests/test_scope.py` and `tests/test_cli.py`.
 - `README.md`, `docs/design.md`; `.cspell.yaml` if new words appear.
 - The in-flight `graft-check` change switches to `build --into "$(mktemp -d)"` once this lands; it is not blocked
   meanwhile.
