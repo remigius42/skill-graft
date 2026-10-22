@@ -19,6 +19,13 @@ CONFIG_TEMPLATE = """\
 # ref = "<sha>"              # the commit build reads; `skill-graft update` sets it
 # subdirectory = "skills"    # optional; read only this folder of the repository
 # prefix = "mp-"             # optional; each skill deploys as mp-<name> unless [rename] says otherwise
+#
+# graft-check, a skill that reviews how skill-graft read your skills (run /graft-check):
+# [sources.skill-graft]
+# git = "https://github.com/remigius42/skill-graft.git"
+# subdirectory = "skills"
+# then run `skill-graft update skill-graft` and `skill-graft add skill-graft/graft-check`.
+# Until that update sets its ref, every `build` fails, not only graft-check's.
 """
 
 APM_YML = "name: skill-graft\nversion: 0.1.0\n"

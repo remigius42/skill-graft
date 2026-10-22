@@ -1,10 +1,12 @@
+import re
 import shutil
 import tomllib
 from pathlib import Path
 
 import pytest
-from conftest import FakeApm
+from conftest import FakeApm, write_config
 
+from skill_graft import config
 from skill_graft.cli import main
 
 
@@ -26,6 +28,28 @@ def test_template_shows_a_git_source(home: Path, fake_apm: FakeApm) -> None:
     text = (home / ".apm" / "skill-graft" / "skill-graft.toml").read_text()
     for word in ("git =", "branch =", "ref =", "subdirectory =", "skill-graft update"):
         assert word in text
+
+
+def test_template_shows_graft_check(home: Path, fake_apm: FakeApm) -> None:
+    assert main(["init"]) == 0
+
+    text = (home / ".apm" / "skill-graft" / "skill-graft.toml").read_text()
+    lines = text.splitlines()
+    start = lines.index("# [sources.skill-graft]")
+    block = []
+    for line in lines[start:]:
+        if not re.match(r"# (\[|\w+ = )", line):
+            break
+        block.append(line.removeprefix("# "))
+    write_config("\n".join(block) + "\n")
+    source = config.load().sources["skill-graft"]
+    assert isinstance(source, config.GitSource)
+    assert source.url == "https://github.com/remigius42/skill-graft.git"
+    assert source.subdirectory == "skills"
+    rest = "\n".join(lines[start + len(block) :])
+    update = rest.index("skill-graft update skill-graft")
+    assert update < rest.index("skill-graft add skill-graft/graft-check")
+    assert "every `build` fails" in rest
 
 
 def test_folder_exists(
