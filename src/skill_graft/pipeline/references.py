@@ -4,8 +4,8 @@ import re
 from dataclasses import dataclass
 from pathlib import Path
 
-from skill_graft import files
-from skill_graft.errors import SkillGraftError
+from skill_graft.infra import files
+from skill_graft.infra.errors import SkillGraftError
 
 # `/name` as its own token: not inside a path, URL or tag, nor a Markdown link
 # target (`](/x)`), an attribute (`="/x"`) or an alias (`@/x`), nor a quoted first

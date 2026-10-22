@@ -7,9 +7,10 @@ from pathlib import Path
 
 import tomlkit
 
-from skill_graft import files, paths, rename
-from skill_graft.config import Config, GitSource, SkillId
-from skill_graft.hull import Hull
+from skill_graft.infra import files, paths
+from skill_graft.pipeline import rename
+from skill_graft.pipeline.config import Config, GitSource, SkillId
+from skill_graft.pipeline.hull import Hull
 
 
 def render(

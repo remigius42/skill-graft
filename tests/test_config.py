@@ -6,7 +6,7 @@ from typing import TypeAlias
 import pytest
 from conftest import build, configure, skill, vendored, write_config
 
-from skill_graft import config
+from skill_graft.pipeline import config
 
 Capsys: TypeAlias = pytest.CaptureFixture[str]
 

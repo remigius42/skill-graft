@@ -5,9 +5,10 @@ import shutil
 import stat
 from pathlib import Path
 
-from skill_graft import discovery, files, git
-from skill_graft.config import Config, PatchFile, SkillId
-from skill_graft.errors import SkillGraftError
+from skill_graft.infra import files, git
+from skill_graft.infra.errors import SkillGraftError
+from skill_graft.pipeline import discovery
+from skill_graft.pipeline.config import Config, PatchFile, SkillId
 
 # A hunk's header in a `.rej` file, without the section heading after it.
 HUNK = re.compile(rb"^(@@ -\d+(?:,\d+)? \+\d+(?:,\d+)? @@)", re.MULTILINE)

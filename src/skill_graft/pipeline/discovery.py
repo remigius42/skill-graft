@@ -5,9 +5,10 @@ import re
 from dataclasses import dataclass
 from pathlib import Path
 
-from skill_graft import paths, references
-from skill_graft.config import NAME, SkillId
-from skill_graft.errors import SkillGraftError
+from skill_graft.infra import paths
+from skill_graft.infra.errors import SkillGraftError
+from skill_graft.pipeline import references
+from skill_graft.pipeline.config import NAME, SkillId
 
 # A comment: `#` after whitespace, to the end of the line.
 COMMENT = re.compile(r"\s+#.*$")

@@ -5,8 +5,8 @@ from pathlib import Path
 import pytest
 from conftest import skill
 
-from skill_graft import references
-from skill_graft.errors import SkillGraftError
+from skill_graft.infra.errors import SkillGraftError
+from skill_graft.pipeline import references
 
 
 def found(folder: Path) -> list[str]:

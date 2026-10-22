@@ -11,20 +11,11 @@ from collections.abc import Iterator
 from pathlib import Path
 from typing import Any, NoReturn
 
-from skill_graft import (
-    apm,
-    config,
-    edit,
-    explain,
-    init,
-    lock,
-    paths,
-    resolve,
-    update,
-    vendor,
-)
-from skill_graft.errors import SkillGraftError, notice, warn
-from skill_graft.hull import Hull
+from skill_graft.commands import edit, explain, init_package, update
+from skill_graft.infra import apm, paths
+from skill_graft.infra.errors import SkillGraftError, notice, warn
+from skill_graft.pipeline import compute, config, lock, vendor
+from skill_graft.pipeline.hull import Hull
 
 
 # Commands that write: they name the package they act on before anything else.
@@ -290,7 +281,7 @@ def main(argv: list[str] | None = None) -> int:
             notice(f"into: {args.into.absolute()}")
             _check_into(args.into)
         if args.command == "init":
-            init.init(args.project)
+            init_package.init(args.project)
         elif args.command == "update":
             update.update(_load(), args.aliases, args.dry_run)
         elif args.command == "add":
@@ -309,7 +300,7 @@ def main(argv: list[str] | None = None) -> int:
                     target = explain.find(
                         resolved,
                         args.skill,
-                        lambda text: resolve.known(loaded, "why", text),
+                        lambda text: compute.known(loaded, "why", text),
                     )
                     print(explain.why(resolved, target), end="")
                 finally:  # after the output, as `tree` and `resolve` print them
@@ -338,7 +329,7 @@ def main(argv: list[str] | None = None) -> int:
                 loaded = _load()
                 if given is not None:
                     _check_into_sources(given, loaded)
-                with resolve.compute_hull(loaded) as resolved:
+                with compute.compute_hull(loaded) as resolved:
                     warn(resolved.warnings)
                     started = True  # from here on `into` may hold our writes
                     vendor.vendor(resolved, skills)
@@ -443,7 +434,7 @@ def _load() -> config.Config:
 def _hull() -> Iterator[tuple[config.Config, Hull]]:
     """The config and its hull, every source at its ref, valid inside the `with`."""
     loaded = _load()
-    with resolve.compute_hull(loaded) as hull:
+    with compute.compute_hull(loaded) as hull:
         yield loaded, hull
 
 

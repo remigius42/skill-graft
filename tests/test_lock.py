@@ -8,13 +8,14 @@ from typing import Any
 
 from conftest import Upstream, configure, make_patch, skill, write_config
 
-from skill_graft import config, lock, paths, resolve
 from skill_graft.cli import main
+from skill_graft.infra import paths
+from skill_graft.pipeline import compute, config, lock
 
 
 def render() -> str:
     loaded = config.load()
-    with resolve.compute_hull(loaded) as hull:
+    with compute.compute_hull(loaded) as hull:
         return lock.render(loaded, {}, hull)
 
 

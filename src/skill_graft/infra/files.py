@@ -7,7 +7,7 @@ import tempfile
 from collections.abc import Callable
 from pathlib import Path
 
-from skill_graft.errors import SkillGraftError
+from skill_graft.infra.errors import SkillGraftError
 
 
 def skill_entries(folder: Path) -> list[Path]:

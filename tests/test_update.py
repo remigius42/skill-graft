@@ -7,8 +7,9 @@ from typing import TypeAlias
 import pytest
 from conftest import FakeApm, Upstream, make_patch, skill, vendored, write_config
 
-from skill_graft import cache, config, paths
 from skill_graft.cli import main
+from skill_graft.infra import cache, paths
+from skill_graft.pipeline import config
 
 Capsys: TypeAlias = pytest.CaptureFixture[str]
 

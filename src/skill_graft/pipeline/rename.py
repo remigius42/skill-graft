@@ -4,10 +4,10 @@ reference."""
 import re
 from pathlib import Path
 
-from skill_graft import references
-from skill_graft.config import Config, SkillId
-from skill_graft.errors import SkillGraftError
-from skill_graft.hull import Hull
+from skill_graft.infra.errors import SkillGraftError
+from skill_graft.pipeline import references
+from skill_graft.pipeline.config import Config, SkillId
+from skill_graft.pipeline.hull import Hull
 
 # Names the harnesses APM deploys to already use: Claude Code's built-in commands,
 # bundled skills and their aliases, and Codex's slash commands, from their docs.

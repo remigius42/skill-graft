@@ -7,8 +7,8 @@ from pathlib import Path
 import pytest
 from conftest import make_patch, skill
 
-from skill_graft import patch
-from skill_graft.config import PatchFile, SkillId
+from skill_graft.pipeline import patch
+from skill_graft.pipeline.config import PatchFile, SkillId
 
 TDD = SkillId("mp", "tdd")
 LINES = "".join(f"line {i}\n" for i in range(1, 11))

@@ -2,8 +2,8 @@
 
 import shutil
 
-from skill_graft import apm, paths
-from skill_graft.errors import SkillGraftError, notice
+from skill_graft.infra import apm, paths
+from skill_graft.infra.errors import SkillGraftError, notice
 
 CONFIG_TEMPLATE = """\
 # skill-graft.toml: the skills you want and where they come from.

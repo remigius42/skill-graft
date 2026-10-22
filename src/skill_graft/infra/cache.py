@@ -10,8 +10,8 @@ from collections.abc import Callable, Iterator
 from contextlib import contextmanager
 from pathlib import Path
 
-from skill_graft import git
-from skill_graft.errors import SkillGraftError
+from skill_graft.infra import git
+from skill_graft.infra.errors import SkillGraftError
 
 # Characters a cache folder name keeps; others become `_`.
 UNSAFE = re.compile(r"[^A-Za-z0-9._-]")

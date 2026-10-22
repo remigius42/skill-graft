@@ -6,8 +6,8 @@ from pathlib import Path
 import pytest
 from conftest import FakeApm, write_config
 
-from skill_graft import config
 from skill_graft.cli import main
+from skill_graft.pipeline import config
 
 
 def test_fresh_home(home: Path, fake_apm: FakeApm) -> None:

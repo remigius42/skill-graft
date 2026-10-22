@@ -7,9 +7,9 @@ from typing import TypeAlias
 import pytest
 from conftest import Upstream, configure, make_patch, skill, write_config
 
-from skill_graft import lock, vendor
 from skill_graft.cli import main
-from skill_graft.hull import Hull
+from skill_graft.pipeline import lock, vendor
+from skill_graft.pipeline.hull import Hull
 
 Capsys: TypeAlias = pytest.CaptureFixture[str]
 

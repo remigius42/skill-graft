@@ -7,11 +7,18 @@ from contextlib import contextmanager
 from dataclasses import replace
 from pathlib import Path
 
-from skill_graft import discovery, hull, patch, paths, rename
-from skill_graft.cache import Cache
-from skill_graft.config import Config, GitSource, SkillId, deployed, parse_skill_id
-from skill_graft.errors import SkillGraftError
-from skill_graft.hull import Hull
+from skill_graft.infra import paths
+from skill_graft.infra.cache import Cache
+from skill_graft.pipeline import discovery, hull, patch, rename
+from skill_graft.pipeline.config import (
+    Config,
+    GitSource,
+    SkillId,
+    deployed,
+    parse_skill_id,
+)
+from skill_graft.infra.errors import SkillGraftError
+from skill_graft.pipeline.hull import Hull
 
 
 def check_refs(config: Config, given: Iterable[str]) -> None:

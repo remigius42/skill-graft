@@ -9,10 +9,10 @@ from typing import TypeAlias
 import pytest
 from conftest import after_package_line, build, configure, skill, vendored, write_config
 
-from skill_graft import config, resolve
 from skill_graft.cli import main
-from skill_graft.config import SkillId
-from skill_graft.hull import Hull
+from skill_graft.pipeline import compute, config
+from skill_graft.pipeline.config import SkillId
+from skill_graft.pipeline.hull import Hull
 
 Capsys: TypeAlias = pytest.CaptureFixture[str]
 
@@ -326,7 +326,7 @@ def test_prose_never_extends_the_hull(home: Path, capsys: Capsys) -> None:
 
 @contextmanager
 def resolved() -> Iterator[Hull]:
-    with resolve.compute_hull(config.load()) as hull:
+    with compute.compute_hull(config.load()) as hull:
         yield hull
 
 

@@ -7,8 +7,8 @@ from pathlib import Path
 import pytest
 from conftest import make_patch
 
-from skill_graft import git
-from skill_graft.errors import SkillGraftError
+from skill_graft.infra import git
+from skill_graft.infra.errors import SkillGraftError
 
 
 def folder_with(tmp_path: Path, files: dict[str, str]) -> Path:

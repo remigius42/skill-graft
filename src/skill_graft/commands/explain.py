@@ -5,9 +5,9 @@ import json
 import zlib
 from collections.abc import Callable
 
-from skill_graft.config import SkillId
-from skill_graft.errors import SkillGraftError, notice
-from skill_graft.hull import Edge, Hull
+from skill_graft.infra.errors import SkillGraftError, notice
+from skill_graft.pipeline.config import SkillId
+from skill_graft.pipeline.hull import Edge, Hull
 
 
 def find(hull: Hull, text: str, parse: Callable[[str], SkillId]) -> SkillId:

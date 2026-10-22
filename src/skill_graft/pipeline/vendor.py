@@ -3,9 +3,10 @@
 import shutil
 from pathlib import Path
 
-from skill_graft import files, paths, rename
-from skill_graft.errors import SkillGraftError
-from skill_graft.hull import Hull
+from skill_graft.infra import files, paths
+from skill_graft.infra.errors import SkillGraftError
+from skill_graft.pipeline import rename
+from skill_graft.pipeline.hull import Hull
 
 
 def vendor(hull: Hull, skills: Path | None = None) -> None:

@@ -7,10 +7,12 @@ from typing import Any, cast
 
 import tomlkit
 
-from skill_graft import config, edit, explain, git, lock, patch, paths, resolve
-from skill_graft.cache import Cache
-from skill_graft.config import Config, GitSource, SkillId
-from skill_graft.errors import SkillGraftError, warn
+from skill_graft.commands import edit, explain
+from skill_graft.infra import git, paths
+from skill_graft.infra.cache import Cache
+from skill_graft.infra.errors import SkillGraftError, warn
+from skill_graft.pipeline import compute, config, lock, patch
+from skill_graft.pipeline.config import Config, GitSource, SkillId
 
 
 def update(loaded: Config, aliases: list[str], dry_run: bool = False) -> None:
@@ -46,7 +48,7 @@ def _fetch_hint(error: patch.PatchError, tmp: Path) -> patch.PatchError:
 
 def _update(loaded: Config, aliases: list[str], git_cache: Cache, write: bool) -> None:
     selected = _select(loaded, aliases)
-    resolve.check_refs(loaded, selected)
+    compute.check_refs(loaded, selected)
     for alias, source in selected.items():
         if source.branch is not None:
             _check_branch(alias, source.branch)
@@ -61,7 +63,7 @@ def _update(loaded: Config, aliases: list[str], git_cache: Cache, write: bool) -
             git_cache.fetch(alias, source.url)
         unchanged = " (unchanged)" if tips[alias] == source.ref else ""
         print(f"{alias} {tips[alias]}{unchanged}")
-    with resolve.compute_hull(loaded, git_cache, tips) as hull:
+    with compute.compute_hull(loaded, git_cache, tips) as hull:
         hashes = lock.skill_hashes(hull)
     warn(hull.warnings)
     _print_diff(_previous(loaded, selected, git_cache), hashes)
@@ -88,7 +90,7 @@ def _previous(
         if not git_cache.has_commit(source.url, source.ref):
             return f"{alias!r} ref {source.ref} not cached"
     try:
-        with resolve.compute_hull(loaded, git_cache) as hull:
+        with compute.compute_hull(loaded, git_cache) as hull:
             return lock.skill_hashes(hull)
     except patch.PatchError as error:  # likely rewritten for the tips
         if error.other:  # an error that is no patch's: that one matters

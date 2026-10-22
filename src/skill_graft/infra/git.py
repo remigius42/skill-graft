@@ -5,7 +5,7 @@ import os
 import subprocess
 from pathlib import Path
 
-from skill_graft.errors import SkillGraftError
+from skill_graft.infra.errors import SkillGraftError
 
 # Variables that point git at another repository, as a git hook running
 # skill-graft would set them: skill-graft names its repositories itself.

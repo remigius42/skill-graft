@@ -9,8 +9,8 @@ from pathlib import Path
 import pytest
 from conftest import Upstream
 
-from skill_graft import cache, paths
-from skill_graft.errors import SkillGraftError
+from skill_graft.infra import cache, paths
+from skill_graft.infra.errors import SkillGraftError
 
 
 def test_default_location(home: Path) -> None:

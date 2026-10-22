@@ -5,9 +5,9 @@ from pathlib import Path
 import pytest
 from conftest import FakeApm, skill, write_config
 
-from skill_graft import config, lock, resolve, vendor
 from skill_graft.cli import main
-from skill_graft.hull import Hull
+from skill_graft.pipeline import compute, config, lock, vendor
+from skill_graft.pipeline.hull import Hull
 
 
 def skills_dir(home: Path) -> Path:
@@ -417,7 +417,7 @@ def test_vendor_and_lock_into_a_given_folder(home: Path, tmp_path: Path) -> None
     write_config('entries = ["own/chisel"]\n[sources.own]\npath = "~/src"\n')
     into = tmp_path / "into"
 
-    with resolve.compute_hull(config.load()) as hull:
+    with compute.compute_hull(config.load()) as hull:
         vendor.vendor(hull, into / ".apm" / "skills")
     lock.write("lock\n", into / "skill-graft.lock")
 

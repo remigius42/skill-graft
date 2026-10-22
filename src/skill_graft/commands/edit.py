@@ -9,10 +9,12 @@ from typing import cast
 import tomlkit
 from tomlkit.items import Array, Table
 
-from skill_graft import config, explain, files, lock, paths, resolve
-from skill_graft.config import SkillId
-from skill_graft.errors import SkillGraftError, notice, warn
-from skill_graft.hull import Hull
+from skill_graft.commands import explain
+from skill_graft.infra import files, paths
+from skill_graft.infra.errors import SkillGraftError, notice, warn
+from skill_graft.pipeline import compute, config, lock
+from skill_graft.pipeline.config import SkillId
+from skill_graft.pipeline.hull import Hull
 
 
 def read() -> tuple[tomlkit.TOMLDocument, config.Config, str]:
@@ -76,7 +78,7 @@ def rename(text: str, name: str) -> None:
         raise SkillGraftError(
             f"rename: {name!r} is not a skill name: {config.NAME.pattern}"
         )
-    skill = resolve.known(loaded, "rename", text)
+    skill = compute.known(loaded, "rename", text)
     if config.deployed(loaded, skill) == name:
         notice(f"`{skill}` already deploys as `{name}`")
         return
@@ -99,7 +101,7 @@ def bind(key: str, target: str) -> None:
     # Resolving checks the target; a no-op skips that, so it is checked here first:
     # one gone upstream is no longer bound. Present too: a missing key reads as None.
     if skill in loaded.binds:
-        bound = None if target == "false" else resolve.known(loaded, "bind", target)
+        bound = None if target == "false" else compute.known(loaded, "bind", target)
         if loaded.binds[skill] == bound:
             notice(f"`{key}` is already bound to `{target}`")
             return
@@ -151,7 +153,7 @@ def _finish(document: tomlkit.TOMLDocument, before: str) -> Hull:
     # Relative paths start where `load` starts them, even for a symlinked file.
     loaded = config.parse(text, paths.config_file())
     warn(loaded.warnings)
-    with resolve.compute_hull(loaded) as hull:
+    with compute.compute_hull(loaded) as hull:
         lock_text = lock.render(loaded, {}, hull)  # hashes the patched copies
     write(document)
     try:

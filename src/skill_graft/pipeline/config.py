@@ -6,8 +6,8 @@ from dataclasses import dataclass
 from pathlib import Path
 from typing import NamedTuple
 
-from skill_graft import paths
-from skill_graft.errors import SkillGraftError
+from skill_graft.infra import paths
+from skill_graft.infra.errors import SkillGraftError
 
 # A source alias or skill name: one path segment, so `<alias>/<name>` splits cleanly.
 NAME = re.compile(r"[A-Za-z0-9][A-Za-z0-9._-]*")

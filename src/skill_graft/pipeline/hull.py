@@ -4,9 +4,10 @@ from collections import deque
 from dataclasses import dataclass
 from pathlib import Path
 
-from skill_graft import discovery, files, patch, references
-from skill_graft.config import Config, SkillId, deployed
-from skill_graft.errors import SkillGraftError
+from skill_graft.infra import files
+from skill_graft.infra.errors import SkillGraftError
+from skill_graft.pipeline import discovery, patch, references
+from skill_graft.pipeline.config import Config, SkillId, deployed
 
 
 @dataclass(frozen=True)

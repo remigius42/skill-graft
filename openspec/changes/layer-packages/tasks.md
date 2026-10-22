@@ -15,7 +15,7 @@
 
 ## 2. Layer packages
 
-- [ ] 2.1 `git mv` the modules into `commands/`, `pipeline/`, `infra/` as in design.md (`resolve.py` →
+- [x] 2.1 `git mv` the modules into `commands/`, `pipeline/`, `infra/` as in design.md (`resolve.py` →
   `pipeline/compute.py`, `init.py` → `commands/init_package.py`), each `__init__.py` a docstring naming its layer;
   change only import lines in `src/` and `tests/`, plus the module name at call sites of the two renamed modules
   (`resolve.` → `compute.`, `init.init` → `init_package.init`), keeping module-attribute calls so

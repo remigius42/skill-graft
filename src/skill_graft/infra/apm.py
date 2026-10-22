@@ -4,8 +4,8 @@ import re
 import subprocess
 from pathlib import Path
 
-from skill_graft import paths
-from skill_graft.errors import SkillGraftError
+from skill_graft.infra import paths
+from skill_graft.infra.errors import SkillGraftError
 
 # A YAML comment in `apm.yml`: `#` after whitespace, to the end of the line.
 COMMENT = re.compile(r"\s+#.*$")

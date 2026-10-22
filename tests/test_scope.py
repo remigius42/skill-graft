@@ -8,8 +8,8 @@ from pathlib import Path
 import pytest
 from conftest import FakeApm, skill
 
-from skill_graft import paths
 from skill_graft.cli import main
+from skill_graft.infra import paths
 
 
 def project(root: Path, entries: str = '["own/chisel"]') -> Path:
