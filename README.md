@@ -35,6 +35,10 @@ pipenv install "skill-graft @ git+https://github.com/remigius42/skill-graft"
 uv picks a suitable Python itself; pipx and pip use theirs, so point them at 3.11 or later. pipenv installs into
 that project's environment: run it as `pipenv run skill-graft`.
 
+These install the latest `main`. To install a release instead, append its tag to the URL,
+`git+https://github.com/remigius42/skill-graft@v<version>`; the tags are listed under
+[releases](https://github.com/remigius42/skill-graft/releases).
+
 skill-graft runs APM as a command, so `apm` must be on `PATH` as well, in version 0.33.0: the folders APM deploys
 to were measured on it, and another version may deploy elsewhere. Install it the same way, e.g.
 `uv tool install apm-cli==0.33.0`, `pipx install apm-cli==0.33.0` or `pip install apm-cli==0.33.0`.
