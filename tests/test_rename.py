@@ -1,14 +1,15 @@
 """Deployed names carried into `name:` and every reference (the `renames` spec)."""
 
 import os
+from collections.abc import Iterator
+from contextlib import contextmanager
 from dataclasses import replace
 from pathlib import Path
 
 import pytest
 from conftest import Upstream, after_package_line, configure, skill, write_config
 
-from skill_graft import config, paths, rename, resolve, vendor
-from skill_graft.cache import Cache
+from skill_graft import config, rename, resolve, vendor
 from skill_graft.cli import main
 from skill_graft.config import SkillId
 from skill_graft.errors import SkillGraftError
@@ -72,13 +73,12 @@ def test_name_yaml_would_misread(name: str, written: str) -> None:
     )
 
 
-def resolved(**renames: str) -> Hull:
+@contextmanager
+def resolved(**renames: str) -> Iterator[Hull]:
     """The hull, with these skill IDs (`alias__name`) deployed under new names."""
-    loaded = config.load()
-    folders = resolve.folders(loaded, Cache(paths.cache()), {})
-    hull = resolve.resolve(loaded, folders, Path.home() / "work")
-    deployed = {SkillId(*key.split("__")): name for key, name in renames.items()}
-    return replace(hull, deployed=hull.deployed | deployed)
+    with resolve.compute_hull(config.load()) as hull:
+        deployed = {SkillId(*key.split("__")): name for key, name in renames.items()}
+        yield replace(hull, deployed=hull.deployed | deployed)
 
 
 def rewritten(hull: Hull) -> dict[str, dict[str, str]]:
@@ -97,7 +97,8 @@ def test_bound_to_another_name(home: Path) -> None:
         '[sources.own]\npath = "~/own"\n[bind]\n"mp/grilling" = "own/grill"\n'
     )
 
-    assert rewritten(resolved()) == {"mp/tdd": {"SKILL.md": "Run /grill.\n"}}
+    with resolved() as hull:
+        assert rewritten(hull) == {"mp/tdd": {"SKILL.md": "Run /grill.\n"}}
 
 
 def test_every_form_rewritten(home: Path) -> None:
@@ -110,12 +111,13 @@ def test_every_form_rewritten(home: Path) -> None:
     )
     configure(["mp/tdd", "mp/diagnosing-bugs"], mp="~/mp")
 
-    hull = resolved(mp__grilling="mp-grilling", **{"mp__diagnosing-bugs": "mp-dbg"})
-
-    assert rewritten(hull)["mp/tdd"] == {
-        "SKILL.md": 'Run /mp-grilling. Then Skill(skill: "mp-grilling", args: "x"),\n'
-        "`mp-grilling` and mp-dbg...\n"
-    }
+    with resolved(
+        mp__grilling="mp-grilling", **{"mp__diagnosing-bugs": "mp-dbg"}
+    ) as hull:
+        assert rewritten(hull)["mp/tdd"] == {
+            "SKILL.md": 'Run /mp-grilling. Then Skill(skill: "mp-grilling", args: "x"),\n'
+            "`mp-grilling` and mp-dbg...\n"
+        }
 
 
 def test_self_reference_and_sibling_file(home: Path) -> None:
@@ -126,15 +128,14 @@ def test_self_reference_and_sibling_file(home: Path) -> None:
     skill(home / "mp" / "grilling")
     configure(["mp/tdd"], mp="~/mp")
 
-    hull = resolved(mp__tdd="mp-tdd", mp__grilling="mp-grilling")
-
-    assert rewritten(hull) == {
-        "mp/tdd": {
-            "SKILL.md": "---\nname: mp-tdd\n---\n/mp-tdd and /mp-grilling\n",
-            "refs/loop.md": "/mp-grilling\n",
-        },
-        "mp/grilling": {"SKILL.md": "---\nname: mp-grilling\n---\n# skill\n"},
-    }
+    with resolved(mp__tdd="mp-tdd", mp__grilling="mp-grilling") as hull:
+        assert rewritten(hull) == {
+            "mp/tdd": {
+                "SKILL.md": "---\nname: mp-tdd\n---\n/mp-tdd and /mp-grilling\n",
+                "refs/loop.md": "/mp-grilling\n",
+            },
+            "mp/grilling": {"SKILL.md": "---\nname: mp-grilling\n---\n# skill\n"},
+        }
 
 
 def test_own_name_line_not_rewritten(home: Path) -> None:
@@ -145,7 +146,8 @@ def test_own_name_line_not_rewritten(home: Path) -> None:
         '[sources.own]\npath = "~/own"\n[bind]\n"mp/code-review" = "own/review"\n'
     )
 
-    assert rewritten(resolved()) == {}
+    with resolved() as hull:
+        assert rewritten(hull) == {}
 
 
 @pytest.mark.parametrize("change", ["not UTF-8", "deleted", "edited"])
@@ -153,18 +155,18 @@ def test_file_changed_before_vendoring(home: Path, change: str) -> None:
     tdd = skill(home / "mp" / "tdd", "/grilling\n")
     skill(home / "mp" / "grilling")
     configure(["mp/tdd"], mp="~/mp")
-    hull = resolved(mp__grilling="mp-grilling")
-    if change == "deleted":
-        (tdd / "SKILL.md").unlink()
-    elif change == "edited":
-        (tdd / "SKILL.md").write_text("A new first line\n/grilling\n")
-    else:
-        (tdd / "SKILL.md").write_bytes(b"/grilling \xff\n")
+    with resolved(mp__grilling="mp-grilling") as hull:
+        if change == "deleted":
+            (tdd / "SKILL.md").unlink()
+        elif change == "edited":
+            (tdd / "SKILL.md").write_text("A new first line\n/grilling\n")
+        else:
+            (tdd / "SKILL.md").write_bytes(b"/grilling \xff\n")
 
-    with pytest.raises(SkillGraftError, match="SKILL.md"):
-        vendor.vendor(hull)
+        with pytest.raises(SkillGraftError, match="SKILL.md"):
+            vendor.vendor(hull)
 
-    assert not (package() / ".apm" / "skills.new").exists()
+        assert not (package() / ".apm" / "skills.new").exists()
 
 
 def test_unresolved_names_untouched(home: Path) -> None:
@@ -177,11 +179,10 @@ def test_unresolved_names_untouched(home: Path) -> None:
         '[bind]\n"mp/pre-commit" = false\n'
     )
 
-    hull = resolved(mp__grilling="mp-grilling", **{"mp__pre-commit": "mp-pc"})
-
-    assert rewritten(hull)["mp/tdd"] == {
-        "SKILL.md": "/foo, /mp-grilling\n```\npre-commit run\n```\n"
-    }
+    with resolved(mp__grilling="mp-grilling", **{"mp__pre-commit": "mp-pc"}) as hull:
+        assert rewritten(hull)["mp/tdd"] == {
+            "SKILL.md": "/foo, /mp-grilling\n```\npre-commit run\n```\n"
+        }
 
 
 def package() -> Path:

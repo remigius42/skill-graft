@@ -3,16 +3,13 @@
 Each edit resolves the edited text first and writes nothing unless it resolves.
 """
 
-import tempfile
 from collections import deque
-from pathlib import Path
 from typing import cast
 
 import tomlkit
 from tomlkit.items import Array, Table
 
 from skill_graft import config, files, lock, paths, resolve
-from skill_graft.cache import Cache
 from skill_graft.config import SkillId
 from skill_graft.errors import SkillGraftError, notice, warn
 from skill_graft.hull import Hull
@@ -154,9 +151,7 @@ def _finish(document: tomlkit.TOMLDocument, before: str) -> Hull:
     # Relative paths start where `load` starts them, even for a symlinked file.
     loaded = config.parse(text, paths.config_file())
     warn(loaded.warnings)
-    with tempfile.TemporaryDirectory(prefix="skill-graft-") as work:
-        folders = resolve.folders(loaded, Cache(paths.cache()), {})
-        hull = resolve.resolve(loaded, folders, Path(work))
+    with resolve.compute_hull(loaded) as hull:
         lock_text = lock.render(loaded, {}, hull)  # hashes the patched copies
     write(document)
     try:

@@ -5,8 +5,7 @@ from pathlib import Path
 import pytest
 from conftest import FakeApm, skill, write_config
 
-from skill_graft import config, lock, paths, resolve, vendor
-from skill_graft.cache import Cache
+from skill_graft import config, lock, resolve, vendor
 from skill_graft.cli import main
 from skill_graft.hull import Hull
 
@@ -416,12 +415,10 @@ def test_registration_removed_by_hand(home: Path, fake_apm: FakeApm) -> None:
 def test_vendor_and_lock_into_a_given_folder(home: Path, tmp_path: Path) -> None:
     skill(home / "src" / "chisel")
     write_config('entries = ["own/chisel"]\n[sources.own]\npath = "~/src"\n')
-    loaded = config.load()
-    folders = resolve.folders(loaded, Cache(paths.cache()), {})
-    hull = resolve.resolve(loaded, folders, tmp_path / "work")
     into = tmp_path / "into"
 
-    vendor.vendor(hull, into / ".apm" / "skills")
+    with resolve.compute_hull(config.load()) as hull:
+        vendor.vendor(hull, into / ".apm" / "skills")
     lock.write("lock\n", into / "skill-graft.lock")
 
     assert (into / ".apm" / "skills" / "chisel" / "SKILL.md").is_file()

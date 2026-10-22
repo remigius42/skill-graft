@@ -1,7 +1,9 @@
 """Resolves the hull from the config: the step `build`, `resolve` and `update` share."""
 
 import os
-from collections.abc import Iterable
+import tempfile
+from collections.abc import Iterable, Iterator
+from contextlib import contextmanager
 from dataclasses import replace
 from pathlib import Path
 
@@ -22,7 +24,7 @@ def check_refs(config: Config, given: Iterable[str]) -> None:
             )
 
 
-def folders(config: Config, cache: Cache, refs: dict[str, str]) -> dict[str, Path]:
+def _folders(config: Config, cache: Cache, refs: dict[str, str]) -> dict[str, Path]:
     """Every declared source's folder: git ones at `refs`, else their ref.
 
     A reference may resolve in any source, so all are read, used by an entry or not.
@@ -71,13 +73,13 @@ def _subdirectory(alias: str, tree: Path, subdirectory: str, ref: str) -> Path:
 def known(config: Config, where: str, text: str) -> SkillId:
     """The skill ID `text`, its source declared and holding that skill."""
     skill = parse_skill_id(where, text, config.sources)
-    folder = folders(config, Cache(paths.cache()), {})[skill.alias]
-    index = indexes(config, {skill.alias: folder})[skill.alias]
+    folder = _folders(config, Cache(paths.cache()), {})[skill.alias]
+    index = _indexes(config, {skill.alias: folder})[skill.alias]
     discovery.find(index, skill, f"{where}: `{skill}`")
     return skill
 
 
-def indexes(config: Config, folders: dict[str, Path]) -> dict[str, discovery.Index]:
+def _indexes(config: Config, folders: dict[str, Path]) -> dict[str, discovery.Index]:
     """Every source's skills by name, a git source's confined to its checkout."""
     return {
         alias: discovery.index(folder, isinstance(config.sources[alias], GitSource))
@@ -85,7 +87,7 @@ def indexes(config: Config, folders: dict[str, Path]) -> dict[str, discovery.Ind
     }
 
 
-def roots(config: Config, folders: dict[str, Path]) -> dict[str, Path]:
+def _roots(config: Config, folders: dict[str, Path]) -> dict[str, Path]:
     """Every source's root: its folder, or the tree holding a git source's
     subdirectory, one level up per part."""
     result = {}
@@ -97,18 +99,28 @@ def roots(config: Config, folders: dict[str, Path]) -> dict[str, Path]:
     return result
 
 
-def resolve(config: Config, folders: dict[str, Path], work: Path) -> Hull:
+@contextmanager
+def compute_hull(
+    config: Config, cache: Cache | None = None, refs: dict[str, str] | None = None
+) -> Iterator[Hull]:
     """The hull, its skills found and checked for stray symlinks and name clashes.
 
-    Clashing entries are reported before anything is searched. Patched copies
-    go under `work`, which must outlive the hull.
+    Reads every source, git ones at `refs`, else their ref, through `cache`, by
+    default the user's. Clashing entries are reported before anything is searched.
+    Patched copies go in a temporary folder removed on exit: a patched skill's
+    path in `skills` is valid only inside the `with`.
     """
-    rename.check_unique(
-        config, {entry: deployed(config, entry) for entry in config.entries}
-    )
-    result = hull.walk(config, indexes(config, folders), roots(config, folders), work)
-    rename.check_unique(config, result.deployed)
-    warnings = rename.unused(config, result.skills)
-    warnings += patch.unused(config, result.skills)
-    warnings += rename.check_reserved(config, result.deployed)
-    return replace(result, warnings=result.warnings + warnings)
+    with tempfile.TemporaryDirectory(prefix="skill-graft-") as work:
+        cache = Cache(paths.cache()) if cache is None else cache
+        folders = _folders(config, cache, refs or {})
+        rename.check_unique(
+            config, {entry: deployed(config, entry) for entry in config.entries}
+        )
+        result = hull.walk(
+            config, _indexes(config, folders), _roots(config, folders), Path(work)
+        )
+        rename.check_unique(config, result.deployed)
+        warnings = rename.unused(config, result.skills)
+        warnings += patch.unused(config, result.skills)
+        warnings += rename.check_reserved(config, result.deployed)
+        yield replace(result, warnings=result.warnings + warnings)

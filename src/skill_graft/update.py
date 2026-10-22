@@ -61,10 +61,7 @@ def _update(loaded: Config, aliases: list[str], git_cache: Cache, write: bool) -
             git_cache.fetch(alias, source.url)
         unchanged = " (unchanged)" if tips[alias] == source.ref else ""
         print(f"{alias} {tips[alias]}{unchanged}")
-    with tempfile.TemporaryDirectory(prefix="skill-graft-") as work:
-        hull = resolve.resolve(
-            loaded, resolve.folders(loaded, git_cache, tips), Path(work)
-        )
+    with resolve.compute_hull(loaded, git_cache, tips) as hull:
         hashes = lock.skill_hashes(hull)
     warn(hull.warnings)
     _print_diff(_previous(loaded, selected, git_cache), hashes)
@@ -91,9 +88,8 @@ def _previous(
         if not git_cache.has_commit(source.url, source.ref):
             return f"{alias!r} ref {source.ref} not cached"
     try:
-        with tempfile.TemporaryDirectory(prefix="skill-graft-") as work:
-            folders = resolve.folders(loaded, git_cache, {})
-            return lock.skill_hashes(resolve.resolve(loaded, folders, Path(work)))
+        with resolve.compute_hull(loaded, git_cache) as hull:
+            return lock.skill_hashes(hull)
     except patch.PatchError as error:  # likely rewritten for the tips
         if error.other:  # an error that is no patch's: that one matters
             return f"the current refs do not resolve: patches fail there; {error.other}"

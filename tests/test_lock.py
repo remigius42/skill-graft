@@ -9,16 +9,13 @@ from typing import Any
 from conftest import Upstream, configure, make_patch, skill, write_config
 
 from skill_graft import config, lock, paths, resolve
-from skill_graft.cache import Cache
 from skill_graft.cli import main
 
 
 def render() -> str:
     loaded = config.load()
-    folders = resolve.folders(loaded, Cache(paths.cache()), {})
-    return lock.render(
-        loaded, {}, resolve.resolve(loaded, folders, Path.home() / "work")
-    )
+    with resolve.compute_hull(loaded) as hull:
+        return lock.render(loaded, {}, hull)
 
 
 def parsed() -> dict[str, Any]:

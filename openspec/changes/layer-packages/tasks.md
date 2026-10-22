@@ -2,7 +2,7 @@
 
 ## 1. Narrow interfaces (flat layout)
 
-- [ ] 1.1 Add `compute_hull(config, cache=None, refs=None)` to `resolve.py`, a context manager owning the temporary
+- [x] 1.1 Add `compute_hull(config, cache=None, refs=None)` to `resolve.py`, a context manager owning the temporary
   folder; move `cli._resolve` (renamed `_hull`, still printing the config's warnings),
   `cli`'s `build`, `edit._finish`, `update._update`, `update._previous` and the four
   tests calling `resolve.folders` / `resolve.resolve` onto it; make `folders`, `indexes`, `roots` private; verify

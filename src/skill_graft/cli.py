@@ -6,8 +6,8 @@ import os
 import re
 import shutil
 import sys
-import tempfile
 import textwrap
+from collections.abc import Iterator
 from pathlib import Path
 from typing import Any, NoReturn
 
@@ -23,7 +23,6 @@ from skill_graft import (
     update,
     vendor,
 )
-from skill_graft.cache import Cache
 from skill_graft.errors import SkillGraftError, notice, warn
 from skill_graft.hull import Hull
 
@@ -305,30 +304,27 @@ def main(argv: list[str] | None = None) -> int:
         elif args.command == "unbind":
             edit.unbind(args.key)
         elif args.command == "why":
-            with tempfile.TemporaryDirectory(prefix="skill-graft-") as work:
-                loaded, resolved = _resolve(Path(work))
-            try:
-                target = explain.find(
-                    resolved,
-                    args.skill,
-                    lambda text: resolve.known(loaded, "why", text),
-                )
-                print(explain.why(resolved, target), end="")
-            finally:  # after the output, as `tree` and `resolve` print them
-                warn(resolved.warnings)
+            with _hull() as (loaded, resolved):
+                try:
+                    target = explain.find(
+                        resolved,
+                        args.skill,
+                        lambda text: resolve.known(loaded, "why", text),
+                    )
+                    print(explain.why(resolved, target), end="")
+                finally:  # after the output, as `tree` and `resolve` print them
+                    warn(resolved.warnings)
         elif args.command == "tree":
-            with tempfile.TemporaryDirectory(prefix="skill-graft-") as work:
-                _, resolved = _resolve(Path(work))
-            if args.link:
-                print(explain.link(explain.mermaid(resolved)))
-            elif args.format == "mermaid":
-                print(explain.mermaid(resolved), end="")
-            else:
-                print(lock.tree(resolved), end="")
-            warn(resolved.warnings)
+            with _hull() as (_, resolved):
+                if args.link:
+                    print(explain.link(explain.mermaid(resolved)))
+                elif args.format == "mermaid":
+                    print(explain.mermaid(resolved), end="")
+                else:
+                    print(lock.tree(resolved), end="")
+                warn(resolved.warnings)
         elif args.command == "resolve":
-            with tempfile.TemporaryDirectory(prefix="skill-graft-") as work:
-                loaded, resolved = _resolve(Path(work))
+            with _hull() as (loaded, resolved):
                 lock.write(lock.render(loaded, {}, resolved))
             print(lock.tree(resolved) + lock.suggestions(resolved), end="")
             warn(resolved.warnings)
@@ -339,12 +335,10 @@ def main(argv: list[str] | None = None) -> int:
             skills = paths.skills() if into is None else into / ".apm" / "skills"
             started = False
             try:
-                with tempfile.TemporaryDirectory(prefix="skill-graft-") as work:
-                    loaded = _load()
-                    if given is not None:
-                        _check_into_sources(given, loaded)
-                    folders = resolve.folders(loaded, Cache(paths.cache()), {})
-                    resolved = resolve.resolve(loaded, folders, Path(work))
+                loaded = _load()
+                if given is not None:
+                    _check_into_sources(given, loaded)
+                with resolve.compute_hull(loaded) as resolved:
                     warn(resolved.warnings)
                     started = True  # from here on `into` may hold our writes
                     vendor.vendor(resolved, skills)
@@ -443,11 +437,12 @@ def _load() -> config.Config:
     return loaded
 
 
-def _resolve(work: Path) -> tuple[config.Config, Hull]:
-    """The config and its hull, every source at its ref, patched copies in `work`."""
+@contextlib.contextmanager
+def _hull() -> Iterator[tuple[config.Config, Hull]]:
+    """The config and its hull, every source at its ref, valid inside the `with`."""
     loaded = _load()
-    folders = resolve.folders(loaded, Cache(paths.cache()), {})
-    return loaded, resolve.resolve(loaded, folders, work)
+    with resolve.compute_hull(loaded) as hull:
+        yield loaded, hull
 
 
 if __name__ == "__main__":
