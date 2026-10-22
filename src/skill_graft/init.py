@@ -24,7 +24,7 @@ CONFIG_TEMPLATE = """\
 # [sources.skill-graft]
 # git = "https://github.com/remigius42/skill-graft.git"
 # subdirectory = "skills"
-# then run `skill-graft update skill-graft` and `skill-graft add skill-graft/graft-check`.
+# then run `skill-graft update skill-graft`, `skill-graft add skill-graft/graft-check` and `skill-graft build`.
 # Until that update sets its ref, every `build` fails, not only graft-check's.
 """
 

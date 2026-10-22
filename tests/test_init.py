@@ -48,7 +48,8 @@ def test_template_shows_graft_check(home: Path, fake_apm: FakeApm) -> None:
     assert source.subdirectory == "skills"
     rest = "\n".join(lines[start + len(block) :])
     update = rest.index("skill-graft update skill-graft")
-    assert update < rest.index("skill-graft add skill-graft/graft-check")
+    add = rest.index("skill-graft add skill-graft/graft-check")
+    assert update < add < rest.index("skill-graft build")
     assert "every `build` fails" in rest
 
 
