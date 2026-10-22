@@ -24,9 +24,15 @@ before changing behavior. Until OpenSpec specs cover it, `docs/design.md` holds 
 - Python 3.11 or later, for `tomllib`. Runtime dependencies: the standard library and `tomlkit`, nothing else.
   Call `git` and `apm` as subprocesses; never import `apm_cli`, whose internals are not an API.
 - `mypy --strict` and `ruff` run as pre-commit hooks, configured in `pyproject.toml`.
+- `src/skill_graft/` has four layers, top to bottom: `cli.py`, `commands/`, `pipeline/`, `infra/`. A module imports
+  only its own layer and those below; `lint-imports` (pre-commit, contract in `pyproject.toml`) refuses the rest,
+  and a module outside the four packages. Call a module's functions through it (`vendor.vendor(...)`), so
+  `monkeypatch.setattr` in tests still hits.
 
 ## Tests
 
+- `tests/` mirrors the layers: `tests/<layer>/test_<module>.py`; end-to-end tests driven through `main()` go in
+  `tests/cli/`. Shared helpers stay in `tests/conftest.py`.
 - Never touch the real `~/.apm`, `~/.claude`, or `~/.agents`. Anything that runs `apm` sets `HOME` to a
   temporary directory.
 - Fixture skills and source repositories are synthetic, built in the test. Do not copy real skills into the

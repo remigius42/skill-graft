@@ -253,8 +253,8 @@ it, so the explanation is a view of it:
 - `why` and `tree` resolve as `resolve` does (fetching only an uncached commit, warnings on stderr, a failing
   patch an error) but write nothing, so they never see a missing or stale lock.
 
-The lock holds `version = 1`. Any change to its keys or to what they mean raises `version` (`test_lock.py` pins the
-keys), since the `graft-check` skill reads version 1 only.
+The lock holds `version = 1`. Any change to its keys or to what they mean raises `version`
+(`tests/pipeline/test_lock.py` pins the keys), since the `graft-check` skill reads version 1 only.
 
 That skill, `skills/graft-check/` in this repository, is the **Check** of ADR 0006, installed like any other skill from
 a git source with `subdirectory = "skills"`. An agent builds `--into` a temporary folder, reads that lock, the output
@@ -267,6 +267,9 @@ for the user to accept. It takes no part in resolution.
   writes. `git` and `apm` run as subprocesses.
 - Packaged with `uv`, installed with `uv tool install`. The CLI is `skill-graft`, not a shorter name that could
   clash on `PATH`; it runs rarely, so the length costs little.
+- `src/skill_graft/` is layered, each layer importing only those below it: `cli.py` (the console entry point);
+  `commands/` (`edit`, `update`, `explain`, `init_package`); `pipeline/` (config to **Hull** to vendored skills
+  and lock, `compute.compute_hull` computing the **Hull**); `infra/` (file system, `git`, `apm`, errors).
 
 ## Measured APM behavior
 

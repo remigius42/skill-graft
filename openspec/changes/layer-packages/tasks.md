@@ -29,6 +29,6 @@
   pre-commit hook `uv run lint-imports` on `src/` and `pyproject.toml`, and `.import_linter_cache/` to `.gitignore`;
   verify the hook passes, fails when `infra/paths.py` imports `skill_graft.commands.edit`, fails when an empty
   `src/skill_graft/stray.py` is added (both reverted after), and `git status` shows no cache folder
-- [ ] 2.4 Name the layers and the import rule in `AGENTS.md` (Python section) and that `tests/` mirrors them (Tests
+- [x] 2.4 Name the layers and the import rule in `AGENTS.md` (Python section) and that `tests/` mirrors them (Tests
   section), and update module names in `docs/design.md`; add new words to `.cspell.yaml`; verify
   `pre-commit run --all-files` is green
