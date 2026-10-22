@@ -22,7 +22,9 @@ deploying stays the user's own `skill-graft build`.
 - **Hull**: the **Entries** (the **Skill IDs** in `entries`) plus every **Skill** their slash and Skill tool
   **References** reach.
 - **Bind**: `[bind]` `"<alias>/<name>" = "<skill id>"` or `false`. It decides every **Reference** to that name from
-  that **Source**, in every form; `false` makes the name no **Reference** at all.
+  that **Source**, in every form; `false` makes the name no **Reference** at all. `<alias>` is the **Source** of the
+  **Skill** holding the **Reference**, not of its target: `/<name>` in `a/x` resolving to `b/<name>` is bound as
+  `a/<name>`.
 - **Deployed name**: a **Skill**'s name once built, set by `[rename]` or a **Source**'s `prefix`. Every **Reference** to
   it is rewritten to it.
 - **Upstream**: a **Skill** as its **Source** has it, before any **Patch**.
