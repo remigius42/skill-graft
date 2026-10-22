@@ -10,8 +10,8 @@ Creates the skill-graft APM package under `~/.apm/skill-graft/` and registers it
 
 `skill-graft init` SHALL create `~/.apm/skill-graft/`, and `skill-graft init --project` SHALL create
 `<working folder>/.apm/skill-graft/`, each holding a `skill-graft.toml` whose content is only comments explaining
-`entries` and `[sources.<alias>]`, both with `path` and with `git`, `branch` and `ref`, and an `apm.yml` of
-exactly two lines: `name: skill-graft` and `version: 0.1.0`.
+`entries` and `[sources.<alias>]`, both with `path` and with `git`, `branch` and `ref`, and showing how to install
+the `graft-check` skill, and an `apm.yml` of exactly two lines: `name: skill-graft` and `version: 0.1.0`.
 
 #### Scenario: Fresh home
 
@@ -23,6 +23,15 @@ exactly two lines: `name: skill-graft` and `version: 0.1.0`.
 
 - **WHEN** the user runs `skill-graft init`
 - **THEN** `skill-graft.toml` mentions `git`, `branch`, `ref` and `skill-graft update`
+
+#### Scenario: Template shows graft-check
+
+- **WHEN** the user runs `skill-graft init`
+- **THEN** `skill-graft.toml` holds, commented out, a **Source** `skill-graft` of
+  `https://github.com/remigius42/skill-graft.git` with `subdirectory = "skills"`, followed by
+  `skill-graft update skill-graft`, `skill-graft add skill-graft/graft-check` and `skill-graft build`, with a note that
+  every `build` fails until that `update` has set the `ref`, and uncommenting the **Source** alone gives a config that
+  loads
 
 #### Scenario: Project package
 

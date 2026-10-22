@@ -294,3 +294,16 @@ record its `patches`, as written in the TOML, in apply order. Each hash SHALL co
 
 - **WHEN** the user runs `resolve`, saves the lock, then runs `build --no-install`, with patches declared
 - **THEN** both locks are byte for byte equal
+
+### Requirement: Lock layout version
+
+The lock SHALL hold `version = 1` for this layout: top-level `version`, `sources`, `skills`, `edges` and `suggestions`;
+a **Source** with `git`, `ref` and, when set, `subdirectory`, or `path`; a **Skill** with `id`, `entry`, `upstream`,
+`hash`, and when they apply `deployed` and `patches`; an edge with `from`, `to`, `kind`, and `bind` when true; a
+suggestion with `id` and `from`. Any change to these keys or their meaning SHALL raise `version`.
+
+#### Scenario: Version 1 keys
+
+- **WHEN** `resolve` writes a lock whose **Hull** has a renamed, patched **Skill** from a git **Source** with a
+  `subdirectory`, a plain **Entry** from a path **Source**, a bound edge and a suggestion
+- **THEN** the lock has `version = 1` and exactly the keys above
