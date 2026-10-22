@@ -346,9 +346,8 @@ def main(argv: list[str] | None = None) -> int:
                     _undo_into(into)
                 raise
             if into is None:  # its hint, `resolve`, would rewrite the package's lock
-                explain.announce_suggestions(
-                    resolved
-                )  # once nothing before APM can fail
+                # Once nothing before APM can fail.
+                explain.announce_suggestions(resolved)
                 if not args.no_install:
                     apm.install()
     except (SkillGraftError, OSError) as error:

@@ -26,13 +26,14 @@ before changing behavior. Until OpenSpec specs cover it, `docs/design.md` holds 
 - `mypy --strict` and `ruff` run as pre-commit hooks, configured in `pyproject.toml`.
 - `src/skill_graft/` has four layers, top to bottom: `cli.py`, `commands/`, `pipeline/`, `infra/`. A module imports
   only its own layer and those below; `lint-imports` (pre-commit, contract in `pyproject.toml`) refuses the rest,
-  and a module outside the four packages. Call a module's functions through it (`vendor.vendor(...)`), so
-  `monkeypatch.setattr` in tests still hits.
+  and a module outside the four packages. Call a function tests replace with `monkeypatch.setattr` through its
+  module (`vendor.vendor(...)`), or the patch misses the call.
 
 ## Tests
 
-- `tests/` mirrors the layers: `tests/<layer>/test_<module>.py`; end-to-end tests driven through `main()` go in
-  `tests/cli/`. Shared helpers stay in `tests/conftest.py`.
+- `tests/` mirrors the layers: a test file sits in the layer of the module it is named after
+  (`tests/<layer>/test_<module>.py`); end-to-end files named after a command `cli.py` runs itself, or a
+  cross-cutting concern, go in `tests/cli/`. Shared helpers stay in `tests/conftest.py`.
 - Never touch the real `~/.apm`, `~/.claude`, or `~/.agents`. Anything that runs `apm` sets `HOME` to a
   temporary directory.
 - Fixture skills and source repositories are synthetic, built in the test. Do not copy real skills into the
