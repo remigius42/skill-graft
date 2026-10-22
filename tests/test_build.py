@@ -661,6 +661,17 @@ def test_into_a_symlink_to_an_empty_folder(home: Path, tmp_path: Path) -> None:
     assert (target / ".apm" / "skills" / "chisel" / "SKILL.md").is_file()
 
 
+def test_into_a_path_only_passing_through_a_package(home: Path, tmp_path: Path) -> None:
+    chisel_config(home)
+    (tmp_path / "other" / ".apm" / "skill-graft").mkdir(parents=True)
+    out = empty_folder(tmp_path)
+    into = tmp_path / "other" / ".apm" / "skill-graft" / ".." / ".." / ".." / "into"
+
+    assert main(["build", "--into", str(into)]) == 0
+
+    assert (out / ".apm" / "skills" / "chisel" / "SKILL.md").is_file()
+
+
 @pytest.mark.parametrize(
     "where",
     [

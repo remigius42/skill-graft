@@ -388,7 +388,9 @@ def _check_into(into: Path) -> None:
     if any(into.iterdir()):
         raise SkillGraftError(f"--into {into}: not empty")
     resolved = _folded(into.resolve())
-    if any(paths.in_package(p) for p in (_folded(into.absolute()), resolved)):
+    # As given too, but without `..`: a path only passing through a package is fine.
+    given = _folded(Path(os.path.normpath(into.absolute())))
+    if any(paths.in_package(p) for p in (given, resolved)):
         raise SkillGraftError(f"--into {into}: inside a package (.apm/skill-graft)")
     if paths.overlap(resolved, _folded(cache := paths.cache().resolve())):
         raise SkillGraftError(f"--into {into}: overlaps the cache {cache}")
