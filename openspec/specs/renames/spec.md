@@ -155,8 +155,10 @@ A `[rename]` key naming no **Hull** **Skill** SHALL be a warning naming the key,
 ### Requirement: Deployed names are unique
 
 Two **Hull** **Skills** with the same **Deployed name**, compared ignoring case, SHALL be an error naming both
-and a change that would separate them, and the command SHALL then write nothing. The hint SHALL name a `[rename]`
-line for a clashing **Skill** with neither a `[rename]` key nor a **Prefix**; else the `[rename]` value of a
+and a change that would separate them, and the command SHALL then write nothing. Every command that computes the
+**Hull** SHALL report a clash between **Entries** before any **Source** is read or a remote contacted, except
+`rename` and `bind`, which first read the **Sources** to check the **Skill ID** they are given. The hint SHALL name a
+`[rename]` line for a clashing **Skill** with neither a `[rename]` key nor a **Prefix**; else the `[rename]` value of a
 renamed one to change; else, for a prefixed one, that a `[rename]` key for it would, or its **Source**'s `prefix`
 unless another clashing **Skill** is of that **Source**.
 
@@ -164,6 +166,18 @@ unless another clashing **Skill** is of that **Source**.
 
 - **WHEN** `mp/tdd` and `own/tdd` are both **Entries**, neither renamed
 - **THEN** `build` exits non-zero naming both and `[rename]`, and leaves `.apm/skills/` and the lock unchanged
+
+#### Scenario: Entries clash before any fetch
+
+- **WHEN** **Entries** `mp/tdd` and `own/tdd` have no `[rename]` key, and `mp` is a git **Source** whose `ref` is
+  not cached
+- **THEN** `build` exits non-zero naming both, and fetches nothing
+
+#### Scenario: Entries clash before update fetches
+
+- **WHEN** **Entries** `mp/tdd` and `own/tdd` have no `[rename]` key, `mp` is a git **Source**, and the user runs
+  `update mp`
+- **THEN** `update` exits non-zero naming both, contacts no remote, and writes nothing
 
 #### Scenario: Clash through a reference
 
