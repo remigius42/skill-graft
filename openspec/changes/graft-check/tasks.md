@@ -13,7 +13,10 @@
   `tests/test_check.py` asserting the front matter, and that a temporary path **Source** holding the tracked
   files under `skills/` (`git ls-files skills`) with `entries = ["sg/graft-check"]` resolves to
   `sg/graft-check` alone with no warning and no suggestion; verify the tests pass
-- [ ] 2.2 Write the skill's body with the mp-writing-for-agents skill:
+- [ ] 2.2 Write the skill's body by the rules in `resources/writing-for-agents/SKILL.md` and, for a skill,
+  `resources/writing-for-agents/SKILL-MECHANICS.md` (user-invoked branch), with one exception: the description keeps
+  the "only when the user asks" wording, since harnesses other than Claude Code may ignore
+  `disable-model-invocation`. The body covers:
   - `mktemp -d`, then build `--into` that folder, read the **Package** line, stop on a lock
     `version` other than 1 (a higher one with the update advice)
   - inputs: the throwaway lock and vendored copies, one `skill-graft why` per **Source** joined with the lock's
@@ -25,8 +28,10 @@
     failed **Patch**'s file and own list item only
   - close with the `skill-graft build` advice when a fix was accepted or the first throwaway lock differs from
     the **Package**'s; otherwise say the **Package** matches its config and that deployment is not checked
-  - verify `tests/test_check.py` still passes (no **Reference** crept in) and `pre-commit run --all-files` is
-    green
+  - verify: a review of the finished `SKILL.md` against every rule of both resource files (context pointer, the
+    two loads, information hierarchy and disclosure, completion criteria, splitting, leading words, negation,
+    pruning, invocation) finds nothing left to fix, each rule named with how the text meets it; then
+    `tests/test_check.py` still passes (no **Reference** crept in) and `pre-commit run --all-files` is green
 
 ## 3. Installing it
 
