@@ -66,3 +66,6 @@
   wrapper rewrites the throwaway lock to `version = 2`) and `fix` (a second `claude -p --continue` turn accepts
   `bind up/review false` and declines the rest: `up/review` left the **Hull**, the advice to build, no other config
   change); verify each scenario's checks against stub reports that pass and fail, then a manual run of all of them
+- [ ] 4.3 Add the scenario `unknown-argument`: `/graft-check up-lead`, the deployed name, on the defects package names
+  `up-lead`, lists `up/lead`, reports none of `lead`'s defects and changes nothing; verify its checks against stub
+  reports that pass and fail, then a manual run of every scenario

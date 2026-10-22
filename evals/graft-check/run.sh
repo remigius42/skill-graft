@@ -4,7 +4,7 @@
 #   run.sh [scenario…]   default: every scenario
 set -euo pipefail
 
-scenarios=(defects clean never-built scoped build-fails newer-lock fix)
+scenarios=(defects clean never-built scoped unknown-argument build-fails newer-lock fix)
 selected=("$@")
 [[ ${#selected[@]} -gt 0 ]] || selected=("${scenarios[@]}")
 for name in "${selected[@]}"; do
@@ -233,6 +233,14 @@ for scenario in "${selected[@]}"; do
       ask scoped report "/graft-check up/code-style"
       check "false: GET /status" found false "GET /status"
       check "lead not checked" eval 'lacks "notes skill" && lacks "GET /review"'
+      check "package unchanged" unchanged
+      ;;
+    unknown-argument)
+      project unknown-argument defects built
+      ask unknown-argument report "/graft-check up-lead"
+      check "argument named" has "up-lead"
+      check "skill IDs listed" has "up/lead"
+      check "nothing checked" lacks "GET /review"
       check "package unchanged" unchanged
       ;;
     build-fails)

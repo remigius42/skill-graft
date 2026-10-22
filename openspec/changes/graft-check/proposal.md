@@ -27,7 +27,7 @@ config the user accepts.
   `graft-check` was installed from, build there, and start a new session.
   The lock's version 1 keys are pinned by a test, so a layout change has to raise `version`.
 - `skill-graft init` writes the lines that install it into its commented template; `README.md` explains them.
-- An opt-in eval script runs the skill headless over seven scenarios on synthetic **Packages**, one defect of each
+- An opt-in eval script runs the skill headless over eight scenarios on synthetic **Packages**, one defect of each
   kind among them, outside pre-commit and CI.
 
 ## Capabilities

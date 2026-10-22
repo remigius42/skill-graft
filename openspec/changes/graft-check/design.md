@@ -99,13 +99,13 @@ What the skill can lean on already exists:
 - **Eval, not test, for the agent.** `evals/graft-check/run.sh` builds a project **Package** in a temporary folder (a
   git **Source** made with `git init` and committed with `GIT_AUTHOR_*` and `GIT_COMMITTER_*` set, since the temporary
   `HOME` has no git identity; no network), one per named scenario (`run.sh [scenario…]`, all by default): planted
-  defects with a user **Patch**, a clean **Package** built or never built, a scoped run, a failing build, a lock the
-  `skill-graft` wrapper rewrites to `version = 2`, and a second `claude -p --continue` turn that accepts one fix. It
-  runs `claude -p` there, then greps each report: a finding counts when one line holds its text and its kind. Left to
-  manual review, since a headless run cannot reliably make a build fail mid-fix or accept a given `add`: One false match
-  among real calls, A skill joins the hull, Bind restored, Earlier patches kept, Source changed, and Lock current,
-  vendored copies behind. A project **Package** is found before the user's, so the real `~/.apm` is never read or
-  written.
+  defects with a user **Patch**, a clean **Package** built or never built, a scoped run, an argument that is no **Skill
+  ID**, a failing build, a lock the `skill-graft` wrapper rewrites to `version = 2`, and a second `claude -p --continue`
+  turn that accepts one fix. It runs `claude -p` there, then greps each report: a finding counts when one line holds its
+  text and its kind. Left to manual review, since a headless run cannot reliably make a build fail mid-fix or accept a
+  given `add`: One false match among real calls, A skill joins the hull, Bind restored, Earlier patches kept, Source
+  changed, and Lock current, vendored copies behind. A project **Package** is found before the user's, so the real
+  `~/.apm` is never read or written.
   - `HOME` and `XDG_CACHE_HOME` point into the temporary folder, as AGENTS.md asks of anything that runs `apm`,
     though nothing here does: the real `~/.claude` and `~/.cache/skill-graft` stay untouched, the user's
     settings, hooks and personal skills (a deployed `graft-check` among them) cannot change the run, and the
