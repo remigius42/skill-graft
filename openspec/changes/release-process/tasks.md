@@ -2,7 +2,7 @@
 
 ## 1. CI
 
-- [ ] 1.1 In `.github/workflows/ci.yml`, add `release/**` to the push branches, and in the commitlint step set `FROM`
+- [x] 1.1 In `.github/workflows/ci.yml`, add `release/**` to the push branches, and in the commitlint step set `FROM`
   to `git merge-base origin/main "$TO"` when `git cat-file -e "$FROM^{commit}"` fails; verify, in a scratch clone with
   `origin/main` behind a branch, that the step's shell lints the branch's commits for an all-zero `FROM` and for one
   the clone lacks, and keeps a valid `FROM`, and that pre-commit is green

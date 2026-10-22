@@ -2,7 +2,7 @@ name: CI
 
 on:
   push:
-    branches: [main]
+    branches: [main, "release/**"]
   pull_request:
     branches: [main]
 
@@ -37,6 +37,10 @@ jobs:
         env:
           FROM: ${{ github.event.pull_request.base.sha || github.event.before }}
           TO: ${{ github.event.pull_request.head.sha || github.sha }}
-        run: >
-          npx --yes -p @commitlint/cli@20.5.0 -p @commitlint/config-conventional@20.5.0 --
-          commitlint --from "$FROM" --to "$TO" --verbose
+        # A new branch's `before` is all zeros, a forced push's may be missing: lint what the branch adds to main.
+        run: |
+          if ! git cat-file -e "$FROM^{commit}" 2>/dev/null; then
+            FROM=$(git merge-base origin/main "$TO")
+          fi
+          npx --yes -p @commitlint/cli@20.5.0 -p @commitlint/config-conventional@20.5.0 -- \
+            commitlint --from "$FROM" --to "$TO" --verbose
