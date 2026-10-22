@@ -17,10 +17,12 @@ the default token permissions and takes its actions by movable tags. The sibling
   repositories. No version has been released, so every entry sits under `[Unreleased]`, seeded from the archived
   OpenSpec changes: one entry per change a user can notice; refactors and internal tooling get none.
 - `AGENTS.md`: a commit that changes what a user sees adds its entry under `[Unreleased]`; for an OpenSpec change,
-  the archive commit.
+  the archive commit. `openspec/config.yaml` repeats it as archive guidance, which the generated archive skill
+  reads.
+- `.markdownlint.yaml`: MD024 checks only sibling headings, so every version can have its own `### Added`.
 - `docs/development.md` moves to `CONTRIBUTING.md`, keeping its setup, checks and evals, and gains the OpenSpec
-  workflow in short, a pointer to `AGENTS.md` and `CONTEXT.md` for the rules, and a hook summary that names
-  `.pre-commit-config.yaml` as the full list instead of its partial one.
+  workflow in short, a pointer to `AGENTS.md` and `CONTEXT.md` for the rules, and a pointer to
+  `.pre-commit-config.yaml` in place of its partial hook list.
 - `README.md`, toward the four parts of a README (identification, evaluation, usage, engagement):
   - a copyright line under the title, as in `claude-cloud-test`;
   - `## Installation` moved up, followed by a new `## Usage`: one scenario from a fresh install to deployed skills,
@@ -45,5 +47,6 @@ None: tooling and documentation only (`skip_specs: true`).
 
 - `.github/workflows/ci.yml`; new `CHANGELOG.md`; `docs/development.md` moved to `CONTRIBUTING.md`; `AGENTS.md`;
   `README.md`; `.cspell.yaml` for new words. Archived changes that name `docs/development.md` stay as written.
-- No code, test, dependency or pre-commit change. Pinned SHAs move only when edited: automated updates (Dependabot)
+- No code, test or dependency change; the only check configuration touched is `.markdownlint.yaml` (MD024) and
+  `.cspell.yaml` (words). Pinned SHAs move only when edited: automated updates (Dependabot)
   are out of scope, as are a release, a version tag, issue templates and `SECURITY.md`.
