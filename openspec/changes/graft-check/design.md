@@ -44,13 +44,18 @@ What the skill can lean on already exists:
   or turn ambiguous. The `subdirectory` key of the `source-subdirectory` change, which lands first, keeps
   discovery to `skills/`.
 - **Its text names no skill.** Examples in it use placeholders, not `/tmp` or real names, so its **Hull** stays
-  itself alone. The pytest guard copies the tracked files under `skills/` (`git ls-files skills`), what the
-  installed **Source** holds, into a temporary path **Source**. A path **Source** of the working tree would also
-  find untracked, ignored skills a developer keeps there.
-- **Upstream folders: one `why` per Source.** The lock's `upstream` is relative to a cache export the skill cannot
-  locate portably. `why` prints one **Skill**'s absolute folder; minus the lock's relative `upstream`, that gives
-  the **Source**'s root, which serves all its **Skills**. One `why` per **Skill** would resolve the whole config
-  each time.
+  itself alone; its own name, in its usage line, is no **Reference**, since the walk drops self-references. The
+  pytest guard copies the working tree's `skills/`, what the installed **Source** holds, into a temporary path
+  **Source**: the working tree, so a `SKILL.md` not yet staged counts, test-first and without `.git`.
+- **Upstream folders: one `why` per git Source.** A path **Source**'s folder is in the lock (`sources.<alias>.path`,
+  in project scope relative to the **Package**). A git **Source**'s `upstream` is relative to a cache export the
+  skill cannot locate portably: `why` prints one **Skill**'s absolute folder, and minus the lock's relative
+  `upstream` that gives the root for all its **Skills**. Each `why` resolves the whole config, so once per git
+  **Source**, never per **Skill**.
+- **Patched Skills are compared with their Patches applied.** `why` and the lock's `upstream` name the folder before
+  any **Patch**. The rewrite and link kinds diff it against the vendored copy, so the skill applies the lock's
+  `patches` for that **Skill** first, as the README recipe builds its `base`, and the user's hunks never read as
+  defects.
 - **Fixes go through the CLI wherever one exists.** `add`, `bind` and `unbind` already refuse what does not
   resolve, so only a **Patch** needs undoing by hand when the rebuild fails: its file, its own list item, and the
   key only when the skill created it.
@@ -68,12 +73,16 @@ What the skill can lean on already exists:
   (not `--into "$(mktemp -d)"`, which a `Bash(skill-graft:*)` permission does not cover), then passes the path.
   A new folder per build, since a used one is not empty; successive locks are what the hull comparison diffs.
   The folders are left to the system's temporary-folder cleanup, so the skill needs no delete permission.
-- **The `skill-graft build` advice when a build would change something.** The lock is deterministic, so the first
-  throwaway lock differing from the **Package**'s means an in-place build would change the vendored copies (a path
-  **Source**'s edits, a `ref` the user changed); an accepted fix means the same. Whether APM deployed what the
-  **Package** holds stays unknowable locally, so the skill says so instead of advising a build it cannot justify.
+- **The `skill-graft build` advice when a build would change something, judged by the vendored folders.** `add`,
+  `remove`, `rename`, `bind`, `unbind`, `update` and `resolve` write the **Package**'s lock without vendoring, so
+  a lock can be current while `.apm/skills/` is behind; comparing locks would miss exactly the `ref` the user
+  moved. The skill compares the throwaway `.apm/skills/` with the **Package**'s (`diff -rq`); any difference, or
+  an accepted fix, earns the advice. Whether APM deployed what the **Package** holds stays unknowable locally, so
+  otherwise the skill says so instead of advising a build it cannot justify.
 - **Only version 1 is read.** It is the first lock version, so no lock can be older; the CLI-upgrade advice comes
-  with a skill that reads a version 2.
+  with a skill that reads a version 2. The update advice names no alias: the checked **Package** may not be the
+  one that installed `graft-check` (a user-scope install checking a project), so it points the user at the
+  **Source** they installed it from, in that **Package**.
 - **One subagent per checked Skill**, each reporting findings of the per-skill kinds (missed, false, rewrite,
   link) in a fixed shape; the main agent judges wrong targets from the lock's edges, merges, and proposes. Without
   subagents, the main agent goes through the **Skills** one by one.
@@ -91,10 +100,10 @@ What the skill can lean on already exists:
     `claude` takes its credentials from the environment: `CLAUDE_CODE_OAUTH_TOKEN` (from `claude setup-token`,
     billed to the subscription) or `ANTHROPIC_API_KEY`. The script needs one of them and, with neither, stops
     before building anything, pointing to `claude setup-token`.
-  - `--allowedTools` grants `Bash(skill-graft:*)`, `Bash(mktemp:*)`, file reads and searches, and subagents;
-    headless, any other tool call is denied, not asked. `TMPDIR` also points into the temporary folder, apart
-    from the eval **Package**, its **Source** and `XDG_CACHE_HOME`, since `--into` refuses a folder in any of
-    them.
+  - `--allowedTools` grants `Bash(skill-graft:*)`, `Bash(mktemp:*)`, `Bash(diff:*)`, file reads and searches,
+    and subagents; headless, any other tool call is denied, not asked. `TMPDIR` also points into the temporary
+    folder, apart from the eval **Package** and `XDG_CACHE_HOME`, since `--into` refuses a folder in a
+    **Package** or the cache (and in a path **Source**, which the eval has none of).
 
 ## Risks / Trade-offs
 

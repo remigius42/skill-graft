@@ -10,5 +10,5 @@ suggestion with `id` and `from`. Any change to these keys or their meaning SHALL
 #### Scenario: Version 1 keys
 
 - **WHEN** `resolve` writes a lock whose **Hull** has a renamed, patched **Skill** from a git **Source** with a
-  `subdirectory`, a bound edge and a suggestion
+  `subdirectory`, a plain **Entry** from a path **Source**, a bound edge and a suggestion
 - **THEN** the lock has `version = 1` and exactly the keys above

@@ -9,13 +9,12 @@ for what form-based resolution gets wrong and proposes **Binds**, **Entries** an
 
 This repository SHALL hold the skill at `skills/graft-check/SKILL.md`, a **Skill** named `graft-check`, so a
 **Source** of the repository has it as `<alias>/graft-check`. Its text SHALL hold no slash, Skill tool or prose
-**Reference** to any **Skill** the repository holds, so its **Hull** is itself alone and resolving it gives no
-warning and no suggestion.
+**Reference** to any other **Skill** the repository holds (its own name, as in its usage line, is no
+**Reference**), so its **Hull** is itself alone and resolving it gives no warning and no suggestion.
 
 #### Scenario: Alone in its hull
 
-- **WHEN** a **Source** `sg` holds the files this repository tracks under `skills/` and
-  `entries = ["sg/graft-check"]`
+- **WHEN** a **Source** `sg` holds this repository's `skills/` folder and `entries = ["sg/graft-check"]`
 - **THEN** `skill-graft resolve` succeeds, the **Hull** is `sg/graft-check` alone, and it prints no warning and
   no suggestion
 
@@ -40,8 +39,10 @@ without arguments, the whole **Hull**.
 The skill SHALL first make a new, empty folder under the system's temporary folder and run
 `skill-graft build --into` with it, reading the **Package** from the `package:` line. A failing build SHALL end the
 **Check** with the build's error. It SHALL then read the lock and the vendored copies in that folder, and each
-**Skill**'s **Upstream** folder, finding each **Source**'s folder once (through `skill-graft why` on one of its
-**Skills**) and joining it with the lock's relative `upstream`. The **Package**'s own `.apm/skills/` and lock SHALL
+**Skill**'s **Upstream** folder: under a path **Source**'s folder as the lock records it, and for a git **Source**
+under its root, found once through `skill-graft why` on one of its **Skills**. A **Skill** the lock lists
+`patches` for SHALL be compared with its **Upstream** text with those **Patches** applied, so their hunks count as
+intended. The **Package**'s own `.apm/skills/` and lock SHALL
 change only through accepted fixes.
 
 #### Scenario: Build fails
@@ -57,13 +58,14 @@ change only through accepted fixes.
 ### Requirement: Lock version
 
 The skill SHALL read lock `version = 1` only; any other version SHALL stop it. A higher one SHALL come with the
-advice to run `skill-graft update <alias>` for the **Source** that holds the skill, `skill-graft build`, and a new
-session.
+advice to run `skill-graft update` on the **Source** the user installed `graft-check` from, in the **Package**
+that installed it, then `skill-graft build` there, and a new session.
 
 #### Scenario: Newer lock
 
 - **WHEN** the lock has `version = 2`
-- **THEN** the skill stops and names `skill-graft update` with its own **Source**'s alias
+- **THEN** the skill stops and says to update the **Source** `graft-check` was installed from, in its own
+  **Package**
 
 ### Requirement: What it reports
 
@@ -125,9 +127,11 @@ the **Skill**'s `[patches]` list, and the key only if the skill created it, leav
 ### Requirement: Never deploys
 
 The skill SHALL NOT run `skill-graft build` without `--into`, nor `apm`. It SHALL end by telling the user to run
-`skill-graft build` when a fix was accepted, or when its first build's lock differs from the **Package**'s, so an
-in-place build would change the vendored copies. Otherwise it SHALL say the **Package** is as the config builds
-it, and that it cannot tell whether APM deployed that.
+`skill-graft build` when a fix was accepted, or when its first build's `.apm/skills/` differs from the **Package**'s, so
+an in-place build would change the vendored copies. Commands that write only the lock (`add`, `remove`, `rename`,
+`bind`, `unbind`, `update`, `resolve`) leave the **Package**'s lock current and its vendored copies behind, so the
+comparison is of the folders, not the locks. Otherwise it SHALL say the **Package** is as the config builds it, and that
+it cannot tell whether APM deployed that.
 
 #### Scenario: After a fix
 
@@ -139,7 +143,12 @@ it, and that it cannot tell whether APM deployed that.
 - **WHEN** a path **Source**'s **Skill** changed since the last in-place build, and the user declines every fix
 - **THEN** the skill's last message tells the user to run `skill-graft build`
 
+#### Scenario: Lock current, vendored copies behind
+
+- **WHEN** the user ran `skill-graft add mp/x` but no `build`, and declines every fix
+- **THEN** the skill's last message tells the user to run `skill-graft build`
+
 #### Scenario: Nothing to build
 
-- **WHEN** the first build's lock equals the **Package**'s and the user declines every fix
+- **WHEN** the first build's `.apm/skills/` equals the **Package**'s and the user declines every fix
 - **THEN** the skill does not tell the user to run `skill-graft build`
