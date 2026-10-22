@@ -12,8 +12,10 @@ improvisation the next release cannot repeat.
 - `CONTRIBUTING.md` gains `## Releasing`: the version to pick (Semantic Versioning, a breaking change before 1.0
   raising the minor version), the release commit (`chore(release): <version>`, which moves `[Unreleased]` to a dated
   version heading, opens an empty `[Unreleased]`, adds the compare and tag link definitions, and sets the version in
-  `pyproject.toml` and `uv.lock`), the annotated tag `v<version>` on that commit once CI is green on `main`, and a
-  GitHub release whose notes are that version's changelog section.
+  `pyproject.toml` and `uv.lock`), CI on a pull request from `release/v<version>` before `main` is fast-forwarded, the
+  annotated tag `v<version>` on that commit, and a GitHub release whose notes are that version's changelog section.
+- `AGENTS.md` (Git): a release is the one branch outside OpenSpec, `release/v<version>`, done as `CONTRIBUTING.md`
+  says.
 - `README.md` Installation: one sentence on installing a tagged release (`…/skill-graft@v<version>`), pointing to the
   repository's releases, so the README needs no edit per release.
 - `0.1.0` is cut by those steps: the changelog's current `[Unreleased]` becomes `[0.1.0]`, tagged `v0.1.0` and
@@ -33,7 +35,7 @@ None: process and documentation only (`skip_specs: true`).
 
 ## Impact
 
-- `CONTRIBUTING.md`, `README.md`, `CHANGELOG.md`; a tag `v0.1.0` and a GitHub release on `remigius42/skill-graft`;
-  `.cspell.yaml` for new words.
+- `CONTRIBUTING.md`, `AGENTS.md`, `README.md`, `CHANGELOG.md`; a pull request, a tag `v0.1.0` and a GitHub release on
+  `remigius42/skill-graft`; `.cspell.yaml` for new words.
 - No code, test, dependency or CI change. Out of scope: publishing to PyPI, release automation (release-please,
   tag-triggered workflows), Dependabot, and a `--version` flag.
