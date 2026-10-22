@@ -5,10 +5,13 @@
 ADR 0006 and the **Check** entry in `CONTEXT.md` settle the boundary: the agent advises, skill-graft resolves.
 What the skill can lean on already exists:
 
-- `build --into <folder>` (the `build-into` change, which lands first) vendors and writes the lock into that folder,
-  never runs APM, leaves the **Package** byte-identical, and prints `skill-graft: package: <path>`. Assumed here: it
-  creates a missing folder and lays it out as the **Package** is (`skill-graft.lock`, `.apm/skills/<name>/`), and
-  its lock has the bytes an in-place build would write. Recheck once `build-into` is settled.
+- `build --into <folder>` vendors into `<folder>/.apm/skills/<name>/` and writes `<folder>/skill-graft.lock`, the
+  bytes an in-place build would write, never runs APM, and leaves the **Package** byte-identical. It prints
+  `skill-graft: package: <path>`, then `skill-graft: into: <absolute folder>`. The folder must exist and be empty,
+  and must not lie in a **Package**, a path **Source**'s folder or the git cache; `build` never creates or deletes
+  it, and a failed build leaves it empty.
+- A git **Source** may set `subdirectory`; the lock's `upstream` stays relative to the repository's root, so it
+  includes the `subdirectory`.
 - The lock (`version = 1`) lists each **Hull** **Skill** with `deployed`, `upstream` (relative to its **Source**)
   and `patches`, and each edge with its kind and `bind`. `skill-graft why <id>` prints the absolute **Upstream**
   folder.
@@ -59,10 +62,12 @@ What the skill can lean on already exists:
   diffed against the previous lock's **Skills**, so a fix that drops one says so.
 - **The README recipe, with the real Package.** The recipe spells out the user **Package**; the skill puts the
   `package:` line's path in its place, so project scope writes its own `patches/`.
-- **Every build goes `--into` a new temporary folder.** Looking must not change the **Package**: a committed
-  project **Package** would show a dirty tree, and the user could not just look. A new folder per build because
-  `--into` will not write into a used one, and successive locks are what the hull comparison diffs. The folders
-  are left to the system's temporary-folder cleanup, so the skill needs no delete permission.
+- **Every build goes `--into` a new temporary folder, made with `mktemp -d`.** Looking must not change the
+  **Package**: a committed project **Package** would show a dirty tree, and the user could not just look. `--into`
+  needs an existing, empty folder and never creates one, so the skill runs `mktemp -d` first, as its own command
+  (not `--into "$(mktemp -d)"`, which a `Bash(skill-graft:*)` permission does not cover), then passes the path.
+  A new folder per build, since a used one is not empty; successive locks are what the hull comparison diffs.
+  The folders are left to the system's temporary-folder cleanup, so the skill needs no delete permission.
 - **The `skill-graft build` advice when a build would change something.** The lock is deterministic, so the first
   throwaway lock differing from the **Package**'s means an in-place build would change the vendored copies (a path
   **Source**'s edits, a `ref` the user changed); an accepted fix means the same. Whether APM deployed what the
@@ -84,9 +89,10 @@ What the skill can lean on already exists:
     settings, hooks and personal skills (a deployed `graft-check` among them) cannot change the run, and the
     working copy in the project's `.claude/skills/` is the only `graft-check`. `claude` then logs in through
     `ANTHROPIC_API_KEY`, which the script requires.
-  - `--allowedTools` grants `Bash(skill-graft:*)`, file reads and searches, and subagents; headless, any other
-    tool call is denied, not asked. `TMPDIR` also points into the temporary folder, so the throwaway builds go
-    with it.
+  - `--allowedTools` grants `Bash(skill-graft:*)`, `Bash(mktemp:*)`, file reads and searches, and subagents;
+    headless, any other tool call is denied, not asked. `TMPDIR` also points into the temporary folder, apart
+    from the eval **Package**, its **Source** and `XDG_CACHE_HOME`, since `--into` refuses a folder in any of
+    them.
 
 ## Risks / Trade-offs
 

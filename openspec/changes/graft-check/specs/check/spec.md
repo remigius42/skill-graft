@@ -37,12 +37,12 @@ without arguments, the whole **Hull**.
 
 ### Requirement: Builds before reading
 
-The skill SHALL first run `skill-graft build --into <folder>`, a new folder under the system's temporary folder,
-and read the **Package** from its `package:` line. A failing build SHALL end the **Check** with the build's
-error. It SHALL then read the lock and the vendored copies in that folder, and each **Skill**'s **Upstream**
-folder, finding each **Source**'s folder once (through `skill-graft why` on one of its **Skills**) and joining it
-with the lock's relative `upstream`. The **Package**'s own `.apm/skills/` and lock SHALL change only through
-accepted fixes.
+The skill SHALL first make a new, empty folder under the system's temporary folder and run
+`skill-graft build --into` with it, reading the **Package** from the `package:` line. A failing build SHALL end the
+**Check** with the build's error. It SHALL then read the lock and the vendored copies in that folder, and each
+**Skill**'s **Upstream** folder, finding each **Source**'s folder once (through `skill-graft why` on one of its
+**Skills**) and joining it with the lock's relative `upstream`. The **Package**'s own `.apm/skills/` and lock SHALL
+change only through accepted fixes.
 
 #### Scenario: Build fails
 
@@ -97,8 +97,8 @@ SHALL propose a **Patch** of the **Skill** that holds the wrong one.
 
 The skill SHALL apply a fix only after the user accepts it, one fix at a time, through `skill-graft add`,
 `skill-graft bind` or `skill-graft unbind`, or as a **Patch** written by the README's recipe with the **Package**
-from the `package:` line in place of its `~/.apm/skill-graft/`. After each it SHALL build again with `--into` a
-new folder and name every **Skill** that left or joined the **Hull** since the previous build. It SHALL NOT edit
+from the `package:` line in place of its `~/.apm/skill-graft/`. After each it SHALL build again `--into` another
+new, empty folder and name every **Skill** that left or joined the **Hull** since the previous build. It SHALL NOT edit
 the vendored **Skills**.
 
 #### Scenario: Declined
