@@ -2,7 +2,7 @@
 
 import os
 import tempfile
-from collections.abc import Iterable, Iterator
+from collections.abc import Generator, Iterable
 from contextlib import contextmanager
 from dataclasses import replace
 from pathlib import Path
@@ -109,7 +109,7 @@ def _roots(config: Config, folders: dict[str, Path]) -> dict[str, Path]:
 @contextmanager
 def compute_hull(
     config: Config, cache: Cache | None = None, refs: dict[str, str] | None = None
-) -> Iterator[Hull]:
+) -> Generator[Hull]:
     """The hull, its skills found and checked for stray symlinks and name clashes.
 
     Reads every source, git ones at `refs`, else their ref, through `cache`, by

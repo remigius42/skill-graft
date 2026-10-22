@@ -1,7 +1,7 @@
 """Deployed names carried into `name:` and every reference (the `renames` spec)."""
 
 import os
-from collections.abc import Iterator
+from collections.abc import Generator
 from contextlib import contextmanager
 from dataclasses import replace
 from pathlib import Path
@@ -74,7 +74,7 @@ def test_name_yaml_would_misread(name: str, written: str) -> None:
 
 
 @contextmanager
-def resolved(**renames: str) -> Iterator[Hull]:
+def resolved(**renames: str) -> Generator[Hull]:
     """The hull, with these skill IDs (`alias__name`) deployed under new names."""
     with compute.compute_hull(config.load()) as hull:
         deployed = {SkillId(*key.split("__")): name for key, name in renames.items()}

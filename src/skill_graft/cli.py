@@ -7,7 +7,7 @@ import re
 import shutil
 import sys
 import textwrap
-from collections.abc import Iterator
+from collections.abc import Generator
 from pathlib import Path
 from typing import Any, NoReturn
 
@@ -430,7 +430,7 @@ def _load() -> config.Config:
 
 
 @contextlib.contextmanager
-def _hull() -> Iterator[tuple[config.Config, Hull]]:
+def _hull() -> Generator[tuple[config.Config, Hull]]:
     """The config and its hull, every source at its ref, valid inside the `with`."""
     loaded = _load()
     with compute.compute_hull(loaded) as hull:
