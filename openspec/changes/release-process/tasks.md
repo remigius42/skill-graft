@@ -16,7 +16,7 @@
   lists every flag used, that the notes-extraction command, run on a scratch changelog holding two versions with link
   definitions, prints exactly the asked section for both the newer and the oldest version, and that pre-commit is
   green; add new words to `.cspell.yaml`
-- [ ] 2.2 Add to `AGENTS.md` (Git) that a release is the one branch outside OpenSpec, `release/v<version>`, following
+- [x] 2.2 Add to `AGENTS.md` (Git) that a release is the one branch outside OpenSpec, `release/v<version>`, following
   `CONTRIBUTING.md`'s Releasing; verify the link resolves and pre-commit is green
 - [ ] 2.3 Add to `README.md` Installation one sentence on installing a release by appending `@v<version>` to the git
   URL, linking the repository's releases page; verify the link resolves and pre-commit is green

@@ -10,6 +10,8 @@ before changing behavior. Until OpenSpec specs cover it, `docs/design.md` holds 
 - Conventional Commits (commitlint). No Co-Authored-By trailer.
 - Remote `origin`: <https://github.com/remigius42/skill-graft>. Never push without asking.
 - Work on a branch, never on main: one per OpenSpec change, `feat/opsx-<change-name>`.
+- A release is the one branch outside OpenSpec, `release/v<version>`: follow
+  [CONTRIBUTING.md](CONTRIBUTING.md#releasing).
 
 ## Workflow
 
