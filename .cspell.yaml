@@ -66,6 +66,7 @@ words:
   - samefile
   - scandir
   - shutil
+  - SIGPIPE
   - statusline
   - stdlib
   - strerror

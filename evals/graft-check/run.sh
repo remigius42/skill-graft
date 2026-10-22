@@ -38,13 +38,22 @@ export GIT_AUTHOR_NAME=eval GIT_AUTHOR_EMAIL=eval@example.com
 export GIT_COMMITTER_NAME=eval GIT_COMMITTER_EMAIL=eval@example.com
 # The working tree's skill-graft, under the name the skill calls. With
 # EVAL_LOCK_VERSION set, a throwaway build's lock claims that version.
-cat > "$work/bin/skill-graft" <<SH
-#!/bin/sh
-"$skill_graft" "\$@" || exit
-if [ -n "\${EVAL_LOCK_VERSION:-}" ] && [ "\$1" = build ] && [ "\$2" = --into ]; then
-  sed -i "s/^version = 1\\\$/version = \$EVAL_LOCK_VERSION/" "\$3/skill-graft.lock"
-fi
+{
+  echo '#!/bin/sh'
+  echo "skill_graft='$skill_graft'"
+  cat <<'SH'
+"$skill_graft" "$@" || exit
+[ -n "${EVAL_LOCK_VERSION:-}" ] || exit 0
+into=""
+previous=""
+for argument; do
+  case "$argument" in --into=*) into="${argument#--into=}" ;; esac
+  [ "$previous" = --into ] && into="$argument"
+  previous="$argument"
+done
+[ -z "$into" ] || sed -i "s/^version = 1\$/version = $EVAL_LOCK_VERSION/" "$into/skill-graft.lock"
 SH
+} > "$work/bin/skill-graft"
 chmod +x "$work/bin/skill-graft"
 export PATH="$work/bin:$PATH"
 
@@ -152,7 +161,7 @@ TOML
   mkdir -p "$dir/project/.claude/skills"
   cp -r "$repo/skills/graft-check" "$dir/project/.claude/skills/"
   if [[ -n "$built" ]]; then
-    (cd "$dir/project" && skill-graft build --no-install 2> /dev/null)
+    (cd "$dir/project" && skill-graft build --no-install)
   fi
   snapshot "$1" > "$dir/before"
 }
@@ -185,11 +194,12 @@ check() {  # <description> <command…>
 }
 report() { cat "$work/$scenario/${1:-report}"; }
 # A line naming both: a finding of that kind quoting that text.
-found() { report | grep -iF -- "$2" | grep -qiF -- "$1"; }
-has() { report "${2:-}" | grep -qiF -- "$1"; }
+# `> /dev/null`, not `-q`: an early exit would SIGPIPE the pipe, which pipefail reports.
+found() { report | grep -iF -- "$2" | grep -iF -- "$1" > /dev/null; }
+has() { report "${2:-}" | grep -iF -- "$1" > /dev/null; }
 lacks() { ! has "$@"; }
 # `skill-graft build` advised, not `build --into` narrated.
-advises_build() { report "${1:-}" | grep -qiP 'skill-graft build(?! --into)'; }
+advises_build() { report "${1:-}" | grep -iP 'skill-graft build(?! --into)' > /dev/null; }
 unchanged() { diff <(snapshot "$scenario") "$work/$scenario/before" > /dev/null; }
 
 for scenario in "${selected[@]}"; do
@@ -202,7 +212,7 @@ for scenario in "${selected[@]}"; do
       check "wrong target: format" found "wrong target" "format"
       check "rewrite: follow-up question" found rewrite "follow-up question"
       check "link: checklist" found link "checklist"
-      check "patched line not a rewrite" eval '! report | grep -i changelog | grep -i rewrite | grep -qviE "intended|patch"'
+      check "patched line not a rewrite" eval '! report | grep -i changelog | grep -i rewrite | grep -viE "intended|patch" > /dev/null'
       check "package unchanged" unchanged
       ;;
     clean)
