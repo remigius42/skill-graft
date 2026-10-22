@@ -15,11 +15,15 @@
 - [ ] 2.2 Add to `AGENTS.md` (Workflow) that archiving a change a user can notice adds its `CHANGELOG.md` entry
   under `[Unreleased]` in the archive commit; verify pre-commit is green
 
-## 3. Contributing
+## 3. README and contributing
 
-- [ ] 3.1 Add the `## Engagement` section to the end of `README.md`, worded as design.md quotes; verify pre-commit is
-  green
-- [ ] 3.2 Write `CONTRIBUTING.md` as design.md describes, linking `AGENTS.md`, `CONTEXT.md`, `evals/` and the
-  README's `## Engagement`; verify its setup steps in a fresh clone (`git clone` of this repository into a temporary
-  folder, `uv sync`, the `pre-commit install` line, `uv run pre-commit run --all-files`), and that pre-commit is
-  green; add new words to `.cspell.yaml`
+- [ ] 3.1 `git mv docs/development.md CONTRIBUTING.md`; add the OpenSpec loop, the links to `AGENTS.md` and
+  `CONTEXT.md`, and `lint-imports` to its hook list; fix its relative links for the new location, and point the
+  README's `## Development` link at it; verify its setup
+  steps in a fresh clone (`git clone` of this repository into a temporary folder, `uv sync`, both
+  `pre-commit install` lines, `uv run pre-commit run --all-files`), that no file outside `openspec/changes/archive/`
+  names `docs/development.md`, and that pre-commit is green
+- [ ] 3.2 Restructure `README.md` as design.md orders it: copyright line, `## Installation` moved up, a new
+  `## Usage`, `## Contributing` replacing `## Development`, lines 17 and 18 rejoined; verify the Usage scenario runs
+  as written with `HOME` at a temporary folder and `apm` 0.33.0 from the dev group, that every link resolves, and
+  that pre-commit is green; add new words to `.cspell.yaml`
