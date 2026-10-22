@@ -8,7 +8,7 @@
   `home / ".cache"` does not exist; verify it fails today (the fetch creates the cache). Green: add
   `compute.check_entries(config)` and call it first in `compute_hull`, before the `TemporaryDirectory`, updating
   the docstring; verify the new test and the existing clash tests pass and `pre-commit run --all-files` is green
-- [ ] 1.2 Red: in `tests/commands/test_update.py` add the "Entries clash before update fetches" scenario: the same
+- [x] 1.2 Red: in `tests/commands/test_update.py` add the "Entries clash before update fetches" scenario: the same
   two **Entries**, `mp` with a `ref`, `update mp`; assert it exits 1 naming both, `home / ".cache"` does not exist
   and `skill-graft.toml` is unchanged; verify it fails today. Green: call `compute.check_entries` in `_update`
   before the first `_tip`; verify the test passes and `pre-commit run --all-files` is green

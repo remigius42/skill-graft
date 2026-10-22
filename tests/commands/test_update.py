@@ -61,6 +61,25 @@ def test_other_source_without_a_ref(upstream: Upstream, capsys: Capsys) -> None:
     assert not paths.cache().exists()
 
 
+def test_entries_clash_before_update_fetches(
+    home: Path, upstream: Upstream, capsys: Capsys
+) -> None:
+    sha = upstream.commit({"tdd/SKILL.md": "# tdd\n"})
+    skill(home / "own" / "tdd")
+    config = write_config(
+        'entries = ["mp/tdd", "own/tdd"]\n'
+        + git_source("mp", upstream, f'ref = "{sha}"\n')
+        + '[sources.own]\npath = "~/own"\n'
+    )
+    text = config.read_text()
+
+    code, _, err = update(capsys, "mp")
+
+    assert code == 1 and "mp/tdd" in err and "own/tdd" in err
+    assert not (home / ".cache").exists()
+    assert config.read_text() == text
+
+
 @pytest.mark.parametrize("branch", ["main~3", "main@{1}", "a..b", "@{-1}"])
 def test_revision_syntax_as_branch(tmp_path: Path, capsys: Capsys, branch: str) -> None:
     write_config(f'[sources.mp]\ngit = "{tmp_path / "nowhere"}"\nbranch = "{branch}"\n')

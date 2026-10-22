@@ -52,6 +52,7 @@ def _update(loaded: Config, aliases: list[str], git_cache: Cache, write: bool) -
     for alias, source in selected.items():
         if source.branch is not None:
             _check_branch(alias, source.branch)
+    compute.check_entries(loaded)  # before any remote: compute_hull would be too late
     places: dict[tuple[str, str | None], str] = {}
     tips = {}
     for alias, source in selected.items():
