@@ -29,4 +29,4 @@ and is skipped when `apm` is not on `PATH`.
 `evals/graft-check/run.sh [scenario…]` runs the working copy of the `graft-check` skill headless with `claude -p` on
 synthetic packages and greps its reports. It is opt-in and costs tokens, so no hook or CI job runs it; run it when the
 skill changes. It needs `CLAUDE_CODE_OAUTH_TOKEN` (from `claude setup-token`) or `ANTHROPIC_API_KEY`. Scenarios and
-checks: [evals/graft-check/README.md](../evals/graft-check/README.md).
+checks: [evals/graft-check/README.md](evals/graft-check/README.md).

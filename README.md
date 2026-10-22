@@ -175,4 +175,4 @@ it, then run `update` again.
 
 ## Development
 
-See [docs/development.md](docs/development.md).
+See [CONTRIBUTING.md](CONTRIBUTING.md).
