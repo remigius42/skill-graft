@@ -116,8 +116,8 @@ What the skill can lean on already exists:
   - `--allowedTools` grants `Bash(skill-graft:*)`, `Bash(mktemp:*)`, `Bash(diff:*)`, file reads and searches, and
     subagents; headless, any other tool call is denied, not asked. `TMPDIR` also points into the temporary folder, apart
     from the eval **Package** and `XDG_CACHE_HOME`, since `--into` refuses a folder in a **Package** or the cache (and
-    in a path **Source**, such as the eval's `art`). `--add-dir` grants it, since it lies outside the project and its
-    reads would be denied.
+    in a path **Source**, such as the eval's `art`). `--add-dir` grants the whole temporary folder:
+    the throwaway builds, the cache and the sources lie outside the project, where reads and `diff` would be denied.
 
 ## Risks / Trade-offs
 

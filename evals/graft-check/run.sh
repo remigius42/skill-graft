@@ -173,8 +173,8 @@ snapshot() { (cd "$work/$1/project/.apm/skill-graft" && find . -type f -exec sha
 ask() {
   local dir="$work/$1" report="$work/$1/$2" code=0
   shift 2
-  # --add-dir: the throwaway builds lie under TMPDIR, outside the project.
-  (cd "$dir/project" && claude -p "$@" --add-dir "$TMPDIR" \
+  # --add-dir: the throwaway builds, the cache and the sources lie outside the project.
+  (cd "$dir/project" && claude -p "$@" --add-dir "$work" \
     --allowedTools "Bash(skill-graft:*)" "Bash(mktemp:*)" "Bash(diff:*)" Read Grep Glob Task Agent) \
     > "$report" || code=$?
   echo "=== $report" >&2
