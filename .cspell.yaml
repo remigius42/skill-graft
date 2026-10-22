@@ -20,6 +20,7 @@ words:
   - copytree
   - dataviz
   - delenv
+  - docstrings
   - evals
   - fcntl
   - followlinks
@@ -65,11 +66,13 @@ words:
   - rmtree
   - samefile
   - scandir
+  - setattr
   - shutil
   - SIGPIPE
   - statusline
   - stdlib
   - strerror
+  - subpackages
   - symref
   - testpaths
   - tomlkit
