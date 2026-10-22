@@ -87,8 +87,10 @@ What the skill can lean on already exists:
   - `HOME` and `XDG_CACHE_HOME` point into the temporary folder, as AGENTS.md asks of anything that runs `apm`,
     though nothing here does: the real `~/.claude` and `~/.cache/skill-graft` stay untouched, the user's
     settings, hooks and personal skills (a deployed `graft-check` among them) cannot change the run, and the
-    working copy in the project's `.claude/skills/` is the only `graft-check`. `claude` then logs in through
-    `ANTHROPIC_API_KEY`, which the script requires.
+    working copy in the project's `.claude/skills/` is the only `graft-check`. With no `~/.claude` login to read,
+    `claude` takes its credentials from the environment: `CLAUDE_CODE_OAUTH_TOKEN` (from `claude setup-token`,
+    billed to the subscription) or `ANTHROPIC_API_KEY`. The script needs one of them and, with neither, stops
+    before building anything, pointing to `claude setup-token`.
   - `--allowedTools` grants `Bash(skill-graft:*)`, `Bash(mktemp:*)`, file reads and searches, and subagents;
     headless, any other tool call is denied, not asked. `TMPDIR` also points into the temporary folder, apart
     from the eval **Package**, its **Source** and `XDG_CACHE_HOME`, since `--into` refuses a folder in any of
