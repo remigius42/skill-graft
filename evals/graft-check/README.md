@@ -40,7 +40,7 @@ question"; a relative link into a renamed skill's folder), plus a user patch add
 `HOME`, `XDG_CACHE_HOME` and `TMPDIR` point into the temporary folder, so the real `~/.claude`, `~/.apm` and
 `~/.cache/skill-graft` are never read or written, and no personal setting, hook or deployed skill changes the run.
 `--allowedTools` grants `skill-graft`, `mktemp`, `diff`, reads, searches and subagents; headless, any other tool call
-is denied.
+is denied. `--add-dir` grants `TMPDIR`, where the throwaway builds lie, outside the project.
 
 The script prints each report, then one `ok` or `FAILED` line per check, and exits non-zero when any check fails or
 `claude` does. A finding counts when one line of the report holds its text and its kind. Read the reports too: the

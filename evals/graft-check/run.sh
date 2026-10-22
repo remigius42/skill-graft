@@ -173,7 +173,8 @@ snapshot() { (cd "$work/$1/project/.apm/skill-graft" && find . -type f -exec sha
 ask() {
   local dir="$work/$1" report="$work/$1/$2" code=0
   shift 2
-  (cd "$dir/project" && claude -p "$@" \
+  # --add-dir: the throwaway builds lie under TMPDIR, outside the project.
+  (cd "$dir/project" && claude -p "$@" --add-dir "$TMPDIR" \
     --allowedTools "Bash(skill-graft:*)" "Bash(mktemp:*)" "Bash(diff:*)" Read Grep Glob Task Agent) \
     > "$report" || code=$?
   echo "=== $report" >&2
@@ -199,7 +200,9 @@ found() { report | grep -iF -- "$2" | grep -iF -- "$1" > /dev/null; }
 has() { report "${2:-}" | grep -iF -- "$1" > /dev/null; }
 lacks() { ! has "$@"; }
 # `skill-graft build` advised, not `build --into` narrated.
-advises_build() { report "${1:-}" | grep -iP 'skill-graft build(?! --into)' > /dev/null; }
+advises_build() {
+  report "${1:-}" | grep -iP 'skill-graft build(?! --into)' | grep -viE "don't|do not|no need|not need" > /dev/null
+}
 unchanged() { diff <(snapshot "$scenario") "$work/$scenario/before" > /dev/null; }
 
 for scenario in "${selected[@]}"; do
