@@ -30,3 +30,11 @@ schema: spec-driven
 #     archive:
 #       guidance:
 #         - Summarize the archive outcome before finishing
+
+operations:
+  archive:
+    guidance:
+      - >-
+        In the archive commit, add the change's entry to CHANGELOG.md under [Unreleased] when it changes what a
+        user sees: say what the user sees, in CONTEXT.md's terms, not which change brought it. Refactors and
+        tooling get none.

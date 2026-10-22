@@ -13,7 +13,7 @@
   `[Unreleased]`, seeded from the archived OpenSpec changes as design.md decides; verify each entry against the README
   and `openspec/specs/`, that each says what a user sees rather than which change brought it, and that pre-commit is
   green; set MD024 to `siblings_only: true` in `.markdownlint.yaml`; add new words to `.cspell.yaml`
-- [ ] 2.2 Add to `AGENTS.md` (Workflow) that a commit changing what a user sees adds its `CHANGELOG.md` entry under
+- [x] 2.2 Add to `AGENTS.md` (Workflow) that a commit changing what a user sees adds its `CHANGELOG.md` entry under
   `[Unreleased]`, for an OpenSpec change in its archive commit, and repeat it under `operations.archive.guidance` in
   `openspec/config.yaml`; verify `openspec instructions archive --change project-hygiene --json` returns it, and that
   pre-commit is green
