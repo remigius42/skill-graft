@@ -107,8 +107,8 @@ if [[ "$status" != 0 ]]; then
   echo "run.sh: claude exited $status" >&2
 fi
 
-check() {  # <kind> <text the finding quotes>: both in the report
-  if grep -qiF -- "$2" "$report" && grep -qiF -- "$1" "$report"; then
+check() {  # <kind> <text the finding quotes>: both on one line of the report
+  if grep -iF -- "$2" "$report" | grep -qiF -- "$1"; then
     echo "run.sh: found $1 ($2)" >&2
   else
     echo "run.sh: MISSING $1 ($2)" >&2

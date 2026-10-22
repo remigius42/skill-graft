@@ -26,6 +26,6 @@ It builds, in a new temporary folder:
 `--allowedTools` grants `skill-graft`, `mktemp`, `diff`, reads, searches and subagents; headless, any other tool
 call is denied.
 
-The script prints the report, then one line per defect: `found` when the report holds the defect's text and its
-kind, `MISSING` otherwise. It exits non-zero when `claude` fails, a defect is missing, or the eval package's files
+The script prints the report, then one line per defect: `found` when a line of the report holds the defect's text and
+its kind, `MISSING` otherwise. It exits non-zero when `claude` fails, a defect is missing, or the eval package's files
 changed. Read the report too: the grep only shows that each finding is named.
