@@ -2,7 +2,7 @@
 
 ## 1. Report an Entry clash before reading Sources
 
-- [ ] 1.1 Red: in `tests/cli/test_build.py`, beside `test_clash_is_reported_before_searching`, add the "Entries
+- [x] 1.1 Red: in `tests/cli/test_build.py`, beside `test_clash_is_reported_before_searching`, add the "Entries
   clash before any fetch" scenario: an `Upstream` with `tdd/SKILL.md`, `own/tdd` in a path **Source**,
   `[sources.mp]` at that commit's `ref`, uncached; assert `build` exits 1, `err` names `mp/tdd` and `own/tdd`, and
   `home / ".cache"` does not exist; verify it fails today (the fetch creates the cache). Green: add

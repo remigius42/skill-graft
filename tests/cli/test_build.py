@@ -3,7 +3,7 @@ import tempfile
 from pathlib import Path
 
 import pytest
-from conftest import FakeApm, skill, write_config
+from conftest import FakeApm, Upstream, skill, write_config
 
 from skill_graft.cli import main
 from skill_graft.pipeline import compute, config, lock, vendor
@@ -168,6 +168,25 @@ def test_clash_is_reported_before_searching(
     assert main(["build", "--no-install"]) == 1
 
     assert "deployed name 'tdd'" in capsys.readouterr().err
+
+
+def test_entries_clash_before_any_fetch(
+    home: Path, tmp_path: Path, capsys: pytest.CaptureFixture[str]
+) -> None:
+    upstream = Upstream(tmp_path / "up")
+    sha = upstream.commit({"tdd/SKILL.md": "# tdd\n"})
+    skill(home / "own" / "tdd")
+    write_config(
+        'entries = ["mp/tdd", "own/tdd"]\n'
+        f'[sources.mp]\ngit = "{upstream.url}"\nref = "{sha}"\n'
+        '[sources.own]\npath = "~/own"\n'
+    )
+
+    assert main(["build", "--no-install"]) == 1
+
+    err = capsys.readouterr().err
+    assert "mp/tdd" in err and "own/tdd" in err
+    assert not (home / ".cache").exists()
 
 
 def test_clash_ignores_case(home: Path, capsys: pytest.CaptureFixture[str]) -> None:

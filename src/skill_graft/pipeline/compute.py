@@ -31,6 +31,13 @@ def check_refs(config: Config, given: Iterable[str]) -> None:
             )
 
 
+def check_entries(config: Config) -> None:
+    """The entries' deployed names are unique: from the config alone, no source read."""
+    rename.check_unique(
+        config, {entry: deployed(config, entry) for entry in config.entries}
+    )
+
+
 def _folders(config: Config, cache: Cache, refs: dict[str, str]) -> dict[str, Path]:
     """Every declared source's folder: git ones at `refs`, else their ref.
 
@@ -113,16 +120,14 @@ def compute_hull(
     """The hull, its skills found and checked for stray symlinks and name clashes.
 
     Reads every source, git ones at `refs`, else their ref, through `cache`, by
-    default the user's. Clashing entries are reported before anything is searched.
+    default the user's. Clashing entries are reported before any source is read.
     Patched copies go in a temporary folder removed on exit: a patched skill's
     path in `skills` is valid only inside the `with`.
     """
+    check_entries(config)
     with tempfile.TemporaryDirectory(prefix="skill-graft-") as work:
         cache = Cache(paths.cache()) if cache is None else cache
         folders = _folders(config, cache, refs or {})
-        rename.check_unique(
-            config, {entry: deployed(config, entry) for entry in config.entries}
-        )
         result = hull.walk(
             config, _indexes(config, folders), _roots(config, folders), Path(work)
         )
