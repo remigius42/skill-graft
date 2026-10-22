@@ -57,10 +57,11 @@ From the lock, for each **Skill** to check (`[[skills]]`, or only the arguments)
   - A path **Source**'s root is `[sources.<alias>] path`; a relative one is relative to the **Package**.
   - A git **Source**'s root: run `skill-graft why <skill id>` for one of its **Skills**; the last line is
     `upstream: <absolute folder>`; take the lock's `upstream` off its end. Once per git **Source**.
-- **Patches**: each file in the **Skill**'s `patches`, relative to the **Package**. Read them as text; the lines they
-  change are intended.
+- **Patches**: each file in the **Skill**'s `patches`, relative to the **Package** unless absolute or starting with
+  `~`. Read them as text; the lines they change are intended.
 - **Written names**: `skill-graft tree` prints each edge as `<target> (<as written>[, prose][, bind])`, the target
-  followed by `as <deployed name>` when renamed. The lock's `[[edges]]` hold targets only.
+  followed by `as <deployed name>` when renamed. It shows one edge per target and kind, the first written name, and a
+  prose edge only when rewritten; the lock's `[[edges]]` hold targets only.
 
 Done when every **Skill** to check has its vendored copy, **Upstream** folder and patches, and you hold the tree.
 
@@ -68,7 +69,8 @@ Done when every **Skill** to check has its vendored copy, **Upstream** folder an
 
 Give each **Skill** to check its own subagent: its **Skill ID**, vendored copy, **Upstream** folder, patch files, the
 lock's path, this file's path with "read its Kinds section", and the report shape below. Without subagents, check the
-**Skills** one by one yourself. Meanwhile, judge **wrong target** for each tree edge from a checked **Skill**.
+**Skills** one by one yourself. Meanwhile, judge **wrong target** for each name the tree shows from a checked
+**Skill**, at every use in its **Upstream** text.
 
 A subagent reports every finding of the per-**Skill** kinds, or `none`:
 
@@ -80,7 +82,7 @@ kind: missed | false | rewrite | link
 why: <one sentence>
 ```
 
-Done when every checked **Skill** has a report and every edge from one has a **wrong target** verdict.
+Done when every checked **Skill** has a report and every use of those names has a **wrong target** verdict.
 
 ## Kinds
 
@@ -96,26 +98,26 @@ is one of five kinds; the first four are judged per **Skill**:
   Missed: a renamed **Skill**'s name left as it was where it means that **Skill**.
 - **link**: a relative link or path that works in the **Upstream** folder and breaks in the vendored copy:
   `../<other>/<file>.md` into another **Skill**'s folder, now under another name or not vendored.
-- **wrong target**, judged from the tree: a **Reference** whose written name, read in its **Upstream** sentence, means
-  another **Skill** than its target: `/<name>` from **Source** `a` means a **Skill** `a` lacks, and resolved to an
-  unrelated `b/<name>`; or a **Bind** sends it astray.
+- **wrong target**, judged from the tree's names at each of their uses: a **Reference** whose written name, read in its
+  **Upstream** sentence, means another **Skill** than its target: `/<name>` from **Source** `a` means a **Skill** `a`
+  lacks, and resolved to an unrelated `b/<name>`; or a **Bind** sends it astray.
 
 ## 4. Report
 
 List each finding with its **Skill**, file, text, kind, and a proposed fix:
 
-| Kind         | Fix                                                                                                                            |
-| ------------ | ------------------------------------------------------------------------------------------------------------------------------ |
-| missed       | `skill-graft add <skill id>` for a **Skill** outside the **Hull**; a **Patch** writing `/<name>` where it must follow a rename |
-| false        | `skill-graft bind <alias>/<name> false`, or a **Patch**                                                                        |
-| wrong target | `skill-graft bind <alias>/<name> <skill id>`, `skill-graft unbind <alias>/<name>` for a wrong **Bind**, or a **Patch**         |
-| rewrite      | `skill-graft bind <alias>/<name> false` for a word, or a **Patch**                                                             |
-| link         | a **Patch** of the link                                                                                                        |
+| Kind         | Fix                                                                                                                                                         |
+| ------------ | ----------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| missed       | a **Patch** writing `/<name>`: it pulls the **Skill** in and follows its **Deployed name**; `skill-graft add <skill id>` when it deploys under its own name |
+| false        | `skill-graft bind <alias>/<name> false`, or a **Patch**                                                                                                     |
+| wrong target | `skill-graft bind <alias>/<name> <skill id>`, `skill-graft unbind <alias>/<name>` for a wrong **Bind**, or a **Patch**                                      |
+| rewrite      | `skill-graft bind <alias>/<name> false` for a word, or a **Patch**                                                                                          |
+| link         | a **Patch** of the link                                                                                                                                     |
 
-A **Bind** is source-wide. Before proposing one for `<name>` from `<alias>`, search the **Upstream** text of every
-**Hull** **Skill** of `<alias>` for `<name>` in each form: `/<name>`, `Skill(<name>)`, the name in a code span, the
-bare name. Propose the **Bind** only when every match needs it; when some are right, propose a **Patch** of the
-**Skill** holding the wrong one.
+A **Bind** is source-wide. Before proposing one for `<name>` from `<alias>`, search the **Upstream** text, plus the
+lines its patches add, of every **Hull** **Skill** of `<alias>` for `<name>` in each form: `/<name>`, `Skill(<name>)`,
+the name in a code span, the bare name. Propose the **Bind** only when every match needs it; when some are right,
+propose a **Patch** of the **Skill** holding the wrong one.
 
 With no finding, say the **Check** found nothing and go to step 6.
 
@@ -128,9 +130,10 @@ Take the fixes one at a time: ask, and apply only on yes.
 - `add`, `bind` and `unbind` write only a config that resolves.
 - A **Patch**, with `<package>` the **Package** path and `<n>` a new patch name:
   1. `cp -rL <upstream folder> base && rm -rf base/.git` in a new `mktemp -d` folder.
-  1. Apply the **Skill**'s patches in order: `(cd base && git apply -p1 <package>/<patch>)`.
+  1. Apply the **Skill**'s patch files (step 2) in order: `(cd base && git apply -p1 <patch file>)`.
   1. `cp -r base edited`, edit the files in `edited/`, keeping `name:` as it is.
-  1. `mkdir -p <package>/patches/`, then `LC_ALL=C diff -ruN base/ edited/ > <package>/patches/<n>.patch`.
+  1. `mkdir -p <package>/patches/`, then `LC_ALL=C diff -ruN base/ edited/ > <package>/patches/<n>.patch`; its exit
+     code 1 means it wrote a diff.
   1. Append `"patches/<n>.patch"` to the **Skill**'s list under `[patches]` in the **Package**'s `skill-graft.toml`,
      creating the key or the table if missing. Note which you created.
 
