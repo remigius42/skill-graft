@@ -20,7 +20,7 @@
 
 ## 3. README and contributing
 
-- [ ] 3.1 `git mv docs/development.md CONTRIBUTING.md`; add the OpenSpec loop and the links to `AGENTS.md` and
+- [x] 3.1 `git mv docs/development.md CONTRIBUTING.md`; add the OpenSpec loop and the links to `AGENTS.md` and
   `CONTEXT.md`; replace its hook list with one sentence pointing to `.pre-commit-config.yaml`; fix its relative links
   for the new location, and point the README's `## Development` link at it; add new words to `.cspell.yaml`; commit,
   then verify the setup steps in a fresh clone of that commit
