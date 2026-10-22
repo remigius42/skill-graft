@@ -299,3 +299,60 @@ def test_header_first_when_the_hull_is_empty(home: Path) -> None:
 
     assert render().startswith("# Written by skill-graft; never read. Do not edit.\n")
     assert parsed()["skills"] == []
+
+
+def test_version_1_keys(home: Path, tmp_path: Path) -> None:
+    upstream = Upstream(tmp_path / "up")
+    tdd = "# tdd\n/g, then `diagnosing-bugs`\n"
+    sha = upstream.commit(
+        {
+            "pack/tdd/SKILL.md": tdd,
+            "pack/diagnosing-bugs/SKILL.md": "# diagnosing-bugs\n",
+        }
+    )
+    skill(home / "own" / "chisel")
+    skill(home / "own" / "notes")
+    package = home / ".apm" / "skill-graft"
+    (package / "patches").mkdir(parents=True)
+    (package / "patches" / "tdd.patch").write_bytes(
+        make_patch(tmp_path, {"SKILL.md": tdd}, {"SKILL.md": tdd + "patched\n"})
+    )
+    write_config(
+        'entries = ["cp/tdd", "own/chisel"]\n'
+        f'[sources.cp]\ngit = "{upstream.url}"\nref = "{sha}"\nsubdirectory = "pack"\n'
+        '[sources.own]\npath = "~/own"\n'
+        '[rename]\n"cp/tdd" = "cp-tdd"\n'
+        '[patches]\n"cp/tdd" = ["patches/tdd.patch"]\n'
+        '[bind]\n"cp/g" = "own/notes"\n'
+    )
+
+    lock_data = parsed()
+    skills = {s["id"]: s for s in lock_data["skills"]}
+    keys = {
+        "top": set(lock_data),
+        "git source": set(lock_data["sources"]["cp"]),
+        "path source": set(lock_data["sources"]["own"]),
+        "renamed, patched skill": set(skills["cp/tdd"]),
+        "plain entry": set(skills["own/chisel"]),
+        "bound edge": set(lock_data["edges"][0]),
+        "suggestion": set(lock_data["suggestions"][0]),
+    }
+
+    assert lock_data["version"] == 1
+    assert lock_data["edges"][0]["bind"] is True
+    assert keys == {
+        "top": {"version", "sources", "skills", "edges", "suggestions"},
+        "git source": {"git", "ref", "subdirectory"},
+        "path source": {"path"},
+        "renamed, patched skill": {
+            "id",
+            "entry",
+            "deployed",
+            "upstream",
+            "patches",
+            "hash",
+        },
+        "plain entry": {"id", "entry", "upstream", "hash"},
+        "bound edge": {"from", "to", "kind", "bind"},
+        "suggestion": {"id", "from"},
+    }, "the lock's layout changed: raise its `version` (and the graft-check skill's)"

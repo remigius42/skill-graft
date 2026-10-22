@@ -2,7 +2,7 @@
 
 ## 1. Lock version
 
-- [ ] 1.1 Pin the lock's version 1 keys in `tests/test_lock.py` (a renamed, patched **Skill** from a git **Source** with
+- [x] 1.1 Pin the lock's version 1 keys in `tests/test_lock.py` (a renamed, patched **Skill** from a git **Source** with
   a `subdirectory`, a plain **Entry** from a path **Source**, a bound edge, a suggestion), its failure message saying to
   raise `version`; verify it passes against today's lock writer and goes red when a key is added to the writer
   (reverted after)
