@@ -64,8 +64,8 @@ From the lock, for each **Skill** to check (`[[skills]]`, or only the arguments)
 - **Patches**: each file in the **Skill**'s `patches`, relative to the **Package** unless absolute or starting with
   `~`. Read them as text; the lines they change are intended.
 - **Written names**: `skill-graft tree` prints each edge as `<target> (<as written>[, prose][, bind])`, the target
-  followed by `as <deployed name>` when renamed. It shows one edge per target and kind, the first written name, and a
-  prose edge only when rewritten; the lock's `[[edges]]` hold targets only.
+  followed by `as <deployed name>` when renamed. It shows one edge per target, kind and bind, the first written name,
+  and a prose edge only when rewritten; the lock's `[[edges]]` hold targets only.
 
 Done when every **Skill** to check has its vendored copy, **Upstream** folder and patches, and you hold the tree.
 
