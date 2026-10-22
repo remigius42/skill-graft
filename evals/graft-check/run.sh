@@ -36,11 +36,11 @@ up="$work/up"
 write "$up/lead/SKILL.md" <<'MD'
 # lead
 
-Plan the change with /code-style in mind. When the plan is done, run the notes skill to record it.
+Plan the change with /code-style in mind, and file leftovers with /follow-up. When the plan is done, run the notes skill to record it.
 
 Fetch the open issues from the tracker's API with `GET /review`, then run /format to format the code.
 
-Keep the code-style consistent across files. See [the checklist](../code-style/checklist.md).
+Answer every follow-up question from the reviewer. See [the checklist](../code-style/checklist.md).
 MD
 write "$up/code-style/SKILL.md" <<'MD'
 # code-style
@@ -49,6 +49,11 @@ The house style for code.
 MD
 write "$up/code-style/checklist.md" <<'MD'
 - Names say what a thing is.
+MD
+write "$up/follow-up/SKILL.md" <<'MD'
+# follow-up
+
+Files an issue for each task left over from a change.
 MD
 write "$up/notes/SKILL.md" <<'MD'
 # notes
@@ -113,7 +118,7 @@ check() {  # <kind> <text the finding quotes>: both in the report
 check missed "notes skill"
 check false "GET /review"
 check "wrong target" "format"
-check rewrite "consistent"
+check rewrite "follow-up question"
 check link "checklist"
 if [[ "$(snapshot)" != "$before" ]]; then
   echo "run.sh: the eval package changed" >&2

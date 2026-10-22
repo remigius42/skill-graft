@@ -16,7 +16,7 @@ It builds, in a new temporary folder:
 
 - a git source `up`, prefixed `up-`, committed with `GIT_AUTHOR_*` and `GIT_COMMITTER_*` set, whose entry `up/lead`
   holds one defect of each kind but one: a call written in words ("run the notes skill"), a false reference
-  (`` `GET /review` ``), a prose word the prefix rewrites (`code-style`), and a relative link into a renamed skill's
+  (`` `GET /review` ``), a prose word the prefix rewrites ("follow-up question"), and a relative link into a renamed skill's
   folder;
 - a path source `art` whose `format` is not what `lead` means by `/format`: the wrong target;
 - a project package over both, built in place with `--no-install`, and the skill in the project's `.claude/skills/`.
