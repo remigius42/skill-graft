@@ -10,7 +10,7 @@
 - [x] 1.2 Move `tree`, `suggestions`, `announce_suggestions`, `shown_edges`, `node_label`, `edge_label` from `lock.py`
   to `explain.py`, the last three private; update the module docstrings and callers; verify `lock.py` no longer
   imports `notice` or `Edge`, `explain.py` no longer imports `lock`, and pre-commit is green
-- [ ] 1.3 Make `discovery.skill_folders`, `paths.package_in`, `explain.outside` and `git.call` private; verify
+- [x] 1.3 Make `discovery.skill_folders`, `paths.package_in`, `explain.outside` and `git.call` private; verify
   `grep` finds no use outside their modules and pre-commit is green
 
 ## 2. Layer packages

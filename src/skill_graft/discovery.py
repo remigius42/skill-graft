@@ -13,7 +13,7 @@ from skill_graft.errors import SkillGraftError
 COMMENT = re.compile(r"\s+#.*$")
 
 
-def skill_folders(source: Path, confined: bool = False) -> list[Path]:
+def _skill_folders(source: Path, confined: bool = False) -> list[Path]:
     """Every folder under `source` holding a `SKILL.md`, not looking inside one.
 
     Follows symlinked folders, visiting each resolved folder once, and skips `.git`,
@@ -101,7 +101,7 @@ class Index:
 
 def index(source: Path, confined: bool = False) -> Index:
     skills = Index({}, {}, {})
-    for folder in skill_folders(source, confined):
+    for folder in _skill_folders(source, confined):
         try:
             name = read_name(folder)
         except SkillGraftError as error:

@@ -19,7 +19,7 @@ def find(hull: Hull, text: str, parse: Callable[[str], SkillId]) -> SkillId:
         for skill in hull.skills:  # in the hull, it exists: no need to look
             if str(skill) == text:
                 return skill
-        raise SkillGraftError(outside(hull, parse(text)))
+        raise SkillGraftError(_outside(hull, parse(text)))
     for skill, deployed in hull.deployed.items():
         if deployed == text:
             return skill
@@ -30,11 +30,11 @@ def find(hull: Hull, text: str, parse: Callable[[str], SkillId]) -> SkillId:
                 f"`{deployed}`; try `skill-graft why {skill}`"
             )
     if suggested := sorted(s for s in hull.suggestions if s.name == text):
-        raise SkillGraftError("; ".join(outside(hull, s) for s in suggested))
+        raise SkillGraftError("; ".join(_outside(hull, s) for s in suggested))
     raise SkillGraftError(f"no skill in the hull deploys as `{text}`")
 
 
-def outside(hull: Hull, skill: SkillId) -> str:
+def _outside(hull: Hull, skill: SkillId) -> str:
     """Why `skill` is not in the hull, and how to add it."""
     mentions = ""
     if skill in hull.suggestions:

@@ -30,14 +30,14 @@ def run(
     input: bytes | None = None,
 ) -> bytes:
     """Runs `git [--git-dir repo] args`; a failure names `context` and git's error."""
-    result = call(*(["--git-dir", str(repo)] if repo else []), *args, input=input)
+    result = _call(*(["--git-dir", str(repo)] if repo else []), *args, input=input)
     if result.returncode != 0:
         stderr = result.stderr.decode(errors="replace").strip()
         raise SkillGraftError(f"{context}: `git {_subcommand(args)}` failed: {stderr}")
     return result.stdout
 
 
-def call(
+def _call(
     *args: str,
     input: bytes | None = None,
     cwd: Path | None = None,
@@ -76,7 +76,7 @@ def apply(folder: Path, patch: bytes, home: Path) -> tuple[bool, str]:
     for theirs), the system's or any passed in the environment; and no repository
     above `folder` is looked for. A hunk that fails leaves a `.rej` file.
     """
-    result = call(
+    result = _call(
         "apply",
         "-p1",
         "--reject",
