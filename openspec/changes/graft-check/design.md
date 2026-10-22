@@ -45,20 +45,22 @@ What the skill can lean on already exists:
   discovery to `skills/`.
 - **Its text names no skill.** Examples in it use placeholders, not `/tmp` or real names, so its **Hull** stays
   itself alone; its own name, in its usage line, is no **Reference**, since the walk drops self-references. The
-  pytest guard copies the working tree's `skills/`, what the installed **Source** holds, into a temporary path
-  **Source**: the working tree, so a `SKILL.md` not yet staged counts, test-first and without `.git`.
+  pytest guard commits a copy of the working tree's `skills/` into a temporary git repository and declares it as a
+  git **Source** with `subdirectory = "skills"`, as the template installs it: discovery confines a git **Source**
+  to its commit, which a path **Source** would not, and the working tree means a `SKILL.md` not yet staged counts,
+  test-first and without `.git`.
 - **Upstream folders: one `why` per git Source.** A path **Source**'s folder is in the lock (`sources.<alias>.path`,
   in project scope relative to the **Package**). A git **Source**'s `upstream` is relative to a cache export the
   skill cannot locate portably: `why` prints one **Skill**'s absolute folder, and minus the lock's relative
   `upstream` that gives the root for all its **Skills**. Each `why` resolves the whole config, so once per git
   **Source**, never per **Skill**.
-- **Patched Skills are compared with their Patches applied.** `why` and the lock's `upstream` name the folder before
-  any **Patch**. The rewrite and link kinds diff it against the vendored copy, so the skill applies the lock's
-  `patches` for that **Skill** first, as the README recipe builds its `base`, and the user's hunks never read as
-  defects.
+- **A patched Skill's hunks are read, not applied.** `why` and the lock's `upstream` name the folder before any
+  **Patch**. The rewrite and link kinds compare it with the vendored copy, so the skill reads the lock's `patches`
+  for that **Skill** and counts the lines they change as intended. Applying them would take `cp`, `git apply` and
+  writes, tools a read-only look should not need.
 - **Fixes go through the CLI wherever one exists.** `add`, `bind` and `unbind` already refuse what does not
   resolve, so only a **Patch** needs undoing by hand when the rebuild fails: its file, its own list item, and the
-  key only when the skill created it.
+  key and the `[patches]` table only when the skill created them.
 - **A Bind is source-wide, so it is checked against the text.** Before proposing `bind <alias>/<name> false` or a
   redirect, the skill searches the **Upstream** text of that **Source**'s **Hull** **Skills** for the name in
   each **Reference** form. The lock's edges cannot answer this: they hold targets, not the names written, and a
@@ -83,14 +85,17 @@ What the skill can lean on already exists:
   with a skill that reads a version 2. The update advice names no alias: the checked **Package** may not be the
   one that installed `graft-check` (a user-scope install checking a project), so it points the user at the
   **Source** they installed it from, in that **Package**.
-- **One subagent per checked Skill**, each reporting findings of the per-skill kinds (missed, false, rewrite,
-  link) in a fixed shape; the main agent judges wrong targets from the lock's edges, merges, and proposes. Without
-  subagents, the main agent goes through the **Skills** one by one.
+- **One subagent per checked Skill**, each reporting findings of the per-skill kinds (missed, false, rewrite, link) in a
+  fixed shape; the main agent judges wrong targets from `skill-graft tree`, which names each edge's **Reference** as
+  written (the lock's edges hold targets only), merges, and proposes. Without subagents, the main agent goes through the
+  **Skills** one by one.
 - **Template block is a commented `[sources.skill-graft]`** with `subdirectory = "skills"`, plus the two
   commands to run, not an `entries` line: the template's example `entries` line is already there, and `add`
-  writes the **Entry** once `update` has set the `ref`.
+  writes the **Entry** once `update` has set the `ref`. The block says that until then every `build` fails, not
+  only graft-check's, since a git **Source** without a `ref` blocks the whole **Package**.
 - **Eval, not test, for the agent.** `evals/graft-check/run.sh` builds a project **Package** in a temporary folder
-  (a git **Source** made with `git init`, so no network), plants one defect per kind, and runs `claude -p` there,
+  (a git **Source** made with `git init` and committed with `GIT_AUTHOR_*` and `GIT_COMMITTER_*` set, since the
+  temporary `HOME` has no git identity; no network), plants one defect per kind, and runs `claude -p` there,
   then greps the report. A project **Package** is found before the user's, so the real `~/.apm` is never read or
   written.
   - `HOME` and `XDG_CACHE_HOME` point into the temporary folder, as AGENTS.md asks of anything that runs `apm`,

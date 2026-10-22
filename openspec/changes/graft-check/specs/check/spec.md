@@ -14,7 +14,8 @@ This repository SHALL hold the skill at `skills/graft-check/SKILL.md`, a **Skill
 
 #### Scenario: Alone in its hull
 
-- **WHEN** a **Source** `sg` holds this repository's `skills/` folder and `entries = ["sg/graft-check"]`
+- **WHEN** a git **Source** `sg` with `subdirectory = "skills"` holds a commit of this repository's `skills/`
+  folder, and `entries = ["sg/graft-check"]`
 - **THEN** `skill-graft resolve` succeeds, the **Hull** is `sg/graft-check` alone, and it prints no warning and
   no suggestion
 
@@ -40,9 +41,10 @@ The skill SHALL first make a new, empty folder under the system's temporary fold
 `skill-graft build --into` with it, reading the **Package** from the `package:` line. A failing build SHALL end the
 **Check** with the build's error. It SHALL then read the lock and the vendored copies in that folder, and each
 **Skill**'s **Upstream** folder: under a path **Source**'s folder as the lock records it, and for a git **Source**
-under its root, found once through `skill-graft why` on one of its **Skills**. A **Skill** the lock lists
-`patches` for SHALL be compared with its **Upstream** text with those **Patches** applied, so their hunks count as
-intended. The **Package**'s own `.apm/skills/` and lock SHALL
+under its root, found once through `skill-graft why` on one of its **Skills**. For a **Skill** the lock lists
+`patches` for, the skill SHALL read those patch files and count the lines they change as intended, applying
+nothing. It SHALL take which written name each edge comes from from `skill-graft tree`, which prints every edge with
+the **Reference** as written. The **Package**'s own `.apm/skills/` and lock SHALL
 change only through accepted fixes.
 
 #### Scenario: Build fails
@@ -92,7 +94,7 @@ SHALL propose a **Patch** of the **Skill** that holds the wrong one.
 
 #### Scenario: One false match among real calls
 
-- **WHEN** `mp/a` calls `/grill` and `mp/b` writes `/grill` as a URL path, not a call
+- **WHEN** `mp/a` calls `/grill` and `mp/b` writes `` `GET /grill` ``, an HTTP route, not a call
 - **THEN** the skill proposes a **Patch** of `mp/b`, not `skill-graft bind mp/grill false`
 
 ### Requirement: Fixes only once accepted
@@ -116,7 +118,8 @@ the vendored **Skills**.
 ### Requirement: A failed patch is undone
 
 When the build after a **Patch** fails, the skill SHALL delete the patch file and remove only its own item from
-the **Skill**'s `[patches]` list, and the key only if the skill created it, leaving the user's earlier **Patches**.
+the **Skill**'s `[patches]` list, the key only if the skill created it, and the `[patches]` table only if the skill
+created that, leaving the user's earlier **Patches** and `skill-graft.toml` otherwise as it was.
 
 #### Scenario: Earlier patches kept
 
@@ -130,8 +133,8 @@ The skill SHALL NOT run `skill-graft build` without `--into`, nor `apm`. It SHAL
 `skill-graft build` when a fix was accepted, or when its first build's `.apm/skills/` differs from the **Package**'s, so
 an in-place build would change the vendored copies. Commands that write only the lock (`add`, `remove`, `rename`,
 `bind`, `unbind`, `update`, `resolve`) leave the **Package**'s lock current and its vendored copies behind, so the
-comparison is of the folders, not the locks. Otherwise it SHALL say the **Package** is as the config builds it, and that
-it cannot tell whether APM deployed that.
+comparison is of the folders, not the locks. A **Package** with no `.apm/skills/` yet differs. Otherwise it SHALL say
+the **Package** is as the config builds it, and that it cannot tell whether APM deployed that.
 
 #### Scenario: After a fix
 
@@ -146,6 +149,11 @@ it cannot tell whether APM deployed that.
 #### Scenario: Lock current, vendored copies behind
 
 - **WHEN** the user ran `skill-graft add mp/x` but no `build`, and declines every fix
+- **THEN** the skill's last message tells the user to run `skill-graft build`
+
+#### Scenario: Never built
+
+- **WHEN** the **Package** holds no `.apm/skills/` and the user declines every fix
 - **THEN** the skill's last message tells the user to run `skill-graft build`
 
 #### Scenario: Nothing to build
