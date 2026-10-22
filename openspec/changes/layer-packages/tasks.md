@@ -25,7 +25,7 @@
   design.md, renaming `test_init` and `test_git_apply`, and add `tests` to `mypy_path`; verify
   `pre-commit run mypy --files tests/cli/test_build.py` passes, and `pytest --collect-only -q` reports the same number of
   tests as before the move and pre-commit is green
-- [ ] 2.3 Add `import-linter` to the dev group, its exhaustive `layers` contract to `pyproject.toml`, a local
+- [x] 2.3 Add `import-linter` to the dev group, its exhaustive `layers` contract to `pyproject.toml`, a local
   pre-commit hook `uv run lint-imports` on `src/` and `pyproject.toml`, and `.import_linter_cache/` to `.gitignore`;
   verify the hook passes, fails when `infra/paths.py` imports `skill_graft.commands.edit`, fails when an empty
   `src/skill_graft/stray.py` is added (both reverted after), and `git status` shows no cache folder

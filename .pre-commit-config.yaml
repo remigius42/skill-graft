@@ -65,6 +65,13 @@ repos:
         language: system
         pass_filenames: false
         types: [python]
+      # Refuses an import that goes up a layer; the contract lives in pyproject.toml.
+      - id: lint-imports
+        name: lint-imports
+        entry: uv run lint-imports
+        language: system
+        pass_filenames: false
+        files: ^(src/|pyproject\.toml$)
       # The oldest supported Python: 3.11 and 3.12 differ from newer ones in pathlib and shutil.
       - id: pytest-py311
         name: pytest (Python 3.11)

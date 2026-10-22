@@ -16,6 +16,7 @@ skill-graft = "skill_graft.cli:main"
 [dependency-groups]
 dev = [
   "apm-cli==0.33.0",
+  "import-linter",
   "pre-commit",
   "pytest",
 ]
@@ -34,3 +35,13 @@ mypy_path = ["src", "tests"]
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]
+
+[tool.importlinter]
+root_package = "skill_graft"
+
+[[tool.importlinter.contracts]]
+name = "Each layer imports only the layers below it"
+type = "layers"
+containers = ["skill_graft"]
+layers = ["cli", "commands", "pipeline", "infra"]
+exhaustive = true

@@ -31,6 +31,7 @@ words:
   - gitlink
   - heapdump
   - ignorewhitespace
+  - importlinter
   - iterdir
   - keepends
   - kiro
