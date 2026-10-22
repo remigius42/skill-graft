@@ -4,6 +4,8 @@
 [![License](https://img.shields.io/badge/license-MIT-blue.svg)](LICENSE)
 [![CI](https://github.com/remigius42/skill-graft/actions/workflows/ci.yml/badge.svg)](https://github.com/remigius42/skill-graft/actions/workflows/ci.yml)
 
+Copyright 2026 [Andreas Remigius Schmidt](https://github.com/remigius42)
+
 Graft agent skills from other people's repositories onto your own setup.
 
 You name the skills you want. skill-graft follows their references to other skills and files, vendors the
@@ -14,11 +16,59 @@ Skills call each other (`/grilling`, "call the Skill tool with `domain-modeling`
 taking every skill it reaches. Installing a whole collection is fine for a large model, but on a smaller one the
 full skill set crowds the context, and taking only a subset by hand means tracing those calls yourself, skill by
 skill. skill-graft computes that hull, the skills you ask for plus every skill they call, and deploys only those
-skills. Renames
-come with it: a skill named like a harness built-in (`code-review`) shadows it or is shadowed by it, and renaming
-one skill by hand misses the other skills that call it by name.
+skills. Renames come with it: a skill named like a harness built-in (`code-review`) shadows it or is shadowed by it,
+and renaming one skill by hand misses the other skills that call it by name.
 
 Status: beta.
+
+## Installation
+
+skill-graft needs Python 3.11 or later. It is not on PyPI; install it from the repository with any of:
+
+```sh
+uv tool install git+https://github.com/remigius42/skill-graft
+pipx install --python python3.11 git+https://github.com/remigius42/skill-graft
+pip install git+https://github.com/remigius42/skill-graft      # into the active environment
+pipenv install "skill-graft @ git+https://github.com/remigius42/skill-graft"
+```
+
+uv picks a suitable Python itself; pipx and pip use theirs, so point them at 3.11 or later. pipenv installs into
+that project's environment: run it as `pipenv run skill-graft`.
+
+skill-graft runs APM as a command, so `apm` must be on `PATH` as well, in version 0.33.0: the folders APM deploys
+to were measured on it, and another version may deploy elsewhere. Install it the same way, e.g.
+`uv tool install apm-cli==0.33.0`, `pipx install apm-cli==0.33.0` or `pip install apm-cli==0.33.0`.
+
+## Usage
+
+Besides skill-graft and APM, you need a harness folder for APM to deploy into, such as `~/.claude/` for Claude Code.
+To deploy the `tdd` skill of [mattpocock/skills](https://github.com/mattpocock/skills), and every skill it calls,
+create your package:
+
+```sh
+skill-graft init
+```
+
+`init` writes the package's config, `~/.apm/skill-graft/skill-graft.toml`, all commented out. Add the repository
+to it as a source, a new table after the comments (the commented `[sources.mp]` there is only an example):
+
+```toml
+[sources.mp]
+git = "https://github.com/mattpocock/skills.git"
+```
+
+Then:
+
+```sh
+skill-graft update mp    # set the source's ref to its branch tip
+skill-graft add mp/tdd   # ask for the skill
+skill-graft tree         # see the hull: mp/tdd and every skill it calls
+skill-graft build        # vendor the hull and deploy it through APM
+```
+
+`tdd` and the skills it calls are now in `~/.claude/skills/`. To share skills through a project instead, see
+[A package for one project](#a-package-for-one-project); to deploy them under other names, `[rename]` and `prefix`
+in [Config](#config); to change what a skill says, [Writing a patch](#writing-a-patch).
 
 ## Commands
 
@@ -27,7 +77,8 @@ Status: beta.
 - `build [--no-install | --into <dir>]`: resolve, vendor the hull patched and renamed into `.apm/skills/`, deploy
   through APM. `--into <dir>` writes the skills and the lock into an empty `<dir>` instead, never touching the
   package or APM.
-- `update [source…] [--dry-run]`: move each git source's `ref` to its branch tip, if the hull still resolves there.
+- `update [source…] [--dry-run]`: move each git source's `ref` to its branch tip, if the hull still resolves and every
+  patch still applies there.
 - `tree [--format text|mermaid] [--link]`: print the hull, writing nothing; `--link` gives a mermaid.live URL.
 - `why <skill>`: print the paths from the entries that reach a skill, and its upstream folder.
 - `add <skill-id>…`, `remove <skill-id>…`: change `entries`, keeping the file's comments, once the result resolves.
@@ -84,24 +135,6 @@ path = "~/skills"
 - `[patches]`: unified diffs, applied before renames, so a patch can change what a skill calls (see
   [Writing a patch](#writing-a-patch)).
 - `reserved`: deployed names to refuse, on top of the harness built-ins skill-graft warns about.
-
-## Installation
-
-skill-graft needs Python 3.11 or later. It is not on PyPI; install it from the repository with any of:
-
-```sh
-uv tool install git+https://github.com/remigius42/skill-graft
-pipx install --python python3.11 git+https://github.com/remigius42/skill-graft
-pip install git+https://github.com/remigius42/skill-graft      # into the active environment
-pipenv install "skill-graft @ git+https://github.com/remigius42/skill-graft"
-```
-
-uv picks a suitable Python itself; pipx and pip use theirs, so point them at 3.11 or later. pipenv installs into
-that project's environment: run it as `pipenv run skill-graft`.
-
-skill-graft runs APM as a command, so `apm` must be on `PATH` as well, in version 0.33.0: the folders APM deploys
-to were measured on it, and another version may deploy elsewhere. Install it the same way, e.g.
-`uv tool install apm-cli==0.33.0`, `pipx install apm-cli==0.33.0` or `pip install apm-cli==0.33.0`.
 
 ## A package for one project
 
@@ -173,6 +206,10 @@ patch must not change the skill's `name:`: use `[rename]`. When `update` finds t
 a new commit, it keeps the old `ref` and names the upstream folder at the new commit: redo the patch against
 it, then run `update` again.
 
-## Development
+## Contributing
 
-See [CONTRIBUTING.md](CONTRIBUTING.md).
+Report bugs and suggest ideas in [GitHub issues](https://github.com/remigius42/skill-graft/issues). To change the
+code, see [CONTRIBUTING.md](CONTRIBUTING.md).
+
+This is a personal exploration project with best-effort maintenance. Responses to issues or pull requests may be
+slow, and changes that don't align with the project's direction are unlikely to merge.
