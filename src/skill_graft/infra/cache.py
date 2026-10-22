@@ -6,7 +6,7 @@ import os
 import re
 import shutil
 import tempfile
-from collections.abc import Callable, Iterator
+from collections.abc import Callable, Generator
 from contextlib import contextmanager
 from pathlib import Path
 
@@ -126,7 +126,7 @@ class Cache:
 
 
 @contextmanager
-def lock(repo: Path) -> Iterator[None]:
+def lock(repo: Path) -> Generator[None]:
     """Holds `repo`'s lock, waiting for any other run that holds it.
 
     Two fetches into one repository would fail on git's own ref locks.

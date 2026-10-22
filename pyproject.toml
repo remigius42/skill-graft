@@ -33,6 +33,16 @@ python_version = "3.11"
 strict = true
 mypy_path = ["src", "tests"]
 
+# For editors (Pylance, pyright); mypy above is the check pre-commit enforces. Standard, not strict: strict
+# flags every value read from parsed TOML, which is untyped.
+[tool.pyright]
+pythonVersion = "3.11"
+typeCheckingMode = "standard"
+reportDeprecated = "warning"
+venvPath = "."
+venv = ".venv"
+extraPaths = ["src", "tests"]
+
 [tool.pytest.ini_options]
 testpaths = ["tests"]
 
