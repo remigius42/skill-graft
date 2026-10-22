@@ -47,7 +47,7 @@
 
 ## 4. Eval
 
-- [ ] 4.1 Write `evals/graft-check/run.sh` and its README: a temporary project **Package** over a local git **Source**
+- [x] 4.1 Write `evals/graft-check/run.sh` and its README: a temporary project **Package** over a local git **Source**
   (committed with `GIT_AUTHOR_*` and `GIT_COMMITTER_*` set)
   with one planted defect per kind, the working copy in the project's `.claude/skills/`, `HOME`, `XDG_CACHE_HOME` and
   `TMPDIR` in the temporary folder, `CLAUDE_CODE_OAUTH_TOKEN` or `ANTHROPIC_API_KEY` required (neither: stop, naming
