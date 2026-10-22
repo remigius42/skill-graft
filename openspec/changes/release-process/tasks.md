@@ -27,7 +27,7 @@
   `release/v0.1.0`): `## [Unreleased]` becomes `## [0.1.0] - <today>` under a new empty `## [Unreleased]`, with the
   `[Unreleased]` compare and `[0.1.0]` tag link definitions; verify `pyproject.toml` and `uv.lock` already say
   `0.1.0` (`uv lock --check`), that no entry changed, and that pre-commit is green
-- [ ] 3.2 Once the user confirms each push: push this branch as `release/v0.1.0`, wait for its CI run to be green,
+- [x] 3.2 Once the user confirms each push: push this branch as `release/v0.1.0`, wait for its CI run to be green,
   fast-forward `main` to the release commit and push it, tag the release commit `v0.1.0` (annotated), push the tag,
   publish the GitHub release by the documented command, and delete the remote `release/v0.1.0`; verify the branch's
   CI run passed both jobs, `git ls-remote origin 'refs/tags/v0.1.0^{}'` names the release commit,
