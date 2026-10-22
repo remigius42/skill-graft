@@ -16,8 +16,9 @@ deploying stays the user's own `skill-graft build`.
 ## Terms
 
 - **Skill ID**: `<alias>/<name>`, the **Source** alias and the **Skill**'s name.
-- **Reference**: a name skill-graft took for a **Skill**: slash (`/<name>`), Skill tool (`Skill(<name>)`), or prose (a
-  name in a code span, or a bare hyphenated name). A slash or Skill tool one resolves in its own **Source** first, else
+- **Reference**: a name skill-graft took for a **Skill**: slash (`/<name>`), Skill tool (`Skill(<name>)`, or a
+  sentence telling the reader to call the Skill tool with `"<name>"`), or prose (a name in a code span, or a bare
+  hyphenated name). A slash or Skill tool one resolves in its own **Source** first, else
   in exactly one other; a prose one only in its own.
 - **Hull**: the **Entries** (the **Skill IDs** in `entries`) plus every **Skill** their slash and Skill tool
   **References** reach.
@@ -124,8 +125,8 @@ report holds only findings in those **Skills**.
 
 A **Bind** is source-wide. Before proposing one for `<name>` from `<alias>`, search the **Upstream** text, plus the
 lines its patches add, of every **Hull** **Skill** of `<alias>` for `<name>` in each form: `/<name>`, `Skill(<name>)`,
-the name in a code span, the bare name. Propose the **Bind** only when every match needs it; when some are right,
-propose a **Patch** of the **Skill** holding the wrong one.
+`"<name>"` in a Skill tool sentence, the name in a code span, the bare name. Propose the **Bind** only when every
+match needs it; when some are right, propose a **Patch** of the **Skill** holding the wrong one.
 
 With no finding, say the **Check** found nothing and go to step 6.
 
