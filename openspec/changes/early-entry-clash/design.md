@@ -25,9 +25,10 @@ may fetch), and only then calls `rename.check_unique` on the **Entries**' **Depl
 ## Decisions
 
 - **One config-only function, `compute.check_entries(config)`**, wrapping
-  `rename.check_unique(config, {entry: deployed(config, entry) ...})`. `compute_hull` calls it first, before the
+  `rename.check_unique(config, {entry: deployed(config, entry) ...})`. `compute_hull` calls it after `check_refs`
+  (still also `_folders`'s first step, for `known()`, so a missing `ref` still wins, as in `update`) and before the
   `TemporaryDirectory`; `_update` calls it after its own config checks and before the first `_tip`. The check then
-  runs twice in `update` (again inside `compute_hull`); it reads only the config, so that costs nothing.
+  runs again inside each `compute_hull` of `update`; it reads only the config, so that costs nothing.
   Alternative: put it in `_folders` or `known()`. Rejected: `known()` runs before an edit is applied, so
   `rename own/tdd own-tdd` would refuse to run because of the very clash it fixes.
 - **Tests at the CLI**, next to the existing clash tests: `build` in `tests/cli/test_build.py` beside

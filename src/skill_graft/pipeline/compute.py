@@ -124,6 +124,7 @@ def compute_hull(
     Patched copies go in a temporary folder removed on exit: a patched skill's
     path in `skills` is valid only inside the `with`.
     """
+    check_refs(config, (refs or {}).keys())  # first, as `update` does
     check_entries(config)
     with tempfile.TemporaryDirectory(prefix="skill-graft-") as work:
         cache = Cache(paths.cache()) if cache is None else cache

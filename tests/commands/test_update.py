@@ -62,21 +62,20 @@ def test_other_source_without_a_ref(upstream: Upstream, capsys: Capsys) -> None:
 
 
 def test_entries_clash_before_update_fetches(
-    home: Path, upstream: Upstream, capsys: Capsys
+    home: Path, tmp_path: Path, capsys: Capsys
 ) -> None:
-    sha = upstream.commit({"tdd/SKILL.md": "# tdd\n"})
     skill(home / "own" / "tdd")
-    config = write_config(
+    config = write_config(  # no remote there: contacting it would be another error
         'entries = ["mp/tdd", "own/tdd"]\n'
-        + git_source("mp", upstream, f'ref = "{sha}"\n')
-        + '[sources.own]\npath = "~/own"\n'
+        f'[sources.mp]\ngit = "{tmp_path / "nowhere"}"\nref = "{"0" * 40}"\n'
+        '[sources.own]\npath = "~/own"\n'
     )
     text = config.read_text()
 
     code, _, err = update(capsys, "mp")
 
     assert code == 1 and "mp/tdd" in err and "own/tdd" in err
-    assert not (home / ".cache").exists()
+    assert not paths.cache().exists()
     assert config.read_text() == text
 
 

@@ -6,6 +6,7 @@ import pytest
 from conftest import FakeApm, Upstream, skill, write_config
 
 from skill_graft.cli import main
+from skill_graft.infra import paths
 from skill_graft.pipeline import compute, config, lock, vendor
 from skill_graft.pipeline.hull import Hull
 
@@ -186,7 +187,22 @@ def test_entries_clash_before_any_fetch(
 
     err = capsys.readouterr().err
     assert "mp/tdd" in err and "own/tdd" in err
-    assert not (home / ".cache").exists()
+    assert not paths.cache().exists()
+
+
+def test_missing_ref_before_entries_clash(
+    home: Path, tmp_path: Path, capsys: pytest.CaptureFixture[str]
+) -> None:
+    skill(home / "own" / "tdd")
+    write_config(
+        'entries = ["mp/tdd", "own/tdd"]\n'
+        f'[sources.mp]\ngit = "{tmp_path / "nowhere"}"\n'
+        '[sources.own]\npath = "~/own"\n'
+    )
+
+    assert main(["build", "--no-install"]) == 1
+
+    assert "skill-graft update mp" in capsys.readouterr().err
 
 
 def test_clash_ignores_case(home: Path, capsys: pytest.CaptureFixture[str]) -> None:
