@@ -3,11 +3,11 @@
 ## Context
 
 `CHANGELOG.md` follows Keep a Changelog 1.1.0, all entries under `## [Unreleased]`, which has no link definition yet
-(project-hygiene's design deferred it to the first tag). The version lives in `pyproject.toml` (`0.1.0`) and is
-mirrored in `uv.lock`; the README's version badge reads `pyproject.toml` on `main`. CI runs on pushes to `main` and
-on pull requests, not on tags. AGENTS.md forbids work on `main` and pushing without asking. `init`'s `apm.yml`
-template also says `version: 0.1.0`: that is the version of the user's **Package** as APM sees it, not skill-graft's,
-and a release leaves it alone.
+(project-hygiene's design deferred it to the first tag). The version lives in `pyproject.toml` (`0.1.0`) and is mirrored
+in `uv.lock`; the README's version badge reads `pyproject.toml` on `main`. CI runs on pushes to `main` and on pull
+requests, not on other branches or tags; its commitlint job lints from `github.event.before`. AGENTS.md forbids work on
+`main` and pushing without asking. `init`'s `apm.yml` template also says `version: 0.1.0`: that is the version of the
+user's **Package** as APM sees it, not skill-graft's, and a release leaves it alone.
 
 ## Goals / Non-Goals
 
@@ -42,13 +42,19 @@ and a release leaves it alone.
   raises the major version, else an `### Added` or `### Deprecated` entry the minor, else (`### Fixed`, `### Security`,
   a `### Changed` that breaks nothing) the patch. Before 1.0: a breaking entry raises the minor, anything else the
   patch. The section names already sort the entries, so picking the version needs no other record.
-- **CI before `main`: push the release branch and open a pull request.** CI runs on pull requests, so the release
-  commit is checked before `main` or the README's version badge names its version. Once the run is green,
-  fast-forward `main` to the release commit and push it, which marks the pull request merged; the commit `main` gets
-  is the one CI ran on. If CI fails, fix on the branch and amend or add commits there; nothing on `main` changes. If
-  `main` moved meanwhile, rebase the branch onto it, set the changelog date to that day, and wait for CI again.
-  Alternative: fast-forward `main` first and tag once its run is green. Rejected: a red run leaves `main` and the badge
-  naming a version that has no tag.
+- **CI before `main`: push the release branch, with CI running on `release/**`.** `ci.yml` adds `release/**` to its
+  push branches, so pushing `release/v<version>` checks the release commit before `main` or the README's version
+  badge names its version, without a pull request. Once the run is green, fast-forward `main` to the release commit
+  and push it; the commit `main` gets is the one CI ran on. If CI fails, fix on the branch and push again; nothing on
+  `main` changes. If `main` moved meanwhile, rebase the branch onto it, set the changelog date to that day, push it
+  with `--force-with-lease`, and wait for CI again. After the release, delete the branch, local and remote.
+  Alternatives: a pull request (rejected by the maintainer: one more step per release for a one-person project), or
+  fast-forwarding `main` first and tagging once its run is green (rejected: a red run leaves `main` and the badge
+  naming a version that has no tag).
+- **commitlint lints from the merge-base when `before` is no commit.** The first push of a branch has an all-zero
+  `github.event.before`, and a forced push one the clone lacks; `commitlint --from` then fails on no bad message. When
+  `git cat-file -e "$FROM^{commit}"` fails, `FROM` becomes `git merge-base origin/main "$TO"`, the commits the branch
+  adds. A rewritten `main` gets the same fallback, which lints nothing rather than failing.
 - **Tag after the push, annotated, `v`-prefixed.** Tag the release commit with
   `git tag -a v<version> -m "skill-graft <version>"`, then push the tag alone. CI does not run on tags, so this order
   is what makes the tagged commit a checked one. `v` matches the sibling repositories and uv's and pip's
@@ -72,13 +78,14 @@ and a release leaves it alone.
   tagging; markdownlint's MD053 accepts them since the headings use them as shortcut references.
 - [A wrong tag is pushed] → before anyone installs it, `gh release delete v<version> --cleanup-tag --yes` removes
   release and tag; once someone may have installed it, leave it and release a fixed patch version instead.
-- [A commit after the release commit is what CI checked] → tag only the commit the pull request's run checked; for
+- [A commit after the release commit is what CI checked] → tag only the commit the release branch's run checked; for
   `0.1.0`, later commits on this change's branch only archive it (`openspec/` moves) and come after the tag.
 
 ## Migration Plan
 
 For `0.1.0` the release commit is a task of this change, so it sits on `feat/opsx-release-process` in place of
-`release/v0.1.0`, and that branch is the one pushed for the pull request. Tagging is a task, so the archive commit
-comes after the tag: apply the documentation and release-commit tasks, push the branch and open the pull request,
-wait for CI, fast-forward and push `main`, tag and publish `0.1.0`; then tick that task and archive on the branch, and
-fast-forward and push `main` again. Each push is confirmed with the user first.
+`release/v0.1.0`; it is pushed as `release/v0.1.0`, the CI change riding in the same push, since a push runs the
+workflow of the commit pushed. Tagging is a task, so the archive commit comes after the tag: apply the CI, documentation
+and release-commit tasks, push the branch as `release/v0.1.0`, wait for CI, fast-forward and push `main`, tag and
+publish `0.1.0`; then tick that task and archive on the branch, and fast-forward and push `main` again. Each push is
+confirmed with the user first.
