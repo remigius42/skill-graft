@@ -10,7 +10,7 @@ from conftest import Upstream, write_config
 
 from skill_graft.cli import main
 
-SKILLS = Path(__file__).parents[1] / "skills"
+SKILLS = Path(__file__).parents[2] / "skills"
 
 
 def front_matter() -> dict[str, str]:

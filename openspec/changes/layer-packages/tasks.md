@@ -21,7 +21,7 @@
   (`resolve.` → `compute.`, `init.init` → `init_package.init`), keeping module-attribute calls so
   `monkeypatch.setattr` still hits;
   verify pre-commit is green and the console script runs (`uv run skill-graft help`)
-- [ ] 2.2 `git mv` the test files into `tests/cli/`, `tests/commands/`, `tests/pipeline/`, `tests/infra/` as in
+- [x] 2.2 `git mv` the test files into `tests/cli/`, `tests/commands/`, `tests/pipeline/`, `tests/infra/` as in
   design.md, renaming `test_init` and `test_git_apply`, and add `tests` to `mypy_path`; verify
   `pre-commit run mypy --files tests/cli/test_build.py` passes, and `pytest --collect-only -q` reports the same number of
   tests as before the move and pre-commit is green
