@@ -78,9 +78,9 @@ that installed it, then `skill-graft build` there, and a new session.
 
 ### Requirement: What it reports
 
-The skill SHALL report each finding with the **Skill**, the file, the text, its kind, and a proposed fix. The
-kinds SHALL be: a missed **Reference**, a false **Reference**, a **Reference** resolved to the wrong **Skill**, a
-rewrite of the wrong text or a missed one, and a relative link that the vendored copy breaks.
+The skill SHALL report the findings as a table, one row per finding with the **Skill**, the file, the text, its kind,
+and a proposed fix. The kinds SHALL be: a missed **Reference**, a false **Reference**, a **Reference** resolved to
+the wrong **Skill**, a rewrite of the wrong text or a missed one, and a relative link that the vendored copy breaks.
 
 #### Scenario: Planted defects
 
