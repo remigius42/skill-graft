@@ -23,7 +23,7 @@
 
 ## 3. Release 0.1.0
 
-- [ ] 3.1 Make the release commit `chore(release): 0.1.0` by the documented steps (on this change's branch in place of
+- [x] 3.1 Make the release commit `chore(release): 0.1.0` by the documented steps (on this change's branch in place of
   `release/v0.1.0`): `## [Unreleased]` becomes `## [0.1.0] - <today>` under a new empty `## [Unreleased]`, with the
   `[Unreleased]` compare and `[0.1.0]` tag link definitions; verify `pyproject.toml` and `uv.lock` already say
   `0.1.0` (`uv lock --check`), that no entry changed, and that pre-commit is green
