@@ -530,7 +530,7 @@ def test_lock_write_fails(
 
     def fail(text: str, file: Path | None = None) -> None:
         assert file is not None
-        file.with_name(".skill-graft.lock.tmp").write_text(text)
+        file.write_text(text[:10])
         raise OSError("disk full")
 
     monkeypatch.setattr(lock, "write", fail)
@@ -747,3 +747,84 @@ def test_into_a_source(
     err = capsys.readouterr().err
     assert f"skill-graft: --into {into}: inside source '{alias}'" in err
     assert list(into.iterdir()) == []
+
+
+def test_into_a_source_ignoring_case(
+    home: Path, capsys: pytest.CaptureFixture[str]
+) -> None:
+    chisel_config(home)
+    into = home / "SRC" / "tmp"  # the same folder as ~/src/tmp on macOS
+    into.mkdir(parents=True)
+
+    assert main(["build", "--into", str(into)]) == 1
+
+    assert f"--into {into}: inside source 'own'" in capsys.readouterr().err
+
+
+def test_into_the_cache_ignoring_case(
+    home: Path,
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+    capsys: pytest.CaptureFixture[str],
+) -> None:
+    chisel_config(home)
+    monkeypatch.setenv("XDG_CACHE_HOME", str(tmp_path / "cache"))
+    into = tmp_path / "CACHE" / "Skill-Graft" / "tmp"
+    into.mkdir(parents=True)
+
+    assert main(["build", "--into", str(into)]) == 1
+
+    assert f"--into {into}: overlaps the cache" in capsys.readouterr().err
+
+
+def test_into_untouched_when_the_config_fails(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    write_config("entries = [\n")
+    into = empty_folder(tmp_path)
+    load = config.load
+
+    def another_process_writes_first() -> config.Config:
+        (into / "skill-graft.lock").write_text("theirs\n")
+        return load()
+
+    monkeypatch.setattr(config, "load", another_process_writes_first)
+
+    assert main(["build", "--into", str(into)]) == 1
+
+    assert snapshot(into) == {"skill-graft.lock": b"theirs\n"}
+
+
+def test_cleanup_keeps_the_real_error(
+    home: Path,
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+    capsys: pytest.CaptureFixture[str],
+) -> None:
+    chisel_config(home)
+    into = empty_folder(tmp_path)
+
+    def fail(text: str, file: Path | None = None) -> None:
+        assert file is not None
+        file.mkdir()  # a lock the cleanup cannot unlink
+        raise OSError("disk full")
+
+    monkeypatch.setattr(lock, "write", fail)
+
+    assert main(["build", "--into", str(into)]) == 1
+
+    assert "skill-graft: disk full" in capsys.readouterr().err
+
+
+def test_into_names_no_resolve_hint(
+    home: Path, tmp_path: Path, capsys: pytest.CaptureFixture[str]
+) -> None:
+    skill(home / "src" / "tdd", "then diagnosing-bugs\n")
+    skill(home / "src" / "diagnosing-bugs")
+    write_config('entries = ["own/tdd"]\n[sources.own]\npath = "~/src"\n')
+    into = empty_folder(tmp_path)
+
+    assert main(["build", "--into", str(into)]) == 0
+
+    assert "prose suggestion" not in capsys.readouterr().err
+    assert 'id = "own/diagnosing-bugs"' in (into / "skill-graft.lock").read_text()

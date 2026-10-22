@@ -336,10 +336,16 @@ def main(argv: list[str] | None = None) -> int:
             # `--into` mirrors the package's layout in another folder.
             into = None if args.into is None else args.into.resolve()
             skills = paths.skills() if into is None else into / ".apm" / "skills"
+            started = False
             try:
                 with tempfile.TemporaryDirectory(prefix="skill-graft-") as work:
-                    loaded, resolved = _resolve(Path(work), into)
+                    loaded = _load()
+                    if into is not None:
+                        _check_into_sources(args.into, into, loaded)
+                    folders = resolve.folders(loaded, Cache(paths.cache()), {})
+                    resolved = resolve.resolve(loaded, folders, Path(work))
                     warn(resolved.warnings)
+                    started = True  # from here on `into` may hold our writes
                     vendor.vendor(resolved, skills)
                 # Hashes the vendored copies, so the lock holds what was vendored.
                 copies = {
@@ -350,12 +356,13 @@ def main(argv: list[str] | None = None) -> int:
                 lock.write(lock.render(loaded, {}, resolved, copies), lock_file)
             except BaseException:
                 # After the work folder is gone, which a TMPDIR may put in `into`.
-                if into is not None:
+                if into is not None and started:
                     _undo_into(into)
                 raise
-            lock.announce_suggestions(resolved)  # once nothing before APM can fail
-            if not args.no_install and into is None:
-                apm.install()
+            if into is None:  # its hint, `resolve`, would rewrite the package's lock
+                lock.announce_suggestions(resolved)  # once nothing before APM can fail
+                if not args.no_install:
+                    apm.install()
     except (SkillGraftError, OSError) as error:
         print(f"skill-graft: {error}", file=sys.stderr)
         return 1
@@ -380,21 +387,38 @@ def _check_into(into: Path) -> None:
         raise SkillGraftError(f"--into {into}: not a folder")
     if any(into.iterdir()):
         raise SkillGraftError(f"--into {into}: not empty")
-    resolved = into.resolve()
-    # Ignoring case: on a case-insensitive filesystem `.APM/Skill-Graft` is a package.
-    if any(paths.in_package(Path(str(p).lower())) for p in (into.absolute(), resolved)):
+    resolved = _folded(into.resolve())
+    if any(paths.in_package(p) for p in (_folded(into.absolute()), resolved)):
         raise SkillGraftError(f"--into {into}: inside a package (.apm/skill-graft)")
-    if paths.overlap(resolved, cache := paths.cache().resolve()):
+    if paths.overlap(resolved, _folded(cache := paths.cache().resolve())):
         raise SkillGraftError(f"--into {into}: overlaps the cache {cache}")
 
 
+def _check_into_sources(given: Path, into: Path, loaded: config.Config) -> None:
+    """Refuses an `--into` folder, resolved as `into`, inside a path source."""
+    for alias, source in sorted(loaded.sources.items()):
+        if isinstance(source, config.PathSource) and _folded(into).is_relative_to(
+            _folded(source.folder)
+        ):
+            raise SkillGraftError(f"--into {given}: inside source {alias!r}")
+
+
+def _folded(path: Path) -> Path:
+    """`path` in lower case: on a case-insensitive filesystem `.APM/Skill-Graft` is
+    a package, and `~/Own` a source `~/own`. Refusing a lookalike elsewhere is harmless."""
+    return Path(str(path).lower())
+
+
 def _undo_into(into: Path) -> None:
-    """Removes what a failed `build --into` wrote in `into`, and nothing else there."""
+    """Removes what a failed `build --into` wrote in `into`, and nothing else there.
+
+    Never raises: the build's own error is the one to report.
+    """
     folder = into / ".apm"
-    for name in ("skills.new", "skills.old", "skills"):
+    for name in ("skills.new", "skills.old", "skills"):  # `.new` stays on Ctrl-C
         shutil.rmtree(folder / name, ignore_errors=True)
-    for written in [into / "skill-graft.lock", *into.glob(".skill-graft.lock.*")]:
-        written.unlink(missing_ok=True)
+    with contextlib.suppress(OSError):
+        (into / "skill-graft.lock").unlink(missing_ok=True)
     with contextlib.suppress(OSError):  # kept if another process wrote into it
         folder.rmdir()
 
@@ -415,16 +439,9 @@ def _load() -> config.Config:
     return loaded
 
 
-def _resolve(work: Path, into: Path | None = None) -> tuple[config.Config, Hull]:
-    """The config and its hull, every source at its ref, patched copies in `work`;
-    first refusing an `into` folder inside a path source, as `build --into` must."""
+def _resolve(work: Path) -> tuple[config.Config, Hull]:
+    """The config and its hull, every source at its ref, patched copies in `work`."""
     loaded = _load()
-    if into is not None:
-        for alias, source in sorted(loaded.sources.items()):
-            if isinstance(source, config.PathSource) and into.is_relative_to(
-                source.folder
-            ):
-                raise SkillGraftError(f"--into {into}: inside source {alias!r}")
     folders = resolve.folders(loaded, Cache(paths.cache()), {})
     return loaded, resolve.resolve(loaded, folders, work)
 

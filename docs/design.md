@@ -98,7 +98,8 @@ path = "~/Documents/sync/2_areas/software/chisel_skill"
   `--no-install`) writes `<dir>/.apm/skills/` and `<dir>/skill-graft.lock` instead, the same lock bytes an
   in-place build writes, and never runs APM or changes the package. `<dir>` must be an existing, empty folder,
   not in a package (any `.apm/skill-graft` path, ignoring case), a path source's folder, or in or around the
-  cache; a failed build removes what it wrote there.
+  cache; a failed build removes what it wrote there. It prints no hint to `resolve` for prose suggestions,
+  which would rewrite the package's lock; `<dir>`'s lock lists them.
 - Writing commands (`init`, `resolve`, `build`, `update`, `add`, `remove`, `rename`, `bind`, `unbind`) first
   print `skill-graft: package: <path>`.
 - `update [source…]`: fetches, resolves at each branch tip, and only if that succeeds writes the lock, and the
