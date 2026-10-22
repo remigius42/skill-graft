@@ -10,6 +10,9 @@ MD013:  # Line length
   code_blocks: false
   tables: false
 
+MD024:  # Multiple headings with the same content
+  siblings_only: true  # every changelog version has its own "### Added"
+
 MD033:  # Inline HTML
   allowed_elements:
     - details
