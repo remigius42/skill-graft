@@ -33,7 +33,9 @@ and a release leaves it alone.
   (ISO date), adds an empty `## [Unreleased]` above it, and sets the link definitions at the end of the file:
   `[Unreleased]` comparing `v<version>...HEAD`, `[<version>]` comparing the previous tag with `v<version>`, or, for the
   first release, linking `releases/tag/v<version>`. It sets `version` in `pyproject.toml` and runs `uv lock` so
-  `uv.lock` matches. Earlier link definitions stay as they are.
+  `uv.lock` matches. Earlier link definitions stay as they are. The date is the release commit's day, and the tag
+  follows that day: release-please, semantic-release and cargo-release write it the same way, and a tag date could
+  only be recorded by another commit after CI.
 - **Version by Semantic Versioning, read from the changelog.** A `### Removed` entry, or a `### Changed` entry that
   breaks a config, command or lock a user already has, raises the major version (the minor before 1.0); a new
   `### Added` entry raises the minor (the patch before 1.0 only if nothing was added); only `### Fixed` raises the
