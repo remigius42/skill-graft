@@ -59,7 +59,8 @@ path = "~/Documents/sync/2_areas/software/chisel_skill"
 
 ## Commands
 
-- `init`: creates `~/.apm/skill-graft/` with a commented `skill-graft.toml` and the two-line `apm.yml`, then
+- `init`: creates `~/.apm/skill-graft/` with a commented `skill-graft.toml`, including the lines that install
+  graft-check, and the two-line `apm.yml`, then
   registers it with `apm install -g <absolute path of ~/.apm/skill-graft>`. Refuses if the folder exists.
   `init --project` does the same in `./.apm/skill-graft/`, registering it with `apm install ./.apm/skill-graft`
   run there; refused in the home folder, and if APM leaves it unregistered, the folder is removed again.
@@ -251,6 +252,14 @@ it, so the explanation is a view of it:
   it; then the prose suggestions, and the warnings on stderr.
 - `why` and `tree` resolve as `resolve` does (fetching only an uncached commit, warnings on stderr, a failing
   patch an error) but write nothing, so they never see a missing or stale lock.
+
+The lock holds `version = 1`. Any change to its keys or to what they mean raises `version` (`test_lock.py` pins the
+keys), since the `graft-check` skill reads version 1 only.
+
+That skill, `skills/graft-check/` in this repository, is the **Check** of ADR 0006, installed like any other skill from
+a git source with `subdirectory = "skills"`. An agent builds `--into` a temporary folder, reads that lock, the output
+of `why` and `tree`, and the vendored copies against their upstream folders, and proposes binds, entries and patches
+for the user to accept. It takes no part in resolution.
 
 ## Stack
 

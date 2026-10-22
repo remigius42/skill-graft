@@ -31,3 +31,4 @@ before changing behavior. Until OpenSpec specs cover it, `docs/design.md` holds 
   temporary directory.
 - Fixture skills and source repositories are synthetic, built in the test. Do not copy real skills into the
   repository.
+- `evals/` runs agents headless: opt-in, billed in tokens, never in hooks or CI. Run one only when asked.
