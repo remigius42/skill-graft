@@ -116,6 +116,34 @@ then need only APM: `apm install` deploys the skills, and only whoever changes t
 sources inside the project (`path = "../../skills"`) and the rest git sources: the lock then records them
 relative to the package and reads the same on every machine; a path outside the project is recorded absolute.
 
+## Checking a package
+
+skill-graft finds references by their form alone, so it misses "run the grilling skill", takes `/tmp` for a call,
+and can rewrite a word a prefix happens to match. The `graft-check` skill, in this repository's `skills/`, has an
+agent read the built skills for those mistakes. Install it like any other skill, with the lines `init` writes
+commented out into `skill-graft.toml`:
+
+```toml
+[sources.skill-graft]
+git = "https://github.com/remigius42/skill-graft.git"
+subdirectory = "skills"
+```
+
+```sh
+skill-graft update skill-graft
+skill-graft add skill-graft/graft-check
+skill-graft build
+```
+
+Until that `update` sets the source's `ref`, every `build` fails, not only graft-check's.
+
+Run it in your harness as `/graft-check`, or `/graft-check mp/tdd` to check only some skills; it runs only when
+you ask. It builds into a temporary folder with `build --into`, compares each skill's upstream text with its
+vendored copy, and reports missed and false references, references resolved to the wrong skill, wrong or missed
+rewrites, and relative links vendoring broke. For each finding it proposes `add`, `bind`, `unbind` or a patch,
+and applies it only once you accept. It never deploys: when the package would change, it tells you to run
+`skill-graft build`. It reads lock `version` 1 only; for a newer lock, update the source you installed it from.
+
 ## Writing a patch
 
 A patch is a unified diff against the skill's upstream folder, which `skill-graft why <skill>` prints on its last

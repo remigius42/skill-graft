@@ -42,7 +42,7 @@
 - [x] 3.1 Add the commented `[sources.skill-graft]` block (with `subdirectory = "skills"`) and the `update`/`add`
   commands, with the note that every `build` fails until that `update`, to the `init` template; verify a test for the
   "Template shows graft-check" scenario passes, uncommenting the block and loading it
-- [ ] 3.2 Document installing and running `graft-check` in `README.md`; verify the documented commands match the
+- [x] 3.2 Document installing and running `graft-check` in `README.md`; verify the documented commands match the
   template and `pre-commit run --all-files` is green
 
 ## 4. Eval
