@@ -38,6 +38,8 @@
     two loads, information hierarchy and disclosure, completion criteria, splitting, leading words, negation,
     pruning, invocation) finds nothing left to fix, each rule named with how the text meets it; then
     `tests/test_check.py` still passes (no **Reference** crept in) and `pre-commit run --all-files` is green
+- [x] 2.3 Add an `argument-hint` naming the optional `<alias>/<name>` arguments to the front matter; verify
+  `test_front_matter` goes red without it and `tests/test_check.py` passes with it
 
 ## 3. Installing it
 
