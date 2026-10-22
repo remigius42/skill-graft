@@ -12,9 +12,9 @@ What the skill can lean on already exists:
   it, and a failed build leaves it empty.
 - A git **Source** may set `subdirectory`; the lock's `upstream` stays relative to the repository's root, so it
   includes the `subdirectory`.
-- The lock (`version = 1`) lists each **Hull** **Skill** with `deployed`, `upstream` (relative to its **Source**)
-  and `patches`, and each edge with its kind and `bind`. `skill-graft why <id>` prints the absolute **Upstream**
-  folder.
+- The lock (`version = 1`) lists each **Hull** **Skill** with `deployed`, `upstream` (relative to the git repository's
+  root or the path **Source**'s folder) and `patches`, and each edge with its kind and `bind`. `skill-graft why <id>`
+  prints the absolute **Upstream** folder.
 - `add`, `bind` and `unbind` refuse any edit that does not resolve and then write nothing. The unmatched-reference
   warning and the ambiguity error already suggest `skill-graft bind`.
 - No command writes **Patches**; the README's "Writing a patch" recipe does it with `cp`, `diff` and `git apply`.
@@ -43,12 +43,13 @@ What the skill can lean on already exists:
   the user's cross-**Source** **References**: a `/openspec-explore` elsewhere would pull in this repository's copy,
   or turn ambiguous. The `subdirectory` key of the `source-subdirectory` change, which lands first, keeps
   discovery to `skills/`.
-- **Its text names no skill.** Examples in it use placeholders, not `/tmp` or real names, so its **Hull** stays
-  itself alone; its own name, in its usage line, is no **Reference**, since the walk drops self-references. The
-  pytest guard commits a copy of the working tree's `skills/` into a temporary git repository and declares it as a
-  git **Source** with `subdirectory = "skills"`, as the template installs it: discovery confines a git **Source**
-  to its commit, which a path **Source** would not, and the working tree means a `SKILL.md` not yet staged counts,
-  test-first and without `.git`.
+- **Its text names no skill but itself.** A slash or Skill tool name resolves in every **Source**, so even one a user's
+  other **Source** holds would grow the **Hull**. Examples in it use placeholders, not `/tmp` or real names, so its
+  **Hull** stays itself alone; its own name, in its usage line, is no **Reference**, since the walk drops
+  self-references. The pytest guard commits a copy of the working tree's `skills/` into a temporary git repository and
+  declares it as a git **Source** with `subdirectory = "skills"`, as the template installs it: discovery confines a git
+  **Source** to its commit, which a path **Source** would not, and the working tree means a `SKILL.md` not yet staged
+  counts, test-first and without `.git`.
 - **Upstream folders: one `why` per git Source.** A path **Source**'s folder is in the lock (`sources.<alias>.path`,
   in project scope relative to the **Package**). A git **Source**'s `upstream` is relative to a cache export the
   skill cannot locate portably: `why` prints one **Skill**'s absolute folder, and minus the lock's relative
@@ -81,10 +82,9 @@ What the skill can lean on already exists:
   moved. The skill compares the throwaway `.apm/skills/` with the **Package**'s (`diff -rq`); any difference, or
   an accepted fix, earns the advice. Whether APM deployed what the **Package** holds stays unknowable locally, so
   otherwise the skill says so instead of advising a build it cannot justify.
-- **Only version 1 is read.** It is the first lock version, so no lock can be older; the CLI-upgrade advice comes
-  with a skill that reads a version 2. The update advice names no alias: the checked **Package** may not be the
-  one that installed `graft-check` (a user-scope install checking a project), so it points the user at the
-  **Source** they installed it from, in that **Package**.
+- **Only version 1 is read.** It is the first lock version, so no lock can be older. The update advice names no alias:
+  the checked **Package** may not be the one that installed `graft-check` (a user-scope install checking a project), so
+  it points the user at the **Source** they installed it from, in that **Package**.
 - **One subagent per checked Skill**, each reporting findings of the per-skill kinds (missed, false, rewrite, link) in a
   fixed shape; the main agent judges wrong targets from `skill-graft tree`, which names each edge's **Reference** as
   written (the lock's edges hold targets only), merges, and proposes. Without subagents, the main agent goes through the

@@ -24,7 +24,7 @@ config the user accepts.
   **Hull**. A failed **Patch** is undone without touching earlier ones. It never deploys: when a fix was accepted or the
   **Package** is behind its config, it ends by telling the user to run `skill-graft build`.
 - A lock `version` it does not know stops it; a newer one comes with the advice to update the **Source**
-  `graft-check` was installed from.
+  `graft-check` was installed from, build there, and start a new session.
   The lock's version 1 keys are pinned by a test, so a layout change has to raise `version`.
 - `skill-graft init` writes the lines that install it into its commented template; `README.md` explains them.
 - An opt-in eval script plants one defect of each kind in a synthetic **Package** and runs the skill headless,

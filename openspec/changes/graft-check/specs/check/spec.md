@@ -7,10 +7,11 @@ for what form-based resolution gets wrong and proposes **Binds**, **Entries** an
 
 ### Requirement: Installed as a skill of this repository
 
-This repository SHALL hold the skill at `skills/graft-check/SKILL.md`, a **Skill** named `graft-check`, so a
-**Source** of the repository has it as `<alias>/graft-check`. Its text SHALL hold no slash, Skill tool or prose
-**Reference** to any other **Skill** the repository holds (its own name, as in its usage line, is no
-**Reference**), so its **Hull** is itself alone and resolving it gives no warning and no suggestion.
+This repository SHALL hold the skill at `skills/graft-check/SKILL.md`, a **Skill** named `graft-check`, so a **Source**
+of the repository has it as `<alias>/graft-check`. Its text SHALL name no **Skill** but itself in slash or Skill tool
+form, since those resolve in every **Source**, and hold no prose **Reference** to another **Skill** of the repository
+(its own name, as in its usage line, is no **Reference**), so its **Hull** is itself alone in any **Package** and
+resolving it gives no warning and no suggestion.
 
 #### Scenario: Alone in its hull
 
@@ -28,7 +29,8 @@ without arguments, the whole **Hull**.
 #### Scenario: Front matter
 
 - **WHEN** `skills/graft-check/SKILL.md` is parsed
-- **THEN** its front matter has `name: graft-check` and `disable-model-invocation: true`
+- **THEN** its front matter has `name: graft-check` and `disable-model-invocation: true`, and its description says
+  it runs only when the user asks
 
 #### Scenario: Scoped
 
@@ -52,6 +54,11 @@ change only through accepted fixes.
 - **WHEN** `skill-graft build --into <folder>` exits non-zero
 - **THEN** the skill reports its error and checks nothing
 
+#### Scenario: Patched lines are intended
+
+- **WHEN** the lock lists `patches` for `mp/x`, and one of them changes a line of its `SKILL.md`
+- **THEN** that line is not reported as a rewrite of the wrong text
+
 #### Scenario: Looking changes nothing
 
 - **WHEN** the user runs `/graft-check` and declines every fix
@@ -67,7 +74,7 @@ that installed it, then `skill-graft build` there, and a new session.
 
 - **WHEN** the lock has `version = 2`
 - **THEN** the skill stops and says to update the **Source** `graft-check` was installed from, in its own
-  **Package**
+  **Package**, run `skill-graft build` there, and start a new session
 
 ### Requirement: What it reports
 
@@ -114,6 +121,11 @@ the vendored **Skills**.
 
 - **WHEN** an accepted fix drops `mp/grill` from the **Hull**
 - **THEN** the skill says `mp/grill` left the **Hull**
+
+#### Scenario: A skill joins the hull
+
+- **WHEN** the user accepts `skill-graft add mp/notes`, and `mp/notes` calls `/todo`
+- **THEN** the skill says `mp/notes` and `mp/todo` joined the **Hull**
 
 ### Requirement: A failed patch is undone
 

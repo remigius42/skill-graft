@@ -18,8 +18,9 @@
   skill, `resources/writing-for-agents/writing-for-agents-skill-mechanics.md` (user-invoked branch), with one exception:
   the description keeps the "only when the user asks" wording, since harnesses other than Claude Code may ignore
   `disable-model-invocation`. The body covers:
-  - `mktemp -d`, then build `--into` that folder, read the **Package** line, stop on a lock
-    `version` other than 1 (a higher one with the update advice, naming no alias)
+  - `mktemp -d`, then build `--into` that folder, read the **Package** line, stop on a lock `version` other than 1 (a
+    higher one with the advice to update the **Source** it was installed from, run `skill-graft build` there and start a
+    new session, naming no alias)
   - inputs: the throwaway lock and vendored copies; **Upstream** folders from the lock for path **Sources** and one
     `skill-graft why` per git **Source**; a patched **Skill**'s `patches` read, their changed lines counted as intended;
     `skill-graft tree` for each edge's written name; optional **Skill ID** arguments
