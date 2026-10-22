@@ -22,16 +22,16 @@ resolving it gives no warning and no suggestion.
 
 ### Requirement: Invoked only by the user
 
-The skill's front matter SHALL set `disable-model-invocation: true`, and its description SHALL say it runs only
-when the user asks for it. Given **Skill IDs** as arguments, it SHALL check only those **Hull** **Skills**;
-without arguments, the whole **Hull**. An argument that is no **Skill ID** of the **Hull** SHALL end the **Check**,
-naming it and listing the **Hull**'s **Skill IDs**.
+The skill's front matter SHALL set `disable-model-invocation: true` and an `argument-hint` naming the optional
+`<alias>/<name>` arguments, and its description SHALL say it runs only when the user asks for it. Given **Skill IDs** as
+arguments, it SHALL check only those **Hull** **Skills**; without arguments, the whole **Hull**. An argument that is no
+**Skill ID** of the **Hull** SHALL end the **Check**, naming it and listing the **Hull**'s **Skill IDs**.
 
 #### Scenario: Front matter
 
 - **WHEN** `skills/graft-check/SKILL.md` is parsed
-- **THEN** its front matter has `name: graft-check` and `disable-model-invocation: true`, and its description says
-  it runs only when the user asks
+- **THEN** its front matter has `name: graft-check`, `disable-model-invocation: true` and an `argument-hint` with
+  `<alias>/<name>`, and its description says it runs only when the user asks
 
 #### Scenario: Scoped
 

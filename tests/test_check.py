@@ -27,6 +27,7 @@ def test_front_matter() -> None:
     assert fields["name"] == "graft-check"
     assert fields["disable-model-invocation"] == "true"
     assert "only when the user asks" in fields["description"]
+    assert "<alias>/<name>" in fields["argument-hint"]
 
 
 def test_alone_in_its_hull(
