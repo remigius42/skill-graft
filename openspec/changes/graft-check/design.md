@@ -60,14 +60,16 @@ What the skill can lean on already exists:
   for that **Skill** and counts the lines they change as intended. Applying them would take `cp`, `git apply` and
   writes, tools a read-only look should not need.
 - **Fixes go through the CLI wherever one exists.** `add`, `bind` and `unbind` already refuse what does not
-  resolve, so only a **Patch** needs undoing by hand when the rebuild fails: its file, its own list item, and the
-  key and the `[patches]` table only when the skill created them.
+  resolve, patches applied, so a rebuild after them fails only while vendoring (an unreadable file, a path **Source**
+  edited meanwhile). The skill still undoes any failed fix, a cheap safeguard: `remove` after `add`, the noted value
+  after `bind` or `unbind`, and for a **Patch** its file, its own list item, and the key and the `[patches]` table
+  only when the skill created them.
 - **A Bind is source-wide, so it is checked against the text.** Before proposing `bind <alias>/<name> false` or a
-  redirect, the skill searches the **Upstream** text of that **Source**'s **Hull** **Skills** for the name in
-  each **Reference** form. The lock's edges cannot answer this: they hold targets, not the names written, and a
-  `false` **Bind** leaves no edge. If some uses are right, a **Patch** of the **Skill** with the wrong one fits
-  instead. Every rebuild is
-  diffed against the previous lock's **Skills**, so a fix that drops one says so.
+  redirect, the skill searches the **Upstream** text of that **Source**'s **Hull** **Skills**, plus the lines their
+  **Patches** add, for the name in each **Reference** form. The lock's edges cannot answer this: they hold targets, not
+  the names written, and a `false` **Bind** leaves no edge. If some uses are right, a **Patch** of the **Skill** with
+  the wrong one fits instead. Every rebuild is diffed against the previous lock's **Skills**, so a fix that drops one
+  says so.
 - **The README recipe, with the real Package.** The recipe spells out the user **Package**; the skill puts the
   `package:` line's path in its place, so project scope writes its own `patches/`.
 - **Every build goes `--into` a new temporary folder, made with `mktemp -d`.** Looking must not change the

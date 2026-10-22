@@ -94,10 +94,10 @@ rewrite of the wrong text or a missed one, and a relative link that the vendored
 
 ### Requirement: Fixes fit their scope
 
-A **Bind** applies to every **Reference** to its name from its **Source**. The skill SHALL propose a **Bind** only
-when that is what every such **Reference** needs, judged by searching the **Upstream** text of that **Source**'s
-**Hull** **Skills** for the name (the lock's edges name no **Reference**); when only some of them are wrong, it
-SHALL propose a **Patch** of the **Skill** that holds the wrong one.
+A **Bind** applies to every **Reference** to its name from its **Source**. The skill SHALL propose a **Bind** only when
+that is what every such **Reference** needs, judged by searching the **Upstream** text of that **Source**'s **Hull**
+**Skills**, plus the lines their **Patches** add, for the name (the lock's edges name no **Reference**); when only some
+of them are wrong, it SHALL propose a **Patch** of the **Skill** that holds the wrong one.
 
 #### Scenario: One false match among real calls
 
@@ -127,11 +127,20 @@ the vendored **Skills**.
 - **WHEN** the user accepts `skill-graft add mp/notes`, and `mp/notes` calls `/todo`
 - **THEN** the skill says `mp/notes` and `mp/todo` joined the **Hull**
 
-### Requirement: A failed patch is undone
+### Requirement: A failed fix is undone
 
-When the build after a **Patch** fails, the skill SHALL delete the patch file and remove only its own item from
-the **Skill**'s `[patches]` list, the key only if the skill created it, and the `[patches]` table only if the skill
-created that, leaving the user's earlier **Patches** and `skill-graft.toml` otherwise as it was.
+When the build after an accepted fix fails, the skill SHALL undo that fix and show the error. After `skill-graft add`
+it SHALL run `skill-graft remove` on the same **Skill IDs**; after `skill-graft bind` or `skill-graft unbind` it SHALL
+restore the key's value from before the fix, or unbind a key that had none. After a **Patch** it SHALL delete the
+patch file and remove only its own item from the **Skill**'s `[patches]` list, the key only if the skill created it,
+and the `[patches]` table only if the skill created that, leaving the user's earlier **Patches** and
+`skill-graft.toml` otherwise as it was.
+
+#### Scenario: Bind restored
+
+- **WHEN** `[bind]` has `"mp/g" = "own/notes"`, the user accepts `skill-graft bind mp/g mp/grill`, and the build
+  fails
+- **THEN** `[bind]` again has `"mp/g" = "own/notes"`
 
 #### Scenario: Earlier patches kept
 

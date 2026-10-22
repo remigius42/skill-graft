@@ -28,7 +28,8 @@
   - fixes one at a time after the user's yes: a **Bind** only when every use of the name in that **Source**'s
     **Upstream** text needs it, else a **Patch**; `add`/`bind`/`unbind`, or the README recipe with the **Package** path;
     rebuild `--into` a new `mktemp -d` folder after each and name **Skills** that left or joined the **Hull**; undo a
-    failed **Patch**'s file and own list item only, the key and table only if it created them
+    failed fix: `remove` after `add`, the noted value after `bind`/`unbind`, a **Patch**'s file and own list item
+    only, the key and table only if it created them
   - close with the `skill-graft build` advice when a fix was accepted or the first throwaway `.apm/skills/` differs from
     the **Package**'s (`diff -rq`, a missing one counting as different); otherwise say the **Package** matches its
     config and that deployment is not checked
