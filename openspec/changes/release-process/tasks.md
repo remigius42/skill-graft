@@ -9,7 +9,7 @@
 
 ## 2. Documentation
 
-- [ ] 2.1 Add `## Releasing` to `CONTRIBUTING.md` as design.md decides: picking the version from the changelog's
+- [x] 2.1 Add `## Releasing` to `CONTRIBUTING.md` as design.md decides: picking the version from the changelog's
   sections, the `release/v<version>` branch, the release commit's edits, pushing the branch and waiting for its CI
   run before `main` is fast-forwarded and pushed, what to do when CI fails or `main` moved, the annotated tag, the
   GitHub release with that version's section as notes, and deleting the branch; verify `gh release create --help`
