@@ -37,6 +37,7 @@ None.
 
 - `build`: new requirements for building into a folder other than the **Package**, without APM; "Vendor
   entries", "Deploy through APM" and "Build resolves first" exempt `--into`.
+- `resolve`: "Prose suggestions" exempts `build --into` from the line pointing to `resolve`.
 
 ## Impact
 

@@ -184,10 +184,11 @@ from the same input. Paths a project-scope lock records relative to the **Packag
 
 ### Requirement: Into folder is empty and apart
 
-`<dir>` SHALL be an existing, empty folder, compared resolved. It SHALL NOT lie in a **Package** (any path
-through `.apm/skill-graft`, as given or resolved, ignoring case), in a path **Source**'s folder, or in or around
-the git cache, both resolved. Otherwise `build` SHALL exit 1 naming `<dir>` and why, before resolving; the **Source** check
-follows loading the config, the others precede it. `build` SHALL never create or delete `<dir>` itself.
+`<dir>` SHALL be an existing, empty folder, compared resolved. It SHALL NOT lie in a **Package** (any path through
+`.apm/skill-graft`, resolved or as given with `..` normalized), in a path **Source**'s folder, or in or around the
+git cache, both resolved; all three compared ignoring case. Otherwise `build` SHALL exit 1 naming `<dir>` and why,
+before resolving; the **Source** check follows loading the config, the others precede it. `build` SHALL never create
+or delete `<dir>` itself.
 
 #### Scenario: Missing folder
 

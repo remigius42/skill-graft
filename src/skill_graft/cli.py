@@ -334,14 +334,15 @@ def main(argv: list[str] | None = None) -> int:
             warn(resolved.warnings)
         elif args.command == "build":
             # `--into` mirrors the package's layout in another folder.
-            into = None if args.into is None else args.into.resolve()
+            given: Path | None = args.into
+            into = None if given is None else given.resolve()
             skills = paths.skills() if into is None else into / ".apm" / "skills"
             started = False
             try:
                 with tempfile.TemporaryDirectory(prefix="skill-graft-") as work:
                     loaded = _load()
-                    if into is not None:
-                        _check_into_sources(args.into, into, loaded)
+                    if given is not None:
+                        _check_into_sources(given, loaded)
                     folders = resolve.folders(loaded, Cache(paths.cache()), {})
                     resolved = resolve.resolve(loaded, folders, Path(work))
                     warn(resolved.warnings)
@@ -396,13 +397,14 @@ def _check_into(into: Path) -> None:
         raise SkillGraftError(f"--into {into}: overlaps the cache {cache}")
 
 
-def _check_into_sources(given: Path, into: Path, loaded: config.Config) -> None:
-    """Refuses an `--into` folder, resolved as `into`, inside a path source."""
+def _check_into_sources(into: Path, loaded: config.Config) -> None:
+    """Refuses an `--into` folder inside a path source, compared resolved."""
+    folded = _folded(into.resolve())
     for alias, source in sorted(loaded.sources.items()):
-        if isinstance(source, config.PathSource) and _folded(into).is_relative_to(
+        if isinstance(source, config.PathSource) and folded.is_relative_to(
             _folded(source.folder)
         ):
-            raise SkillGraftError(f"--into {given}: inside source {alias!r}")
+            raise SkillGraftError(f"--into {into}: inside source {alias!r}")
 
 
 def _folded(path: Path) -> Path:
