@@ -111,7 +111,8 @@ is one of five kinds; the first four are judged per **Skill**:
 
 ## 4. Report
 
-List each finding with its **Skill**, file, text, kind, and a proposed fix:
+List the findings as a table, one row each: its **Skill**, file, text, kind, and a proposed fix. With arguments, the
+report holds only findings in those **Skills**.
 
 | Kind         | Fix                                                                                                                                                         |
 | ------------ | ----------------------------------------------------------------------------------------------------------------------------------------------------------- |
