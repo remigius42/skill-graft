@@ -55,3 +55,9 @@
   `claude setup-token`), `claude -p` run there with `--allowedTools` for `Bash(skill-graft:*)`, `Bash(mktemp:*)`,
   `Bash(diff:*)`, reads, searches and subagents, and a grep per defect; verify a manual run reports all five, leaves the
   eval **Package**'s files unchanged, and leaves the real `~/.apm`, `~/.claude` and `~/.cache/skill-graft` unchanged
+- [x] 4.2 Split `run.sh` into named scenarios, all by default or those named: `defects` (today's run, plus a user
+  **Patch** of `lead` whose line is not reported), `clean` (nothing found, nothing to build), `never-built`, `scoped`
+  (`/graft-check up/code-style` reports none of `lead`'s defects), `build-fails`, `newer-lock` (the `skill-graft`
+  wrapper rewrites the throwaway lock to `version = 2`) and `fix` (a second `claude -p --continue` turn accepts
+  `bind up/review false` and declines the rest: `up/review` left the **Hull**, the advice to build, no other config
+  change); verify each scenario's checks against stub reports that pass and fail, then a manual run of all of them

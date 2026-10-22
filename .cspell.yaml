@@ -30,6 +30,7 @@ words:
   - gitlink
   - heapdump
   - ignorewhitespace
+  - iterdir
   - keepends
   - kiro
   - mattpocock
