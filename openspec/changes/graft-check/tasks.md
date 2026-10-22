@@ -9,7 +9,7 @@
 
 ## 2. The skill
 
-- [ ] 2.1 Add `skills/graft-check/SKILL.md` with front matter (`name: graft-check`, `disable-model-invocation: true`, a
+- [x] 2.1 Add `skills/graft-check/SKILL.md` with front matter (`name: graft-check`, `disable-model-invocation: true`, a
   description saying it runs only when the user asks) and a body stub; add `tests/test_check.py` asserting the front
   matter, and that a git **Source** with `subdirectory = "skills"`, a temporary repository committing a copy of the
   working tree's `skills/`, with `entries = ["sg/graft-check"]` resolves to `sg/graft-check` alone with no warning and
