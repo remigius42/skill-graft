@@ -96,10 +96,12 @@ before="$(snapshot)"
 report="$work/report.md"
 claude -p "/graft-check" \
   --allowedTools "Bash(skill-graft:*)" "Bash(mktemp:*)" "Bash(diff:*)" Read Grep Glob Task Agent \
-  > "$report"
+  > "$report" && status=0 || status=$?
 cat "$report"
+if [[ "$status" != 0 ]]; then
+  echo "run.sh: claude exited $status" >&2
+fi
 
-status=0
 check() {  # <kind> <text the finding quotes>: both in the report
   if grep -qiF -- "$2" "$report" && grep -qiF -- "$1" "$report"; then
     echo "run.sh: found $1 ($2)" >&2

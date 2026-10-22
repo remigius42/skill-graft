@@ -27,5 +27,5 @@ It builds, in a new temporary folder:
 call is denied.
 
 The script prints the report, then one line per defect: `found` when the report holds the defect's text and its
-kind, `MISSING` otherwise. It exits non-zero when a defect is missing or the eval package's files changed. Read the
-report too: the grep only shows that each finding is named.
+kind, `MISSING` otherwise. It exits non-zero when `claude` fails, a defect is missing, or the eval package's files
+changed. Read the report too: the grep only shows that each finding is named.
