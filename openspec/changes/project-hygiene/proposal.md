@@ -16,9 +16,11 @@ the default token permissions and takes its actions by movable tags. The sibling
 - `CHANGELOG.md`, hand-written in the Keep a Changelog 1.1.0 format with Semantic Versioning, as in the sibling
   repositories. No version has been released, so every entry sits under `[Unreleased]`, seeded from the archived
   OpenSpec changes: one entry per change a user can notice; refactors and internal tooling get none.
-- `AGENTS.md`: archiving a change a user can notice adds its entry under `[Unreleased]` in the same commit.
+- `AGENTS.md`: a commit that changes what a user sees adds its entry under `[Unreleased]`; for an OpenSpec change,
+  the archive commit.
 - `docs/development.md` moves to `CONTRIBUTING.md`, keeping its setup, checks and evals, and gains the OpenSpec
-  workflow in short, a pointer to `AGENTS.md` and `CONTEXT.md` for the rules, and `lint-imports` in its hook list.
+  workflow in short, a pointer to `AGENTS.md` and `CONTEXT.md` for the rules, and a hook summary that names
+  `.pre-commit-config.yaml` as the full list instead of its partial one.
 - `README.md`, toward the four parts of a README (identification, evaluation, usage, engagement):
   - a copyright line under the title, as in `claude-cloud-test`;
   - `## Installation` moved up, followed by a new `## Usage`: one scenario from a fresh install to deployed skills,
