@@ -88,17 +88,23 @@ What the skill can lean on already exists:
   the checked **Package** may not be the one that installed `graft-check` (a user-scope install checking a project), so
   it points the user at the **Source** they installed it from, in that **Package**.
 - **One subagent per checked Skill**, each reporting findings of the per-skill kinds (missed, false, rewrite, link) in a
-  fixed shape; the main agent judges wrong targets from `skill-graft tree`, which names each edge's **Reference** as
-  written (the lock's edges hold targets only), merges, and proposes. Without subagents, the main agent goes through the
-  **Skills** one by one.
-- **Template block is a commented `[sources.skill-graft]`** with `subdirectory = "skills"`, plus the two
-  commands to run, not an `entries` line: the template's example `entries` line is already there, and `add`
-  writes the **Entry** once `update` has set the `ref`. The block says that until then every `build` fails, not
+  fixed shape; the main agent judges wrong targets, merges, and proposes. `skill-graft tree` gives the targets; it shows
+  one edge per target, kind and **Bind**, and a prose edge only when rewritten, so the agent judges every use of each
+  target's own name and of each `[bind]` key bound to it (the lock's edges hold targets only). Without subagents, the
+  main agent goes through the **Skills** one by one.
+- **Template block is a commented `[sources.skill-graft]`** with `subdirectory = "skills"`, plus the three commands to
+  run (`update`, `add`, `build`), not an `entries` line: the template's example `entries` line is already there, and
+  `add` writes the **Entry** once `update` has set the `ref`. The block says that until then every `build` fails, not
   only graft-check's, since a git **Source** without a `ref` blocks the whole **Package**.
-- **Eval, not test, for the agent.** `evals/graft-check/run.sh` builds a project **Package** in a temporary folder
-  (a git **Source** made with `git init` and committed with `GIT_AUTHOR_*` and `GIT_COMMITTER_*` set, since the
-  temporary `HOME` has no git identity; no network), plants one defect per kind, and runs `claude -p` there,
-  then greps the report. A project **Package** is found before the user's, so the real `~/.apm` is never read or
+- **Eval, not test, for the agent.** `evals/graft-check/run.sh` builds a project **Package** in a temporary folder (a
+  git **Source** made with `git init` and committed with `GIT_AUTHOR_*` and `GIT_COMMITTER_*` set, since the temporary
+  `HOME` has no git identity; no network), one per named scenario (`run.sh [scenario…]`, all by default): planted
+  defects with a user **Patch**, a clean **Package** built or never built, a scoped run, a failing build, a lock the
+  `skill-graft` wrapper rewrites to `version = 2`, and a second `claude -p --continue` turn that accepts one fix. It
+  runs `claude -p` there, then greps each report: a finding counts when one line holds its text and its kind. Left to
+  manual review, since a headless run cannot reliably make a build fail mid-fix or accept a given `add`: One false match
+  among real calls, A skill joins the hull, Bind restored, Earlier patches kept, Source changed, and Lock current,
+  vendored copies behind. A project **Package** is found before the user's, so the real `~/.apm` is never read or
   written.
   - `HOME` and `XDG_CACHE_HOME` point into the temporary folder, as AGENTS.md asks of anything that runs `apm`,
     though nothing here does: the real `~/.claude` and `~/.cache/skill-graft` stay untouched, the user's
@@ -110,7 +116,7 @@ What the skill can lean on already exists:
   - `--allowedTools` grants `Bash(skill-graft:*)`, `Bash(mktemp:*)`, `Bash(diff:*)`, file reads and searches,
     and subagents; headless, any other tool call is denied, not asked. `TMPDIR` also points into the temporary
     folder, apart from the eval **Package** and `XDG_CACHE_HOME`, since `--into` refuses a folder in a
-    **Package** or the cache (and in a path **Source**, which the eval has none of).
+    **Package** or the cache (and in a path **Source**, such as the eval's `art`).
 
 ## Risks / Trade-offs
 

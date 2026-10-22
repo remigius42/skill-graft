@@ -24,7 +24,8 @@ resolving it gives no warning and no suggestion.
 
 The skill's front matter SHALL set `disable-model-invocation: true`, and its description SHALL say it runs only
 when the user asks for it. Given **Skill IDs** as arguments, it SHALL check only those **Hull** **Skills**;
-without arguments, the whole **Hull**.
+without arguments, the whole **Hull**. An argument that is no **Skill ID** of the **Hull** SHALL end the **Check**,
+naming it and listing the **Hull**'s **Skill IDs**.
 
 #### Scenario: Front matter
 
@@ -37,17 +38,22 @@ without arguments, the whole **Hull**.
 - **WHEN** the user runs `/graft-check mp/tdd`
 - **THEN** the report covers `mp/tdd` only
 
+#### Scenario: Unknown argument
+
+- **WHEN** the user runs `/graft-check mp-tdd`, the **Deployed name** rather than the **Skill ID**
+- **THEN** the skill names `mp-tdd`, lists the **Hull**'s **Skill IDs**, and checks nothing
+
 ### Requirement: Builds before reading
 
-The skill SHALL first make a new, empty folder under the system's temporary folder and run
-`skill-graft build --into` with it, reading the **Package** from the `package:` line. A failing build SHALL end the
-**Check** with the build's error. It SHALL then read the lock and the vendored copies in that folder, and each
-**Skill**'s **Upstream** folder: under a path **Source**'s folder as the lock records it, and for a git **Source**
-under its root, found once through `skill-graft why` on one of its **Skills**. For a **Skill** the lock lists
-`patches` for, the skill SHALL read those patch files and count the lines they change as intended, applying
-nothing. It SHALL take which written name each edge comes from from `skill-graft tree`, which prints every edge with
-the **Reference** as written. The **Package**'s own `.apm/skills/` and lock SHALL
-change only through accepted fixes.
+The skill SHALL first make a new, empty folder under the system's temporary folder and run `skill-graft build --into`
+with it, reading the **Package** from the `package:` line. A failing build SHALL end the **Check** with the build's
+error. It SHALL then read the lock and the vendored copies in that folder, and each **Skill**'s **Upstream** folder:
+under a path **Source**'s folder as the lock records it, and for a git **Source** under its root, found once through
+`skill-graft why` on one of its **Skills**. For a **Skill** the lock lists `patches` for, the skill SHALL read those
+patch files and count the lines they change as intended, applying nothing. It SHALL take the targets from
+`skill-graft tree` and judge each at every use, in the **Upstream** text, of its own name and of each `[bind]` key of
+that **Source** bound to it, since the tree shows one edge per target, kind and **Bind**, and a prose edge only when
+rewritten. The **Package**'s own `.apm/skills/` and lock SHALL change only through accepted fixes.
 
 #### Scenario: Build fails
 

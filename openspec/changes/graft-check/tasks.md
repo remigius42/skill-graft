@@ -23,7 +23,8 @@
     new session, naming no alias)
   - inputs: the throwaway lock and vendored copies; **Upstream** folders from the lock for path **Sources** and one
     `skill-graft why` per git **Source**; a patched **Skill**'s `patches` read, their changed lines counted as intended;
-    `skill-graft tree` for each edge's written name; optional **Skill ID** arguments
+    `skill-graft tree` for the targets, every use of each target's name and of its bound `[bind]` keys judged; optional
+    **Skill ID** arguments
   - the five kinds with a placeholder example each; the per-skill subagent fan-out and its report shape
   - fixes one at a time after the user's yes: a **Bind** only when every use of the name in that **Source**'s
     **Upstream** text needs it, else a **Patch**; `add`/`bind`/`unbind`, or the README recipe with the **Package** path;
@@ -40,21 +41,23 @@
 
 ## 3. Installing it
 
-- [x] 3.1 Add the commented `[sources.skill-graft]` block (with `subdirectory = "skills"`) and the `update`/`add`
-  commands, with the note that every `build` fails until that `update`, to the `init` template; verify a test for the
-  "Template shows graft-check" scenario passes, uncommenting the block and loading it
+- [x] 3.1 Add the commented `[sources.skill-graft]` block (with `subdirectory = "skills"`) and the
+  `update`/`add`/`build` commands, with the note that every `build` fails until that `update`, to the `init`
+  template; verify a test for the "Template shows graft-check" scenario passes, uncommenting the block and loading
+  it
 - [x] 3.2 Document installing and running `graft-check` in `README.md`; verify the documented commands match the
   template and `pre-commit run --all-files` is green
 
 ## 4. Eval
 
 - [x] 4.1 Write `evals/graft-check/run.sh` and its README: a temporary project **Package** over a local git **Source**
-  (committed with `GIT_AUTHOR_*` and `GIT_COMMITTER_*` set)
-  with one planted defect per kind, the working copy in the project's `.claude/skills/`, `HOME`, `XDG_CACHE_HOME` and
-  `TMPDIR` in the temporary folder, `CLAUDE_CODE_OAUTH_TOKEN` or `ANTHROPIC_API_KEY` required (neither: stop, naming
-  `claude setup-token`), `claude -p` run there with `--allowedTools` for `Bash(skill-graft:*)`, `Bash(mktemp:*)`,
-  `Bash(diff:*)`, reads, searches and subagents, and a grep per defect; verify a manual run reports all five, leaves the
-  eval **Package**'s files unchanged, and leaves the real `~/.apm`, `~/.claude` and `~/.cache/skill-graft` unchanged
+  and a path **Source** `art` (the wrong target), the git one committed with `GIT_AUTHOR_*` and `GIT_COMMITTER_*`
+  set, with one planted defect per kind, the working copy in the project's `.claude/skills/`, `HOME`,
+  `XDG_CACHE_HOME` and `TMPDIR` in the temporary folder, `CLAUDE_CODE_OAUTH_TOKEN` or `ANTHROPIC_API_KEY` required
+  (neither: stop, naming `claude setup-token`), `claude -p` run there with `--allowedTools` for
+  `Bash(skill-graft:*)`, `Bash(mktemp:*)`, `Bash(diff:*)`, reads, searches and subagents, and a grep per defect;
+  verify a manual run reports all five, leaves the eval **Package**'s files unchanged, and leaves the real `~/.apm`,
+  `~/.claude` and `~/.cache/skill-graft` unchanged
 - [x] 4.2 Split `run.sh` into named scenarios, all by default or those named: `defects` (today's run, plus a user
   **Patch** of `lead` whose line is not reported), `clean` (nothing found, nothing to build), `never-built`, `scoped`
   (`/graft-check up/code-style` reports none of `lead`'s defects), `build-fails`, `newer-lock` (the `skill-graft`
