@@ -94,11 +94,13 @@ is one of five kinds; the first four are judged per **Skill**:
 
 - **missed**: words that call a **Skill** in a form skill-graft does not read: "run the `<name>` skill", "hand off to
   `<name>`". Its **Skill** stays out of the **Hull**, or keeps its old name after a rename.
-- **false**: a **Reference** that names no **Skill**: `` `GET /<route>` ``, a path `/<folder>` in prose, a hyphenated
-  word that happens to match a **Skill**'s name.
+- **false**: a slash or Skill tool **Reference** that names no **Skill**, so it pulls one into the **Hull** or
+  skill-graft warns that none matches: `` `GET /<route>` ``, a path `/<folder>` in prose. A prose one is a **rewrite**
+  when the build changed it, and otherwise no finding.
 - **rewrite**: compare the **Upstream** text, plus its patches' lines, with the vendored copy. Each remaining change
-  must be a **Reference** rewritten to its **Deployed name**. Wrong: a word changed that names no **Skill** there.
-  Missed: a renamed **Skill**'s name left as it was where it means that **Skill**.
+  must be a **Reference** rewritten to its **Deployed name**. Wrong: a word changed that names no **Skill** there, such
+  as a hyphenated word that happens to match a renamed **Skill**'s name. Missed: a renamed **Skill**'s name left as it
+  was where it means that **Skill**.
 - **link**: a relative link or path that works in the **Upstream** folder and breaks in the vendored copy:
   `../<other>/<file>.md` into another **Skill**'s folder, now under another name or not vendored.
 - **wrong target**, judged from the tree's targets at every use of their names: a **Reference** whose written name,
