@@ -50,6 +50,8 @@ Done when you hold the **Package** path and a version 1 lock.
 
 ## 2. Inputs
 
+An argument that is no `id` in the lock's `[[skills]]` ends the **Check**: name it, and list the ids.
+
 From the lock, for each **Skill** to check (`[[skills]]`, or only the arguments):
 
 - **Vendored copy**: `<folder>/.apm/skills/<deployed name>/`, the `deployed` key, else the name.
@@ -69,8 +71,9 @@ Done when every **Skill** to check has its vendored copy, **Upstream** folder an
 
 Give each **Skill** to check its own subagent: its **Skill ID**, vendored copy, **Upstream** folder, patch files, the
 lock's path, this file's path with "read its Kinds section", and the report shape below. Without subagents, check the
-**Skills** one by one yourself. Meanwhile, judge **wrong target** for each name the tree shows from a checked
-**Skill**, at every use in its **Upstream** text.
+**Skills** one by one yourself. Meanwhile, judge **wrong target** for each target the tree shows from a checked
+**Skill**, at every use in its **Upstream** text of a name that resolves there: the target's own name, and each
+`[bind]` key of that **Source** in `skill-graft.toml` bound to it.
 
 A subagent reports every finding of the per-**Skill** kinds, or `none`:
 
@@ -98,9 +101,9 @@ is one of five kinds; the first four are judged per **Skill**:
   Missed: a renamed **Skill**'s name left as it was where it means that **Skill**.
 - **link**: a relative link or path that works in the **Upstream** folder and breaks in the vendored copy:
   `../<other>/<file>.md` into another **Skill**'s folder, now under another name or not vendored.
-- **wrong target**, judged from the tree's names at each of their uses: a **Reference** whose written name, read in its
-  **Upstream** sentence, means another **Skill** than its target: `/<name>` from **Source** `a` means a **Skill** `a`
-  lacks, and resolved to an unrelated `b/<name>`; or a **Bind** sends it astray.
+- **wrong target**, judged from the tree's targets at every use of their names: a **Reference** whose written name,
+  read in its **Upstream** sentence, means another **Skill** than its target: `/<name>` from **Source** `a` means a
+  **Skill** `a` lacks, and resolved to an unrelated `b/<name>`; or a **Bind** sends it astray.
 
 ## 4. Report
 
@@ -127,10 +130,10 @@ Done when every finding is listed with its fix.
 
 Take the fixes one at a time: ask, and apply only on yes.
 
-- `add`, `bind` and `unbind` write only a config that resolves.
+- `add`, `bind` and `unbind` write only a config that resolves. Before a `bind` or `unbind`, note the key's value.
 - A **Patch**, with `<package>` the **Package** path and `<n>` a new patch name:
   1. `cp -rL <upstream folder> base && rm -rf base/.git` in a new `mktemp -d` folder.
-  1. Apply the **Skill**'s patch files (step 2) in order: `(cd base && git apply -p1 <patch file>)`.
+  1. Apply the **Skill**'s patch files (step 2) in order: `(cd base && git apply -p1 <absolute patch file>)`.
   1. `cp -r base edited`, edit the files in `edited/`, keeping `name:` as it is.
   1. `mkdir -p <package>/patches/`, then `LC_ALL=C diff -ruN base/ edited/ > <package>/patches/<n>.patch`; its exit
      code 1 means it wrote a diff.
@@ -140,8 +143,12 @@ Take the fixes one at a time: ask, and apply only on yes.
 After each applied fix, make a throwaway build (step 1) into a new folder and compare its lock's `[[skills]]` ids with
 the previous build's. Name every **Skill** that left or joined the **Hull**.
 
-When that build fails after a **Patch**, undo the **Patch**: delete its file and remove its own item from the list; the
-key and the `[patches]` table only if you created them. Show the error.
+When that build fails, undo the fix and show the error:
+
+- `add`: `skill-graft remove` the same **Skill IDs**.
+- `bind` or `unbind`: `skill-graft bind` the key to its noted value, or `skill-graft unbind` it if it had none.
+- A **Patch**: delete its file and remove its own item from the list; the key and the `[patches]` table only if you
+  created them.
 
 Done when every proposed fix is applied or declined.
 
