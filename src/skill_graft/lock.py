@@ -9,8 +9,7 @@ import tomlkit
 
 from skill_graft import files, paths, rename
 from skill_graft.config import Config, GitSource, SkillId
-from skill_graft.errors import notice
-from skill_graft.hull import Edge, Hull
+from skill_graft.hull import Hull
 
 
 def render(
@@ -77,103 +76,6 @@ def _source_path(folder: Path) -> str:
     if paths.scope() == "project" and folder.is_relative_to(paths.root()):
         return Path(os.path.relpath(folder, paths.package())).as_posix()
     return str(folder)
-
-
-def tree(hull: Hull) -> str:
-    """The hull as `cargo tree` prints: one line per edge, repeats marked `(*)`.
-
-    Each entry expands at the top level; any other skill at its first line. A
-    renamed or prefixed skill shows its deployed name, a patched one `(patched)`.
-    A prose edge shows only when the build rewrites it; it pulls nothing in, so
-    its target expands elsewhere: `(*)`.
-    """
-    children = shown_edges(hull)
-    expanded: set[SkillId] = set()
-    lines: list[str] = []
-
-    def expand(skill_id: SkillId, prefix: str) -> None:
-        expanded.add(skill_id)
-        edges = children.get(skill_id, [])
-        for i, edge in enumerate(edges):
-            last = i == len(edges) - 1
-            repeat = (
-                edge.kind == "prose"
-                or edge.target in expanded
-                or edge.target in hull.entries
-            )
-            line = (
-                f"{prefix}{'└── ' if last else '├── '}"
-                f"{node_label(hull, edge.target)} ({edge_label(edge)})"
-            )
-            lines.append(line + (" (*)" if repeat else ""))
-            if not repeat:
-                expand(edge.target, prefix + ("    " if last else "│   "))
-
-    for entry in hull.entries:
-        lines.append(node_label(hull, entry))
-        expand(entry, "")
-    return "".join(f"{line}\n" for line in lines)
-
-
-def shown_edges(hull: Hull) -> dict[SkillId, list[Edge]]:
-    """Each skill's edges that get a tree line, in scan order.
-
-    One per target, kind and bind; a prose edge only when the build rewrites it.
-    """
-    children: dict[SkillId, dict[tuple[SkillId, str, bool], Edge]] = {}
-    for edge in hull.edges:
-        if edge.kind == "prose" and hull.deployed[edge.target] == edge.name:
-            continue
-        key = (edge.target, edge.kind, edge.bind)
-        children.setdefault(edge.source, {}).setdefault(key, edge)
-    return {source: list(edges.values()) for source, edges in children.items()}
-
-
-def node_label(hull: Hull, skill_id: SkillId) -> str:
-    """A skill as tree lines name it: its deployed name if it differs, `(patched)`."""
-    deployed = hull.deployed[skill_id]
-    return (
-        str(skill_id)
-        + ("" if deployed == skill_id.name else f" as {deployed}")
-        + (" (patched)" if skill_id in hull.patches else "")
-    )
-
-
-def edge_label(edge: Edge) -> str:
-    """The reference as written, plus `prose` and `bind` when they apply."""
-    return ", ".join(
-        [edge.text]
-        + (["prose"] if edge.kind == "prose" else [])
-        + (["bind"] if edge.bind else [])
-    )
-
-
-def suggestions(hull: Hull) -> str:
-    """The skills prose mentions outside the hull, and who mentions them."""
-    if not hull.suggestions:
-        return ""
-    lines = [
-        f"  {skill}, by {', '.join(sorted(str(s) for s in hull.suggestions[skill]))}"
-        for skill in sorted(hull.suggestions)
-    ]
-    header = (
-        "mentioned in prose, not in the hull (`skill-graft add <skill id>` to include):"
-    )
-    return "".join(f"{line}\n" for line in ["", header, *lines])
-
-
-def announce_suggestions(hull: Hull, dry_run: bool = False) -> None:
-    """For `build` and `update`: one line pointing to `resolve`, which lists them.
-
-    After a dry run `resolve` still reads the old refs, so the hint says to update.
-    """
-    if not hull.suggestions:
-        return
-    count = f"{len(hull.suggestions)} prose suggestion(s)"
-    if dry_run:
-        notice(f"{count} at the new tips: update, then run skill-graft resolve")
-    else:
-        notice(f"{count}: run skill-graft resolve")
 
 
 def skill_hashes(hull: Hull) -> dict[SkillId, str]:

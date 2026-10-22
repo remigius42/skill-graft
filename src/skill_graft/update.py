@@ -7,7 +7,7 @@ from typing import Any, cast
 
 import tomlkit
 
-from skill_graft import config, edit, git, lock, patch, paths, resolve
+from skill_graft import config, edit, explain, git, lock, patch, paths, resolve
 from skill_graft.cache import Cache
 from skill_graft.config import Config, GitSource, SkillId
 from skill_graft.errors import SkillGraftError, warn
@@ -71,7 +71,7 @@ def _update(loaded: Config, aliases: list[str], git_cache: Cache, write: bool) -
         if moved:
             _write_refs(moved)
         lock.write(text)  # even if no ref moved: a path source may have changed
-    lock.announce_suggestions(hull, dry_run=not write)  # once the writes succeeded
+    explain.announce_suggestions(hull, dry_run=not write)  # once the writes succeeded
 
 
 def _previous(

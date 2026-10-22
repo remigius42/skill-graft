@@ -1,13 +1,12 @@
-"""Views of the hull beyond `resolve`'s tree: why, Mermaid and its mermaid.live link."""
+"""Views of the hull: its tree and prose suggestions, why, Mermaid and its mermaid.live link."""
 
 import base64
 import json
 import zlib
 from collections.abc import Callable
 
-from skill_graft import lock
 from skill_graft.config import SkillId
-from skill_graft.errors import SkillGraftError
+from skill_graft.errors import SkillGraftError, notice
 from skill_graft.hull import Edge, Hull
 
 
@@ -44,6 +43,103 @@ def outside(hull: Hull, skill: SkillId) -> str:
     return f"`{skill}` is not in the hull{mentions}: `skill-graft add {skill}`"
 
 
+def tree(hull: Hull) -> str:
+    """The hull as `cargo tree` prints: one line per edge, repeats marked `(*)`.
+
+    Each entry expands at the top level; any other skill at its first line. A
+    renamed or prefixed skill shows its deployed name, a patched one `(patched)`.
+    A prose edge shows only when the build rewrites it; it pulls nothing in, so
+    its target expands elsewhere: `(*)`.
+    """
+    children = _shown_edges(hull)
+    expanded: set[SkillId] = set()
+    lines: list[str] = []
+
+    def expand(skill_id: SkillId, prefix: str) -> None:
+        expanded.add(skill_id)
+        edges = children.get(skill_id, [])
+        for i, edge in enumerate(edges):
+            last = i == len(edges) - 1
+            repeat = (
+                edge.kind == "prose"
+                or edge.target in expanded
+                or edge.target in hull.entries
+            )
+            line = (
+                f"{prefix}{'└── ' if last else '├── '}"
+                f"{_node_label(hull, edge.target)} ({_edge_label(edge)})"
+            )
+            lines.append(line + (" (*)" if repeat else ""))
+            if not repeat:
+                expand(edge.target, prefix + ("    " if last else "│   "))
+
+    for entry in hull.entries:
+        lines.append(_node_label(hull, entry))
+        expand(entry, "")
+    return "".join(f"{line}\n" for line in lines)
+
+
+def _shown_edges(hull: Hull) -> dict[SkillId, list[Edge]]:
+    """Each skill's edges that get a tree line, in scan order.
+
+    One per target, kind and bind; a prose edge only when the build rewrites it.
+    """
+    children: dict[SkillId, dict[tuple[SkillId, str, bool], Edge]] = {}
+    for edge in hull.edges:
+        if edge.kind == "prose" and hull.deployed[edge.target] == edge.name:
+            continue
+        key = (edge.target, edge.kind, edge.bind)
+        children.setdefault(edge.source, {}).setdefault(key, edge)
+    return {source: list(edges.values()) for source, edges in children.items()}
+
+
+def _node_label(hull: Hull, skill_id: SkillId) -> str:
+    """A skill as tree lines name it: its deployed name if it differs, `(patched)`."""
+    deployed = hull.deployed[skill_id]
+    return (
+        str(skill_id)
+        + ("" if deployed == skill_id.name else f" as {deployed}")
+        + (" (patched)" if skill_id in hull.patches else "")
+    )
+
+
+def _edge_label(edge: Edge) -> str:
+    """The reference as written, plus `prose` and `bind` when they apply."""
+    return ", ".join(
+        [edge.text]
+        + (["prose"] if edge.kind == "prose" else [])
+        + (["bind"] if edge.bind else [])
+    )
+
+
+def suggestions(hull: Hull) -> str:
+    """The skills prose mentions outside the hull, and who mentions them."""
+    if not hull.suggestions:
+        return ""
+    lines = [
+        f"  {skill}, by {', '.join(sorted(str(s) for s in hull.suggestions[skill]))}"
+        for skill in sorted(hull.suggestions)
+    ]
+    header = (
+        "mentioned in prose, not in the hull (`skill-graft add <skill id>` to include):"
+    )
+    return "".join(f"{line}\n" for line in ["", header, *lines])
+
+
+def announce_suggestions(hull: Hull, dry_run: bool = False) -> None:
+    """For `build` and `update`: one line pointing to `resolve`, which lists them.
+
+    After a dry run `resolve` still reads the old refs, so the hint says to update.
+    """
+    if not hull.suggestions:
+        return
+    count = f"{len(hull.suggestions)} prose suggestion(s)"
+    if dry_run:
+        notice(f"{count} at the new tips: update, then run skill-graft resolve")
+    else:
+        notice(f"{count}: run skill-graft resolve")
+
+
 def why(hull: Hull, skill: SkillId) -> str:
     """The inverted tree, as `cargo tree -i`: `skill`, then what reaches it.
 
@@ -58,7 +154,7 @@ def why(hull: Hull, skill: SkillId) -> str:
             callers.setdefault(edge.target, {}).setdefault(key, edge)
     order = {s: i for i, s in enumerate(hull.skills)}
     expanded = {skill}
-    lines = [lock.node_label(hull, skill) + _entry(hull, skill)]
+    lines = [_node_label(hull, skill) + _entry(hull, skill)]
 
     def expand(target: SkillId, prefix: str) -> None:
         edges = sorted(callers.get(target, {}).values(), key=lambda e: order[e.source])
@@ -68,7 +164,7 @@ def why(hull: Hull, skill: SkillId) -> str:
             repeat = not entry and edge.source in expanded
             line = (
                 f"{prefix}{'└─← ' if last else '├─← '}"
-                f"{lock.node_label(hull, edge.source)} ({lock.edge_label(edge)})"
+                f"{_node_label(hull, edge.source)} ({_edge_label(edge)})"
             )
             lines.append(line + _entry(hull, edge.source) + (" (*)" if repeat else ""))
             if not (entry or repeat):
@@ -94,11 +190,11 @@ def mermaid(hull: Hull) -> str:
     lines = ["flowchart TD"]
     for skill, node in ids.items():
         entry = ":::entry" if skill in hull.entries else ""
-        lines.append(f"  {node}[{_quote(lock.node_label(hull, skill))}]{entry}")
-    for source, edges in lock.shown_edges(hull).items():
+        lines.append(f"  {node}[{_quote(_node_label(hull, skill))}]{entry}")
+    for source, edges in _shown_edges(hull).items():
         for edge in edges:
             arrow = "-.->" if edge.kind == "prose" else "-->"
-            label = _quote(lock.edge_label(edge))
+            label = _quote(_edge_label(edge))
             lines.append(f"  {ids[source]} {arrow}|{label}| {ids[edge.target]}")
     lines.append("  classDef entry stroke-width:3px")
     return "".join(f"{line}\n" for line in lines)

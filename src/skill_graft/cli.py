@@ -321,12 +321,12 @@ def main(argv: list[str] | None = None) -> int:
                 elif args.format == "mermaid":
                     print(explain.mermaid(resolved), end="")
                 else:
-                    print(lock.tree(resolved), end="")
+                    print(explain.tree(resolved), end="")
                 warn(resolved.warnings)
         elif args.command == "resolve":
             with _hull() as (loaded, resolved):
                 lock.write(lock.render(loaded, {}, resolved))
-            print(lock.tree(resolved) + lock.suggestions(resolved), end="")
+            print(explain.tree(resolved) + explain.suggestions(resolved), end="")
             warn(resolved.warnings)
         elif args.command == "build":
             # `--into` mirrors the package's layout in another folder.
@@ -355,7 +355,9 @@ def main(argv: list[str] | None = None) -> int:
                     _undo_into(into)
                 raise
             if into is None:  # its hint, `resolve`, would rewrite the package's lock
-                lock.announce_suggestions(resolved)  # once nothing before APM can fail
+                explain.announce_suggestions(
+                    resolved
+                )  # once nothing before APM can fail
                 if not args.no_install:
                     apm.install()
     except (SkillGraftError, OSError) as error:

@@ -9,7 +9,7 @@ from typing import cast
 import tomlkit
 from tomlkit.items import Array, Table
 
-from skill_graft import config, files, lock, paths, resolve
+from skill_graft import config, explain, files, lock, paths, resolve
 from skill_graft.config import SkillId
 from skill_graft.errors import SkillGraftError, notice, warn
 from skill_graft.hull import Hull
@@ -159,6 +159,6 @@ def _finish(document: tomlkit.TOMLDocument, before: str) -> Hull:
     except OSError:  # leave neither file changed
         files.atomic_write(paths.config_file().resolve(), before.encode())
         raise
-    print(lock.tree(hull) + lock.suggestions(hull), end="")
+    print(explain.tree(hull) + explain.suggestions(hull), end="")
     warn(hull.warnings)
     return hull
