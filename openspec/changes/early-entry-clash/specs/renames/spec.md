@@ -5,8 +5,9 @@
 ### Requirement: Deployed names are unique
 
 Two **Hull** **Skills** with the same **Deployed name**, compared ignoring case, SHALL be an error naming both
-and a change that would separate them, and the command SHALL then write nothing. `build`, `resolve` and `update` SHALL
-report a clash between **Entries** before any **Source** is read or a remote contacted. The hint SHALL name a
+and a change that would separate them, and the command SHALL then write nothing. Every command that computes the
+**Hull** SHALL report a clash between **Entries** before any **Source** is read or a remote contacted, except
+`rename` and `bind`, which first read the **Sources** to check the **Skill ID** they are given. The hint SHALL name a
 `[rename]` line for a clashing **Skill** with neither a `[rename]` key nor a **Prefix**; else the `[rename]` value of a
 renamed one to change; else, for a prefixed one, that a `[rename]` key for it would, or its **Source**'s `prefix`
 unless another clashing **Skill** is of that **Source**.

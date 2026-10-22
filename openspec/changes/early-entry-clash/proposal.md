@@ -9,7 +9,8 @@ it behind a network error.
 
 ## What Changes
 
-- `build` and `resolve` check the **Entries**' **Deployed names** for clashes before any **Source** is read or
+- Every command that computes the **Hull** through `compute_hull` (`build`, `resolve`, `tree`, `why`, `add`,
+  `remove`, `unbind`) checks the **Entries**' **Deployed names** for clashes before any **Source** is read or
   fetched, and before the temporary folder is made.
 - `update` makes the same check before it contacts any remote.
 - Clashes found only through **References** are unchanged. `rename` and `bind` still read the **Sources** first,
@@ -23,8 +24,8 @@ None.
 
 ### Modified Capabilities
 
-- `renames`: "Deployed names are unique" adds that `build`, `resolve` and `update` report a clash between
-  **Entries** before any **Source** is read or a remote contacted.
+- `renames`: "Deployed names are unique" adds that every command computing the **Hull** reports a clash between
+  **Entries** before any **Source** is read or a remote contacted, except `rename` and `bind`.
 
 ## Impact
 
