@@ -14,7 +14,7 @@
   matter, and that a git **Source** with `subdirectory = "skills"`, a temporary repository committing a copy of the
   working tree's `skills/`, with `entries = ["sg/graft-check"]` resolves to `sg/graft-check` alone with no warning and
   no suggestion; verify the tests pass
-- [ ] 2.2 Write the skill's body by the rules in `resources/writing-for-agents/writing-for-agents-skill.md` and, for a
+- [x] 2.2 Write the skill's body by the rules in `resources/writing-for-agents/writing-for-agents-skill.md` and, for a
   skill, `resources/writing-for-agents/writing-for-agents-skill-mechanics.md` (user-invoked branch), with one exception:
   the description keeps the "only when the user asks" wording, since harnesses other than Claude Code may ignore
   `disable-model-invocation`. The body covers:
