@@ -2,17 +2,18 @@
 
 ## Why
 
-`compute_hull` checks that the **Entries**' **Deployed names** are unique only after it has read every **Source**,
-which may fetch an uncached **Ref**. That check needs only the config, so a clash between two **Entries** costs a
-fetch to report, and a failed fetch hides it behind a network error.
+`build`, `resolve` and `update` check that the **Entries**' **Deployed names** are unique only after they have
+read every **Source**, which may fetch an uncached **Ref** (and `update` first asks the remote for its tip). That
+check needs only the config, so a clash between two **Entries** costs a fetch to report, and a failed fetch hides
+it behind a network error.
 
 ## What Changes
 
-- Check the **Entries**' **Deployed names** for clashes before any **Source** is read or fetched (and before the
-  temporary folder is made), so every command computing the **Hull** reports such a clash at once, without
-  contacting a remote.
-- A clash between **Entries** now wins over every error from reading **Sources** (a missing `ref`, a failed fetch,
-  a bad `subdirectory`). Clashes found only through **References** are unchanged.
+- `build` and `resolve` check the **Entries**' **Deployed names** for clashes before any **Source** is read or
+  fetched, and before the temporary folder is made.
+- `update` makes the same check before it contacts any remote.
+- Clashes found only through **References** are unchanged. `rename` and `bind` still read the **Sources** first,
+  to check the **Skill ID** they are given.
 
 ## Capabilities
 
@@ -22,11 +23,13 @@ None.
 
 ### Modified Capabilities
 
-- `renames`: "Deployed names are unique" adds that a clash between **Entries** is reported before any **Source**
-  is read or fetched.
+- `renames`: "Deployed names are unique" adds that `build`, `resolve` and `update` report a clash between
+  **Entries** before any **Source** is read or a remote contacted.
 
 ## Impact
 
-- `src/skill_graft/pipeline/compute.py` (`compute_hull`): the entries-only `rename.check_unique` call moves ahead
-  of `_folders` and the `TemporaryDirectory`.
-- One new test in `tests/cli/test_git_build.py`. No config, lock, output or dependency changes.
+- `src/skill_graft/pipeline/compute.py`: a config-only check of the **Entries**' **Deployed names**, run first in
+  `compute_hull`.
+- `src/skill_graft/commands/update.py`: `_update` runs it before contacting a remote.
+- Two new tests: in `tests/cli/test_build.py` and `tests/commands/test_update.py`. No config, lock, output or
+  dependency changes.

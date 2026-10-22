@@ -5,9 +5,9 @@
 ### Requirement: Deployed names are unique
 
 Two **Hull** **Skills** with the same **Deployed name**, compared ignoring case, SHALL be an error naming both
-and a change that would separate them, and the command SHALL then write nothing. A clash between **Entries** SHALL
-be reported before any **Source** is read or fetched. The hint SHALL name a `[rename]`
-line for a clashing **Skill** with neither a `[rename]` key nor a **Prefix**; else the `[rename]` value of a
+and a change that would separate them, and the command SHALL then write nothing. `build`, `resolve` and `update` SHALL
+report a clash between **Entries** before any **Source** is read or a remote contacted. The hint SHALL name a
+`[rename]` line for a clashing **Skill** with neither a `[rename]` key nor a **Prefix**; else the `[rename]` value of a
 renamed one to change; else, for a prefixed one, that a `[rename]` key for it would, or its **Source**'s `prefix`
 unless another clashing **Skill** is of that **Source**.
 
@@ -21,6 +21,12 @@ unless another clashing **Skill** is of that **Source**.
 - **WHEN** **Entries** `mp/tdd` and `own/tdd` have no `[rename]` key, and `mp` is a git **Source** whose `ref` is
   not cached
 - **THEN** `build` exits non-zero naming both, and fetches nothing
+
+#### Scenario: Entries clash before update fetches
+
+- **WHEN** **Entries** `mp/tdd` and `own/tdd` have no `[rename]` key, `mp` is a git **Source**, and the user runs
+  `update mp`
+- **THEN** `update` exits non-zero naming both, contacts no remote, and writes nothing
 
 #### Scenario: Clash through a reference
 
