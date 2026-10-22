@@ -211,6 +211,8 @@ print them, but when there are any SHALL print one line on standard error,
 `skill-graft: <n> prose suggestion(s): run skill-graft resolve`; `update` counts those of the new tips, and
 after `--dry-run`, whose tips `resolve` cannot see yet, prints
 `skill-graft: <n> prose suggestion(s) at the new tips: update, then run skill-graft resolve` instead.
+`build --into` SHALL print no such line: `resolve` would rewrite the **Package**'s lock, and the lock in the
+`--into` folder lists the suggestions.
 
 #### Scenario: Suggestion printed
 
@@ -229,6 +231,12 @@ after `--dry-run`, whose tips `resolve` cannot see yet, prints
   `` `notes` `` but calls neither, and the user runs `build`
 - **THEN** stderr holds `skill-graft: 2 prose suggestion(s): run skill-graft resolve`, and stdout no suggestion
   block
+
+#### Scenario: Build into a folder announces none
+
+- **WHEN** **Entry** `mp/tdd` mentions `diagnosing-bugs`, not in the **Hull**, and the user runs
+  `build --into <dir>`
+- **THEN** stderr holds no `prose suggestion(s)` line, and `<dir>/skill-graft.lock` lists `mp/diagnosing-bugs`
 
 #### Scenario: Update announces suggestions
 
