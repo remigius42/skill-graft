@@ -2,9 +2,10 @@
 
 ## 1. CI
 
-- [ ] 1.1 In `.github/workflows/ci.yml`, add a top-level `permissions: contents: read` and pin each `uses:` to the full
-  commit SHA its tag names, the tag in a trailing comment; verify each SHA equals
-  `gh api repos/<owner>/<repo>/commits/<tag> --jq .sha`, that no `uses:` is left on a tag, and that pre-commit is green
+- [x] 1.1 In `.github/workflows/ci.yml`, add a top-level `permissions: contents: read`, set `persist-credentials: false`
+  on each checkout, and pin each `uses:` to the full commit SHA its tag names, the tag in a trailing comment; verify
+  each SHA equals `gh api repos/<owner>/<repo>/commits/<tag> --jq .sha`, that no `uses:` is left on a tag, that both
+  checkouts set `persist-credentials: false`, and that pre-commit is green
 
 ## 2. Changelog
 

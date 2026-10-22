@@ -11,7 +11,8 @@
 
 **Goals:**
 
-- The workflow's token can only read, and a moved tag cannot change what CI runs.
+- The workflow's token can only read and stays out of `.git/config`, and a moved tag cannot change which action
+  CI runs.
 - A user can read what skill-graft does differently from one release to the next, without reading OpenSpec.
 
 **Non-Goals:**
@@ -25,6 +26,9 @@
 - **Permissions at the top level, `contents: read` only.** Both jobs only check out. Per-job blocks would repeat it;
   a job that ever needs more adds its own block. Alternative: no block, relying on the repository's default token
   setting. Rejected: that setting is invisible in the repository and may be read-write.
+- **`persist-credentials: false` on each checkout.** Neither job uses git credentials after checkout: commitlint
+  reads local history, and pre-commit clones its public hook repositories itself. Left persisted, the token sits in
+  `.git/config`, readable by every hook the job runs.
 - **Pin by full SHA, the tag in a comment** (`uses: actions/checkout@<40 hex> # v7.0.1`). Look the SHA up with
   `gh api repos/<owner>/<repo>/commits/<tag> --jq .sha`, which peels an annotated tag to its commit. The comment
   keeps the version readable and is the format Dependabot updates later. The `npx` versions in the `commitlint` job

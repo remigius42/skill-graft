@@ -11,8 +11,8 @@ the default token permissions and takes its actions by movable tags. The sibling
 
 ## What Changes
 
-- `.github/workflows/ci.yml`: a top-level `permissions: contents: read`, and every `uses:` pinned to a full commit
-  SHA with its tag in a trailing comment (`# v7.0.1`).
+- `.github/workflows/ci.yml`: a top-level `permissions: contents: read`, `persist-credentials: false` on each
+  checkout, and every `uses:` pinned to a full commit SHA with its tag in a trailing comment (`# v7.0.1`).
 - `CHANGELOG.md`, hand-written in the Keep a Changelog 1.1.0 format with Semantic Versioning, as in the sibling
   repositories. No version has been released, so every entry sits under `[Unreleased]`, seeded from the archived
   OpenSpec changes: one entry per change a user can notice; refactors and internal tooling get none.
