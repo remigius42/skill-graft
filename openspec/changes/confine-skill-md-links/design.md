@@ -26,8 +26,9 @@ export writes committed symlinks as they are, absolute targets included (`cache.
 - **Checks in `index` and `read_name`, in this order; no rule shared with `check_files`.**
 
   1. Confined: `os.path.realpath(SKILL.md)` must be inside the **Skill**'s resolved folder (`folder.resolve()`: the
-     walk may reach the folder through a symlinked one). First, so nothing outside a git **Source** is ever stat'ed or
-     opened, and every outside link gets the same message whatever it leads to.
+     walk may reach the folder through a symlinked one). First, so nothing outside a git **Source** is opened or
+     stat'ed through a link (`realpath` only `lstat`s and reads links on the way), and every outside link gets the same
+     message whatever it leads to.
   1. Always: `os.stat` the `SKILL.md`, links followed, and require `S_ISREG`; any `OSError` (missing, loop, `EACCES`)
      refuses it too, its message adding the cause. Not `Path.is_file`, which re-raises `EACCES` on Python 3.11 to 3.13
      past `index`'s handler, nor `os.path.isfile`, which drops the cause.
