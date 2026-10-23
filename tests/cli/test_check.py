@@ -49,6 +49,7 @@ def test_reader_only_reads() -> None:
     for kind in ("missed", "false", "rewrite", "link", "wrong target"):
         assert f"**{kind}**" in prompt
     assert "at most 200 characters" in prompt and "means:" in prompt
+    assert "line of the `upstream` file" in prompt and "vendored: " in prompt
 
 
 def test_patcher_only_edits() -> None:

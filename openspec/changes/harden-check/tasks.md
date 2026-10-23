@@ -63,6 +63,8 @@ characters**, Markdown that is not UTF-8).
     `` `GET /up-review` `` instead of the **Upstream** line. Missed `notes` got no fix, though `add up/notes` is
     allowed: the fix-argument rule reads stricter than it is. A first run, before the eval's `claude` wrapper gave
     readers the token, had every reader fail "Not logged in" and the **Check** read nothing in its own session.
+  - After that run, the reader quotes the **Upstream** line in `text`, the built one in `vendored`, and `SKILL.md`
+    allows `add` for a name a report writes under a declared alias; not yet rerun.
 - [x] 3.4 Ignore the deployed `.claude/skills/graft-check/` in `.gitignore` beside `mp-*` and `hl-*`; verify
   `git status` no longer lists it
 

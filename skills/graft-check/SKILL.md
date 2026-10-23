@@ -124,8 +124,8 @@ Done when every checked **Skill** has a report, or is named as having none.
 
 ## 5. Report
 
-List the findings as a table, one row each: its **Skill**, file, the reader's `text` in a code span, kind, and a
-proposed fix. With arguments, the report holds only findings in those **Skills**.
+List the findings as a table, one row each: its **Skill**, file, the reader's `text` in a code span, its `vendored`
+line too when given, kind, and a proposed fix. With arguments, the report holds only findings in those **Skills**.
 
 | Kind         | Fix                                                                                                                                                         |
 | ------------ | ----------------------------------------------------------------------------------------------------------------------------------------------------------- |
@@ -137,8 +137,8 @@ proposed fix. With arguments, the report holds only findings in those **Skills**
 
 Every name in a fix comes from a known source; a finding whose fix fails this is listed with no fix:
 
-- A **Skill ID**: an `id` in the lock's `[[skills]]` or a target in the tree; for `skill-graft add`, one whose alias
-  is a **Source** in `[sources]`.
+- A **Skill ID**: an `id` in the lock's `[[skills]]` or a target in the tree. For `skill-graft add`, also one outside
+  the **Hull**: its alias a **Source** in `[sources]`, its name as a report on that **Source**'s **Skills** writes it.
 - A **Bind** key `<alias>/<name>`: its alias in `[sources]`, its name written in the tree or in a report on that
   **Source**'s **Skills**.
 - Each side of the slash matches `[A-Za-z0-9][A-Za-z0-9._-]*`, and the whole is single-quoted in the command:
