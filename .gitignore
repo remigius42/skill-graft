@@ -44,3 +44,4 @@ apm_modules/
 /apm.lock.yaml
 .claude/skills/mp-*/
 .claude/skills/hl-*/
+.claude/skills/graft-check/

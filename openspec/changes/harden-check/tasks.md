@@ -57,7 +57,7 @@ characters**, Markdown that is not UTF-8).
   marker file outside its folders: the marker is absent and the other findings are reported) and `unhardened` (a
   `claude` wrapper on `PATH` whose `--help` lacks `--restricted`: the skill asks and, on no, reads nothing); update its
   README. Verify `bash -n` and shellcheck in pre-commit; run the eval only on the user's go, and record the result
-- [ ] 3.4 Ignore the deployed `.claude/skills/graft-check/` in `.gitignore` beside `mp-*` and `hl-*`; verify
+- [x] 3.4 Ignore the deployed `.claude/skills/graft-check/` in `.gitignore` beside `mp-*` and `hl-*`; verify
   `git status` no longer lists it
 
 ## 4. Security docs
