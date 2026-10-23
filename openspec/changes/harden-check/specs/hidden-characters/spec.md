@@ -71,8 +71,8 @@ that none of these decode is binary and SHALL be skipped.
 
 For a **Skill** with **Patches**, its **Upstream** folder and the lines its patch files add SHALL be checked, so a
 **Patch** that adds a **Hidden character** fails, naming the patch file and its line, and one that removes it does not
-clear the **Upstream** one. In the patched copy, every file and folder name the **Upstream** folder lacks, and every
-file a binary hunk writes, SHALL be checked too, named by its path inside the **Skill** as in the patched copy.
+clear the **Upstream** one. In the patched copy, every file and folder name the **Upstream** folder lacks SHALL be
+checked too, named by its path inside the **Skill** as in the patched copy.
 
 #### Scenario: Patch adds one
 
@@ -89,11 +89,6 @@ file a binary hunk writes, SHALL be checked too, named by its path inside the **
 
 - **WHEN** `mp/tdd`'s **Upstream** `SKILL.md` holds U+E0041 and its **Patch** removes that line
 - **THEN** `skill-graft resolve` exits 1, naming the **Upstream** file
-
-#### Scenario: Binary hunk
-
-- **WHEN** `mp/tdd`'s **Patch** writes `data.txt` through a binary hunk, and the written file holds U+E0041
-- **THEN** `skill-graft resolve` exits 1, naming `data.txt` as in the patched copy
 
 #### Scenario: Patch creates a name
 

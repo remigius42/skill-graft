@@ -23,12 +23,12 @@ characters**, Markdown that is not UTF-8).
   a NUL byte not switching the scan off; `.git` left out as vendoring leaves it out; verify the tests pass and
   `lint-imports` stays green
 - [ ] 2.2 Scan each **Skill** in `hull.walk`: its **Upstream** folder, the `+` lines of its patch files, and in the
-  patched copy the names the **Upstream** lacks and the files a binary hunk writes; collected, with Markdown that is not
+  patched copy the names the **Upstream** lacks; collected, with Markdown that is not
   UTF-8, alongside patch failures into one error raised after the walk, each list under its own header, unused-key
   warnings left out; the not-UTF-8 warning in `references.scan` gone; carry the hidden list through `update._fetch_hint`
   and name it in `update._previous`; tests in `tests/pipeline/test_hull.py` for two **Skills** in one run, with Latin-1
-  Markdown, with a failing **Patch**, a **Patch** that adds one, moves one, removes one, creates a name holding one, and
-  writes one through a binary hunk, and a **Skill** outside the **Hull**, and in `tests/commands/` for
+  Markdown, with a failing **Patch**, a **Patch** that adds one, moves one, removes one, and creates a name holding one,
+  and a **Skill** outside the **Hull**, and in `tests/commands/` for
   `update --dry-run` keeping the hidden list; verify they pass, the old not-UTF-8 warning test rewritten to the error
 - [ ] 2.3 Let `why` and `tree` print the **Hull** as walked when only **Hidden characters** or Markdown that is not
   UTF-8 failed, then report them and exit 1; end-to-end tests in `tests/cli/` for the hidden-characters spec:

@@ -51,10 +51,10 @@ See proposal.md for why, ADR 0007 for the decision. What the change builds on:
   is needed: scanning random bytes leniently, a 3-byte bidi sequence turns up by chance about once per 2 MB. The walk
   scans the **Upstream** folder, then the `+` lines of each patch file (context lines repeat **Upstream** ones, which
   would report twice), then in the patched copy every name the **Upstream** lacks (git writes non-ASCII paths in octal
-  escapes, so a patch header hides them) and every file a `GIT binary patch` hunk writes, the one content no text scan
-  saw. Found characters, and Markdown that is not UTF-8, are collected like `failed`, and the walk goes on. Alternative:
-  scan in `vendor`. Rejected: `resolve`, `why`, `tree` and the editing commands never vendor, and the **Check** reads
-  **Upstream** folders, not vendored ones.
+  escapes, so a patch header hides them). No patch writes a file the `+` lines do not show: the config refuses a
+  `GIT binary patch` block. Found characters, and Markdown that is not UTF-8, are collected like `failed`, and the walk
+  goes on. Alternative: scan in `vendor`. Rejected: `resolve`, `why`, `tree` and the editing commands never vendor, and
+  the **Check** reads **Upstream** folders, not vendored ones.
 
 - **`why` and `tree` print before failing.** The walk's collected-failures error carries the **Hull** as walked when it
   failed only on **Hidden characters** or Markdown that is not UTF-8, so these two print it, then the error, exit 1; the
