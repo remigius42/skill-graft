@@ -6,8 +6,8 @@ from pathlib import Path
 
 from skill_graft.infra import files
 from skill_graft.infra.errors import SkillGraftError
-from skill_graft.pipeline import discovery, patch, references
-from skill_graft.pipeline.config import Config, SkillId, deployed
+from skill_graft.pipeline import discovery, hidden, patch, references
+from skill_graft.pipeline.config import Config, PatchFile, SkillId, deployed
 
 
 @dataclass(frozen=True)
@@ -65,11 +65,16 @@ def walk(
     queue = deque(skills)
     # Skills whose patches failed: the walk goes on, to report them all at once.
     failed: list[tuple[SkillId, Path, list[str]]] = []
+    # Hidden characters, and Markdown that is not UTF-8: likewise.
+    found_hidden: list[tuple[SkillId, str]] = []
     try:
         while queue:
             current = queue.popleft()
             upstream[current] = skills[current]
             files.check_files(skills[current])  # before reading any file in it
+            here, debris = _hidden(current, upstream[current], config.patches)
+            found_hidden += [(current, line) for line in here]
+            warnings += debris
             if current in config.patches:
                 try:
                     skills[current] = patch.apply(
@@ -78,12 +83,11 @@ def walk(
                 except patch.PatchFailed as error:  # its references stay unread
                     failed.append((current, upstream[current], error.lines))
                     continue
-            found, file_warnings = references.scan(skills[current])
-            warnings += [  # naming the upstream file, not the copy, which goes away
-                w.replace(str(skills[current]), str(upstream[current]))
-                for w in file_warnings
-            ]
-            for ref in found:
+                found_hidden += [
+                    (current, line)
+                    for line in _hidden_names(upstream[current], skills[current])
+                ]
+            for ref in references.scan(skills[current]):
                 key = SkillId(current.alias, ref.name)
                 bound = key in config.binds
                 if bound:
@@ -133,11 +137,11 @@ def walk(
                     indexes[bound_to.alias], bound_to, f'[bind] "{key}" = "{bound_to}"'
                 )
     except (SkillGraftError, OSError) as error:
-        if not failed:
+        if not failed and not found_hidden:
             raise
-        raise patch.PatchError(failed, str(error)) from None
-    if failed:  # the hull is incomplete: no warning about it would be right
-        raise patch.PatchError(failed)
+        raise patch.PatchError(failed, str(error), hidden=found_hidden) from None
+    if failed or found_hidden:  # no warning about such a hull would be right
+        raise patch.PatchError(failed, hidden=found_hidden)
     suggestions: dict[SkillId, set[SkillId]] = {}
     for current, ref, target, bound, key in prose:
         if target in skills:
@@ -170,6 +174,30 @@ def walk(
         patched,
         roots,
     )
+
+
+def _hidden(
+    skill: SkillId, folder: Path, patches: dict[SkillId, list[PatchFile]]
+) -> tuple[list[str], list[str]]:
+    """The hidden characters of `skill`'s upstream `folder` and of the lines its
+    patches add, then warnings: a patch that removes one does not clear it."""
+    found, warnings = hidden.scan(folder)
+    found = [f"{folder}/{line}" for line in found]
+    warnings = [f"{folder}/{line}" for line in warnings]
+    for file in patches.get(skill, []):
+        in_patch, debris = hidden.scan_patch(file.path, file.data)
+        found += in_patch
+        warnings += debris
+    return found, warnings
+
+
+def _hidden_names(upstream: Path, copy: Path) -> list[str]:
+    """The hidden characters in each name of the patched `copy` the upstream lacks,
+    which git writes escaped in a patch's header; named as in the copy, which goes
+    away. Their text is in the lines the patches add."""
+    known = {entry.relative_to(upstream) for entry in files.skill_entries(upstream)}
+    new = [e for e in files.skill_entries(copy) if e.relative_to(copy) not in known]
+    return [f"as patched, {line}" for line in hidden.scan_names(copy, new)]
 
 
 def _prose_target(

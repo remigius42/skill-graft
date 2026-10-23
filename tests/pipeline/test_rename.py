@@ -170,8 +170,7 @@ def test_file_changed_before_vendoring(home: Path, change: str) -> None:
 
 
 def test_unresolved_names_untouched(home: Path) -> None:
-    folder = skill(home / "mp" / "tdd", "/foo, /grilling\n```\npre-commit run\n```\n")
-    (folder / "notes.md").write_bytes(b"/grilling \xff\n")
+    skill(home / "mp" / "tdd", "/foo, /grilling\n```\npre-commit run\n```\n")
     skill(home / "mp" / "grilling")
     skill(home / "mp" / "pre-commit")
     write_config(

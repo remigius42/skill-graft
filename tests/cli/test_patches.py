@@ -5,17 +5,11 @@ from pathlib import Path
 from typing import TypeAlias
 
 import pytest
-from conftest import build, make_patch, skill, vendored, write_config
+from conftest import build, make_patch, skill, vendored, write_config, write_patch
 
 from skill_graft.cli import main
 
 Capsys: TypeAlias = pytest.CaptureFixture[str]
-
-
-def write_patch(name: str, data: bytes) -> None:
-    folder = Path.home() / ".apm" / "skill-graft" / "patches"
-    folder.mkdir(parents=True, exist_ok=True)
-    (folder / name).write_bytes(data)
 
 
 def configure_patched(entries: str, patches: str, extra: str = "") -> None:
@@ -110,7 +104,7 @@ def test_not_utf8_named_by_upstream_path(
 
     code, err = build(capsys)
 
-    assert code == 0
+    assert code == 1
     assert str(home / "mp" / "tdd" / "notes.md") in err
     assert "skill-graft-" not in err
 

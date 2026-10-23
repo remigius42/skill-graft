@@ -11,7 +11,7 @@ from skill_graft.pipeline import references
 
 def found(folder: Path) -> list[str]:
     """The references in `folder`, as written."""
-    refs, _ = references.scan(folder)
+    refs = references.scan(folder)
     return [ref.text for ref in refs]
 
 
@@ -30,7 +30,7 @@ def found(folder: Path) -> list[str]:
 def test_standalone_token(tmp_path: Path, text: str) -> None:
     folder = skill(tmp_path / "tdd", f"{text}\n")
 
-    refs, _ = references.scan(folder)
+    refs = references.scan(folder)
 
     assert [(r.name, r.kind) for r in refs] == [("grilling", "slash")]
 
@@ -74,7 +74,7 @@ def test_paths_and_urls(tmp_path: Path, text: str) -> None:
 def test_path_arguments_and_after_a_code_span(tmp_path: Path, text: str) -> None:
     folder = skill(tmp_path / "tdd", f"{text}\n")
 
-    refs, _ = references.scan(folder)
+    refs = references.scan(folder)
 
     assert [r.text for r in refs if r.kind == "slash"] == []
 
@@ -93,7 +93,7 @@ def test_path_arguments_and_after_a_code_span(tmp_path: Path, text: str) -> None
 def test_call_forms(tmp_path: Path, text: str) -> None:
     folder = skill(tmp_path / "tdd", f"Use {text} now.\n")
 
-    refs, _ = references.scan(folder)
+    refs = references.scan(folder)
 
     assert [(r.name, r.kind, r.text) for r in refs] == [
         ("grilling", "skill-tool", "Skill(grilling)")
@@ -128,7 +128,7 @@ def test_every_markdown_file(tmp_path: Path) -> None:
     (folder / ".git").mkdir()
     (folder / ".git" / "x.md").write_text("/nope\n")
 
-    refs, _ = references.scan(folder)
+    refs = references.scan(folder)
 
     assert [(r.text, r.file.relative_to(folder).as_posix()) for r in refs] == [
         ("/c", "SKILL.md"),
@@ -137,14 +137,13 @@ def test_every_markdown_file(tmp_path: Path) -> None:
     ]
 
 
-def test_not_utf8_is_skipped_with_a_warning(tmp_path: Path) -> None:
+def test_not_utf8_is_skipped(tmp_path: Path) -> None:
     folder = skill(tmp_path / "tdd", "/a\n")
     (folder / "notes.md").write_bytes(b"/b \xff\n")
 
-    refs, warnings = references.scan(folder)
+    refs = references.scan(folder)  # the hidden character scan fails it
 
     assert [r.text for r in refs] == ["/a"]
-    assert len(warnings) == 1 and "notes.md" in warnings[0]
 
 
 def test_dangling_link_is_an_error(tmp_path: Path) -> None:
@@ -166,7 +165,7 @@ def test_dangling_link_is_an_error(tmp_path: Path) -> None:
 def test_prose(tmp_path: Path, text: str, written: str) -> None:
     folder = skill(tmp_path / "tdd", f"{text}\n")
 
-    refs, _ = references.scan(folder)
+    refs = references.scan(folder)
 
     assert [(r.name, r.kind, r.text) for r in refs] == [
         (written.strip("`"), "prose", written)
@@ -224,7 +223,7 @@ def test_span_is_the_name_alone(tmp_path: Path) -> None:
     text = "Run /grilling. Then Skill('notes', x) and `tdd`, or diagnosing-bugs...\n"
     folder = skill(tmp_path / "tdd", text)
 
-    refs, _ = references.scan(folder)
+    refs = references.scan(folder)
 
     assert [text[slice(*r.span)] for r in refs] == [
         "grilling",
@@ -242,7 +241,7 @@ def test_own_name_line(tmp_path: Path, line: str) -> None:
     )
     (folder / "notes.md").write_text(f"---\n{line}\n---\n")
 
-    refs, _ = references.scan(folder)
+    refs = references.scan(folder)
 
     assert [(r.file.name, r.span[0]) for r in refs] == [
         ("SKILL.md", len(f"---\n{line}\ndescription: before ")),
@@ -253,7 +252,7 @@ def test_own_name_line(tmp_path: Path, line: str) -> None:
 
 def kinds(text: str, tmp_path: Path) -> list[tuple[str, str]]:
     """Each reference in a skill holding `text`: its name and kind."""
-    refs, _ = references.scan(skill(tmp_path / "tdd", text))
+    refs = references.scan(skill(tmp_path / "tdd", text))
     return [(r.name, r.kind) for r in refs]
 
 

@@ -1,11 +1,21 @@
 """The `hull` spec, through `skill-graft build --no-install`."""
 
 import os
+import shutil
+import subprocess
 from pathlib import Path
 from typing import TypeAlias
 
 import pytest
-from conftest import after_package_line, build, configure, skill, vendored, write_config
+from conftest import (
+    after_package_line,
+    build,
+    configure,
+    skill,
+    vendored,
+    write_config,
+    write_patch,
+)
 
 from skill_graft.cli import main
 from skill_graft.pipeline import compute, config
@@ -153,13 +163,32 @@ def test_clash_through_a_reference(home: Path, capsys: Capsys) -> None:
     assert vendored() == set()
 
 
-def test_not_utf8_warns(home: Path, capsys: Capsys) -> None:
+def test_not_utf8_fails(home: Path, capsys: Capsys) -> None:
     two_sources(home, "/grilling\n")
     (home / "mp" / "tdd" / "notes.md").write_bytes(b"\xff")
 
     code, err = build(capsys)
 
-    assert code == 0 and "notes.md" in err and "UTF-8" in err
+    assert code == 1
+    assert f"mp/tdd: {home}/mp/tdd/notes.md: not UTF-8" in err
+    assert vendored() == set()
+
+
+TAG = "\U000e0041"
+
+
+def test_hidden_character_fails(home: Path, capsys: Capsys) -> None:
+    skill(home / "mp" / "tdd", "a\n" * 6 + f"x{TAG}\n")
+    configure(["mp/tdd"], mp="~/mp")
+
+    code, err = build(capsys)
+
+    assert code == 1
+    assert err == (
+        "skill-graft: hidden characters:\n"
+        f"  mp/tdd: {home}/mp/tdd/SKILL.md:7: U+E0041 (tag character)\n"
+    )
+    assert vendored() == set()
 
 
 def test_symlink_to_a_device(home: Path, capsys: Capsys) -> None:
@@ -470,3 +499,221 @@ def test_skill_tool_sentence_ambiguous_when_another_source_has_two(
 
     assert build(capsys) == (0, "")
     assert vendored() == {"tdd"}
+
+
+RLO = "\N{RIGHT-TO-LEFT OVERRIDE}"
+
+
+def hidden_lines(err: str) -> list[str]:
+    """The lines under `hidden characters:` in `err`."""
+    after = err.partition("hidden characters:\n")[2]
+    return [line for line in after.splitlines() if line.startswith("  ")]
+
+
+def test_two_skills_in_one_run(home: Path, capsys: Capsys) -> None:
+    skill(home / "mp" / "tdd", f"{TAG}\nRun /grilling.\n")
+    skill(home / "mp" / "grilling", f"a\n{RLO}\n")
+    configure(["mp/tdd"], mp="~/mp")
+
+    code, err = build(capsys)
+
+    assert code == 1
+    assert hidden_lines(err) == [
+        f"  mp/tdd: {home}/mp/tdd/SKILL.md:1: U+E0041 (tag character)",
+        f"  mp/grilling: {home}/mp/grilling/SKILL.md:2: U+202E (bidi control)",
+    ]
+
+
+def test_with_markdown_not_utf8(home: Path, capsys: Capsys) -> None:
+    skill(home / "mp" / "tdd", "Run /grilling.\n")
+    (home / "mp" / "tdd" / "notes.md").write_bytes("caf\xe9\n".encode("latin-1"))
+    skill(home / "mp" / "grilling", f"{RLO}\n")
+    configure(["mp/tdd"], mp="~/mp")
+
+    code, err = build(capsys)
+
+    assert code == 1
+    assert hidden_lines(err) == [
+        f"  mp/tdd: {home}/mp/tdd/notes.md: not UTF-8, so its references cannot be read",
+        f"  mp/grilling: {home}/mp/grilling/SKILL.md:1: U+202E (bidi control)",
+    ]
+
+
+def test_outside_the_hull(home: Path, capsys: Capsys) -> None:
+    skill(home / "mp" / "tdd")
+    skill(home / "mp" / "notes", f"{TAG}\n")
+    configure(["mp/tdd"], mp="~/mp")
+
+    assert build(capsys) == (0, "")
+
+
+def test_unused_key_warnings_left_out(home: Path, capsys: Capsys) -> None:
+    skill(home / "mp" / "tdd", f"{TAG}\n")
+    skill(home / "mp" / "x")
+    write_config(
+        'entries = ["mp/tdd"]\n[sources.mp]\npath = "~/mp"\n[bind]\n"mp/y" = "mp/x"\n'
+    )
+
+    code, err = build(capsys)
+
+    assert code == 1 and "skill-graft: warning" not in err
+
+
+def test_debris_warns(home: Path, capsys: Capsys) -> None:
+    skill(home / "mp" / "tdd", "a\nb\n\N{ZERO WIDTH SPACE}c\N{ZERO WIDTH SPACE}\n")
+    configure(["mp/tdd"], mp="~/mp")
+
+    assert build(capsys) == (
+        0,
+        f"skill-graft: warning: {home}/mp/tdd/SKILL.md:3: 2 invisible characters, "
+        "the first U+200B\n",
+    )
+    assert vendored() == {"tdd"}
+
+
+@pytest.mark.skipif(os.geteuid() == 0, reason="root reads any file")
+def test_unreadable_file(home: Path, capsys: Capsys) -> None:
+    skill(home / "mp" / "tdd")
+    (home / "mp" / "tdd" / "secret").write_text("x")
+    (home / "mp" / "tdd" / "secret").chmod(0)
+    configure(["mp/tdd"], mp="~/mp")
+
+    code, err = build(capsys)
+
+    assert code == 1
+    assert f"{home}/mp/tdd/secret cannot be read" in err
+
+
+def git_patch(
+    tmp_path: Path, before: dict[str, bytes], after: dict[str, bytes]
+) -> bytes:
+    """`git diff` from a folder holding `before` to one holding `after`."""
+    repo = tmp_path / "git-patch"
+    shutil.rmtree(repo, ignore_errors=True)
+    repo.mkdir()
+
+    def git(*args: str) -> bytes:
+        return subprocess.run(
+            ["git", *args], cwd=repo, check=True, capture_output=True
+        ).stdout
+
+    def write(files: dict[str, bytes]) -> None:
+        for path in [p for p in repo.iterdir() if p.name != ".git"]:
+            shutil.rmtree(path) if path.is_dir() else path.unlink()
+        for name, data in files.items():
+            (repo / name).parent.mkdir(parents=True, exist_ok=True)
+            (repo / name).write_bytes(data)
+
+    git("init", "-q")
+    write(before)
+    git("add", "-A")
+    git("commit", "-qm", "before", "--allow-empty")
+    write(after)
+    git("add", "-A")
+    return git("diff", "--cached")
+
+
+def patched_tdd(
+    tmp_path: Path, upstream: dict[str, bytes], after: dict[str, bytes]
+) -> None:
+    """Entry `mp/tdd` holding `upstream`, patched by `patches/tdd.patch` to `after`."""
+    for name, data in upstream.items():
+        (Path.home() / "mp" / "tdd" / name).parent.mkdir(parents=True, exist_ok=True)
+        (Path.home() / "mp" / "tdd" / name).write_bytes(data)
+    write_patch("tdd.patch", git_patch(tmp_path, upstream, after))
+    write_config(
+        'entries = ["mp/tdd"]\n[sources.mp]\npath = "~/mp"\n'
+        '[patches]\n"mp/tdd" = ["patches/tdd.patch"]\n'
+    )
+
+
+def test_patch_adds_one(home: Path, tmp_path: Path, capsys: Capsys) -> None:
+    patched_tdd(
+        tmp_path, {"SKILL.md": b"# tdd\n"}, {"SKILL.md": f"# tdd\n{RLO}\n".encode()}
+    )
+
+    code, err = build(capsys)
+
+    assert code == 1
+    assert hidden_lines(err) == ["  mp/tdd: patches/tdd.patch:7: U+202E (bidi control)"]
+
+
+def test_patch_moves_one(home: Path, tmp_path: Path, capsys: Capsys) -> None:
+    text = "a\n" * 6 + f"{TAG}\n"
+    patched_tdd(
+        tmp_path, {"SKILL.md": text.encode()}, {"SKILL.md": ("x\n" * 3 + text).encode()}
+    )
+
+    code, err = build(capsys)
+
+    assert code == 1
+    assert hidden_lines(err) == [
+        f"  mp/tdd: {home}/mp/tdd/SKILL.md:7: U+E0041 (tag character)"
+    ]
+
+
+def test_patch_removes_one(home: Path, tmp_path: Path, capsys: Capsys) -> None:
+    patched_tdd(
+        tmp_path, {"SKILL.md": f"# tdd\n{TAG}\n".encode()}, {"SKILL.md": b"# tdd\n"}
+    )
+
+    code, err = build(capsys)
+
+    assert code == 1
+    assert hidden_lines(err) == [
+        f"  mp/tdd: {home}/mp/tdd/SKILL.md:2: U+E0041 (tag character)"
+    ]
+
+
+def test_patch_creates_a_name(home: Path, tmp_path: Path, capsys: Capsys) -> None:
+    patched_tdd(
+        tmp_path,
+        {"SKILL.md": b"# tdd\n"},
+        {"SKILL.md": b"# tdd\n", f"x{RLO}.txt": b"plain\n"},
+    )
+    assert (
+        b'"b/x\\342\\200\\256.txt"'
+        in (home / ".apm/skill-graft/patches/tdd.patch").read_bytes()
+    )
+
+    code, err = build(capsys)
+
+    assert code == 1
+    assert hidden_lines(err) == [
+        "  mp/tdd: as patched, x\\u202e.txt: its name holds U+202E (bidi control)"
+    ]
+
+
+def test_debris_in_a_patch_warns(home: Path, tmp_path: Path, capsys: Capsys) -> None:
+    patched_tdd(
+        tmp_path,
+        {"SKILL.md": b"# tdd\n"},
+        {"SKILL.md": "# tdd\n\N{SOFT HYPHEN}\n".encode()},
+    )
+
+    code, err = build(capsys)
+
+    assert code == 0
+    assert err == (
+        "skill-graft: warning: patches/tdd.patch:7: 1 invisible character, "
+        "the first U+00AD\n"
+    )
+
+
+def test_with_a_failing_patch(home: Path, tmp_path: Path, capsys: Capsys) -> None:
+    patched_tdd(tmp_path, {"SKILL.md": b"# tdd\n"}, {"SKILL.md": b"# tdd\nmore\n"})
+    (home / "mp" / "tdd" / "SKILL.md").write_text("# changed\n")
+    skill(home / "mp" / "notes", f"{TAG}\n")
+    write_config(
+        'entries = ["mp/tdd", "mp/notes"]\n[sources.mp]\npath = "~/mp"\n'
+        '[patches]\n"mp/tdd" = ["patches/tdd.patch"]\n'
+    )
+
+    code, err = build(capsys)
+
+    assert code == 1
+    assert err.index("patches do not apply:") < err.index("hidden characters:")
+    assert "mp/tdd: patches/tdd.patch: SKILL.md: hunk" in err
+    assert hidden_lines(err) == [
+        f"  mp/notes: {home}/mp/notes/SKILL.md:1: U+E0041 (tag character)"
+    ]

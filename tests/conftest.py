@@ -189,6 +189,13 @@ def make_patch(tmp_path: Path, before: dict[str, str], after: dict[str, str]) ->
     return result.stdout
 
 
+def write_patch(name: str, data: bytes) -> None:
+    """Writes `patches/<name>` in the package."""
+    folder = Path.home() / ".apm" / "skill-graft" / "patches"
+    folder.mkdir(parents=True, exist_ok=True)
+    (folder / name).write_bytes(data)
+
+
 def configure(entries: list[str], **sources: str) -> None:
     """Writes a config with these entries and `alias = path` sources."""
     text = f"entries = {json.dumps(entries)}\n"

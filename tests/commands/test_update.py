@@ -801,3 +801,50 @@ def test_dry_run_with_a_failing_patch(
     assert "patches/tdd.patch: SKILL.md: hunk @@ -2,7 +2,7 @@ does not apply" in err
     assert "mp/tdd: run `update` without `--dry-run` to fetch the tip" in err
     assert "redo it against" not in err
+
+
+TAG = "\U000e0041"
+
+
+def test_dry_run_keeps_the_hidden_characters(
+    upstream: Upstream, tmp_path: Path, capsys: Capsys
+) -> None:
+    old = upstream.commit({"tdd/SKILL.md": LINES, "notes/SKILL.md": "# notes\n"})
+    edited = LINES.replace("line 5\n", "line five\n")
+    file = patched_source(
+        upstream, old, make_patch(tmp_path, {"SKILL.md": LINES}, {"SKILL.md": edited})
+    )
+    file.write_text(file.read_text().replace('"mp/tdd"]', '"mp/tdd", "mp/notes"]', 1))
+    assert main(["build", "--no-install"]) == 0
+    upstream.commit(
+        {
+            "tdd/SKILL.md": LINES.replace("line 5\n", "line 5 upstream\n"),
+            "notes/SKILL.md": f"# notes\n{TAG}\n",
+        }
+    )
+    capsys.readouterr()
+
+    code, _, err = update(capsys, "--dry-run")
+
+    assert code == 1
+    assert "mp/tdd: run `update` without `--dry-run` to fetch the tip" in err
+    assert "hidden characters:\n  mp/notes: " in err
+    assert "notes/SKILL.md:2: U+E0041 (tag character)" in err
+
+
+def test_hidden_characters_at_the_current_refs(
+    upstream: Upstream, capsys: Capsys
+) -> None:
+    old = upstream.commit({"tdd/SKILL.md": f"# tdd\n{TAG}\n"})
+    upstream.commit({"tdd/SKILL.md": "# tdd\n"})
+    write_config('entries = ["mp/tdd"]\n' + git_source("mp", upstream))
+    assert main(["update"]) == 0  # caches both commits; then back to the old ref
+    write_config(
+        'entries = ["mp/tdd"]\n' + git_source("mp", upstream, f'ref = "{old}"\n')
+    )
+    capsys.readouterr()
+
+    code, out, _ = update(capsys)
+
+    assert code == 0
+    assert "no previous hull to compare (hidden characters at the current refs)" in out

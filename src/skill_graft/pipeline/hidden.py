@@ -4,6 +4,7 @@ import re
 from pathlib import Path
 
 from skill_graft.infra import files
+from skill_graft.infra.errors import SkillGraftError
 
 # The critical and warning sets of APM 0.33.0's install check
 # (`apm_cli/security/content_scanner.py`), copied as `apm_cli` is no API. Lone
@@ -48,25 +49,52 @@ def scan(folder: Path) -> tuple[list[str], list[str]]:
     found, warnings = [], []
     for entry in files.skill_entries(folder):
         name = show(entry.relative_to(folder).as_posix())
-        found += [
-            f"{name}: its name holds {_describe(char)}"
-            for char in CRITICAL_CHARS.findall(entry.name)
-        ]
+        found += scan_names(folder, [entry])
         if entry.is_dir():
             continue
         markdown = entry.name.lower().endswith(".md")
-        text = _decode(entry.read_bytes(), markdown)
+        try:
+            data = entry.read_bytes()
+        except OSError as error:
+            raise SkillGraftError(f"{entry} cannot be read: {error.strerror}") from None
+        text = _decode(data, markdown)
         if text is None:
             if markdown:
                 found.append(f"{name}: not UTF-8, so its references cannot be read")
             continue
-        critical, debris = characters(text)
-        found += [f"{name}:{number}: {_describe(char)}" for number, char in critical]
-        if debris:
-            number, char = debris[0]
-            count = f"{len(debris)} invisible character{'s' * (len(debris) > 1)}"
-            warnings.append(f"{name}:{number}: {count}, the first U+{ord(char):04X}")
+        found_here, warned = _report(name, text)
+        found += found_here
+        warnings += warned
     return found, warnings
+
+
+def scan_names(folder: Path, entries: list[Path]) -> list[str]:
+    """As `scan`, for the names alone of these entries of `folder`."""
+    return [
+        f"{show(entry.relative_to(folder).as_posix())}: its name holds {_describe(c)}"
+        for entry in entries
+        for c in CRITICAL_CHARS.findall(entry.name)
+    ]
+
+
+def scan_patch(name: str, data: bytes) -> tuple[list[str], list[str]]:
+    """As `scan`, for the lines patch file `name` adds, by its own line numbers:
+    the lines it keeps repeat the upstream ones, which `scan` reports."""
+    text = _decode(data, markdown=False) or ""
+    lines = text.split("\n")
+    added = "\n".join(line if line.startswith("+") else "" for line in lines)
+    return _report(name, added)
+
+
+def _report(name: str, text: str) -> tuple[list[str], list[str]]:
+    """Each hidden character in `text`, of file `name`; a warning for its debris."""
+    critical, debris = characters(text)
+    found = [f"{name}:{number}: {_describe(char)}" for number, char in critical]
+    if not debris:
+        return found, []
+    number, char = debris[0]
+    count = f"{len(debris)} invisible character{'s' * (len(debris) > 1)}"
+    return found, [f"{name}:{number}: {count}, the first U+{ord(char):04X}"]
 
 
 def _decode(data: bytes, markdown: bool) -> str | None:

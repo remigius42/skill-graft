@@ -65,18 +65,18 @@ class Reference:
     sentence: bool = False  # named in a Skill tool sentence: counts only if it resolves
 
 
-def scan(folder: Path) -> tuple[list[Reference], list[str]]:
-    """The references in `folder`'s Markdown files, in order, and warnings.
+def scan(folder: Path) -> list[Reference]:
+    """The references in `folder`'s Markdown files, in order.
 
     Reads files, so the skill's symlinks must be checked first: a link to a
-    device or FIFO would never end. A file that is not UTF-8 is skipped.
+    device or FIFO would never end. A file that is not UTF-8 is skipped:
+    `hidden.scan` fails it.
     """
-    found, warnings = [], []
+    found = []
     for file in _markdown_files(folder):
         try:
             text = file.read_bytes().decode("utf-8")
-        except UnicodeDecodeError:
-            warnings.append(f"{file} is not UTF-8: references in it are not followed")
+        except UnicodeDecodeError:  # the hidden character scan reports it
             continue
         except OSError as error:
             raise SkillGraftError(f"{file} cannot be read: {error}") from None
@@ -111,7 +111,7 @@ def scan(folder: Path) -> tuple[list[Reference], list[str]]:
         # A call keeps the names inside it: `Skill("x")` in a Skill tool sentence.
         named = [r for r in named if not any(_inside(r.span, c) for c in calls)]
         found += sorted(here + named, key=lambda ref: ref.span)
-    return found, warnings
+    return found
 
 
 def _sentence_names(

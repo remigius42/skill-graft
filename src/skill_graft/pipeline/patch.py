@@ -32,9 +32,11 @@ def unused(config: Config, skills: dict[SkillId, Path]) -> list[str]:
 
 
 class PatchError(SkillGraftError):
-    """The patches of one or more skills did not apply; then perhaps another error.
+    """What the walk found wrong in the hull's skills, then perhaps another error.
 
-    `failures` holds each failing skill, its upstream folder and what failed.
+    `failures` holds each skill whose patches did not apply, its upstream folder
+    and what failed; `hidden`, each hidden character or Markdown file that is not
+    UTF-8, by skill.
     """
 
     def __init__(
@@ -42,18 +44,23 @@ class PatchError(SkillGraftError):
         failures: list[tuple[SkillId, Path, list[str]]],
         other: str = "",
         hints: dict[SkillId, str] | None = None,
+        hidden: list[tuple[SkillId, str]] | None = None,
     ) -> None:
         """`hints` replaces, per skill, the hint to redo it against its upstream."""
         hints = hints or {}
-        lines = ["patches do not apply:"]
+        hidden = hidden or []
+        lines = ["patches do not apply:"] if failures else []
         for skill, upstream, failed in failures:
             lines += [f"  {skill}: {line}" for line in failed]
             lines.append(
                 f"  {skill}: {hints.get(skill, f'redo it against {upstream}')}"
             )
+        if hidden:
+            lines += ["hidden characters:", *(f"  {s}: {line}" for s, line in hidden)]
         super().__init__("\n".join(lines + ([other] if other else [])))
         self.failures = failures
         self.other = other
+        self.hidden = hidden
 
 
 def apply(skill: SkillId, upstream: Path, patches: list[PatchFile], work: Path) -> Path:

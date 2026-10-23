@@ -43,7 +43,7 @@ def _fetch_hint(error: patch.PatchError, tmp: Path) -> patch.PatchError:
         for skill, upstream, _ in error.failures
         if upstream.is_relative_to(tmp)
     }
-    return patch.PatchError(error.failures, error.other, hints)
+    return patch.PatchError(error.failures, error.other, hints, error.hidden)
 
 
 def _update(loaded: Config, aliases: list[str], git_cache: Cache, write: bool) -> None:
@@ -93,10 +93,18 @@ def _previous(
     try:
         with compute.compute_hull(loaded, git_cache) as hull:
             return lock.skill_hashes(hull)
-    except patch.PatchError as error:  # likely rewritten for the tips
+    except patch.PatchError as error:  # patches likely rewritten for the tips
+        failed = " and ".join(
+            what
+            for what, found in [
+                ("patches fail", error.failures),
+                ("hidden characters", error.hidden),
+            ]
+            if found
+        )
         if error.other:  # an error that is no patch's: that one matters
-            return f"the current refs do not resolve: patches fail there; {error.other}"
-        return "patches fail at the current refs"
+            return f"the current refs do not resolve: {failed} there; {error.other}"
+        return f"{failed} at the current refs"
     except (SkillGraftError, OSError) as error:  # the update itself is still fine
         return f"the current refs do not resolve: {error}"
 

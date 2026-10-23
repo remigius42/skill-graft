@@ -22,7 +22,7 @@ characters**, Markdown that is not UTF-8).
   by the spec's order (UTF-32 marks before UTF-16, strict UTF-8 with NULs, lenient UTF-8 without, else binary skipped),
   a NUL byte not switching the scan off; `.git` left out as vendoring leaves it out; verify the tests pass and
   `lint-imports` stays green
-- [ ] 2.2 Scan each **Skill** in `hull.walk`: its **Upstream** folder, the `+` lines of its patch files, and in the
+- [x] 2.2 Scan each **Skill** in `hull.walk`: its **Upstream** folder, the `+` lines of its patch files, and in the
   patched copy the names the **Upstream** lacks; collected, with Markdown that is not
   UTF-8, alongside patch failures into one error raised after the walk, each list under its own header, unused-key
   warnings left out; the not-UTF-8 warning in `references.scan` gone; carry the hidden list through `update._fetch_hint`

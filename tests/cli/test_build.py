@@ -1,4 +1,4 @@
-import os
+import shutil
 import tempfile
 from pathlib import Path
 
@@ -18,14 +18,14 @@ def skills_dir(home: Path) -> Path:
 def test_whole_folder_copied(home: Path) -> None:
     source = skill(home / "src" / "chisel")
     (source / "refs").mkdir()
-    (source / "refs" / "notes.md").write_bytes(b"notes\x00\xff")
+    (source / "refs" / "notes.bin").write_bytes(b"notes\x00\xff")
     write_config('entries = ["own/chisel"]\n[sources.own]\npath = "~/src"\n')
 
     assert main(["build", "--no-install"]) == 0
 
     vendored = skills_dir(home) / "chisel"
     assert (vendored / "SKILL.md").read_text() == "# skill\n"
-    assert (vendored / "refs" / "notes.md").read_bytes() == b"notes\x00\xff"
+    assert (vendored / "refs" / "notes.bin").read_bytes() == b"notes\x00\xff"
 
 
 def test_removed_entry(home: Path) -> None:
@@ -86,17 +86,23 @@ def test_symlink_in_a_referenced_skill(
     assert "out" in capsys.readouterr().err and not skills_dir(home).exists()
 
 
-def unreadable(folder: Path) -> None:
-    """A file the copy cannot read, though resolution accepts it."""
+def unreadable(folder: Path, monkeypatch: pytest.MonkeyPatch) -> None:
+    """A file `secret` the copy cannot read, though resolution reads it."""
     (folder / "secret").write_text("x")
-    (folder / "secret").chmod(0)
+    copy2 = shutil.copy2
+
+    def refuse(source: str, target: str) -> object:
+        if Path(source).name == "secret":
+            raise PermissionError(13, "Permission denied", source)
+        return copy2(source, target)
+
+    monkeypatch.setattr(shutil, "copy2", refuse)  # as `vendor` calls it
 
 
-@pytest.mark.skipif(os.geteuid() == 0, reason="root reads any file")
 def test_failed_build_announces_no_suggestions(
-    home: Path, capsys: pytest.CaptureFixture[str]
+    home: Path, capsys: pytest.CaptureFixture[str], monkeypatch: pytest.MonkeyPatch
 ) -> None:
-    unreadable(skill(home / "src" / "tdd", "then diagnosing-bugs\n"))
+    unreadable(skill(home / "src" / "tdd", "then diagnosing-bugs\n"), monkeypatch)
     skill(home / "src" / "diagnosing-bugs")
     write_config('entries = ["own/tdd"]\n[sources.own]\npath = "~/src"\n')
 
@@ -105,13 +111,14 @@ def test_failed_build_announces_no_suggestions(
     assert "prose suggestion(s)" not in capsys.readouterr().err
 
 
-@pytest.mark.skipif(os.geteuid() == 0, reason="root reads any file")
-def test_copy_fails(home: Path, capsys: pytest.CaptureFixture[str]) -> None:
+def test_copy_fails(
+    home: Path, capsys: pytest.CaptureFixture[str], monkeypatch: pytest.MonkeyPatch
+) -> None:
     skill(home / "src" / "chisel")
     broken = skill(home / "src" / "tdd")
     write_config('entries = ["own/chisel"]\n[sources.own]\npath = "~/src"\n')
     main(["build", "--no-install"])
-    unreadable(broken)
+    unreadable(broken, monkeypatch)
     write_config('entries = ["own/tdd"]\n[sources.own]\npath = "~/src"\n')
 
     assert main(["build", "--no-install"]) == 1
@@ -122,9 +129,8 @@ def test_copy_fails(home: Path, capsys: pytest.CaptureFixture[str]) -> None:
     assert not (skills_dir(home).parent / "skills.new").exists()
 
 
-@pytest.mark.skipif(os.geteuid() == 0, reason="root reads any file")
 def test_crash_between_the_renames_keeps_the_previous_build(
-    home: Path, capsys: pytest.CaptureFixture[str]
+    home: Path, capsys: pytest.CaptureFixture[str], monkeypatch: pytest.MonkeyPatch
 ) -> None:
     skill(home / "src" / "chisel")
     broken = skill(home / "src" / "tdd")
@@ -133,7 +139,7 @@ def test_crash_between_the_renames_keeps_the_previous_build(
     # A run killed after moving skills/ aside and before moving skills.new/ in.
     skills_dir(home).rename(skills_dir(home).with_name("skills.old"))
     skill(skills_dir(home).with_name("skills.new") / "half")
-    unreadable(broken)
+    unreadable(broken, monkeypatch)
     write_config('entries = ["own/tdd"]\n[sources.own]\npath = "~/src"\n')
 
     assert main(["build", "--no-install"]) == 1
@@ -534,17 +540,19 @@ def test_same_lock(home: Path, tmp_path: Path) -> None:
     assert (into / "skill-graft.lock").read_bytes() == package_lock.read_bytes()
 
 
-def unreadable_entry(home: Path) -> None:
+def unreadable_entry(home: Path, monkeypatch: pytest.MonkeyPatch) -> None:
     skill(home / "src" / "chisel")
-    unreadable(skill(home / "src" / "tdd", "Run /chisel.\n"))
+    unreadable(skill(home / "src" / "tdd", "Run /chisel.\n"), monkeypatch)
     write_config('entries = ["own/tdd"]\n[sources.own]\npath = "~/src"\n')
 
 
-@pytest.mark.skipif(os.geteuid() == 0, reason="root reads any file")
 def test_vendoring_into_the_folder_fails(
-    home: Path, tmp_path: Path, capsys: pytest.CaptureFixture[str]
+    home: Path,
+    tmp_path: Path,
+    capsys: pytest.CaptureFixture[str],
+    monkeypatch: pytest.MonkeyPatch,
 ) -> None:
-    unreadable_entry(home)
+    unreadable_entry(home, monkeypatch)
     into = empty_folder(tmp_path)
 
     assert main(["build", "--into", str(into)]) == 1
@@ -592,11 +600,10 @@ def test_interrupted(
     assert list(into.iterdir()) == []
 
 
-@pytest.mark.skipif(os.geteuid() == 0, reason="root reads any file")
 def test_foreign_file_kept(
     home: Path, tmp_path: Path, monkeypatch: pytest.MonkeyPatch
 ) -> None:
-    unreadable_entry(home)
+    unreadable_entry(home, monkeypatch)
     into = empty_folder(tmp_path)
     copy = vendor.vendor
 
@@ -613,11 +620,10 @@ def test_foreign_file_kept(
     assert sorted(p.name for p in (into / ".apm").iterdir()) == ["x"]
 
 
-@pytest.mark.skipif(os.geteuid() == 0, reason="root reads any file")
 def test_temporary_folder_inside_it(
     home: Path, tmp_path: Path, monkeypatch: pytest.MonkeyPatch
 ) -> None:
-    unreadable_entry(home)
+    unreadable_entry(home, monkeypatch)
     into = empty_folder(tmp_path)
     monkeypatch.setattr(tempfile, "tempdir", str(into))
 
