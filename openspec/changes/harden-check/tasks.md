@@ -40,7 +40,7 @@ characters**, Markdown that is not UTF-8).
 
 ## 3. The skill
 
-- [ ] 3.1 Add `skills/graft-check/reader.json` and `patcher.json`, the agent definitions: the reader's prompt holds the
+- [x] 3.1 Add `skills/graft-check/reader.json` and `patcher.json`, the agent definitions: the reader's prompt holds the
   Kinds section moved from `SKILL.md`, the report shape with `text` one line of at most 200 characters, and every use of
   each given name with its verdict; the patcher's prompt edits only `edited/` and keeps `name:`. Extend
   `tests/cli/test_check.py`: the reader names only `Read`, `Grep`, `Glob`, the patcher only `Read`, `Edit`, `Write`, and

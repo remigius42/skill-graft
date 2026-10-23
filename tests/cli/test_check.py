@@ -1,6 +1,7 @@
 """The `graft-check` skill this repository ships (the `check` spec): its front matter,
 and that installing it pulls in nothing else."""
 
+import json
 import shutil
 import tomllib
 from pathlib import Path
@@ -28,6 +29,33 @@ def test_front_matter() -> None:
     assert fields["disable-model-invocation"] == "true"
     assert "only when the user asks" in fields["description"]
     assert "<alias>/<name>" in fields["argument-hint"]
+
+
+def agent(name: str) -> dict[str, object]:
+    """The agent `name` that `skills/graft-check/<name>.json` defines for `--agents`."""
+    agents = json.loads((SKILLS / "graft-check" / f"{name}.json").read_text())
+    assert list(agents) == [name]
+    definition = agents[name]
+    assert isinstance(definition, dict)
+    assert definition["description"] and definition["prompt"]
+    return definition
+
+
+def test_reader_only_reads() -> None:
+    reader = agent("reader")
+
+    assert reader["tools"] == ["Read", "Grep", "Glob"]
+    prompt = str(reader["prompt"])
+    for kind in ("missed", "false", "rewrite", "link", "wrong target"):
+        assert f"**{kind}**" in prompt
+    assert "at most 200 characters" in prompt and "means:" in prompt
+
+
+def test_patcher_only_edits() -> None:
+    patcher = agent("patcher")
+
+    assert patcher["tools"] == ["Read", "Edit", "Write"]
+    assert "edited/" in str(patcher["prompt"]) and "name:" in str(patcher["prompt"])
 
 
 def test_alone_in_its_hull(
