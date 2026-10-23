@@ -1,4 +1,5 @@
-"""The `skill-discovery` spec, through `skill-graft build --no-install`."""
+"""The `skill-discovery` spec, through `skill-graft build --no-install`, and through
+`discovery` itself where a build cannot show it."""
 
 import os
 from collections.abc import Iterator

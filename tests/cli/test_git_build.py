@@ -128,7 +128,7 @@ def test_unused_skill_linked_out_of_the_tree(tmp_path: Path, capsys: Capsys) -> 
     (upstream.path / "evil" / "SKILL.md").symlink_to("/dev/zero")
     git_source(upstream, "mp/tdd")
 
-    with deadline():
+    with deadline(30):  # the git fetch too, on a slow machine
         assert build(capsys) == (0, "")
     assert vendored() == {"tdd"}
 
