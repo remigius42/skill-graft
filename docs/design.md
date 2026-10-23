@@ -131,6 +131,11 @@ path = "~/Documents/sync/2_areas/software/chisel_skill"
 ## Resolution
 
 - A skill is its whole folder. Everything in it is vendored; nothing outside it is.
+- Discovery reads a skill's name from its `SKILL.md` only if that is a regular file once links are followed,
+  checked before opening it and again on the open descriptor, so no FIFO or device is opened or waited on. In a git
+  source, whose links someone else wrote, it first requires the `SKILL.md`'s real path inside the skill's resolved
+  folder, whatever the link leads to. A refused `SKILL.md` makes the name unreadable: an entry or reference naming
+  that folder fails, naming the `SKILL.md` by its full path and never its target; others never see it.
 - References are found in every Markdown file of a skill, code blocks included, in three forms: `/name` as its own token
   (never part of a path, URL, link target or attribute, nor a quoted first argument or list item such as
   `fetch('/orders')`, nor after an interpolation as in `${id}/orders`, nor right after a closing code span as in

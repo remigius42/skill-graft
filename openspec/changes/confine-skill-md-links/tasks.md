@@ -25,7 +25,7 @@ Tests that could block on a FIFO or device run under a timeout (`signal.alarm`),
   linked out of the tree", "Unused skill linked out of the tree" and "SKILL.md linked inside its skill"; in
   `tests/cli/test_build.py`, the skill-discovery spec's "SKILL.md linked to a device" and "Entry names it", under a
   timeout; verify they pass
-- [ ] 2.2 Note in `docs/design.md`, where discovery and git **Sources** are described, both checks before a
+- [x] 2.2 Note in `docs/design.md`, where discovery and git **Sources** are described, both checks before a
   `SKILL.md` is read; verify `pre-commit run --all-files`
 
 ## 3. Changelog
