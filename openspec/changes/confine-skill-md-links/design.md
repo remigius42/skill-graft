@@ -29,7 +29,8 @@ export writes committed symlinks as they are, absolute targets included (`cache.
      walk may reach the folder through a symlinked one). First, so nothing outside a git **Source** is ever stat'ed or
      opened, and every outside link gets the same message whatever it leads to.
   1. Always: `os.stat` the `SKILL.md`, links followed, and require `S_ISREG`; any `OSError` (missing, loop, `EACCES`)
-     refuses it too. Not `Path.is_file`, which re-raises `EACCES` on Python 3.11 to 3.13 past `index`'s handler.
+     refuses it too, its message adding the cause. Not `Path.is_file`, which re-raises `EACCES` on Python 3.11 to 3.13
+     past `index`'s handler, nor `os.path.isfile`, which drops the cause.
      Before opening, so no device is opened at all: opening some has side effects.
   1. `read_name` opens with `O_RDONLY | O_NONBLOCK`, `fstat`s the descriptor, requires `S_ISREG` again, and reads from
      it. That closes the race of a regular file swapped for a FIFO after step 2; `O_NONBLOCK` does nothing to a regular
@@ -45,9 +46,12 @@ export writes committed symlinks as they are, absolute targets included (`cache.
   not, would break every build.
 
 - **Messages name the `SKILL.md` by its full path, as `read_name`'s do, never its target**:
-  `<full path>/SKILL.md: a symlink leading outside its skill`, and `<full path>/SKILL.md: not a regular file`. One
-  message per check, whatever the target is, tells nothing about it. `check_files` still prints a link's target; that
-  is the path the link's author wrote, resolved, not any file's content, and stays as it is.
+  `<full path>/SKILL.md: a symlink leading outside its skill`, and `<full path>/SKILL.md: not a regular file`, followed
+  by `: <cause>` (the `OSError`'s `strerror`, such as `Permission denied`) when the `stat` fails. The confined check
+  runs first and has one message whatever the target is, so it tells nothing about it; a cause is told only for a
+  `SKILL.md` that stays inside its **Skill** in a git **Source**, or one in a path **Source**. `check_files` still
+  prints a link's target; that is the path the link's author wrote, resolved, not any file's content, and stays as it
+  is.
 
 ## Risks / Trade-offs
 

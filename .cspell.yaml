@@ -37,6 +37,7 @@ words:
   - heapdump
   - ignorewhitespace
   - importlinter
+  - isfile
   - isinstance
   - ISREG
   - iterdir

@@ -118,10 +118,12 @@ def _check(folder: Path, confined: bool) -> None:
     ):
         raise SkillGraftError(f"{skill_md}: a symlink leading outside its skill")
     try:
-        regular = stat.S_ISREG(os.stat(skill_md).st_mode)
-    except OSError:
-        regular = False
-    if not regular:
+        mode = os.stat(skill_md).st_mode
+    except OSError as error:
+        raise SkillGraftError(
+            f"{skill_md}: not a regular file: {error.strerror}"
+        ) from None
+    if not stat.S_ISREG(mode):
         raise SkillGraftError(f"{skill_md}: not a regular file")
 
 

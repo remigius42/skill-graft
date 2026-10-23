@@ -354,10 +354,18 @@ def test_skill_md_not_a_regular_file_does_not_block(
     assert vendored() == {"tdd"}
 
 
-@pytest.mark.parametrize("how", ["device", "fifo", "dangling", "unstatable"])
+@pytest.mark.parametrize(
+    ("how", "cause"),
+    [
+        ("device", ""),
+        ("fifo", ""),
+        ("dangling", ": No such file or directory"),
+        ("unstatable", ": Permission denied"),
+    ],
+)
 @pytest.mark.usefixtures("unlock")
 def test_skill_md_not_a_regular_file_is_unreadable(
-    home: Path, capsys: Capsys, how: str
+    home: Path, capsys: Capsys, how: str, cause: str
 ) -> None:
     if how == "unstatable" and os.geteuid() == 0:
         pytest.skip("root can stat anything")
@@ -368,7 +376,7 @@ def test_skill_md_not_a_regular_file_is_unreadable(
         code, err = build(capsys)
 
     assert code == 1
-    assert f"{home / 'src' / 'x' / 'SKILL.md'}: not a regular file" in err
+    assert f"{home / 'src' / 'x' / 'SKILL.md'}: not a regular file{cause}\n" in err
 
 
 def test_read_name_refuses_a_fifo(home: Path) -> None:
