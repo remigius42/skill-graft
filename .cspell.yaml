@@ -24,11 +24,13 @@ words:
   - dataviz
   - delenv
   - docstrings
+  - EACCES
   - evals
   - fcntl
   - followlinks
   - frontmatter
   - fsencode
+  - fstat
   - geteuid
   - gitdir
   - gitlink
@@ -36,6 +38,7 @@ words:
   - ignorewhitespace
   - importlinter
   - isinstance
+  - ISREG
   - iterdir
   - keepends
   - kiro
@@ -48,6 +51,7 @@ words:
   - mpgrilling
   - mptdd
   - mypy
+  - NONBLOCK
   - nosystem
   - nowarn
   - oids
@@ -67,6 +71,8 @@ words:
   - pyproject
   - pytest
   - pytestmark
+  - RDONLY
+  - realpath
   - Remigius
   - rmtree
   - samefile
