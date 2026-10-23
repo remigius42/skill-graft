@@ -7,6 +7,27 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+
+- On Claude Code, `/graft-check` reads **Skill** text only through headless readers, `claude -p --restricted` limited
+  to `Read`, `Grep` and `Glob`, without MCP servers and confined to that **Skill**'s folders; its own session sees
+  only CLI output and the readers' reports. A **Patch** it proposes is written by a patcher confined to a temporary
+  folder, and you read its diff before it enters the **Package**. Elsewhere, or with a `claude` lacking those flags,
+  it says the **Check** is unhardened and why, and reads only on your yes
+- A warning for invisible characters common as copy-paste debris (zero-width, soft hyphen, bidi marks), once per file
+  with its first line and count
+- `docs/security.md` and a Security section in the README: what APM and skill-graft block, what the **Check**
+  enforces on Claude Code, running it in Claude Code's sandbox, and the residual risks
+
+### Changed
+
+- **BREAKING**: resolution fails when a **Hull** **Skill** holds a **Hidden character**, in its **Upstream** text, a
+  file or folder name, or the lines its **Patches** add, naming each file, line and character class; one run reports
+  them all. `resolve`, `build` (`--into` too), `update` and the editing commands write nothing; `why` and `tree` print
+  the **Hull**, then fail. Such a **Hull**'s `build` already failed in APM; now `resolve` fails too
+- **BREAKING**: a Markdown file of a **Hull** **Skill** that is not UTF-8, **Upstream** or as patched, fails resolution
+  instead of being skipped with a warning; so does any file of it that cannot be read
+
 ## [0.1.0] - 2026-10-22
 
 ### Added
