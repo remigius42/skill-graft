@@ -40,7 +40,8 @@ A Markdown file SHALL be read as UTF-8, and one that does not decode strictly as
 since its **References** could not be read. Any other file SHALL be read, in this order: in UTF-32 or UTF-16 after a
 byte order mark for it, the UTF-32 marks tried first; else as UTF-8 when it decodes strictly, NUL bytes included; else,
 when it holds no NUL byte, as UTF-8 with each byte that is not UTF-8 counting as no character. A file with a NUL byte
-that none of these decode is binary and SHALL be skipped.
+that none of these decode is binary and SHALL be skipped. A file that cannot be read at all SHALL fail resolution,
+naming it.
 
 #### Scenario: UTF-16 file
 
@@ -66,6 +67,11 @@ that none of these decode is binary and SHALL be skipped.
 
 - **WHEN** a **Hull** **Skill** holds a PNG image, which has NUL bytes
 - **THEN** the image is not read, and resolution goes on
+
+#### Scenario: Unreadable file
+
+- **WHEN** a **Hull** **Skill** holds a file `secret` that the user cannot read
+- **THEN** `skill-graft resolve` exits 1, naming `secret` as unreadable
 
 ### Requirement: Upstream text and patches are both checked
 

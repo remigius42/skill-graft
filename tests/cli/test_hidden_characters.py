@@ -4,7 +4,7 @@ from pathlib import Path
 from typing import TypeAlias
 
 import pytest
-from conftest import Upstream, configure, skill, write_config
+from conftest import FakeApm, Upstream, configure, skill, vendored, write_config
 
 from skill_graft.cli import main
 from skill_graft.pipeline import config
@@ -58,6 +58,17 @@ def test_build_into_stays_empty(home: Path, tmp_path: Path, capsys: Capsys) -> N
 
     assert code == 1 and "U+E0041" in err
     assert list(into.iterdir()) == []
+
+
+def test_build_runs_no_apm(home: Path, fake_apm: FakeApm, capsys: Capsys) -> None:
+    skill(home / "mp" / "tdd", f"{TAG}\n")
+    configure(["mp/tdd"], mp="~/mp")
+
+    code, _, err = run(capsys, "build")
+
+    assert code == 1 and "U+E0041" in err
+    assert fake_apm.calls == []
+    assert vendored() == set()
 
 
 def test_update_keeps_the_ref(tmp_path: Path, capsys: Capsys) -> None:

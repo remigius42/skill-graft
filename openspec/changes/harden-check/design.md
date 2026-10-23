@@ -92,7 +92,8 @@ See proposal.md for why, ADR 0007 for the decision. What the change builds on:
   agent gave it, with its verdict (means that target, or not). Before proposing a **Bind** for `<alias>/<name>`, the
   main agent runs a use-only reader, asked about that name alone, on every **Hull** **Skill** of `<alias>` that has no
   use list for that name yet, the user's scope notwithstanding, and proposes the **Bind** only when every use is wrong.
-  The source-wide search needs no text in the main agent.
+  The source-wide search needs no text in the main agent. A finding quotes its **Upstream** line in `text`, and for a
+  finding the build caused, such as a rewrite or a broken link, the built line in `vendored`.
 
 - **Patcher: the same command shape,** `--tools Read,Edit,Write`, `--permission-mode acceptEdits`, `patcher.json`, run
   in its own `mktemp -d` folder holding only `edited/`, no `--add-dir`. The main agent builds `base/` in a second
@@ -113,8 +114,8 @@ See proposal.md for why, ADR 0007 for the decision. What the change builds on:
 
 - \[A later Claude Code changes what `--restricted` confines\] → the `injected` eval scenario catches it when the skill
   changes; `docs/security.md` names the version the spike ran on.
-- \[A report's quoted `text` carries an injection into the main agent\] → one line, at most 200 characters, shown, never
-  followed; the user accepts each fix. Documented as residual.
+- \[A report's quoted `text`, or its `vendored` line, carries an injection into the main agent\] → each one line, at
+  most 200 characters, shown, never followed; the user accepts each fix. Documented as residual.
 - [A non-Markdown file with a NUL byte that is not UTF-8, such as BOM-less UTF-16 text, is skipped as binary] → no
   Markdown can be, since Markdown must be strictly UTF-8; documented as residual.
 - [The sandbox blocks the readers] → each reader is a `claude` process needing the API's network and writes under
