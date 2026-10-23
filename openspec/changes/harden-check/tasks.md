@@ -16,7 +16,7 @@ characters**, Markdown that is not UTF-8).
 
 ## 2. Hidden characters
 
-- [ ] 2.1 Add `pipeline/hidden.py` test-first in `tests/pipeline/test_hidden.py`: each critical class found with file,
+- [x] 2.1 Add `pipeline/hidden.py` test-first in `tests/pipeline/test_hidden.py`: each critical class found with file,
   line, code point and class, in text and in file and folder names; the warning set, APM's ranges with U+2061 and U+FE00
   to U+FE0E, counted once per file with its first line; Markdown that is not strictly UTF-8 reported; other files read
   by the spec's order (UTF-32 marks before UTF-16, strict UTF-8 with NULs, lenient UTF-8 without, else binary skipped),
