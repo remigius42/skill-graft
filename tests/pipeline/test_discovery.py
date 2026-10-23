@@ -388,6 +388,25 @@ def test_read_name_refuses_a_fifo(home: Path) -> None:
         discovery.read_name(home)
 
 
+def test_read_name_takes_no_terminal(
+    home: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    # A terminal swapped in after the check must not become the controlling one.
+    skill(home / "x")
+    flags = []
+    real_open = os.open
+
+    def spy(path: Path, flag: int) -> int:
+        flags.append(flag)
+        return real_open(path, flag)
+
+    monkeypatch.setattr(os, "open", spy)
+
+    discovery.read_name(home / "x")
+
+    assert flags and all(flag & os.O_NOCTTY for flag in flags)
+
+
 def test_regular_file_linked_from_outside_a_path_source(home: Path) -> None:
     # Discovery reads it; build's symlink check refuses it in a hull skill.
     skill(home / "elsewhere", "---\nname: tdd\n---\n")

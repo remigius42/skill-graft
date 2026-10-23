@@ -32,9 +32,9 @@ export writes committed symlinks as they are, absolute targets included (`cache.
      refuses it too, its message adding the cause. Not `Path.is_file`, which re-raises `EACCES` on Python 3.11 to 3.13
      past `index`'s handler, nor `os.path.isfile`, which drops the cause.
      Before opening, so no device is opened at all: opening some has side effects.
-  1. `read_name` opens with `O_RDONLY | O_NONBLOCK`, `fstat`s the descriptor, requires `S_ISREG` again, and reads from
-     it. That closes the race of a regular file swapped for a FIFO after step 2; `O_NONBLOCK` does nothing to a regular
-     file.
+  1. `read_name` opens with `O_RDONLY | O_NONBLOCK | O_NOCTTY`, `fstat`s the descriptor, requires `S_ISREG` again, and
+     reads from it. That closes the race of a regular file swapped for a FIFO after step 2, and a terminal swapped in
+     never becomes the controlling one; both flags do nothing to a regular file.
 
   The other clauses of `check_files` cannot fire here: git commits no device or FIFO, and `os.walk` lists a link to a
   folder among folders, never as `SKILL.md`. Alternative: extract `check_files`' per-link rule and share it. Its

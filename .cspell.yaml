@@ -52,6 +52,7 @@ words:
   - mpgrilling
   - mptdd
   - mypy
+  - NOCTTY
   - NONBLOCK
   - nosystem
   - nowarn

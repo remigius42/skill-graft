@@ -55,13 +55,13 @@ def read_name(folder: Path) -> str:
 
     Reads only plain and quoted one-line values; anything else is an error, never
     a silent fallback to the folder name. Reads only a regular file: opening never
-    waits on a FIFO, and what is opened is checked, not what was there before.
+    waits on a FIFO or takes a terminal as the controlling one, and what is opened
+    is checked, not what was there before.
     """
     skill_md = folder / "SKILL.md"
+    flags = os.O_RDONLY | os.O_NONBLOCK | os.O_NOCTTY
     try:
-        with open(
-            os.open(skill_md, os.O_RDONLY | os.O_NONBLOCK), encoding="utf-8-sig"
-        ) as file:
+        with open(os.open(skill_md, flags), encoding="utf-8-sig") as file:
             if not stat.S_ISREG(os.fstat(file.fileno()).st_mode):
                 raise SkillGraftError(f"{skill_md}: not a regular file")
             text = file.read()
