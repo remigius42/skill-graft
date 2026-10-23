@@ -56,7 +56,24 @@ SH
 } > "$work/bin/skill-graft"
 chmod +x "$work/bin/skill-graft"
 export PATH="$work/bin:$PATH"
-real_claude="$(command -v claude)"
+# The skill's readers are `claude` processes it starts through Bash, which does not
+# pass the token on: a wrapper on PATH gives every `claude` the credentials from a
+# file only the user can read, deleted on exit.
+claude_bin="$(command -v claude)"
+(
+  umask 077
+  for name in CLAUDE_CODE_OAUTH_TOKEN ANTHROPIC_API_KEY; do
+    [[ -z "${!name:-}" ]] || printf 'export %s=%q\n' "$name" "${!name}"
+  done > "$work/auth"
+)
+trap 'rm -f "$work/auth"' EXIT
+{
+  echo '#!/usr/bin/env bash'
+  echo ". '$work/auth'"
+  echo "exec '$claude_bin' \"\$@\""
+} > "$work/bin/claude"
+chmod +x "$work/bin/claude"
+real_claude="$work/bin/claude"
 
 write() { mkdir -p "$(dirname "$1")"; cat > "$1"; }
 
@@ -328,7 +345,8 @@ work, files = sys.argv[1], sys.argv[2:]
 for file in files:
     for line in open(file):
         event = json.loads(line)
-        for block in (event.get("message") or {}).get("content") or []:
+        message = event.get("message")
+        for block in message.get("content") or [] if isinstance(message, dict) else []:
             if not isinstance(block, dict) or block.get("type") != "tool_use":
                 continue
             text = json.dumps(block.get("input"))

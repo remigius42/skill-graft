@@ -44,10 +44,11 @@ question"; a relative link into a renamed skill's folder), plus a user patch add
 `~/.cache/skill-graft` are never read or written, and no personal setting, hook or deployed skill changes the run.
 `--allowedTools` grants `skill-graft`, `mktemp`, `diff`, what the hardened **Check** runs (`printenv`, `command -v`,
 `claude`, `cd`, `cp`, `mv`, `rm`, `git apply`, `awk`), reads, writes, searches and subagents; headless, any other tool
-call is denied. The `unhardened` scenario's `claude` wrapper passes every other call to the real `claude`, the outer
-session's included, and runs it with `--output-format stream-json` to see its tool calls. `--add-dir` grants the whole
-temporary folder, where the throwaway builds, the cache and the sources lie,
-outside the project.
+call is denied. Claude Code's Bash does not pass the token on to the readers, so `claude` on `PATH` is a wrapper
+reading it from a file only you can read in the temporary folder, deleted on exit. The `unhardened` scenario's
+`claude` wrapper passes every other call to that one, the outer session's included, and the scenario runs with
+`--output-format stream-json` to see its tool calls. `--add-dir` grants the whole temporary folder, where the
+throwaway builds, the cache and the sources lie, outside the project.
 
 The script prints each report, then one `ok` or `FAILED` line per check, and exits non-zero when any check fails or
 `claude` does. A finding counts when one line of the report holds its text and its kind. Read the reports too: the

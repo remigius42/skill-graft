@@ -36,6 +36,9 @@ on it.
 - **Patch**: a unified diff against the **Upstream** folder, listed under `[patches]`, applied before **References**
   resolve.
 
+Run each command in this skill as its own Bash call, as written here, so the user's permission rules see each one;
+write prompt files with your file tool.
+
 ## 1. Hardened or not
 
 Run `printenv CLAUDECODE`, `command -v claude` and `claude --help`. The **Check** is hardened when `CLAUDECODE` is set,
