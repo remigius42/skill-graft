@@ -107,9 +107,16 @@ class Index:
     invalid: dict[str, list[SkillGraftError]]
 
 
-def _check(skill_md: Path) -> None:
+def _check(folder: Path, confined: bool) -> None:
     """Refuses a `SKILL.md` that is not a regular file, links followed, unopened:
-    opening a device can have effects."""
+    opening a device can have effects. When `confined`, first refuses one leading
+    outside its folder, whatever it leads to, so nothing outside is opened.
+    """
+    skill_md = folder / "SKILL.md"
+    if confined and not Path(os.path.realpath(skill_md)).is_relative_to(
+        folder.resolve()
+    ):
+        raise SkillGraftError(f"{skill_md}: a symlink leading outside its skill")
     try:
         regular = stat.S_ISREG(os.stat(skill_md).st_mode)
     except OSError:
@@ -122,7 +129,7 @@ def index(source: Path, confined: bool = False) -> Index:
     skills = Index({}, {}, {})
     for folder in _skill_folders(source, confined):
         try:
-            _check(folder / "SKILL.md")
+            _check(folder, confined)
             name = read_name(folder)
         except SkillGraftError as error:
             skills.unreadable.setdefault(folder.name, []).append(error)

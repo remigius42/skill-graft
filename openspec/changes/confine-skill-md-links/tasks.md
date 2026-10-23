@@ -12,7 +12,7 @@ Tests that could block on a FIFO or device run under a timeout (`signal.alarm`),
   link to `/dev/zero` and a FIFO (other **Skills** found, nothing blocks), a dangling link and a link the user cannot
   stat (refused, no traceback), `read_name` on a FIFO (refused), a regular file linked from outside in an unconfined
   **Source** (read, as today); verify they pass
-- [ ] 1.2 When `confined`, first refuse a `SKILL.md` whose real path leaves its **Skill**'s resolved folder, with
+- [x] 1.2 When `confined`, first refuse a `SKILL.md` whose real path leaves its **Skill**'s resolved folder, with
   `<full path>/SKILL.md: a symlink leading outside its skill`, before any stat; tests: links to an outside file whose
   `name:` is `leaked-marker`, to `/dev/zero` and to a missing path all give that one message (holding neither
   `leaked-marker` nor the target path), a link to a sibling **Skill**'s file (refused), a link to a file inside the

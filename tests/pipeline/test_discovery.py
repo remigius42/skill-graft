@@ -388,3 +388,50 @@ def test_regular_file_linked_from_outside_a_path_source(home: Path) -> None:
     skills = discovery.index(home / "src")
 
     assert skills.folders == {"tdd": [home / "src" / "x"]}
+
+
+@pytest.mark.parametrize("target", ["file", "device", "missing"])
+def test_confined_skill_md_linked_outside(home: Path, target: str) -> None:
+    (home / "local").mkdir()
+    (home / "local" / "SKILL.md").write_text("---\nname: leaked-marker\n---\n")
+    targets = {
+        "file": home / "local" / "SKILL.md",
+        "device": Path("/dev/zero"),
+        "missing": home / "local" / "missing",
+    }
+    (home / "src" / "evil").mkdir(parents=True)
+    (home / "src" / "evil" / "SKILL.md").symlink_to(targets[target])
+
+    with deadline():
+        skills = discovery.index(home / "src", confined=True)
+
+    [error] = skills.unreadable["evil"]
+    skill_md = home / "src" / "evil" / "SKILL.md"
+    assert str(error) == f"{skill_md}: a symlink leading outside its skill"
+
+
+def test_confined_skill_md_linked_to_a_sibling_skill(home: Path) -> None:
+    skill(home / "src" / "tdd")
+    (home / "src" / "copy").mkdir()
+    (home / "src" / "copy" / "SKILL.md").symlink_to("../tdd/SKILL.md")
+
+    skills = discovery.index(home / "src", confined=True)
+
+    assert "outside its skill" in str(skills.unreadable["copy"][0])
+    assert skills.folders == {"tdd": [home / "src" / "tdd"]}
+
+
+@pytest.mark.parametrize("through_link", [False, True])
+def test_confined_skill_md_linked_inside(home: Path, through_link: bool) -> None:
+    tdd = home / "src" / "skills" / "tdd"
+    tdd.mkdir(parents=True)
+    (tdd / "main.md").write_text("---\nname: tdd\n---\n")
+    (tdd / "SKILL.md").symlink_to("main.md")
+    if through_link:
+        # Walked before `skills`, so the skill is reached through the link.
+        (home / "src" / "a").symlink_to("skills")
+        tdd = home / "src" / "a" / "tdd"
+
+    skills = discovery.index(home / "src", confined=True)
+
+    assert skills.folders == {"tdd": [tdd]} and skills.unreadable == {}
