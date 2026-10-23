@@ -153,6 +153,33 @@ path = "~/Documents/sync/2_areas/software/chisel_skill"
   reference bound to a skill of another name is rewritten to that skill's deployed name. Every bind's target
   must exist, used or not, so a typo fails the next `resolve`.
 
+## Hidden characters
+
+- The walk scans each hull skill when it reaches it, after the symlink check and before its patches apply: every
+  file and folder name of its upstream folder (`.git` left out, as vendoring leaves it out) and every file's text,
+  then the `+` lines of its patch files (the lines a patch keeps repeat upstream ones, which would report twice),
+  then, in the patched copy, each name the upstream folder lacks, which git writes in octal escapes in a patch's
+  header. The config refuses binary hunks, so no patch writes text the `+` lines do not show.
+- The upstream folder is scanned too, not only the patched copy: the **Check** reads it, so a patch that removes a
+  hidden character does not clear it. Skills outside the hull, and `skill-graft.toml`, are not scanned.
+- The classes are APM 0.33.0's (`apm_cli/security/content_scanner.py`), copied as ranges since `apm_cli` is no
+  API: its critical set (tag characters, bidi embeddings, overrides and isolates, supplementary variation
+  selectors) fails resolution, naming each file, line, code point and class; its warning set (zero-width
+  characters, word joiner, soft hyphen, BMP variation selectors but the emoji one, bidi marks, invisible operators,
+  annotation markers, deprecated formatting characters) warns once per file, naming its first line and the count.
+  Lone surrogates are left out: strict decoding refuses them, lenient decoding replaces them. A name holding one is
+  printed escaped (`\u202e`), so the message hides and reorders nothing.
+- Markdown must decode strictly as UTF-8, as its references are read; one that does not fails resolution. Any other
+  file is read after a UTF-32 byte order mark, then a UTF-16 one (UTF-32LE's starts with UTF-16LE's), else as
+  strict UTF-8, NUL bytes included, so a NUL cannot switch the scan off, else, without a NUL, as UTF-8 with each bad
+  byte replaced, so one hides nothing; else it is binary and skipped, as scanning random bytes leniently turns up a
+  bidi control about once per 2 MB. A file that cannot be read fails resolution.
+- Found characters and Markdown that is not UTF-8 are collected like patch failures, and the walk goes on, so one
+  run reports them all; the error lists the patch failures, then the hidden characters, each under its own header,
+  then any error that stopped the walk. `why` and `tree` print the hull as walked when only these failed, then the
+  error, so the user sees what pulls such a skill in; `resolve`, `build` (`--into` too), `update` and the editing
+  commands write nothing.
+
 ## Names
 
 A skill's deployed name is its `[rename]` value, else its source's `prefix` before its name, else its name. A
@@ -233,7 +260,7 @@ deployed file as `modified` drift.
   cache, so it reports the hunks and says to run without `--dry-run` to fetch the tip.
 - `update`'s hull diff applies today's patches at the current refs too (the lock is never read back), so `~`
   covers upstream and patch changes alike. When they fail there, it says only "no previous hull to compare
-  (patches fail at the current refs)", without repeating the hunks.
+  (patches fail at the current refs)", without repeating the hunks, and likewise for hidden characters.
 
 ## Feedback
 
@@ -251,7 +278,8 @@ it, so the explanation is a view of it:
   `<id> as <deployed name>`, a patched one followed by `(patched)`, and a prose edge only when the build rewrites
   it; then the prose suggestions, and the warnings on stderr.
 - `why` and `tree` resolve as `resolve` does (fetching only an uncached commit, warnings on stderr, a failing
-  patch an error) but write nothing, so they never see a missing or stale lock.
+  patch an error, hidden characters an error after their output) but write nothing, so they never see a missing or
+  stale lock.
 
 The lock holds `version = 1`. Any change to its keys or to what they mean raises `version`
 (`tests/pipeline/test_lock.py` pins the keys), since the `graft-check` skill reads version 1 only.

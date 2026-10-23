@@ -35,7 +35,7 @@ characters**, Markdown that is not UTF-8).
   `resolve`'s message and exit code, the warning, `build --into` leaving its folder empty, `update` keeping the `ref`,
   `add` keeping `skill-graft.toml`, `remove` of the **Skill** holding one succeeding, `why` printing its path before
   failing; verify they pass
-- [ ] 2.4 Describe the scan in `docs/design.md` (where the walk runs it, APM's table it copies, why **Upstream** too);
+- [x] 2.4 Describe the scan in `docs/design.md` (where the walk runs it, APM's table it copies, why **Upstream** too);
   verify `pre-commit run --all-files`
 
 ## 3. The skill
