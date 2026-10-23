@@ -81,6 +81,8 @@ words:
   - setattr
   - shellcheck
   - shutil
+  - SIGALRM
+  - signum
   - SIGPIPE
   - socat
   - statusline
@@ -99,6 +101,8 @@ words:
   - unrenamed
   - unsandboxed
   - unsets
+  - unstatable
+  - usefixtures
   - venv
   - worktree
   - worktrees

@@ -2,6 +2,7 @@
 
 import os
 import re
+import stat
 from dataclasses import dataclass
 from pathlib import Path
 
@@ -53,11 +54,17 @@ def read_name(folder: Path) -> str:
     """The `name:` of the front matter opening `SKILL.md`, else the folder name.
 
     Reads only plain and quoted one-line values; anything else is an error, never
-    a silent fallback to the folder name.
+    a silent fallback to the folder name. Reads only a regular file: opening never
+    waits on a FIFO, and what is opened is checked, not what was there before.
     """
     skill_md = folder / "SKILL.md"
     try:
-        text = skill_md.read_text(encoding="utf-8-sig")
+        with open(
+            os.open(skill_md, os.O_RDONLY | os.O_NONBLOCK), encoding="utf-8-sig"
+        ) as file:
+            if not stat.S_ISREG(os.fstat(file.fileno()).st_mode):
+                raise SkillGraftError(f"{skill_md}: not a regular file")
+            text = file.read()
     except (OSError, UnicodeDecodeError) as error:
         raise SkillGraftError(f"{skill_md}: cannot be read: {error}") from None
     found = references.name_line(text)
@@ -100,10 +107,22 @@ class Index:
     invalid: dict[str, list[SkillGraftError]]
 
 
+def _check(skill_md: Path) -> None:
+    """Refuses a `SKILL.md` that is not a regular file, links followed, unopened:
+    opening a device can have effects."""
+    try:
+        regular = stat.S_ISREG(os.stat(skill_md).st_mode)
+    except OSError:
+        regular = False
+    if not regular:
+        raise SkillGraftError(f"{skill_md}: not a regular file")
+
+
 def index(source: Path, confined: bool = False) -> Index:
     skills = Index({}, {}, {})
     for folder in _skill_folders(source, confined):
         try:
+            _check(folder / "SKILL.md")
             name = read_name(folder)
         except SkillGraftError as error:
             skills.unreadable.setdefault(folder.name, []).append(error)

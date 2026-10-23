@@ -1,10 +1,15 @@
 """The `skill-discovery` spec, through `skill-graft build --no-install`."""
 
+import os
+from collections.abc import Iterator
 from pathlib import Path
 from typing import TypeAlias
 
 import pytest
-from conftest import build, configure, skill, vendored
+from conftest import build, configure, deadline, skill, vendored
+
+from skill_graft.infra.errors import SkillGraftError
+from skill_graft.pipeline import discovery
 
 Capsys: TypeAlias = pytest.CaptureFixture[str]
 
@@ -311,3 +316,75 @@ def test_symlinked_package_is_skipped(home: Path, capsys: Capsys) -> None:
 
     assert code == 1
     assert "own/tdd" in err
+
+
+def not_regular(skill_md: Path, how: str) -> None:
+    """Makes `skill_md` something other than a regular file, links followed."""
+    skill_md.parent.mkdir(parents=True)
+    if how == "fifo":
+        os.mkfifo(skill_md)
+    elif how == "device":
+        skill_md.symlink_to("/dev/zero")
+    elif how == "dangling":
+        skill_md.symlink_to(skill_md.parent / "nowhere")
+    else:  # a link into a folder the user cannot search, so it cannot be stat'ed
+        locked = skill_md.parents[2] / "locked"
+        skill(locked)
+        skill_md.symlink_to(locked / "SKILL.md")
+        locked.chmod(0)
+
+
+@pytest.fixture
+def unlock(home: Path) -> Iterator[None]:
+    yield
+    for locked in home.rglob("locked"):
+        locked.chmod(0o755)
+
+
+@pytest.mark.parametrize("how", ["device", "fifo"])
+def test_skill_md_not_a_regular_file_does_not_block(
+    home: Path, capsys: Capsys, how: str
+) -> None:
+    skill(home / "src" / "tdd")
+    not_regular(home / "src" / "x" / "SKILL.md", how)
+    configure(["own/tdd"], own="~/src")
+
+    with deadline():
+        assert build(capsys) == (0, "")
+    assert vendored() == {"tdd"}
+
+
+@pytest.mark.parametrize("how", ["device", "fifo", "dangling", "unstatable"])
+@pytest.mark.usefixtures("unlock")
+def test_skill_md_not_a_regular_file_is_unreadable(
+    home: Path, capsys: Capsys, how: str
+) -> None:
+    if how == "unstatable" and os.geteuid() == 0:
+        pytest.skip("root can stat anything")
+    not_regular(home / "src" / "x" / "SKILL.md", how)
+    configure(["own/x"], own="~/src")
+
+    with deadline():
+        code, err = build(capsys)
+
+    assert code == 1
+    assert f"{home / 'src' / 'x' / 'SKILL.md'}: not a regular file" in err
+
+
+def test_read_name_refuses_a_fifo(home: Path) -> None:
+    # As if a regular file were swapped for a FIFO after discovery checked it.
+    os.mkfifo(home / "SKILL.md")
+
+    with deadline(), pytest.raises(SkillGraftError, match="not a regular file"):
+        discovery.read_name(home)
+
+
+def test_regular_file_linked_from_outside_a_path_source(home: Path) -> None:
+    # Discovery reads it; build's symlink check refuses it in a hull skill.
+    skill(home / "elsewhere", "---\nname: tdd\n---\n")
+    (home / "src" / "x").mkdir(parents=True)
+    (home / "src" / "x" / "SKILL.md").symlink_to(home / "elsewhere" / "SKILL.md")
+
+    skills = discovery.index(home / "src")
+
+    assert skills.folders == {"tdd": [home / "src" / "x"]}

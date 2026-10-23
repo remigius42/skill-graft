@@ -6,7 +6,7 @@ Apply with the `tdd` skill: each task red-green-refactor, one commit.
 
 Tests that could block on a FIFO or device run under a timeout (`signal.alarm`), so a regression fails, not hangs.
 
-- [ ] 1.1 In `discovery.index`, before `read_name`, refuse a `SKILL.md` whose `os.stat` fails or is not `S_ISREG`, in
+- [x] 1.1 In `discovery.index`, before `read_name`, refuse a `SKILL.md` whose `os.stat` fails or is not `S_ISREG`, in
   every **Source**, filing the name as unreadable with `<full path>/SKILL.md: not a regular file`; in `read_name`,
   open with `O_NONBLOCK`, `fstat` and require `S_ISREG` before reading; tests in `tests/pipeline/test_discovery.py`: a
   link to `/dev/zero` and a FIFO (other **Skills** found, nothing blocks), a dangling link and a link the user cannot

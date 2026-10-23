@@ -1,9 +1,13 @@
 import json
 import os
 import shutil
+import signal
 import subprocess
 import sys
+from collections.abc import Iterator
+from contextlib import contextmanager
 from pathlib import Path
+from types import FrameType
 
 import pytest
 
@@ -221,3 +225,23 @@ def vendored() -> set[str]:
     """The skill folders the last build left in `.apm/skills/`."""
     skills = Path.home() / ".apm" / "skill-graft" / ".apm" / "skills"
     return {p.name for p in skills.iterdir()} if skills.exists() else set()
+
+
+class Blocked(Exception):
+    """Not an `OSError`, so no handler in skill-graft can swallow it."""
+
+
+@contextmanager
+def deadline(seconds: int = 5) -> Iterator[None]:
+    """Fails the block, rather than hanging, if it runs `seconds` (a FIFO, a device)."""
+
+    def expire(signum: int, frame: FrameType | None) -> None:
+        raise Blocked(f"still running after {seconds} s")
+
+    previous = signal.signal(signal.SIGALRM, expire)
+    signal.alarm(seconds)
+    try:
+        yield
+    finally:
+        signal.alarm(0)
+        signal.signal(signal.SIGALRM, previous)
