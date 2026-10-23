@@ -95,6 +95,12 @@ false or misdirected **References**, rewrites that changed the wrong text, and l
 proposes **Binds**, **Entries** and **Patches**; the user accepts each, and resolution stays skill-graft's alone.
 _Avoid_: Audit, verify, validation
 
+**Hidden character**:
+An invisible character that can carry instructions a reader of the rendered text never sees: Unicode tag
+characters, bidi embeddings, overrides and isolates, supplementary variation selectors. A **Skill** holding
+one, **Upstream** or patched, fails resolution.
+_Avoid_: Invisible Unicode, steganography
+
 ## Example dialogue
 
 > **Dev:** I added `mp/tdd` as an **Entry**. Why is `mp/grilling` in the **Hull**?
