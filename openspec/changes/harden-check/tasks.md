@@ -45,7 +45,7 @@ characters**, Markdown that is not UTF-8).
   each given name with its verdict; the patcher's prompt edits only `edited/` and keeps `name:`. Extend
   `tests/cli/test_check.py`: the reader names only `Read`, `Grep`, `Glob`, the patcher only `Read`, `Edit`, `Write`, and
   the skill still resolves alone with no warning; verify the tests pass
-- [ ] 3.2 Rewrite `skills/graft-check/SKILL.md` by `mp-writing-for-agents`: detecting Claude Code from `claude --help`'s
+- [x] 3.2 Rewrite `skills/graft-check/SKILL.md` by `mp-writing-for-agents`: detecting Claude Code from `claude --help`'s
   flags and asking before an unhardened **Check**; one reader per **Skill** by the command in `design.md`, with a copy
   of its own patch files and its targets' **Upstream** folders, the main agent never opening **Skill** text; wrong
   targets judged by the readers, **Bind** scope by use-only readers over every **Hull** **Skill** of the **Source**,
