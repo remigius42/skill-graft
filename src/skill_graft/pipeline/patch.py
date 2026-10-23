@@ -4,11 +4,15 @@ import re
 import shutil
 import stat
 from pathlib import Path
+from typing import TYPE_CHECKING
 
 from skill_graft.infra import files, git
 from skill_graft.infra.errors import SkillGraftError
 from skill_graft.pipeline import discovery
 from skill_graft.pipeline.config import Config, PatchFile, SkillId
+
+if TYPE_CHECKING:
+    from skill_graft.pipeline.hull import Hull
 
 # A hunk's header in a `.rej` file, without the section heading after it.
 HUNK = re.compile(rb"^(@@ -\d+(?:,\d+)? \+\d+(?:,\d+)? @@)", re.MULTILINE)
@@ -36,7 +40,8 @@ class PatchError(SkillGraftError):
 
     `failures` holds each skill whose patches did not apply, its upstream folder
     and what failed; `hidden`, each hidden character or Markdown file that is not
-    UTF-8, by skill.
+    UTF-8, by skill. `hull` is the hull as walked when only `hidden` failed, for
+    `why` and `tree` to show.
     """
 
     def __init__(
@@ -45,6 +50,7 @@ class PatchError(SkillGraftError):
         other: str = "",
         hints: dict[SkillId, str] | None = None,
         hidden: list[tuple[SkillId, str]] | None = None,
+        hull: "Hull | None" = None,
     ) -> None:
         """`hints` replaces, per skill, the hint to redo it against its upstream."""
         hints = hints or {}
@@ -61,6 +67,7 @@ class PatchError(SkillGraftError):
         self.failures = failures
         self.other = other
         self.hidden = hidden
+        self.hull = hull
 
 
 def apply(skill: SkillId, upstream: Path, patches: list[PatchFile], work: Path) -> Path:

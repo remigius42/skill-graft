@@ -7,14 +7,14 @@ import re
 import shutil
 import sys
 import textwrap
-from collections.abc import Generator
+from collections.abc import Callable, Generator
 from pathlib import Path
 from typing import Any, NoReturn
 
 from skill_graft.commands import edit, explain, init_package, update
 from skill_graft.infra import apm, paths
 from skill_graft.infra.errors import SkillGraftError, notice, warn
-from skill_graft.pipeline import compute, config, lock, vendor
+from skill_graft.pipeline import compute, config, lock, patch, vendor
 from skill_graft.pipeline.hull import Hull
 
 
@@ -295,7 +295,8 @@ def main(argv: list[str] | None = None) -> int:
         elif args.command == "unbind":
             edit.unbind(args.key)
         elif args.command == "why":
-            with _hull() as (loaded, resolved):
+
+            def why(loaded: config.Config, resolved: Hull) -> None:
                 try:
                     target = explain.find(
                         resolved,
@@ -305,8 +306,11 @@ def main(argv: list[str] | None = None) -> int:
                     print(explain.why(resolved, target), end="")
                 finally:  # after the output, as `tree` and `resolve` print them
                     warn(resolved.warnings)
+
+            _explain(why)
         elif args.command == "tree":
-            with _hull() as (_, resolved):
+
+            def tree(_: config.Config, resolved: Hull) -> None:
                 if args.link:
                     print(explain.link(explain.mermaid(resolved)))
                 elif args.format == "mermaid":
@@ -314,6 +318,8 @@ def main(argv: list[str] | None = None) -> int:
                 else:
                     print(explain.tree(resolved), end="")
                 warn(resolved.warnings)
+
+            _explain(tree)
         elif args.command == "resolve":
             with _hull() as (loaded, resolved):
                 lock.write(lock.render(loaded, {}, resolved))
@@ -435,6 +441,20 @@ def _hull() -> Generator[tuple[config.Config, Hull]]:
     loaded = _load()
     with compute.compute_hull(loaded) as hull:
         yield loaded, hull
+
+
+def _explain(show: Callable[[config.Config, Hull], None]) -> None:
+    """Runs `show` on the hull; on one failing only on hidden characters, on the
+    hull as walked, so the user sees what pulls them in, then fails."""
+    loaded = _load()
+    try:
+        with compute.compute_hull(loaded) as resolved:
+            show(loaded, resolved)
+    except patch.PatchError as error:
+        if error.hull is None:
+            raise
+        show(loaded, error.hull)
+        raise
 
 
 if __name__ == "__main__":

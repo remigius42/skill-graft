@@ -30,7 +30,7 @@ characters**, Markdown that is not UTF-8).
   Markdown, with a failing **Patch**, a **Patch** that adds one, moves one, removes one, and creates a name holding one,
   and a **Skill** outside the **Hull**, and in `tests/commands/` for
   `update --dry-run` keeping the hidden list; verify they pass, the old not-UTF-8 warning test rewritten to the error
-- [ ] 2.3 Let `why` and `tree` print the **Hull** as walked when only **Hidden characters** or Markdown that is not
+- [x] 2.3 Let `why` and `tree` print the **Hull** as walked when only **Hidden characters** or Markdown that is not
   UTF-8 failed, then report them and exit 1; end-to-end tests in `tests/cli/` for the hidden-characters spec:
   `resolve`'s message and exit code, the warning, `build --into` leaving its folder empty, `update` keeping the `ref`,
   `add` keeping `skill-graft.toml`, `remove` of the **Skill** holding one succeeding, `why` printing its path before

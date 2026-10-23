@@ -1,7 +1,7 @@
 """Resolves references and walks the hull: the entries and every skill they reach."""
 
 from collections import deque
-from dataclasses import dataclass
+from dataclasses import dataclass, replace
 from pathlib import Path
 
 from skill_graft.infra import files
@@ -140,7 +140,7 @@ def walk(
         if not failed and not found_hidden:
             raise
         raise patch.PatchError(failed, str(error), hidden=found_hidden) from None
-    if failed or found_hidden:  # no warning about such a hull would be right
+    if failed:  # the hull is incomplete: no warning about it would be right
         raise patch.PatchError(failed, hidden=found_hidden)
     suggestions: dict[SkillId, set[SkillId]] = {}
     for current, ref, target, bound, key in prose:
@@ -162,7 +162,7 @@ def walk(
         for skill in skills
         if skill in config.patches
     }
-    return Hull(
+    result = Hull(
         skills,
         list(config.entries),
         edges,
@@ -174,6 +174,11 @@ def walk(
         patched,
         roots,
     )
+    if found_hidden:  # complete, but none of its warnings matter as much
+        raise patch.PatchError(
+            [], hidden=found_hidden, hull=replace(result, warnings=[])
+        )
+    return result
 
 
 def _hidden(
