@@ -155,3 +155,13 @@ def test_why_after_a_failing_patch_prints_nothing(home: Path, capsys: Capsys) ->
 
     assert (code, out) == (1, "")
     assert "patches do not apply:" in err
+
+
+def test_why_an_unknown_skill_still_reports_them(home: Path, capsys: Capsys) -> None:
+    skill(home / "mp" / "tdd", f"{TAG}\n")
+    configure(["mp/tdd"], mp="~/mp")
+
+    code, _, err = run(capsys, "why", "mp/gone")
+
+    assert code == 1
+    assert "mp/gone" in err and "U+E0041" in err

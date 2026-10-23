@@ -182,3 +182,11 @@ def test_git_left_out(tmp_path: Path) -> None:
     (folder / "sub" / ".git").write_text(TAG)
 
     assert hidden.scan(folder) == ([], [])
+
+
+def test_patch_with_a_nul_and_a_bad_byte(tmp_path: Path) -> None:
+    data = b"\0 \xff\n+" + "\N{RIGHT-TO-LEFT OVERRIDE}".encode() + b"\n"
+
+    found, _ = hidden.scan_patch("p.patch", data)
+
+    assert found == ["p.patch:2: U+202E (bidi control)"]

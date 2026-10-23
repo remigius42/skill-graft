@@ -38,12 +38,21 @@ def update(loaded: Config, aliases: list[str], dry_run: bool = False) -> None:
 
 def _fetch_hint(error: patch.PatchError, tmp: Path) -> patch.PatchError:
     """The error, pointing at no upstream folder that goes away with `tmp`."""
+    fetch = "run `update` without `--dry-run` to fetch the tip"
     hints = {
-        skill: "run `update` without `--dry-run` to fetch the tip"
+        skill: fetch
         for skill, upstream, _ in error.failures
         if upstream.is_relative_to(tmp)
     }
-    return patch.PatchError(error.failures, error.other, hints, error.hidden)
+    # A hidden character in a tip's skill is named by its path in `tmp` too.
+    gone = {skill for skill, line in error.hidden if line.startswith(f"{tmp}/")}
+    hidden = []
+    for i, (skill, line) in enumerate(error.hidden):
+        hidden.append((skill, line))
+        after = error.hidden[i + 1 : i + 2]
+        if skill in gone and (not after or after[0][0] != skill):  # its last line
+            hidden.append((skill, fetch))
+    return patch.PatchError(error.failures, error.other, hints, hidden)
 
 
 def _update(loaded: Config, aliases: list[str], git_cache: Cache, write: bool) -> None:

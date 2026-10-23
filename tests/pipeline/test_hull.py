@@ -717,3 +717,30 @@ def test_with_a_failing_patch(home: Path, tmp_path: Path, capsys: Capsys) -> Non
     assert hidden_lines(err) == [
         f"  mp/notes: {home}/mp/notes/SKILL.md:1: U+E0041 (tag character)"
     ]
+
+
+def test_patch_makes_markdown_not_utf8(
+    home: Path, tmp_path: Path, capsys: Capsys
+) -> None:
+    patched_tdd(
+        tmp_path,
+        {"SKILL.md": b"# tdd\n", "notes.md": b"plain\n"},
+        {"SKILL.md": b"# tdd\n", "notes.md": b"caf\xe9\n"},
+    )
+
+    code, err = build(capsys)
+
+    assert code == 1
+    assert hidden_lines(err) == [
+        "  mp/tdd: as patched, notes.md: not UTF-8, so its references cannot be read"
+    ]
+
+
+def test_parent_folder_name_shown_escaped(home: Path, capsys: Capsys) -> None:
+    skill(home / f"m{RLO}p" / "tdd", f"{TAG}\n")
+    configure(["mp/tdd"], mp=f"~/m{RLO}p")
+
+    code, err = build(capsys)
+
+    assert code == 1 and RLO not in err
+    assert "m\\u202ep/tdd/SKILL.md:1: U+E0041" in err

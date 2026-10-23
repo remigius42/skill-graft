@@ -830,6 +830,7 @@ def test_dry_run_keeps_the_hidden_characters(
     assert "mp/tdd: run `update` without `--dry-run` to fetch the tip" in err
     assert "hidden characters:\n  mp/notes: " in err
     assert "notes/SKILL.md:2: U+E0041 (tag character)" in err
+    assert "mp/notes: run `update` without `--dry-run` to fetch the tip" in err
 
 
 def test_hidden_characters_at_the_current_refs(

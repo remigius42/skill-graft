@@ -159,7 +159,8 @@ path = "~/Documents/sync/2_areas/software/chisel_skill"
   file and folder name of its upstream folder (`.git` left out, as vendoring leaves it out) and every file's text,
   then the `+` lines of its patch files (the lines a patch keeps repeat upstream ones, which would report twice),
   then, in the patched copy, each name the upstream folder lacks, which git writes in octal escapes in a patch's
-  header. The config refuses binary hunks, so no patch writes text the `+` lines do not show.
+  header, and each Markdown file a patch changed, which must stay UTF-8. The config refuses binary hunks, so no
+  patch writes text the `+` lines do not show. A patch file's bytes that are not UTF-8 count as no character.
 - The upstream folder is scanned too, not only the patched copy: the **Check** reads it, so a patch that removes a
   hidden character does not clear it. Skills outside the hull, and `skill-graft.toml`, are not scanned.
 - The classes are APM 0.33.0's (`apm_cli/security/content_scanner.py`), copied as ranges since `apm_cli` is no

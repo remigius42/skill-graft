@@ -187,10 +187,11 @@ def _hidden(
     """The hidden characters of `skill`'s upstream `folder` and of the lines its
     patches add, then warnings: a patch that removes one does not clear it."""
     found, warnings = hidden.scan(folder)
-    found = [f"{folder}/{line}" for line in found]
-    warnings = [f"{folder}/{line}" for line in warnings]
+    shown = hidden.show(str(folder))  # its parents' names are no one's to check
+    found = [f"{shown}/{line}" for line in found]
+    warnings = [f"{shown}/{line}" for line in warnings]
     for file in patches.get(skill, []):
-        in_patch, debris = hidden.scan_patch(file.path, file.data)
+        in_patch, debris = hidden.scan_patch(hidden.show(file.path), file.data)
         found += in_patch
         warnings += debris
     return found, warnings
@@ -198,11 +199,23 @@ def _hidden(
 
 def _hidden_names(upstream: Path, copy: Path) -> list[str]:
     """The hidden characters in each name of the patched `copy` the upstream lacks,
-    which git writes escaped in a patch's header; named as in the copy, which goes
-    away. Their text is in the lines the patches add."""
+    which git writes escaped in a patch's header, and each Markdown file a patch
+    made that is not UTF-8; named as in the copy, which goes away. The characters
+    in their text are in the lines the patches add."""
     known = {entry.relative_to(upstream) for entry in files.skill_entries(upstream)}
-    new = [e for e in files.skill_entries(copy) if e.relative_to(copy) not in known]
-    return [f"as patched, {line}" for line in hidden.scan_names(copy, new)]
+    entries = files.skill_entries(copy)
+    new = [e for e in entries if e.relative_to(copy) not in known]
+    changed = [
+        e
+        for e in entries
+        if e.is_file() and not _same_file(e, upstream / e.relative_to(copy))
+    ]
+    found = hidden.scan_names(copy, new) + hidden.not_utf8(copy, changed)
+    return [f"as patched, {line}" for line in found]
+
+
+def _same_file(one: Path, other: Path) -> bool:
+    return other.is_file() and one.read_bytes() == other.read_bytes()
 
 
 def _prose_target(

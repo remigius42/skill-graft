@@ -453,7 +453,10 @@ def _explain(show: Callable[[config.Config, Hull], None]) -> None:
     except patch.PatchError as error:
         if error.hull is None:
             raise
-        show(loaded, error.hull)
+        try:
+            show(loaded, error.hull)
+        except SkillGraftError as shown:  # both matter: the hidden characters too
+            raise SkillGraftError(f"{shown}\n{error}") from None
         raise
 
 

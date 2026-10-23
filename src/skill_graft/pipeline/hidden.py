@@ -77,10 +77,23 @@ def scan_names(folder: Path, entries: list[Path]) -> list[str]:
     ]
 
 
+def not_utf8(folder: Path, entries: list[Path]) -> list[str]:
+    """As `scan`, for these entries of `folder`: each Markdown file that is not UTF-8."""
+    return [
+        f"{show(entry.relative_to(folder).as_posix())}: not UTF-8, so its references "
+        "cannot be read"
+        for entry in entries
+        if entry.name.lower().endswith(".md")
+        and entry.is_file()
+        and _decode(entry.read_bytes(), markdown=True) is None
+    ]
+
+
 def scan_patch(name: str, data: bytes) -> tuple[list[str], list[str]]:
     """As `scan`, for the lines patch file `name` adds, by its own line numbers:
-    the lines it keeps repeat the upstream ones, which `scan` reports."""
-    text = _decode(data, markdown=False) or ""
+    the lines it keeps repeat the upstream ones, which `scan` reports. A patch is
+    text whatever bytes it holds: each that is not UTF-8 counts as no character."""
+    text = data.decode("utf-8", errors="replace")
     lines = text.split("\n")
     added = "\n".join(line if line.startswith("+") else "" for line in lines)
     return _report(name, added)
