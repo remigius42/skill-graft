@@ -1,9 +1,10 @@
+import os
 import shutil
 import tempfile
 from pathlib import Path
 
 import pytest
-from conftest import FakeApm, Upstream, skill, write_config
+from conftest import FakeApm, Upstream, deadline, skill, write_config
 
 from skill_graft.cli import main
 from skill_graft.infra import paths
@@ -307,6 +308,29 @@ def test_symlink_inside_the_skill_is_copied(home: Path) -> None:
 
     copied = skills_dir(home) / "chisel" / "notes.md"
     assert not copied.is_symlink() and copied.read_text() == "inside\n"
+
+
+def test_skill_md_linked_to_a_device(home: Path) -> None:
+    skill(home / "src" / "tdd")
+    (home / "src" / "x").mkdir()
+    (home / "src" / "x" / "SKILL.md").symlink_to("/dev/zero")
+    write_config('entries = ["own/tdd"]\n[sources.own]\npath = "~/src"\n')
+
+    with deadline():
+        assert main(["build", "--no-install"]) == 0
+
+    assert sorted(p.name for p in skills_dir(home).iterdir()) == ["tdd"]
+
+
+def test_entry_names_a_fifo(home: Path, capsys: pytest.CaptureFixture[str]) -> None:
+    (home / "src" / "x").mkdir(parents=True)
+    os.mkfifo(home / "src" / "x" / "SKILL.md")
+    write_config('entries = ["own/x"]\n[sources.own]\npath = "~/src"\n')
+
+    with deadline():
+        assert main(["build", "--no-install"]) == 1
+
+    assert "x/SKILL.md: not a regular file" in capsys.readouterr().err
 
 
 def test_git_metadata_is_not_vendored(home: Path) -> None:

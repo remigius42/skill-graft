@@ -21,7 +21,7 @@ Tests that could block on a FIFO or device run under a timeout (`signal.alarm`),
 
 ## 2. End to end
 
-- [ ] 2.1 In `tests/cli/test_git_build.py`, through a real git **Source**, the git-sources spec's scenarios "SKILL.md
+- [x] 2.1 In `tests/cli/test_git_build.py`, through a real git **Source**, the git-sources spec's scenarios "SKILL.md
   linked out of the tree", "Unused skill linked out of the tree" and "SKILL.md linked inside its skill"; in
   `tests/cli/test_build.py`, the skill-discovery spec's "SKILL.md linked to a device" and "Entry names it", under a
   timeout; verify they pass

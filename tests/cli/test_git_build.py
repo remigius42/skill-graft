@@ -4,7 +4,15 @@ from pathlib import Path
 from typing import TypeAlias
 
 import pytest
-from conftest import Upstream, build, configure, skill, vendored, write_config
+from conftest import (
+    Upstream,
+    build,
+    configure,
+    deadline,
+    skill,
+    vendored,
+    write_config,
+)
 
 from skill_graft.cli import main
 
@@ -85,6 +93,58 @@ def test_discovery_stays_inside_a_git_source(
     write_config('entries = ["mp/tdd"]\n' + git)
     assert build(capsys) == (0, "")
     assert vendored() == {"tdd"}
+
+
+def git_source(upstream: Upstream, entry: str) -> None:
+    """Commits the upstream's working tree and makes `entry` the only entry."""
+    sha = upstream.commit({})
+    write_config(
+        f'entries = ["{entry}"]\n[sources.mp]\ngit = "{upstream.url}"\nref = "{sha}"\n'
+    )
+
+
+def test_skill_md_linked_out_of_the_tree(
+    home: Path, tmp_path: Path, capsys: Capsys
+) -> None:
+    (home / "local").mkdir()
+    (home / "local" / "notes.md").write_text("---\nname: leaked-marker\n---\n")
+    upstream = Upstream(tmp_path / "up")
+    (upstream.path / "evil").mkdir()
+    (upstream.path / "evil" / "SKILL.md").symlink_to(home / "local" / "notes.md")
+    git_source(upstream, "mp/evil")
+
+    code = main(["build", "--no-install"])
+
+    out, err = capsys.readouterr()
+    assert code == 1
+    assert "evil/SKILL.md: a symlink leading outside its skill" in err
+    assert "leaked-marker" not in out + err and "notes.md" not in out + err
+
+
+def test_unused_skill_linked_out_of_the_tree(tmp_path: Path, capsys: Capsys) -> None:
+    upstream = Upstream(tmp_path / "up")
+    upstream.commit({"tdd/SKILL.md": "# tdd\n"})
+    (upstream.path / "evil").mkdir()
+    (upstream.path / "evil" / "SKILL.md").symlink_to("/dev/zero")
+    git_source(upstream, "mp/tdd")
+
+    with deadline():
+        assert build(capsys) == (0, "")
+    assert vendored() == {"tdd"}
+
+
+def test_skill_md_linked_inside_its_skill(
+    home: Path, tmp_path: Path, capsys: Capsys
+) -> None:
+    upstream = Upstream(tmp_path / "up")
+    upstream.commit({"tdd/main.md": "---\nname: tdd\n---\nmain\n"})
+    (upstream.path / "tdd" / "SKILL.md").symlink_to("main.md")
+    git_source(upstream, "mp/tdd")
+
+    assert build(capsys) == (0, "")
+
+    vendored_md = home / ".apm" / "skill-graft" / ".apm" / "skills" / "tdd" / "SKILL.md"
+    assert vendored_md.read_text() == "---\nname: tdd\n---\nmain\n"
 
 
 @pytest.mark.parametrize("entries", ['["mp/tdd"]', '["own/chisel"]'])
