@@ -8,6 +8,7 @@ words:
   - backticked
   - bidi
   - blocklist
+  - bubblewrap
   - cacheinfo
   - cacheprovider
   - capfd
@@ -75,6 +76,7 @@ words:
   - shellcheck
   - shutil
   - SIGPIPE
+  - socat
   - statusline
   - stdlib
   - steganography
@@ -89,6 +91,7 @@ words:
   - ultrareview
   - unpadded
   - unrenamed
+  - unsandboxed
   - unsets
   - venv
   - worktree

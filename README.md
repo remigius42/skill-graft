@@ -175,11 +175,26 @@ skill-graft build
 Until that `update` sets the source's `ref`, every `build` fails, not only graft-check's.
 
 Run it in your harness as `/graft-check`, or `/graft-check mp/tdd` to check only some skills; it runs only when
-you ask. It builds into a temporary folder with `build --into`, compares each skill's upstream text with its
-vendored copy, and reports missed and false references, references resolved to the wrong skill, wrong or missed
-rewrites, and relative links vendoring broke. For each finding it proposes `add`, `bind`, `unbind` or a patch,
-and applies it only once you accept. It never deploys: when the package would change, it tells you to run
+you ask. It builds into a temporary folder with `build --into`, and has one reader per skill compare its upstream
+text with its vendored copy. The readers report missed and false references, references resolved to the wrong
+skill, wrong or missed rewrites, and relative links vendoring broke. For each finding it proposes `add`, `bind`,
+`unbind` or a patch, and applies it only once you accept; a patch is written by a confined patcher, and you read
+its diff before it goes into the package. It never deploys: when the package would change, it tells you to run
 `skill-graft build`. It reads lock `version` 1 only; for a newer lock, update the source you installed it from.
+
+## Security
+
+Skill text comes from other people's repositories and may carry prompt injection. [docs/security.md](docs/security.md)
+has the details.
+
+- skill-graft fails resolution on a skill holding a hidden character (tag characters, bidi controls, supplementary
+  variation selectors), as APM's install does, so none reaches any agent through the hull.
+- On Claude Code, graft-check reads skill text only through `claude -p --restricted` readers limited to `Read`,
+  `Grep` and `Glob`, without MCP servers, confined to that skill's folders, and patches through a patcher confined
+  to a temporary folder. Elsewhere it says it is unhardened and reads only on your yes; other harnesses are likely
+  not secure.
+- Run it outside auto mode; in Claude Code's sandbox, allow the API's domain. Report text and fix arguments are
+  checked at the prompt level only.
 
 ## Writing a patch
 

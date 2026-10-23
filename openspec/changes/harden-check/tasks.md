@@ -62,7 +62,7 @@ characters**, Markdown that is not UTF-8).
 
 ## 4. Security docs
 
-- [ ] 4.1 Write `docs/security.md`: the threat, what APM's install blocks, the **Hidden character** check, what the
+- [x] 4.1 Write `docs/security.md`: the threat, what APM's install blocks, the **Hidden character** check, what the
   **Check** enforces on Claude Code and how, the residual risks (report text, fix arguments, BOM-less UTF-16 skipped as
   binary), that other harnesses are likely not secure, and running the **Check** outside auto mode, with a `WebFetch`
   deny rule where wanted, and in Claude Code's sandbox only with the API's domain allowed and `~/.claude` writable, as
