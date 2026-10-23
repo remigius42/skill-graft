@@ -30,7 +30,7 @@ Tests that could block on a FIFO or device run under a timeout (`signal.alarm`),
 
 ## 3. Changelog
 
-- [ ] 3.1 If what a user sees changed (it does: commands no longer read such a `SKILL.md`, and name it in an error),
+- [x] 3.1 If what a user sees changed (it does: commands no longer read such a `SKILL.md`, and name it in an error),
   add an entry to `CHANGELOG.md` under `[Unreleased]`, `### Security` (create the heading if missing), in
   `CONTEXT.md`'s terms: a `SKILL.md` that a git **Source** links outside its **Skill**, or that is not a regular file,
   is no longer read, so a **Source** can neither make skill-graft read a local file nor hang it. Per `AGENTS.md` it

@@ -28,6 +28,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - **BREAKING**: a Markdown file of a **Hull** **Skill** that is not UTF-8, **Upstream** or as patched, fails resolution
   instead of being skipped with a warning; so does any file of it that cannot be read
 
+### Security
+
+- A `SKILL.md` that a git **Source** links outside its **Skill**, or that is not a regular file (a FIFO or device, or a
+  link to one), is no longer read, so a **Source** can neither make skill-graft read a local file nor hang it. Such a
+  **Skill**'s name is unreadable: an **Entry** or **Reference** naming its folder fails, naming the `SKILL.md`, never
+  what it links to; other **Entries** never see it
+
 ## [0.1.0] - 2026-10-22
 
 ### Added

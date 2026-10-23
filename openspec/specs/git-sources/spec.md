@@ -93,9 +93,11 @@ and telling the user to run `skill-graft update <alias>`. `build` SHALL then wri
 A git **Source**'s folder SHALL be the full tree of its `ref` with the bytes as committed, the same on every
 machine: files marked `export-ignore` included, no `.gitattributes` conversion or filter applied, exec bits and
 symlinks kept; with `subdirectory`, that folder of the tree. Skill discovery and vendoring then work as for a path
-**Source**, except that discovery follows only symlinked folders that stay inside the **Source**'s folder: their
-author is not the user. Submodules SHALL be skipped and LFS objects SHALL NOT be fetched (their pointer files are
-vendored as committed).
+**Source**, except that discovery follows only symlinked folders that stay inside the **Source**'s folder, and
+opens a `SKILL.md` that is a symlink only when it resolves inside its **Skill**'s folder: their author is not the
+user. A **Skill** whose `SKILL.md` is a symlink resolving outside its folder SHALL have an unreadable name, its error
+naming the link by its full path and not what it leads to.
+Submodules SHALL be skipped and LFS objects SHALL NOT be fetched (their pointer files are vendored as committed).
 
 #### Scenario: Skill from git
 
@@ -114,6 +116,25 @@ vendored as committed).
 - **WHEN** commit A holds `out` as a symlink to a local folder holding `secret/SKILL.md`, and `mp/secret` is an
   **Entry**
 - **THEN** `build` exits non-zero naming `mp/secret`, and nothing local is vendored
+
+#### Scenario: SKILL.md linked out of the tree
+
+- **WHEN** commit A holds `evil/SKILL.md` as a symlink to a local file whose front matter holds `name: leaked-marker`,
+  and `mp/evil` is an **Entry**
+- **THEN** the command exits non-zero naming `evil/SKILL.md` as a link leading outside its **Skill**, and its output
+  holds neither `leaked-marker` nor the local file's path
+
+#### Scenario: Unused skill linked out of the tree
+
+- **WHEN** commit A holds `evil/SKILL.md` as a symlink to `/dev/zero`, and `mp/tdd`, another **Skill** of commit A,
+  is the only **Entry**
+- **THEN** `build` finishes and vendors `tdd`
+
+#### Scenario: SKILL.md linked inside its skill
+
+- **WHEN** commit A holds `tdd/SKILL.md` as a symlink to `tdd/main.md`, whose front matter holds `name: tdd`, and
+  `mp/tdd` is an **Entry**
+- **THEN** `build` vendors `.apm/skills/tdd/` with `SKILL.md` holding `main.md`'s content
 
 #### Scenario: Hostile tree
 
