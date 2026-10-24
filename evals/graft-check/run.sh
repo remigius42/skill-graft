@@ -267,6 +267,8 @@ for file in files:
             assert work + "/up" not in text and ".apm/skills" not in text, block
 ' "$work/$1" "$work/$1/report" "$work/$1/reply"
 }
+# Scenario $1's fake `claude` logged exactly one reader: the probe.
+only_probe() { [[ "$(grep -c '' "$work/$1/calls" 2> /dev/null)" == 1 ]]; }
 unchanged() { diff <(snapshot "$scenario") "$work/$scenario/before" > /dev/null; }
 
 for scenario in "${selected[@]}"; do
@@ -370,7 +372,7 @@ SH
       check "unhardened said" has unhardened
       check "Not logged in named" has "Not logged in"
       check "claude auth login advised" has "claude auth login"
-      check "no reader after the probe" test "$(cat "$work/unhardened/calls" 2>/dev/null | wc -l)" = 1
+      check "no reader after the probe" only_probe unhardened
       check "no skill read" no_skill_read unhardened
       check "package unchanged" unchanged
       ;;
@@ -380,6 +382,7 @@ SH
       fake_claude older-claude <<'SH'
 for argument; do
   [ "$argument" = --restricted ] || continue
+  echo reader >> "$log"
   echo "error: unknown option '--restricted'" >&2
   exit 1
 done
@@ -387,7 +390,9 @@ SH
       decline older-claude
       check "unhardened said" has unhardened
       check "--restricted named" has "--restricted"
+      check "no reader after the probe" only_probe older-claude
       check "no skill read" no_skill_read older-claude
+      check "package unchanged" unchanged
       ;;
   esac
 done
