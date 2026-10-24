@@ -389,7 +389,7 @@ def test_diff_past_what_is_left_shown_whole() -> None:
     assert body[0] == "@@ -1,40 +1,40 @@"
 
 
-NOTE = "# run.sh: each backslash shown doubled, as its lines would read alike"
+NOTE = "# run.sh: each backslash shown doubled, so no typed escape reads as one"
 
 
 @pytest.mark.parametrize(
@@ -408,11 +408,45 @@ def test_escape_alike_text_doubles_backslashes(
     assert hunks(lines) == ["@@ -1 +1 @@", removed, added, ""]
 
 
-def test_backslash_kept_single_when_nothing_reads_alike() -> None:
-    lines = diff_of("run.sh", b"echo \\n\n", b"echo \\n\necho \x80\n")
+def test_backslash_kept_single_without_escapes() -> None:
+    lines = diff_of("run.sh", b"echo \\n\n", b"echo \\n\necho done\n")
 
     assert lines[0] == "diff --git a/run.sh b/run.sh"
-    assert hunks(lines) == ["@@ -1 +1,2 @@", " echo \\n", "+echo \\x80", ""]
+    assert hunks(lines) == ["@@ -1 +1,2 @@", " echo \\n", "+echo done", ""]
+
+
+def test_typed_escape_beside_another_change() -> None:
+    lines = diff_of("run.sh", b"run \\x1b now\n", b"run \x1b later\n")
+
+    assert lines[0] == NOTE
+    assert hunks(lines) == ["@@ -1 +1 @@", "-run \\\\x1b now", "+run \\x1b later", ""]
+
+
+def test_no_note_without_hunks() -> None:
+    text = b"echo \\x80\necho \x80\n"
+    old, new = {"run.sh": (text, False)}, {"run.sh": (text, True)}
+
+    lines = deployed.diff(old, new, deployed.Budget()).split("\n")
+
+    assert lines == [
+        "diff --git a/run.sh b/run.sh",
+        "old mode 100644",
+        "new mode 100755",
+        "",
+    ]
+
+
+def test_typed_line_feed_escape_before_no_newline() -> None:
+    lines = diff_of("run.sh", b"x\\x0a", b"x\n")
+
+    assert lines[0] == "diff --git a/run.sh b/run.sh"
+    assert hunks(lines) == [
+        "@@ -1 +1 @@",
+        "-x\\x0a",
+        "\\ No newline at end of file",
+        "+x",
+        "",
+    ]
 
 
 def test_encoding_change_shown_byte_for_byte() -> None:

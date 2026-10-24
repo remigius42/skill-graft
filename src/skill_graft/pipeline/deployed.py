@@ -135,7 +135,7 @@ _ESCAPED = re.compile(
     "[" + "".join(f"{chr(a)}-{chr(b)}" for a, b in _BREAKS) + "]|"
     f"{hidden.CRITICAL_CHARS.pattern}|{hidden.WARNING_CHARS.pattern}"
 )
-# The same, each backslash doubled too: for a file whose lines would read alike.
+# The same, each backslash doubled too: for a file a typed escape could hide in.
 _DOUBLED = re.compile(r"\\|" + _ESCAPED.pattern)
 
 # A changed block: old lines [i1, i2) replaced by new lines [j1, j2).
@@ -174,25 +174,27 @@ def _file_diff(
         a, b = _split(_raw(before[0])), _split(_raw(after[0]))
         note = "shown byte for byte, as its two sides read alike as text"
         out.insert(0, f"# {quote(path)}: {note}\n")
-    escaped = _ESCAPED
-    if _alike(a, b):  # a typed `\x80` and a stray byte: only the doubling tells
-        escaped = _DOUBLED
-        note = "each backslash shown doubled, as its lines would read alike"
-        out.insert(0, f"# {quote(path)}: {note}\n")
+    # A typed `\x80` beside a stray byte: only doubling every backslash tells them apart.
+    doubled = _typed_escapes(a, b)
     too_big = any(f is not None and len(f[0]) > _MAX_BYTES for f in (before, after))
-    hunks = _hunks(a, b, _blocks(a, b, too_big, budget), escaped)
+    blocks = _blocks(a, b, too_big, budget)
+    hunks = _hunks(a, b, blocks, _DOUBLED if doubled else _ESCAPED)
+    if hunks and doubled:
+        note = "each backslash shown doubled, so no typed escape reads as one"
+        out.insert(0, f"# {quote(path)}: {note}\n")
     if hunks:
         out.append(f"--- {a_name if before else '/dev/null'}\n")
         out.append(f"+++ {b_name if after else '/dev/null'}\n")
     return out + hunks
 
 
-def _alike(a: list[str], b: list[str]) -> bool:
-    """Whether two different lines of `a` and `b` would read alike, escaped."""
-    lines = set(a) | set(b)
-    if not any("\\" in line for line in lines):  # no escape can be typed out
-        return False
-    return len({_ESCAPED.sub(_escape_char, line) for line in lines}) < len(lines)
+def _typed_escapes(a: list[str], b: list[str]) -> bool:
+    """Whether the lines of `a` and `b` hold both a backslash and a character to
+    escape, so a typed escape could read as one."""
+    lines = [*a, *b]
+    return any("\\" in line for line in lines) and any(
+        _ESCAPED.search(line.removesuffix("\n")) for line in lines
+    )
 
 
 def _mode(executable: bool) -> str:
