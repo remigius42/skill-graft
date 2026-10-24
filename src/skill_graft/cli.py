@@ -78,7 +78,8 @@ def _version(distribution: metadata.Distribution) -> str:
         fields = distribution.metadata
     except (OSError, ValueError):  # unreadable or undecodable
         return "unknown"
-    # Indexing a missing field is deprecated, to raise KeyError.
+    # Check first: CPython deprecates indexing a missing field and will make it raise
+    # KeyError (`PackageMetadata` declares no `.get`).
     version = fields["Version"].strip() if "Version" in fields else None
     return version if _printable(version) else "unknown"
 
