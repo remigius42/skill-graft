@@ -91,11 +91,9 @@ def skill_hashes(hull: Hull) -> dict[SkillId, str]:
 
 def folder_hash(folder: Path, overrides: dict[Path, bytes] | None = None) -> str:
     """SHA-256 of the folder as vendored: each file's path, exec bit and bytes,
-    as `deployed.deployed_files` reads them, `overrides` in place."""
+    as `deployed.walk` reads them, `overrides` in place, one file held at a time."""
     digest = hashlib.sha256()
-    for relative, (content, executable) in deployed.deployed_files(
-        folder, overrides or {}
-    ).items():
+    for relative, content, executable in deployed.walk(folder, overrides or {}):
         fields = [os.fsencode(relative), b"1" if executable else b"0"]
         digest.update(b"\0".join([*fields, b"%d" % len(content), b""]))
         digest.update(content)

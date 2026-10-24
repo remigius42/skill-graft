@@ -429,3 +429,16 @@ def test_encoding_change_shown_byte_for_byte() -> None:
         "\\ No newline at end of file",
         "",
     ]
+
+
+@pytest.mark.skipif(os.geteuid() == 0, reason="root reads any file")
+def test_walk_reads_one_file_at_a_time(tmp_path: Path) -> None:
+    folder = skill(tmp_path / "tdd", "# tdd\n")
+    (folder / "z.bin").write_bytes(b"x")
+    (folder / "z.bin").chmod(0)
+
+    walked = deployed.walk(folder, {})
+    try:
+        assert next(walked) == ("SKILL.md", b"# tdd\n", False)
+    finally:
+        (folder / "z.bin").chmod(0o644)

@@ -4,6 +4,7 @@ import itertools
 import os
 import re
 import stat
+from collections.abc import Iterator
 from array import array
 from pathlib import Path
 
@@ -30,13 +31,15 @@ _LETTERS = {
 _LIMIT = 20
 
 
-def deployed_files(folder: Path, overrides: dict[Path, bytes]) -> View:
-    """Each file of `folder` as vendored, sorted by its path's bytes.
+def walk(
+    folder: Path, overrides: dict[Path, bytes]
+) -> Iterator[tuple[str, bytes, bool]]:
+    """Each file of `folder` as vendored, sorted by its path's bytes: its path,
+    bytes and executable bit, each file read only when reached.
 
     Symlinks are followed, as the copy does; `.git` is skipped, as it is not copied.
     A file in `overrides`, by path relative to `folder`, has its bytes.
     """
-    view = {}
     for file in sorted(
         (f for f in files.skill_entries(folder) if not f.is_dir()),
         key=lambda f: os.fsencode(f.relative_to(folder).as_posix()),
@@ -45,8 +48,12 @@ def deployed_files(folder: Path, overrides: dict[Path, bytes]) -> View:
         content = overrides.get(relative)
         if content is None:
             content = file.read_bytes()
-        view[relative.as_posix()] = (content, bool(file.stat().st_mode & stat.S_IXUSR))
-    return view
+        yield relative.as_posix(), content, bool(file.stat().st_mode & stat.S_IXUSR)
+
+
+def deployed_files(folder: Path, overrides: dict[Path, bytes]) -> View:
+    """Each file of `folder` as `walk` reads it, all held at once."""
+    return {path: (content, bit) for path, content, bit in walk(folder, overrides)}
 
 
 def changed(old: View, new: View) -> list[str]:

@@ -49,10 +49,12 @@ Checked against `main` (`a290700`):
   as a failed write, so propagates unchanged instead of being taken for a missing old **Hull**. Alternative: copy each
   changed **Skill**'s deployed files out of the first `with`; rejected, as it copies trees only to compare them.
 
-- **The deployed view of a Skill:** `deployed_files(folder, overrides) -> dict[path, (bytes, executable)]`, the same
-  walk `lock.folder_hash` does (`files.skill_entries`, symlinks followed, `.git` skipped), the rewrites' bytes in place
-  of the file's. `folder_hash` is rebuilt on it, so hash and diff cannot drift. Only `+` and `~` **Skills** get a
-  view, so an unchanged **Skill** is read once, for its hash.
+- **The deployed view of a Skill:** `walk(folder, overrides)` yields each file's path, bytes and executable bit, the
+  walk `lock.folder_hash` did (`files.skill_entries`, symlinks followed, `.git` skipped), the rewrites' bytes in place
+  of the file's, reading each file only when reached. `folder_hash` hashes as it walks, one file in memory at a time;
+  `deployed_files(folder, overrides) -> dict[path, (bytes, executable)]` holds a view whole, for the summary and the
+  diff. One walk for both, so hash and diff cannot drift. Only `+` and `~` **Skills** get a view, so an unchanged
+  **Skill** is read once, for its hash.
 
 - **A new `pipeline/deployed.py`**, pure: `summary(old, new) -> list[str]` over two views (`old` empty for a `+`
   **Skill**), with no diff; `diff(old, new, budget) -> str`, the file hunks only, for `--diff` only;
