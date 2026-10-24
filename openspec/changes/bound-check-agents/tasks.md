@@ -37,13 +37,14 @@ commit.
   the Limits section gains it, marked prompt-level, the LLM10 row says what is capped, Residual risks gains the
   prompt-level line, and Future work loses the cap; verify the test fails first, then passes, and
   `pre-commit run --all-files`
-- [ ] 3.3 Patcher reply discarded: test that the patcher command sends stdout to `/dev/null` and stderr to
-  `<base-dir>/patcher.err`, that a non-zero exit ends the fix showing that file's first line cut to 200 characters
-  (run the `SKILL.md` command that does so on a 300-character line and check it prints 200), that `patcher.json` asks
-  for `done` only (in `test_patcher_only_edits`), and that the quarantine paragraph names the patcher's exit code,
-  error line and the diff's summary among what the main agent holds, the error line as quoted data; make the edits; in
-  `docs/security.md`, rewrite the "Patcher reply" residual risk, "The main agent" bullet, and the LLM05 and ASI07 rows;
-  verify the tests fail first, then pass, and `pre-commit run --all-files`
+- [x] 3.3 Patcher reply discarded: test that the patcher command sends stdout to `/dev/null` and stderr to `<err-file>`,
+  a `mktemp` file outside `<work>`, that a non-zero exit ends the fix showing that file's first line cut to 200
+  characters (run the `SKILL.md` command that does so on a 300-character line and check it prints 200), that
+  `patcher.json` asks for `done` only (in `test_patcher_only_edits`), and that the quarantine paragraph names the
+  patcher's exit code, error line and the diff's summary among what the main agent holds, the error line as quoted data;
+  make the edits; in `docs/security.md`, rewrite the "Patcher reply" residual risk, "The main agent" bullet, and the
+  LLM05 and ASI07 rows; verify the tests fail first, then pass, and `pre-commit run --all-files` (stdout later to
+  `<out-file>`, read only on failure: review fix 1)
 - [ ] 3.4 Summary: replace step 6's per-file `awk` with one that prints
   `files: <n>, lines: +<added> -<removed>, binary: <n>` from `change.patch`, as `design.md` has it. Test it by making
   `change.patch` with the `SKILL.md` diff command (`LC_ALL=C diff -ruN base/ edited/`) from real `base/` and `edited/`

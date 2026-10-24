@@ -40,16 +40,28 @@ Checked against `skills/graft-check/` on main (`8c0bad8`, `probe-check-readers` 
 ## Decisions
 
 - **Discard the patcher's reply, not bound it.** The main agent needs nothing from it: the diff, which the user reads,
-  says what changed, and the exit code says whether the patcher ran. Sending stdout to `/dev/null` in the command
-  removes the reply from the main agent's context, which a length bound and a prompt rule would only narrow.
+  says what changed, and the exit code says whether the patcher ran. Sending stdout to `<out-file>`, a `mktemp` file the
+  skill never opens on exit 0, keeps the reply from the main agent's context, which a length bound and a prompt rule
+  would only narrow.
   `patcher.json` then asks for `done` only, so the patcher spends no tokens on a summary nobody reads.
   Alternative: one line per file, each of at most 200 characters, as quoted data (Future work's wording); rejected as
   weaker, and still prompt-level.
-- **Keep one line of the patcher's errors.** stderr goes to `<base-dir>/patcher.err`; on a non-zero exit the skill
-  shows its first line, cut to 200 characters (`head -n 1 patcher.err | cut -c 1-200`), as quoted text, so the user
-  can tell a misconfigured `claude` (an unknown option, no login) from a cap reached, and the fix ends. Measured: a
-  reached turn cap writes `Error: Reached max turns (1)` to stdout, not stderr, so then the line is empty and the exit
-  code alone says it. Alternative: stderr to `/dev/null` too; rejected, as it hides why every **Patch** fix fails.
+- **The error line in printable ASCII.** Every other byte goes before the line is chosen: a carriage return, an
+  escape, a C1 control or a bidi override cannot overwrite or reorder what the user sees, a line of only control
+  characters cannot stand in for the error after it, and a 200-byte cut cannot split a character, since each is one
+  byte. `claude`'s `·` in `Not logged in · Please run /login` is dropped with them. An escape sequence's printable
+  tail, such as `[2K`, stays: a portable `sed` cannot match the escape byte. Alternative: drop only ASCII controls;
+  rejected, as C1 controls and bidi overrides passed and a cut could split a character.
+- **Keep one line of the patcher's errors.** stderr goes to `<err-file>`, stdout to `<out-file>`, both `mktemp` files
+  outside `<work>`, where the patcher cannot write. On a non-zero exit the skill shows the first non-empty line of
+  stderr, else of stdout, in printable ASCII only, cut to 200 characters
+  (`cat <err-file> <out-file> | LC_ALL=C tr -cd '\040-\176\n' | grep -m 1 . | cut -c 1-200`), as quoted text, so the
+  user can tell a misconfigured `claude` from a cap reached, and the fix ends. Stdout counts because `claude -p` writes
+  most errors there: measured, a reached turn cap writes `Error: Reached max turns (1)` to stdout and nothing to stderr,
+  and the probe saw `Not logged in · Please run /login` there too. On a failure stdout holds `claude`'s error, not the
+  patcher's reply: the patcher holds no shell, so it cannot make `claude` exit non-zero to pass its reply on.
+  Alternatives: stdout to `/dev/null`, stderr only; rejected, as it hides those errors and reads an empty stderr as a
+  cap. Both to `/dev/null`; rejected, as it hides why every **Patch** fix fails.
 - **The summary is numbers only, counted from `change.patch`.** No file name the patcher chose reaches the main agent:
   nothing to bound, escape or quote. The user reads the names in the diff, the only place they matter. One `awk` over
   `change.patch` prints `files: <n>, lines: +<added> -<removed>, binary: <n>`. It reads structure, not names: in

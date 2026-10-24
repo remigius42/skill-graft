@@ -10,10 +10,10 @@ how many.
 
 ## What Changes
 
-- The main agent never sees the patcher's reply: the patcher command sends its stdout to `/dev/null`, and the
-  patcher replies `done` only. Its exit code tells the main agent whether it ran; the diff says what it did. Its
-  stderr goes to a file, and on a failure the skill shows that file's first line, cut to 200 characters, as quoted
-  data, so the user sees why.
+- The main agent never sees the patcher's reply: the patcher command sends its stdout to a file the skill never
+  opens on success, and the patcher replies `done` only. Its exit code tells the main agent whether it ran; the diff
+  says what it did. On a failure the skill shows the first line of its stderr, else of its stdout, where `claude`
+  writes most errors, cut to 200 characters, as quoted data, so the user sees why.
 - The step-6 summary holds numbers only, `files: <n>, lines: +<added> -<removed>, binary: <n>`, counted from
   `change.patch`: no file name the patcher chose reaches the main agent. A name holding a space no longer breaks the
   count, a changed line that starts with `--` or `++` is counted, and a binary file, which a **Patch** cannot hold,
