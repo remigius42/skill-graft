@@ -19,7 +19,7 @@ checked by `tests/cli/test_check.py` for its shape and by the eval for its behav
   "Not logged in"), and the yes-or-no as today. Drop the `--help` test. Name
   `reader.json` and `patcher.json` by absolute path in the skill's folder, `${CLAUDE_SKILL_DIR}` in Claude Code;
   verify `pre-commit run --all-files`
-- [ ] 2.2 In `evals/graft-check/run.sh` and its README, make `unhardened` a `claude` wrapper whose calls with
+- [x] 2.2 In `evals/graft-check/run.sh` and its README, make `unhardened` a `claude` wrapper whose calls with
   `--agent` print `Not logged in · Please run /login` on stdout and exit 1, the outer session passing through; check
   it says unhardened, names `Not logged in`, advises `claude auth login`, starts no reader after the probe, reads no
   **Skill**, and leaves the package unchanged. Add `older-claude`, a wrapper whose calls with `--restricted` print

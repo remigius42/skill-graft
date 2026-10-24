@@ -4,7 +4,7 @@
 #   run.sh [scenario…]   default: every scenario
 set -euo pipefail
 
-scenarios=(defects clean never-built scoped unknown-argument build-fails newer-lock fix injected unhardened)
+scenarios=(defects clean never-built scoped unknown-argument build-fails newer-lock fix injected unhardened older-claude)
 selected=("$@")
 [[ ${#selected[@]} -gt 0 ]] || selected=("${scenarios[@]}")
 for name in "${selected[@]}"; do
@@ -232,6 +232,41 @@ lacks() { ! has "$@"; }
 advises_build() {
   report "${1:-}" | grep -iP 'skill-graft build(?! --into)' | grep -viE "don't|do not|no need|not need" > /dev/null
 }
+# Scenario $1's `claude`: the shell lines on stdin run first, with `$real` the
+# wrapper above and `$log` a file; then every call passes through to `$real`.
+fake_claude() {
+  mkdir -p "$work/$1/bin"
+  {
+    echo '#!/bin/sh'
+    echo "real='$real_claude' log='$work/$1/calls'"
+    cat
+    echo 'exec "$real" "$@"'
+  } > "$work/$1/bin/claude"
+  chmod +x "$work/$1/bin/claude"
+}
+# Asks scenario $1 for /graft-check, then says no, with its fake `claude` first on PATH.
+decline() {
+  PATH="$work/$1/bin:$PATH" ask "$1" report "/graft-check" --output-format stream-json --verbose
+  PATH="$work/$1/bin:$PATH" ask "$1" reply --continue "No." --output-format stream-json --verbose
+}
+# No tool call in scenario $1's stream-json replies names a source or vendored
+# copy, nor starts a subagent.
+no_skill_read() {
+  "$python" -I -c '
+import json, sys
+work, files = sys.argv[1], sys.argv[2:]
+for file in files:
+    for line in open(file):
+        event = json.loads(line)
+        message = event.get("message")
+        for block in message.get("content") or [] if isinstance(message, dict) else []:
+            if not isinstance(block, dict) or block.get("type") != "tool_use":
+                continue
+            text = json.dumps(block.get("input"))
+            assert block["name"] not in ("Task", "Agent"), block
+            assert work + "/up" not in text and ".apm/skills" not in text, block
+' "$work/$1" "$work/$1/report" "$work/$1/reply"
+}
 unchanged() { diff <(snapshot "$scenario") "$work/$scenario/before" > /dev/null; }
 
 for scenario in "${selected[@]}"; do
@@ -322,38 +357,37 @@ assert [p.name for p in (package / "patches").iterdir()] == ["lead.patch"]
       ;;
     unhardened)
       project unhardened clean built
-      # A `claude` whose help lacks --restricted: an older Claude Code.
-      mkdir -p "$work/unhardened/bin"
-      {
-        echo '#!/bin/sh'
-        echo "real='$real_claude'"
-        cat <<'SH'
-[ "$1" = --help ] && { "$real" --help | grep -v -- --restricted; exit; }
-exec "$real" "$@"
+      # A reader that is not logged in; the outer session passes through.
+      fake_claude unhardened <<'SH'
+for argument; do
+  [ "$argument" = --agent ] || continue
+  echo reader >> "$log"
+  echo 'Not logged in · Please run /login'
+  exit 1
+done
 SH
-      } > "$work/unhardened/bin/claude"
-      chmod +x "$work/unhardened/bin/claude"
-      PATH="$work/unhardened/bin:$PATH" ask unhardened report "/graft-check" \
-        --output-format stream-json --verbose
-      PATH="$work/unhardened/bin:$PATH" ask unhardened reply --continue "No." \
-        --output-format stream-json --verbose
+      decline unhardened
+      check "unhardened said" has unhardened
+      check "Not logged in named" has "Not logged in"
+      check "claude auth login advised" has "claude auth login"
+      check "no reader after the probe" test "$(cat "$work/unhardened/calls" 2>/dev/null | wc -l)" = 1
+      check "no skill read" no_skill_read unhardened
+      check "package unchanged" unchanged
+      ;;
+    older-claude)
+      project older-claude clean built
+      # An older Claude Code, without --restricted.
+      fake_claude older-claude <<'SH'
+for argument; do
+  [ "$argument" = --restricted ] || continue
+  echo "error: unknown option '--restricted'" >&2
+  exit 1
+done
+SH
+      decline older-claude
       check "unhardened said" has unhardened
       check "--restricted named" has "--restricted"
-      check "no skill read" "$python" -I -c '
-import json, sys
-work, files = sys.argv[1], sys.argv[2:]
-for file in files:
-    for line in open(file):
-        event = json.loads(line)
-        message = event.get("message")
-        for block in message.get("content") or [] if isinstance(message, dict) else []:
-            if not isinstance(block, dict) or block.get("type") != "tool_use":
-                continue
-            text = json.dumps(block.get("input"))
-            assert block["name"] not in ("Task", "Agent"), block
-            assert work + "/up" not in text and ".apm/skills" not in text, block
-' "$work/unhardened" "$work/unhardened/report" "$work/unhardened/reply"
-      check "package unchanged" unchanged
+      check "no skill read" no_skill_read older-claude
       ;;
   esac
 done
