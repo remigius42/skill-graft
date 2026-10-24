@@ -152,10 +152,11 @@ new tips only. `--dry-run` SHALL print the same.
 ### Requirement: Deployed diff file
 
 `update --diff <file>` SHALL write the **Deployed diff** of the **Hull diff**'s `+` and `~` **Skills** to `<file>`,
-its folders resolved, its last part never followed as a symbolic link. Before any other step it SHALL refuse, naming
-it, a `<file>` whose name does not end in `.diff`; that, once its folders are resolved, lies inside a folder named
-`.apm` in any case or a folder holding a `SKILL.md`; that exists and is not a regular file; or that is a regular file
-not starting with the **Deployed diff**'s
+with a line `# - <skill id>` for each **Skill** it marks `-`, its folders resolved, its last part never followed as a
+symbolic link. Before any other step it SHALL refuse, naming it, a `<file>` whose name does not end in `.diff`; that,
+as given without `..` or once its folders are resolved, lies inside a folder named `.apm` in any case; that, once its
+folders are resolved, lies inside a folder holding a `SKILL.md`, or in no existing folder; that exists and is not a
+regular file; or that is a regular file not starting with the **Deployed diff**'s
 header, reading no more of it than the header's first line. So it never replaces a file it did not write, never writes a
 file a harness loads as a command, rule or **Skill**, and never blocks on what it reads. Then it SHALL remove a file it
 wrote before, so a
@@ -253,6 +254,21 @@ reason, and every **Skill** of the new **Hull** as a `+` **Skill**, all its file
 - **WHEN** every **Skill** keeps its hash and the user runs `update --diff review.diff`
 - **THEN** `review.diff` holds the header and says no **Skill** changed
 
+#### Scenario: Skill removed
+
+- **WHEN** at the new tip no **Skill** calls `/grilling` any more, and the user runs `update --dry-run --diff review.diff`
+- **THEN** `review.diff` holds the line `# - mp/grilling`, even when no **Skill** changed or joined
+
+#### Scenario: In no folder
+
+- **WHEN** the user runs `update --dry-run --diff typo/review.diff`, and there is no folder `typo`
+- **THEN** it exits non-zero naming the path, before fetching
+
+#### Scenario: Through a link named .apm
+
+- **WHEN** `proj/.Apm` is a symbolic link to another folder and the user runs `update --diff proj/.Apm/review.diff`
+- **THEN** it exits non-zero naming the path, and writes nothing
+
 ### Requirement: Deployed diff content
 
 For each `+` and `~` **Skill**, the **Deployed diff** SHALL open with `# <mark> <skill id>`, then a line naming its
@@ -268,7 +284,10 @@ quoted too when it holds a space. A file the **Hidden character** check reads as
 and every other file as lenient UTF-8; each byte that cannot be decoded SHALL be shown as a `\x..` escape, and no file
 as `Binary files … differ`. Lines SHALL be split at line feeds only. In each line, every control character but tab,
 U+2028 and U+2029, and every character the **Hidden character** check reports or warns of, SHALL be shown as an escape,
-so no editor breaks a line where the diff does not and no two lines look alike that differ. Computing the diffs of a
+so no editor breaks a line where the diff does not and no two lines look alike that differ. When two different lines
+of a file would still look alike, a typed escape beside the byte or character it names, every backslash of that file
+SHALL be shown doubled; when a file's bytes differ but both sides decode to the same lines, both sides SHALL be shown
+byte for byte, as lenient UTF-8; either way a line before the file SHALL say so. Computing the diffs of a
 run SHALL take time and memory within a fixed step budget, whatever the length of its lines, plus linear time in the
 bytes read: a file over 1 MB, or
 one whose diff would overrun the budget, SHALL show as all its old lines removed and all its new ones added. The diff
@@ -329,6 +348,17 @@ SHALL be the same on every machine: no git configuration of the user's changes i
 
 - **WHEN** at the new tip a line of `mp/tdd`'s `SKILL.md` gains a zero-width space
 - **THEN** the **Deployed diff** shows it as `\u200b`
+
+#### Scenario: A typed escape
+
+- **WHEN** at the new tip `mp/tdd`'s `run.sh` line `echo \x80`, typed so, holds the byte 0x80 instead
+- **THEN** the **Deployed diff** shows `-echo \\x80` and `+echo \x80`, after a line saying each backslash is doubled
+
+#### Scenario: A file re-encoded
+
+- **WHEN** at the new tip `mp/tdd`'s `a.txt` holds the same text in UTF-16 with a byte order mark
+- **THEN** the **Deployed diff** shows both sides byte for byte, the bytes that are not UTF-8 escaped, after a line
+  saying so
 
 #### Scenario: A script with a stray byte
 
