@@ -5,7 +5,8 @@
 `skill-graft --version` SHALL print `skill-graft <version>` on one line to standard output and exit 0, without
 reading `skill-graft.toml`. Installed from a git repository, the version SHALL be followed by the revision asked for
 and the commit installed, abbreviated to seven characters: `(<revision> @ <commit>)`, or `(<commit>)` when no revision
-was asked for or the revision is that commit. Installed from anywhere else, it SHALL print the version only.
+was asked for or the revision is that commit, in full or abbreviated. Installed from anywhere else, it SHALL print
+the version only, and `skill-graft unknown` when it cannot find its own installation.
 
 #### Scenario: Release
 
@@ -28,13 +29,18 @@ was asked for or the revision is that commit. Installed from anywhere else, it S
 #### Scenario: Git install at a commit
 
 - **WHEN** skill-graft 0.2.0 was installed from `git+https://github.com/remigius42/skill-graft@` followed by the full
-  hash of commit `e294a0e…`
+  or a short hash of commit `e294a0e…`
 - **THEN** it prints `skill-graft 0.2.0 (e294a0e)`
 
 #### Scenario: Other version control
 
 - **WHEN** skill-graft 0.2.0 was installed from a Mercurial or Subversion repository
 - **THEN** it prints `skill-graft 0.2.0`
+
+#### Scenario: Not installed
+
+- **WHEN** skill-graft runs from a source tree without being installed, and the user runs `skill-graft --version`
+- **THEN** it exits 0 and prints `skill-graft unknown`
 
 #### Scenario: Broken package
 

@@ -4,17 +4,18 @@ Apply with the `tdd` skill: each task red-green-refactor, one commit.
 
 ## 1. The option
 
-Tests fake the installed distribution with `monkeypatch` on `importlib.metadata` through `cli`'s import of it, so they
-hold whatever installer ran the suite.
+`cli.py` imports `from importlib import metadata` and calls `metadata.distribution(...)`, so tests fake the installed
+distribution with `monkeypatch` through `cli.metadata`, whatever installer ran the suite.
 
 - [ ] 1.1 Add `--version` to the top-level parser as a custom action printing `skill-graft <version>` from
-  `importlib.metadata`, computed only when given; tests in `tests/cli/test_cli.py`: the cli spec's "Release", "Broken
-  package" and "Listed in help" scenarios, `skill-graft unknown` for a missing distribution, and another command still
-  running when the distribution is missing; verify they pass
+  `importlib.metadata`, computed only when given; tests in `tests/cli/test_cli.py`: the cli spec's "Release", "Not
+  installed", "Broken package" and "Listed in help" scenarios, and another command still running when the
+  distribution is missing; verify they pass
 - [ ] 1.2 Follow the version with `(<revision> @ <commit>)` or `(<commit>)` from `direct_url.json`'s `vcs_info`;
-  tests: "Git install without a revision", "Git install at a branch", "Git install at a commit", "Other version
-  control", a ref holding `%` printed as is, and the version only for a `direct_url.json` that is missing, not JSON,
-  not an object, holds `dir_info` instead of `vcs_info`, or a `vcs_info` without `commit_id`; verify they pass
+  tests: "Git install without a revision", "Git install at a branch", "Git install at a commit" with a full and a
+  short hash, "Other version control", a `requested_revision` that is empty or not a string, and the version only
+  for a `direct_url.json` that is missing, not JSON, not an object, holds `dir_info` instead of `vcs_info`, or a
+  `vcs_info` without `commit_id`; verify they pass
 
 ## 2. Docs
 
