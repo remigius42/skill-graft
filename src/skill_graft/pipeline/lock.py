@@ -1,6 +1,7 @@
 """Writes `skill-graft.lock`, where the hull came from; reads back its hashes."""
 
 import hashlib
+import json
 import os
 import tomllib
 from pathlib import Path
@@ -99,6 +100,13 @@ def folder_hash(folder: Path, overrides: dict[Path, bytes] | None = None) -> str
         digest.update(b"\0".join([*fields, b"%d" % len(content), b""]))
         digest.update(content)
     return f"sha256:{digest.hexdigest()}"
+
+
+def digest(hull: Hull, hashes: dict[SkillId, str]) -> str:
+    """The Hull digest: SHA-256 of each skill's ID, deployed name and hash, sorted,
+    so equal digests deploy the same text under the same names."""
+    triples = sorted([str(s), hull.deployed[s], hashes[s]] for s in hull.skills)
+    return hashlib.sha256(json.dumps(triples, ensure_ascii=True).encode()).hexdigest()
 
 
 def write(text: str, file: Path | None = None) -> None:

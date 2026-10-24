@@ -68,7 +68,7 @@ diff** and **Hull digest** are this branch's first commit.
   separator", "A path source", "Edited since the lock", "Git configuration ignored" with a `HOME` whose git config sets
   `*.md binary` and an `orderFile`), and "Dry run with a diff file"; verify the tests fail first, then pass, and
   `pre-commit run --all-files`
-- [ ] 3.4 `lock.digest(hull, hashes)`: SHA-256 of the ASCII JSON of the sorted `[skill id, deployed name, hash]`
+- [x] 3.4 `lock.digest(hull, hashes)`: SHA-256 of the ASCII JSON of the sorted `[skill id, deployed name, hash]`
   triples. Tests in `tests/pipeline/test_lock.py`: equal for equal **Hulls** built in another order, different for a
   changed hash and for a changed **Deployed name** alone; verify the tests fail first, then pass
 - [ ] 3.5 `--expect <digest>` in `cli.py` and `update.update`: 64 lowercase hex checked before any fetch; once the

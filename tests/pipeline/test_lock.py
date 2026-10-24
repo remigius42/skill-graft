@@ -1,6 +1,7 @@
 """The lock's content (the `resolve` spec): sources, skills, edges, hashes."""
 
 import os
+from dataclasses import replace
 import stat
 import tomllib
 from pathlib import Path
@@ -373,3 +374,40 @@ def test_version_1_keys(home: Path, tmp_path: Path) -> None:
         "bound edge": {"from", "to", "kind", "bind"},
         "suggestion": {"id", "from"},
     }, "the lock's layout changed: raise its `version` (and the graft-check skill's)"
+
+
+def digest() -> str:
+    with compute.compute_hull(config.load()) as hull:
+        return lock.digest(hull, lock.skill_hashes(hull))
+
+
+def test_digest_ignores_the_order_reached(home: Path) -> None:
+    skill(home / "own" / "tdd")
+    skill(home / "own" / "grilling")
+    configure(["own/tdd", "own/grilling"], own="~/own")
+    first = digest()
+    configure(["own/grilling", "own/tdd"], own="~/own")
+
+    assert digest() == first
+    assert len(first) == 64 and first == first.lower()
+
+
+def test_digest_follows_a_hash(home: Path) -> None:
+    folder = skill(home / "own" / "tdd")
+    configure(["own/tdd"], own="~/own")
+    first = digest()
+    (folder / "SKILL.md").write_text("changed\n")
+
+    assert digest() != first
+
+
+def test_digest_follows_a_deployed_name_alone(home: Path) -> None:
+    skill(home / "own" / "tdd")
+    configure(["own/tdd"], own="~/own")
+    with compute.compute_hull(config.load()) as hull:
+        hashes = lock.skill_hashes(hull)
+        renamed = replace(
+            hull, deployed={skill_id: "other" for skill_id in hull.deployed}
+        )
+
+        assert lock.digest(renamed, hashes) != lock.digest(hull, hashes)
