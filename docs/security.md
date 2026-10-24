@@ -39,8 +39,8 @@ On Claude Code, the **Check** reads **Skill** text only through confined, headle
   and ignores the user's settings, so none can widen it. The reader definition ships with the skill
   (`skills/graft-check/reader.json`).
 - **The main agent** never opens a **Skill**'s **Upstream** text, vendored copy or patch files. It holds CLI output,
-  `skill-graft.toml`, the lock and the readers' reports, whose quoted `text`, one line of at most 200 characters, it
-  shows and never acts on.
+  `skill-graft.toml`, the lock, the patcher's reply and the readers' reports, whose quoted `text`, one line of at most
+  200 characters, it shows and never acts on.
 - **The patcher** writes a **Patch** with `Read`, `Edit` and `Write` only, confined to a temporary folder holding a
   working copy, out of reach of the base it is diffed against. You read the diff before it goes into the **Package**.
 - **Fix arguments** must come from CLI output or the config, each side of the slash a name skill-graft accepts, quoted.
