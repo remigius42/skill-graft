@@ -82,10 +82,9 @@ skill: the main agent starts each reader, and nothing between it and its shell c
 - **Report text.** A reader's quoted `text` reaches the main agent. It is short and shown, never followed, and you
   accept each fix; this holds at the prompt level only.
 - **Patcher output.** The patcher's reply and the names of the files it changed never reach the main agent, and a
-  name holding a control character ends the fix; one
-  line of its errors does, short and quoted, at the prompt level. A NUL byte past the part of a file `diff` inspects
-  makes no binary count: you read that diff like any other, and a **Patch** `git apply` refuses fails the next build,
-  which undoes it.
+  name holding a control character ends the fix; one line of its errors does, short and quoted, at the prompt level.
+  A NUL byte past the part of a file `diff` inspects makes no binary count: you read that diff like any other, and a
+  **Patch** `git apply` refuses fails the next build, which undoes it.
 - **Fix arguments** are checked by the main agent, at the prompt level too.
 - **Readers at once.** How many readers run at once is up to the main agent following the skill, at the prompt level
   too; each reader's own turns and spend are capped by `claude` itself.
