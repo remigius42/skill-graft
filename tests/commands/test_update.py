@@ -1765,3 +1765,39 @@ def test_diff_file_through_a_folder_named_apm(
 
     assert code == 1 and "proj/.Apm/review.diff" in err and ".apm" in err
     assert not paths.cache().exists() and not list((home / "elsewhere").iterdir())
+
+
+def test_removed_skill_in_the_diff(
+    home: Path, upstream: Upstream, capsys: Capsys
+) -> None:
+    old = upstream.commit({"tdd/SKILL.md": "/grilling\n", "grilling/SKILL.md": "g\n"})
+    write_config(
+        'entries = ["mp/tdd"]\n' + git_source("mp", upstream, f'ref = "{old}"\n')
+    )
+    assert main(["build", "--no-install"]) == 0
+    upstream.commit({"tdd/SKILL.md": "1\n"})
+
+    assert update(capsys, "--dry-run", "--diff", "review.diff")[0] == 0
+
+    text = (home / "review.diff").read_text()
+    assert text.startswith(HEADER + "# - mp/grilling\n# ~ mp/tdd\n")
+
+
+def test_only_removals_in_the_diff(
+    home: Path, upstream: Upstream, capsys: Capsys
+) -> None:
+    old = upstream.commit({"tdd/SKILL.md": "1\n", "grilling/SKILL.md": "g\n"})
+    skill(home / "own" / "notes", "/grilling\n")
+    write_config(
+        'entries = ["own/notes"]\n'
+        + git_source("mp", upstream, f'ref = "{old}"\n')
+        + '[sources.own]\npath = "~/own"\n'
+    )
+    assert main(["build", "--no-install"]) == 0
+    upstream.git("rm", "-q", "-r", "grilling")
+    upstream.commit({})
+
+    code, out, _ = update(capsys, "--dry-run", "--diff", "review.diff")
+
+    assert code == 0 and diff_lines(out)[:2] == [LEGEND, "- mp/grilling"]
+    assert (home / "review.diff").read_text() == HEADER + "# - mp/grilling\n"

@@ -309,9 +309,10 @@ def _deployed_diff(
     edited: list[SkillId],
 ) -> str:
     """The Deployed diff of the `shown` skills, or of every skill as added when
-    there is no previous hull."""
+    there is no previous hull; a line for each skill removed."""
     out = [HEADER]
     old_hull = None
+    removed: set[SkillId] = set()
     if isinstance(previous, str):
         out.append(
             f"# no previous hull to compare ({hidden.show(previous)}): "
@@ -327,10 +328,15 @@ def _deployed_diff(
         }
     else:
         old_hull = previous[0]
+        removed = previous[1].keys() - hashes.keys()
         if previous[1] == hashes:
             out.append("# hull unchanged\n")
     budget = deployed.Budget()  # one for the run: a crafted skill costs no more
-    for skill, (before, after) in shown.items():
+    for skill in sorted(shown.keys() | removed):
+        if skill in removed:
+            out.append(f"# - {skill}\n")
+            continue
+        before, after = shown[skill]
         was = old_hull if old_hull is not None and skill in old_hull.skills else None
         out.append(f"# {'+' if was is None else '~'} {skill}\n")
         out.append(_source_line(loaded, tips, skill, was, hull))
