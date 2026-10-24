@@ -4,7 +4,7 @@ import re
 import shlex
 import stat
 import tempfile
-from collections.abc import Iterator, MutableMapping
+from collections.abc import Generator, MutableMapping
 from contextlib import ExitStack, contextmanager
 from pathlib import Path
 from typing import Any, cast
@@ -200,7 +200,7 @@ def _update(
 @contextmanager
 def _previous(
     loaded: Config, selected: dict[str, GitSource], git_cache: Cache
-) -> Iterator[tuple[Hull, dict[SkillId, str]] | str]:
+) -> Generator[tuple[Hull, dict[SkillId, str]] | str]:
     """The hull at the current refs and each skill's hash, open; or why there is none.
 
     Never fetches: the diff is not worth a remote call. A cached commit whose tree
@@ -232,6 +232,9 @@ def _previous(
         except (SkillGraftError, OSError) as error:  # the update itself is still fine
             stack.close()
             reason = f"the current refs do not resolve: {error}"
+        except BaseException:  # Ctrl-C too: the old hull's copies go now
+            stack.close()
+            raise
     if reason is not None:
         yield reason
         return

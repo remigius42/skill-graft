@@ -1,6 +1,7 @@
 """The `update` spec, through `skill-graft update`."""
 
 import os
+import tempfile
 from pathlib import Path
 from typing import TypeAlias
 
@@ -18,7 +19,7 @@ from conftest import (
 from skill_graft.cli import main
 from skill_graft.commands import edit
 from skill_graft.infra import cache, files, paths
-from skill_graft.pipeline import config, deployed
+from skill_graft.pipeline import config, deployed, lock
 
 Capsys: TypeAlias = pytest.CaptureFixture[str]
 
@@ -1706,3 +1707,32 @@ def test_malformed_digest(upstream: Upstream, capsys: Capsys, digest: str) -> No
 
     assert code == 1 and digest in err and "64 hex digits" in err
     assert not paths.cache().exists()
+
+
+class Stop(BaseException):
+    """Neither an `Exception` nor an `OSError`, as Ctrl-C is not."""
+
+
+def test_old_hull_removed_on_any_error(
+    upstream: Upstream, tmp_path: Path, capsys: Capsys, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    moved_tdd(upstream)
+    work = tmp_path / "work"
+    work.mkdir()
+    monkeypatch.setattr(tempfile, "tempdir", str(work))
+    calls = []
+    skill_hashes = lock.skill_hashes
+
+    def hashes_then_stop(hull: object) -> dict[config.SkillId, str]:
+        calls.append(hull)
+        if len(calls) == 2:  # the old hull's
+            raise Stop
+        return skill_hashes(hull)  # type: ignore[arg-type]
+
+    monkeypatch.setattr(lock, "skill_hashes", hashes_then_stop)
+
+    with pytest.raises(Stop) as stopped:
+        main(["update"])
+
+    # Its traceback still alive, as when Ctrl-C reaches the top: no collector ran.
+    assert stopped.traceback and list(work.iterdir()) == []
