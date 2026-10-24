@@ -101,7 +101,8 @@ skill: the main agent starts each reader, and nothing between it and its shell c
   your reading.
 - **Deployed Skills.** skill-graft does not judge whether a **Skill** is malicious, and no tool reliably can: past
   the **Hidden character** check, visible injection and the scripts a **Skill** ships reach your agent as written.
-  Vet the **Sources** you declare.
+  Vet the **Sources** you declare: `update --dry-run --diff <file>` writes the **Deployed diff**, each changed
+  **Skill**'s text as deployed, for you to read in an editor, and its `apply:` line updates to that **Hull** only.
 
 An unhardened **Check** is likely not secure: it reads **Skill** text in the session that holds your shell.
 
@@ -177,5 +178,5 @@ The agentic list has no page per risk; its entries are in the PDF on OWASP's pag
 
 Rudimentary checks that narrow, not close, the risks above:
 
-- `update` shows each changed **Skill**'s text diff, so vetting covers only what changed.
+- Verify the lock's hash at `build`, so a **Skill** edited since the lock was written is named before it deploys.
 - Flag scripts, URLs and shell commands in **Skill** text for you to review.

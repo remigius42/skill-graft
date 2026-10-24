@@ -200,7 +200,10 @@ def _parser() -> tuple[_Parser, dict[str, argparse.ArgumentParser]]:
         description=(
             "Fetch each git source's branch tip, resolve the hull there, and only "
             "if that succeeds write the new ref into skill-graft.toml and the lock. "
-            "Prints the hull diff and any patch hunk that no longer applies."
+            "Prints the hull diff, each changed file of each changed or added skill, "
+            "and any patch hunk that no longer applies. To review an update, run "
+            "`update --dry-run --diff review.diff`, read the file in an editor, then "
+            "run the `apply:` line it prints, `update --expect <digest>`."
         ),
     )
     update_parser.add_argument(
@@ -210,7 +213,9 @@ def _parser() -> tuple[_Parser, dict[str, argparse.ArgumentParser]]:
         help="a source alias; default: every git source",
     )
     update_parser.add_argument(
-        "--dry-run", action="store_true", help="show the new shas, write nothing"
+        "--dry-run",
+        action="store_true",
+        help="show the new shas, write nothing but --diff's file",
     )
     update_parser.add_argument(
         "--diff",

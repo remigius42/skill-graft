@@ -105,9 +105,19 @@ path = "~/Documents/sync/2_areas/software/chisel_skill"
   print `skill-graft: package: <path>`.
 - `update [source…]`: fetches, resolves at each branch tip, and only if that succeeds writes the lock, and the
   tips' shas into `ref` when one moved; prints the hull diff (`+` added, `-` removed, `~` changed, against the
-  hull at the current refs if those are cached, never fetching for it) and any failing patch hunks. `--dry-run`
-  does all of it without writing the TOML, the lock or the cache. A tip without a source's `subdirectory` fails
-  resolution, so `ref` stays.
+  hull at the current refs if those are cached, never fetching for it) and any failing patch hunks. Under each
+  `+` and `~`, a line per file whose bytes or executable bit differ, its sizes, quoted as git's `core.quotePath`
+  quotes it, a space too, never its text; then each skill whose old side differs from the lock's hash, as edited
+  since the lock was written. `--dry-run` does all of it without writing the TOML, the lock or the cache, and ends
+  with a `review:` hint, or, its diff file written and nothing edited since the lock, an `apply:` line. A tip
+  without a source's `subdirectory` fails resolution, so `ref` stays.
+- `update --diff <file>`: writes the Deployed diff, a unified diff in git's format of each `+` and `~` skill as
+  deployed, built by `pipeline/deployed.py`, no git: a Myers diff on one step budget for the run, a file past it or
+  over 1 MB shown whole; every file as text, each character an editor could break a line at, or the hidden
+  character check reports, escaped. Only to a new file or one it wrote before, named `*.diff`, never inside an
+  `.apm` folder or a skill's; removed first, so a failed run leaves none, and written before the TOML and the lock.
+  With no previous hull, every skill shows as added. `--expect <digest>`: refuses, writing nothing, unless the new
+  hull's digest (SHA-256 over each skill's ID, deployed name and hash) is `<digest>`.
 - `why <skill>`: the reverse paths from the entries, as an inverted tree (`cargo tree -i`): the skill at the
   root, each child a skill whose slash or Skill tool reference reaches it, joined by `├─←` and `└─←`, labels and
   `(*)` as in `resolve`'s tree, an entry below the root marked `(entry)` and not expanded (the root always
@@ -226,9 +236,9 @@ deployed file as `modified` drift.
   context moved only by offset applies, except that one starting at the file's first line stays anchored there; any
   other fails.
 - The upstream folder is checked before it is copied, as the walk checks any skill before reading it. The copy
-  leaves out `.git`, as vendoring does. Each resolution (`update` makes two: at the current refs and at the tips)
-  copies into its own temporary folder, removed whatever the outcome, and `git apply` runs with
-  `GIT_CEILING_DIRECTORIES` at its parent so no enclosing repository changes how paths resolve. `vendor` copies
+  leaves out `.git`, as vendoring does. Each resolution (`update` makes two, both open at once to compare them: at the
+  current refs and at the tips) copies into its own temporary folder, removed whatever the outcome, and `git apply` runs
+  with `GIT_CEILING_DIRECTORIES` at its parent so no enclosing repository changes how paths resolve. `vendor` copies
   from them; messages and the lock name the upstream folder or a path inside the skill, never the copy. Without
   `git` on `PATH`, applying a patch is an error saying `[patches]` needs it; a config without patches never needs
   `git` for them.

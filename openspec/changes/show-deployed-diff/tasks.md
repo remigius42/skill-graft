@@ -83,7 +83,7 @@ diff** and **Hull digest** are this branch's first commit.
 
 ## 4. Docs
 
-- [ ] 4.1 `README.md`'s `update` line and Config-free usage: `--diff <file>`, the review loop
+- [x] 4.1 `README.md`'s `update` line and Config-free usage: `--diff <file>`, the review loop
   `update --dry-run --diff review.diff` then the `apply:` line's `update … --expect …`, never printing the file to a
   terminal; `docs/design.md`'s `update` entry and its two resolutions; `docs/security.md`: drop the Future work item,
   add "Verify the lock's hash at `build`" there and mention the **Deployed diff** under vetting **Sources** in Residual
