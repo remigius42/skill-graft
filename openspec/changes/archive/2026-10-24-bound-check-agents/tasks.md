@@ -61,7 +61,7 @@ commit.
 
 ## 4. Changelog
 
-- [ ] 4.1 Add an entry to `CHANGELOG.md` under `[Unreleased]`: in a hardened **Check**, readers and the patcher stop at
+- [x] 4.1 Add an entry to `CHANGELOG.md` under `[Unreleased]`: in a hardened **Check**, readers and the patcher stop at
   a turn and a spend limit, at most 4 readers run at once, all five settable in a new `[check]` table, and the
   patcher's reply and file names no longer reach the main agent, the patch summary giving counts only and the
   patcher's first error line when it fails. Per `AGENTS.md` it

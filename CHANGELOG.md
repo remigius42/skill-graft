@@ -13,6 +13,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   if one was named: `skill-graft 0.2.0 (main @ e294a0e)`; without a readable installation, `skill-graft unknown`
 - An OWASP Top 10 section in `docs/security.md`: how skill-graft meets each risk of the LLM and agentic
   lists, what is out of scope (judging whether a **Skill** is malicious), and future work
+- A `[check]` table in `skill-graft.toml` for the limits of a hardened `/graft-check`: `reader-turns` (30),
+  `reader-budget-usd` (1.0), `patcher-turns` (10), `patcher-budget-usd` (0.5) and `readers-at-once` (4), each
+  written in plain decimal digits; any other form fails like any bad key
 
 ### Changed
 
@@ -20,6 +23,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   **Skill** text it runs one probe reader, and outside Claude Code it first asks to use your Claude Code account. A
   failed probe makes the **Check** unhardened, naming the probe's error and, when not logged in, advising
   `claude auth login`
+- In a hardened `/graft-check`, each reader and the patcher stop at a cap on their turns and their spend, and at most
+  `readers-at-once` readers run at once, in batches. A reader that stops leaves its **Skill** with no report; a
+  patcher that stops ends that fix
+- The patcher's reply no longer reaches the main agent. A failed patcher shows one line of its error, in printable
+  ASCII, at most 200 characters
+- The summary of a proposed **Patch** gives counts only (`files: 1, lines: +2 -1, binary: 0`), never the patcher's
+  file names. A binary file, or a file name holding a control character, ends that fix
 
 ## [0.2.0] - 2026-10-23
 
