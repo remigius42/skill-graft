@@ -1,5 +1,6 @@
 """Moves each git source's ref to the tip of its branch."""
 
+import re
 import shlex
 import stat
 import tempfile
@@ -42,22 +43,28 @@ def update(
     aliases: list[str],
     dry_run: bool = False,
     diff_file: Path | None = None,
+    expect: str | None = None,
 ) -> None:
     """Moves the selected git sources to their tips, if every entry resolves there.
 
     Prints one line per source first, so a resolution error still shows the shas
     it would have written. A dry run writes only to a temporary folder, reading
-    the real cache, and `diff_file`. Writes `diff_file`'s Deployed diff, if given.
+    the real cache, and `diff_file`. Writes `diff_file`'s Deployed diff, if given;
+    refuses a hull whose digest is not `expect`, if given.
     """
+    if expect is not None and not re.fullmatch("[0-9a-f]{64}", expect):
+        raise SkillGraftError(
+            f"--expect {expect}: expected 64 hex digits, as an `apply:` line gives"
+        )
     target = None if diff_file is None else _diff_target(diff_file)
     if not dry_run:
-        _update(loaded, aliases, Cache(paths.cache()), True, target)
+        _update(loaded, aliases, Cache(paths.cache()), True, target, expect)
         return
     try:
         with tempfile.TemporaryDirectory(prefix="skill-graft-") as tmp:
             git_cache = Cache(Path(tmp), Cache(paths.cache()))
             try:
-                _update(loaded, aliases, git_cache, False, target)
+                _update(loaded, aliases, git_cache, False, target, expect)
             except patch.PatchError as error:
                 raise _fetch_hint(error, Path(tmp)) from None
     finally:
@@ -126,6 +133,7 @@ def _update(
     git_cache: Cache,
     write: bool,
     target: Path | None,
+    expect: str | None,
 ) -> None:
     selected = _select(loaded, aliases)
     compute.check_refs(loaded, selected)
@@ -150,8 +158,16 @@ def _update(
         with _previous(loaded, selected, git_cache) as previous:
             shown = _print_diff(previous, hull, hashes)
             edited = []
-            if not isinstance(previous, str):
+            if not isinstance(previous, str):  # else every skill is shown in full
                 edited = _print_edited(previous[1], lock.read())
+            given = "".join(f"{shlex.quote(alias)} " for alias in aliases)
+            review = f"skill-graft update {given}--dry-run --diff <file>"
+            digest = lock.digest(hull, hashes)
+            if expect is not None and digest != expect:
+                raise SkillGraftError(
+                    f"the hull is not the one reviewed: its digest is {digest}, "
+                    f"not {expect}; review it again: {review}"
+                )
             diff = ""  # built before any write
             if target is not None:
                 diff = _deployed_diff(
@@ -171,11 +187,14 @@ def _update(
                 target.unlink(missing_ok=True)
             raise
     explain.announce_suggestions(hull, dry_run=not write)  # once the writes succeeded
-    if not write and target is not None:
+    if write:
+        return
+    if target is not None:
         files.atomic_write(target, diff.encode())
-    if not write and shown and target is None:
-        given = "".join(f"{shlex.quote(alias)} " for alias in aliases)
-        print(f"review: skill-graft update {given}--dry-run --diff <file>")
+    if target is None and (shown or isinstance(previous, str)):
+        print(f"review: {review}")
+    elif not edited:  # all the text of what it would deploy was shown
+        print(f"apply: skill-graft update {given}--expect {digest}")
 
 
 @contextmanager

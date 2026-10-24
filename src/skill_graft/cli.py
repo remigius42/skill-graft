@@ -221,6 +221,14 @@ def _parser() -> tuple[_Parser, dict[str, argparse.ArgumentParser]]:
             "a new file or one it wrote before, named *.diff; read it in an editor"
         ),
     )
+    update_parser.add_argument(
+        "--expect",
+        metavar="DIGEST",
+        help=(
+            "update only if the new hull's digest is DIGEST, as the `apply:` line of "
+            "a dry run with --diff gives it: so exactly the hull reviewed is written"
+        ),
+    )
     tree = commands.add_parser(
         "tree",
         help="show the hull as a tree, writing nothing",
@@ -360,7 +368,7 @@ def main(argv: list[str] | None = None) -> int:
         if args.command == "init":
             init_package.init(args.project)
         elif args.command == "update":
-            update.update(_load(), args.aliases, args.dry_run, args.diff)
+            update.update(_load(), args.aliases, args.dry_run, args.diff, args.expect)
         elif args.command == "add":
             edit.add(args.skills)
         elif args.command == "remove":

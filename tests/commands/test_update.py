@@ -1307,10 +1307,10 @@ def test_diff_file_after_patches_redone_for_the_tip(
     patched_source(upstream, old, redone)
     capsys.readouterr()
 
-    code, _, _ = update(capsys, "--dry-run", "--diff", "review.diff")
+    code, out, _ = update(capsys, "--dry-run", "--diff", "review.diff")
 
     text = (home / "review.diff").read_text()
-    assert code == 0
+    assert code == 0 and apply_line(out)
     assert text.startswith(
         HEADER + "# no previous hull to compare (patches fail at the current refs): "
         "every Skill shown as added\n# + mp/tdd\n"
@@ -1487,3 +1487,222 @@ def test_git_configuration_ignored(
 
     assert (home / "review.diff").read_text() == plain
     assert "+b\n" in plain
+
+
+DIGEST = "0123456789abcdef" * 4
+
+
+def apply_line(out: str) -> list[str]:
+    """The `update` arguments of the `apply:` line a dry run printed, if any."""
+    prefix = "apply: skill-graft update "
+    lines = [line for line in out.splitlines() if line.startswith(prefix)]
+    assert len(lines) <= 1
+    return lines[0].removeprefix(prefix).split(" ") if lines else []
+
+
+def test_apply_line(upstream: Upstream, capsys: Capsys) -> None:
+    _, new, _ = moved_tdd(upstream)
+
+    code, out, _ = update(capsys, "mp", "--dry-run", "--diff", "review.diff")
+
+    args = apply_line(out)
+    assert code == 0 and args[:2] == ["mp", "--expect"] and len(args[2]) == 64
+    assert out.splitlines()[-2:] == [
+        f"apply: skill-graft update {' '.join(args)}",
+        "dry run: skill-graft.toml and skill-graft.lock not written",
+    ]
+    assert update(capsys, *args)[0] == 0 and ref("mp") == new
+
+
+def test_no_apply_line_before_a_review(upstream: Upstream, capsys: Capsys) -> None:
+    moved_tdd(upstream)
+
+    code, out, _ = update(capsys, "--dry-run")
+
+    assert code == 0 and "review: skill-graft update --dry-run --diff <file>" in out
+    assert apply_line(out) == []
+
+
+def uncached_ref(upstream: Upstream) -> None:
+    """`mp`'s tip is cached; its ref, a commit no cache holds, is not."""
+    tip = upstream.commit({"tdd/SKILL.md": "1\n"})
+    write_config(
+        'entries = ["mp/tdd"]\n' + git_source("mp", upstream, f'ref = "{tip}"\n')
+    )
+    assert main(["build", "--no-install"]) == 0
+    write_config(
+        'entries = ["mp/tdd"]\n' + git_source("mp", upstream, f'ref = "{"0" * 40}"\n')
+    )
+
+
+def test_apply_line_without_a_previous_hull(
+    home: Path, upstream: Upstream, capsys: Capsys
+) -> None:
+    uncached_ref(upstream)
+
+    code, out, _ = update(capsys, "--dry-run", "--diff", "review.diff")
+
+    assert code == 0 and apply_line(out)[:1] == ["--expect"]
+    assert "# + mp/tdd\n" in (home / "review.diff").read_text()
+
+
+def test_hint_without_a_previous_hull(upstream: Upstream, capsys: Capsys) -> None:
+    uncached_ref(upstream)
+
+    code, out, _ = update(capsys, "--dry-run")
+
+    assert code == 0 and "review: skill-graft update --dry-run --diff <file>" in out
+    assert apply_line(out) == []
+
+
+def test_no_apply_line_after_an_edit(
+    home: Path, upstream: Upstream, capsys: Capsys
+) -> None:
+    mp_and_own(home, upstream, '["mp/tdd", "own/notes"]')
+    assert update(capsys)[0] == 0
+    (home / "own" / "notes" / "SKILL.md").write_text("changed\n")
+
+    code, out, _ = update(capsys, "--dry-run", "--diff", "review.diff")
+
+    assert code == 0 and edited(out) == [EDITED + "own/notes"]
+    assert apply_line(out) == []
+
+
+def test_changed_by_resolution_only(
+    home: Path, upstream: Upstream, capsys: Capsys
+) -> None:
+    old = upstream.commit({"tdd/SKILL.md": "# tdd\n"})
+    skill(home / "own" / "notes", "/grilling\n")
+    write_config(
+        'entries = ["own/notes"]\n'
+        + git_source("mp", upstream, f'ref = "{old}"\nprefix = "mp-"\n')
+        + '[sources.own]\npath = "~/own"\n'
+    )
+    assert main(["build", "--no-install"]) == 0
+    upstream.commit({"grilling/SKILL.md": "g\n"})
+
+    code, out, _ = update(capsys, "mp", "--dry-run", "--diff", "review.diff")
+
+    assert code == 0 and "~ own/notes" in out and edited(out) == []
+    before = lock_file().read_text()
+    assert update(capsys, *apply_line(out))[0] == 0
+    assert lock_file().read_text() != before
+    assert "own/notes" in lock_file().read_text()
+
+
+def vetted(upstream: Upstream, capsys: Capsys) -> tuple[list[str], Path, bytes, bytes]:
+    """`update mp --dry-run --diff review.diff` once `mp/tdd` moved: the apply
+    line's arguments, the config, its bytes and the lock's."""
+    _, _, file = moved_tdd(upstream, extra="")
+    code, out, _ = update(capsys, "mp", "--dry-run", "--diff", "review.diff")
+    assert code == 0 and apply_line(out)
+    return apply_line(out), file, file.read_bytes(), lock_file().read_bytes()
+
+
+def refused(
+    capsys: Capsys, args: list[str], file: Path, toml: bytes, lock: bytes
+) -> str:
+    code, _, err = update(capsys, *args)
+    assert code == 1
+    assert file.read_bytes() == toml and lock_file().read_bytes() == lock
+    return err
+
+
+def test_tip_moved_after_vetting(upstream: Upstream, capsys: Capsys) -> None:
+    args, file, toml, lock = vetted(upstream, capsys)
+    upstream.commit({"tdd/SKILL.md": "3\n"})
+
+    err = refused(capsys, args, file, toml, lock)
+
+    assert args[2] in err and "not the one reviewed" in err
+    assert "skill-graft update mp --dry-run --diff <file>" in err
+    assert len([word for word in err.split() if len(word.strip(",;:.")) == 64]) == 2
+
+
+def test_path_source_edited_after_vetting(
+    home: Path, upstream: Upstream, capsys: Capsys
+) -> None:
+    upstream.commit({"tdd/SKILL.md": "1\n"})
+    skill(home / "own" / "notes")
+    write_config(
+        'entries = ["mp/tdd", "own/notes"]\n'
+        + git_source("mp", upstream)
+        + '[sources.own]\npath = "~/own"\n'
+    )
+    assert update(capsys)[0] == 0
+    upstream.commit({"tdd/SKILL.md": "2\n"})
+    code, out, _ = update(capsys, "mp", "--dry-run", "--diff", "review.diff")
+    file = paths.package() / "skill-graft.toml"
+    toml, lock = file.read_bytes(), lock_file().read_bytes()
+    (home / "own" / "notes" / "SKILL.md").write_text("changed\n")
+
+    refused(capsys, apply_line(out), file, toml, lock)
+
+
+def test_patch_edited_after_vetting(
+    upstream: Upstream, tmp_path: Path, capsys: Capsys
+) -> None:
+    old = upstream.commit({"tdd/SKILL.md": LINES})
+    file = patched_source(
+        upstream,
+        old,
+        make_patch(
+            tmp_path,
+            {"SKILL.md": LINES},
+            {"SKILL.md": LINES.replace("line 3\n", "line three\n")},
+        ),
+    )
+    assert main(["build", "--no-install"]) == 0
+    upstream.commit({"tdd/SKILL.md": LINES.replace("line 9\n", "line 9 upstream\n")})
+    code, out, _ = update(capsys, "mp", "--dry-run", "--diff", "review.diff")
+    toml, lock = file.read_bytes(), lock_file().read_bytes()
+    patched_source(
+        upstream,
+        old,
+        make_patch(
+            tmp_path,
+            {"SKILL.md": LINES},
+            {"SKILL.md": LINES.replace("line 3\n", "line 3 edited\n")},
+        ),
+    )
+
+    refused(capsys, apply_line(out), file, file.read_bytes(), lock)
+    assert file.read_bytes() == toml
+
+
+def test_rename_after_vetting(upstream: Upstream, capsys: Capsys) -> None:
+    args, file, _, lock = vetted(upstream, capsys)
+    file.write_text(file.read_text() + '[rename]\n"mp/tdd" = "my-tdd"\n')
+
+    refused(capsys, args, file, file.read_bytes(), lock)
+
+
+def test_unrelated_push(upstream: Upstream, capsys: Capsys) -> None:
+    args, _, _, lock = vetted(upstream, capsys)
+    tip = upstream.commit({"other.txt": "x\n"})
+
+    assert update(capsys, *args)[0] == 0
+
+    assert ref("mp") == tip and lock_file().read_bytes() != lock
+
+
+def test_diff_file_on_a_mismatch(
+    home: Path, upstream: Upstream, capsys: Capsys
+) -> None:
+    _, _, file = moved_tdd(upstream)
+    toml, lock = file.read_bytes(), lock_file().read_bytes()
+
+    refused(capsys, ["--expect", DIGEST, "--diff", "review.diff"], file, toml, lock)
+
+    assert not (home / "review.diff").exists()
+
+
+@pytest.mark.parametrize("digest", ["abc123", DIGEST.upper(), DIGEST + "0"])
+def test_malformed_digest(upstream: Upstream, capsys: Capsys, digest: str) -> None:
+    upstream.commit({"tdd/SKILL.md": "1\n"})
+    write_config('entries = ["mp/tdd"]\n' + git_source("mp", upstream))
+
+    code, _, err = update(capsys, "--expect", digest)
+
+    assert code == 1 and digest in err and "64 hex digits" in err
+    assert not paths.cache().exists()

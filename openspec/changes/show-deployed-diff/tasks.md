@@ -71,7 +71,7 @@ diff** and **Hull digest** are this branch's first commit.
 - [x] 3.4 `lock.digest(hull, hashes)`: SHA-256 of the ASCII JSON of the sorted `[skill id, deployed name, hash]`
   triples. Tests in `tests/pipeline/test_lock.py`: equal for equal **Hulls** built in another order, different for a
   changed hash and for a changed **Deployed name** alone; verify the tests fail first, then pass
-- [ ] 3.5 `--expect <digest>` in `cli.py` and `update.update`: 64 lowercase hex checked before any fetch; once the
+- [x] 3.5 `--expect <digest>` in `cli.py` and `update.update`: 64 lowercase hex checked before any fetch; once the
   **Hull diff** is printed and before any write, a mismatch exits non-zero naming both digests and the review command,
   writing neither the TOML, the lock nor `--diff`'s file; a dry run prints
   `apply: skill-graft update <aliases> --expect <digest>` after its diff file is written and before `dry run:`,
