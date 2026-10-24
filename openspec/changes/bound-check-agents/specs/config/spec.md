@@ -3,9 +3,10 @@
 ### Requirement: Check limits
 
 An optional `[check]` table SHALL set the limits of a hardened **Check**: `reader-turns` (default 30), `patcher-turns`
-(default 10) and `readers-at-once` (default 4), each a positive integer, and `reader-budget-usd` (default 1.0) and
-`patcher-budget-usd` (default 0.5), each a positive finite number. A key left out SHALL take its default. Any other
-value SHALL be an error naming the key and what it must be.
+(default 10) and `readers-at-once` (default 4), each a positive integer written in decimal digits, and
+`reader-budget-usd` (default 1.0) and `patcher-budget-usd` (default 0.5), each a positive number written in decimal
+digits with an optional fraction. A key left out SHALL take its default. Any other value, or the same value in
+another TOML form, SHALL be an error naming the key and what it must be, so the text the skill reads is the value.
 
 #### Scenario: Defaults
 
@@ -14,18 +15,19 @@ value SHALL be an error naming the key and what it must be.
 
 #### Scenario: Some limits set
 
-- **WHEN** `[check]` has `reader-turns = 50` and `patcher-budget-usd = 2`
+- **WHEN** `[check]` has `reader-turns = 50`, `patcher-budget-usd = 2` and `reader-budget-usd = 0.25`
 - **THEN** the command succeeds
 
 #### Scenario: Turns not a positive integer
 
-- **WHEN** `[check]` has `reader-turns = 0`, `reader-turns = 1.5`, `reader-turns = "30"` or `reader-turns = true`
+- **WHEN** `[check]` has `reader-turns = 0`, `reader-turns = 1.5`, `reader-turns = "30"`, `reader-turns = true`,
+  `reader-turns = 0x1E`, `reader-turns = 3_0` or `reader-turns = +30`
 - **THEN** the command exits non-zero naming `check.reader-turns` and a positive integer
 
 #### Scenario: Budget not a positive number
 
-- **WHEN** `[check]` has `reader-budget-usd = 0`, `reader-budget-usd = -1`, `reader-budget-usd = inf` or
-  `reader-budget-usd = "1"`
+- **WHEN** `[check]` has `reader-budget-usd = 0`, `reader-budget-usd = 0.0`, `reader-budget-usd = -1`,
+  `reader-budget-usd = inf`, `reader-budget-usd = "1"`, `reader-budget-usd = true` or `reader-budget-usd = 1e0`
 - **THEN** the command exits non-zero naming `check.reader-budget-usd` and a positive number
 
 #### Scenario: Check not a table

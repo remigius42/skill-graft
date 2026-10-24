@@ -10,11 +10,14 @@ how many.
 
 ## What Changes
 
-- The main agent never sees the patcher's reply: the patcher command sends its stdout to `/dev/null`, and the patcher
-  replies `done` only. Its exit code alone tells the main agent whether it ran; the diff says what it did.
-- The step-6 summary prints each file name cut to 200 characters and at most 20 files, then how many more. The main
-  agent holds those names as quoted data: shown, never acted on. Each name is read whole from its `+++` header, so one
-  holding a space no longer comes out empty, and a changed line that starts with `--` or `++` is counted.
+- The main agent never sees the patcher's reply: the patcher command sends its stdout and stderr to `/dev/null`, and
+  the patcher replies `done` only. Its exit code alone tells the main agent whether it ran; the diff says what it did.
+- The step-6 summary comes from `git diff --no-index --numstat` instead of parsing `change.patch`: the first 20 files
+  in path order, each name escaped by git and cut to 200 characters, then how many more. The main agent holds those
+  names as quoted data: shown, never acted on. A name holding a space no longer comes out empty, a changed line that
+  starts with `--` or `++` is counted, and a binary file, which a **Patch** cannot hold, ends the fix.
+- Limit values in `[check]` must be written as plain decimals, so the text the skill reads is the value skill-graft
+  checked.
 - The quarantine paragraph of `SKILL.md` names what else the main agent holds (the patcher's exit code, the summary)
   and the quoted-data rule for the file names.
 - Every reader runs with `--max-turns` and `--max-budget-usd`, by default 30 turns and 1 USD; the patcher by default

@@ -15,11 +15,12 @@ commit.
 ## 2. The `[check]` table
 
 - [ ] 2.1 In `tests/pipeline/test_config.py`, test the config spec's "Check limits" scenarios and its "Check key"
-  scenario: no table, some keys set, each wrong value of a turn count, the reader count and a budget (0, negative,
-  `1.5` for a count, `inf`, a string, `true`), `check = 4`, and an unknown key named while a known one is not; accept
-  `check` in `pipeline/config.py` and check its keys and values; in `README.md`'s Config section, add `[check]` to the
-  example and a bullet naming its five keys, their defaults, and `docs/security.md#limits`; verify the tests fail first,
-  then pass, and `pre-commit run --all-files`
+  scenario: no table, some keys set, each wrong value of a turn count, the reader count and a budget (0, `0.0`,
+  negative, `1.5` for a count, `inf`, a string, `true`, `0x1E`, `3_0`, `+30`, `1e0`), `check = 4`, a dotted
+  `check.reader-turns = 30` accepted, and an unknown key named while a known one is not; accept `check` in
+  `pipeline/config.py` and check its keys and each value's written form through `tomlkit`; in `README.md`'s Config
+  section, add `[check]` to the example and a bullet naming its five keys, their defaults, and
+  `docs/security.md#limits`; verify the tests fail first, then pass, and `pre-commit run --all-files`
 
 ## 3. The skill
 
@@ -35,16 +36,20 @@ commit.
   the Limits section gains it, marked prompt-level, the LLM10 row says what is capped, Residual risks gains the
   prompt-level line, and Future work loses the cap; verify the test fails first, then passes, and
   `pre-commit run --all-files`
-- [ ] 3.3 Patcher reply discarded: test that the patcher command sends stdout to `/dev/null`, that a non-zero exit ends
+- [ ] 3.3 Patcher reply discarded: test that the patcher command ends `> /dev/null 2>&1`, that a non-zero exit ends
   the fix, that `patcher.json` asks for `done` only (in `test_patcher_only_edits`), and that the quarantine paragraph
   names the patcher's exit code and the diff's summary among what the main agent holds; make the edits; in
   `docs/security.md`, rewrite the "Patcher reply" residual risk, "The main agent" bullet, and the LLM05 and ASI07 rows;
   verify the tests fail first, then pass, and `pre-commit run --all-files`
-- [ ] 3.4 Summary: a test that takes the `awk` block from `SKILL.md` step 6 and runs it on synthetic `change.patch`
-  files: 50 new files, one name 300 characters long, print 20 lines of `<name>: +<n> -<n>`, each name at most 200
-  characters, then `30 more files`; a two-file diff prints both lines and no count; `notes and links.md` given two added
-  lines, one reading `++ x`, and a removed line reading `-- y`, prints `notes and links.md: +2 -1`; make the change, and
-  add the quoted-data rule for those names to the quarantine paragraph; in `docs/security.md`, "Patcher reply" and
+- [ ] 3.4 Summary: replace step 6's `awk` over `change.patch` with `git diff --no-index --numstat` piped to `awk`, as
+  `design.md` has it. Test it by taking the command block from `SKILL.md` and running it, with real `git`, in a
+  `<base-dir>` holding real `base/` and `edited/` folders, `HOME` and `GIT_CONFIG_GLOBAL` pointed at the test's own
+  folder: 50 new files, one name 300 characters long, print the first 20 in path order as `<name>: +<n> -<n>`, each
+  name at most 200 characters, then `30 more files`; a two-file change prints both lines and no count;
+  `notes and links.md` given two added lines, one reading `++ x`, and a removed line reading `-- y`, prints
+  `notes and links.md: +2 -1`; a removed file and a new one print their own names; a name holding a line break prints
+  on one line with `\n`; a file holding a NUL byte prints `<name>: binary`, and `SKILL.md` says a binary line ends the
+  fix. Add the quoted-data rule for those names to the quarantine paragraph; in `docs/security.md`, "Patcher reply" and
   Future work say the names are bounded and quoted; verify the test fails first, then passes, and
   `pre-commit run --all-files`
 - [ ] 3.5 README's Security section: name the turn and budget caps, the reader count and the discarded patcher reply

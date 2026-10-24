@@ -24,6 +24,7 @@ words:
   - copytree
   - dataviz
   - delenv
+  - diffutils
   - docstrings
   - EACCES
   - ELOOP
@@ -60,6 +61,7 @@ words:
   - NONBLOCK
   - nosystem
   - nowarn
+  - numstat
   - oids
   - openclaw
   - opencode
@@ -101,6 +103,7 @@ words:
   - symref
   - sysconfig
   - testpaths
+  - textconv
   - tomlkit
   - tomllib
   - ufeff
