@@ -60,7 +60,8 @@ your yes. Tried by hand in OpenCode 1.3.0 on DeepSeek V4.1 Flash: the main agent
 
 A hardened **Check** caps what its readers and patcher can spend. Set a limit under `[check]` in the **Package**'s
 `skill-graft.toml`, in plain decimal digits; skill-graft refuses any other form. The probe always runs with the
-readers' defaults, since it runs before skill-graft has checked the config.
+readers' defaults, since it runs before skill-graft has checked the config. An unhardened **Check** has none of
+these limits: it reads in its own session, which no flag caps, whatever `[check]` says.
 
 | Key                  | Default | Reaching it                                                     |
 | -------------------- | ------- | --------------------------------------------------------------- |

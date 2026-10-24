@@ -207,8 +207,11 @@ has the details.
   before using your Claude Code account. The probe and keeping skill text from the main agent are steps of the skill:
   they hold only as far as your harness's model follows them. Otherwise it says it is unhardened and why, and reads
   only on your yes; an unhardened check is likely not secure.
-- Run it outside auto mode; in Claude Code's sandbox, allow the API's domain. Report text and fix arguments are
-  checked at the prompt level only.
+- In a hardened check, each reader and the patcher stop at a cap on their turns and their spend, and at most 4 readers
+  run at once, all settable in `[check]` ([Limits](docs/security.md#limits)). The patcher's reply never reaches the main
+  agent, and its diff reaches it only as counts.
+- Run it outside auto mode; in Claude Code's sandbox, allow the API's domain. Report text, fix arguments and how many
+  readers run at once are checked at the prompt level only.
 
 Report a vulnerability privately, as [SECURITY.md](SECURITY.md) says, not in a public issue.
 

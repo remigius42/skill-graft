@@ -54,7 +54,7 @@ commit.
   file holding a NUL byte prints `binary: 1`, and `SKILL.md` says a binary count ends the fix. In `docs/security.md`,
   "Patcher reply" and Future work say no file name reaches the main agent; verify the test fails first, then passes, and
   `pre-commit run --all-files`
-- [ ] 3.5 README's Security section: name the turn and budget caps, the reader count and the discarded patcher reply
+- [x] 3.5 README's Security section: name the turn and budget caps, the reader count and the discarded patcher reply
   beside "Report text and fix arguments are checked at the prompt level only", linking the Limits section; verify
   `pre-commit run --all-files`, and that `docs/security.md`'s Residual risks, OWASP rows and Future work no longer name
   any of the three gaps as open
