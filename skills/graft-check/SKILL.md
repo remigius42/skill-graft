@@ -39,18 +39,37 @@ on it.
 Run each command in this skill as its own Bash call, as written here, so the user's permission rules see each one;
 write prompt files with your file tool.
 
+`<reader.json>` and `<patcher.json>` are those files in this skill's folder, as absolute paths. In Claude Code that
+folder is `${CLAUDE_SKILL_DIR}`; in another harness, the folder you loaded this `SKILL.md` from.
+
 ## 1. Hardened or not
 
-Run `printenv CLAUDECODE`, `command -v claude` and `claude --help`. The **Check** is hardened when `CLAUDECODE` is set,
-`claude` is on `PATH`, and the help text lists all of `--restricted`, `--strict-mcp-config`, `--tools` and `--agents`.
-Judge by the text alone: `--help` exits 0 after an unknown flag too.
+The **Check** is hardened when a probe, a reader run as every reader runs, answers before any **Skill** text is read.
 
-Otherwise tell the user the **Check** is unhardened and why (not Claude Code, no `claude` on `PATH`, or the flags it
-lacks): it would read **Skill** text in this session, where injected text could steer an agent with a shell, file
-writes and network. Ask whether to go on. Only an explicit yes goes on, unhardened; anything else ends the **Check**,
-having read no **Skill** text and changed nothing.
+1. Run `command -v claude`. No `claude` on `PATH` makes the **Check** unhardened: skip the rest of this list.
 
-Done when you know the **Check** is hardened, or the user said yes to an unhardened one.
+1. Run `printenv CLAUDECODE`. When it prints nothing, this session is not Claude Code: tell the user the readers and
+   the patcher run as `claude` processes on their Claude Code account, and ask whether to use it. Anything but an
+   explicit yes makes the **Check** unhardened, with no `claude` process started: skip the rest of this list.
+
+1. The probe: `mktemp -d` makes an empty folder, `mktemp` a prompt file outside it; write `mode: probe` there. From
+   the empty folder, with no `--add-dir`, run:
+
+   ```sh
+   claude -p --restricted --strict-mcp-config --tools Read,Grep,Glob \
+     --agents <reader.json> --agent reader < <prompt file>
+   ```
+
+   It passes when it exits 0 and replies `reader-ok`, and nothing else: the **Check** is hardened.
+
+Otherwise tell the user the **Check** is unhardened and why: no `claude` on `PATH`, their Claude Code account declined,
+or the probe's error, the first line of its stderr, else of its stdout, at most 200 characters. For an error holding
+`Not logged in`, advise running `claude auth login`, which logs in the readers. Unhardened, the **Check** would read
+**Skill** text in this session, where injected text could steer an agent with a shell, file writes and network. Ask
+whether to go on. Only an explicit yes goes on, unhardened; anything else ends the **Check**, having read no **Skill**
+text and changed nothing.
+
+Done when the probe passed, or the user said yes to an unhardened **Check**.
 
 ## 2. Throwaway build
 
@@ -108,7 +127,7 @@ Hardened, each reader is its own `claude` process:
 
    ```sh
    claude -p --restricted --strict-mcp-config --tools Read,Grep,Glob \
-     --agents ${CLAUDE_SKILL_DIR}/reader.json --agent reader \
+     --agents <reader.json> --agent reader \
      --add-dir <upstream> --add-dir <vendored copy> --add-dir <target upstream>… < <prompt file>
    ```
 
@@ -171,7 +190,7 @@ Take the fixes one at a time: ask, and apply only on yes. Run only the commands 
 
      ```sh
      claude -p --restricted --strict-mcp-config --tools Read,Edit,Write --permission-mode acceptEdits \
-       --agents ${CLAUDE_SKILL_DIR}/patcher.json --agent patcher < <prompt file>
+       --agents <patcher.json> --agent patcher < <prompt file>
      ```
 
   1. `(cd <work> && cp -r edited <base-dir>)`, then in `<base-dir>`, `LC_ALL=C diff -ruN base/ edited/ > change.patch`;

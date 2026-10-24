@@ -12,7 +12,7 @@ checked by `tests/cli/test_check.py` for its shape and by the eval for its behav
 
 ## 2. The skill
 
-- [ ] 2.1 Rewrite step 1 of `skills/graft-check/SKILL.md`: `command -v claude`; outside Claude Code (`CLAUDECODE` unset),
+- [x] 2.1 Rewrite step 1 of `skills/graft-check/SKILL.md`: `command -v claude`; outside Claude Code (`CLAUDECODE` unset),
   say the readers and patcher run on the user's Claude Code account and go on only on a yes; then the probe as the
   design has it, hardened on exit 0 and `reader-ok`; otherwise unhardened, naming the error (no `claude`, the account
   declined, or the probe's first stderr line, else stdout's, at most 200 characters, with `claude auth login` advised for
