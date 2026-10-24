@@ -9,8 +9,9 @@ commit the user has to dig up.
 ## What Changes
 
 - `skill-graft --version` prints `skill-graft <version>` and exits 0, without reading `skill-graft.toml`.
-- Installed from git, it adds the revision asked for and the commit installed: `skill-graft 0.2.0 (main @ e294a0e)`.
-  Installed otherwise, from a folder, an archive or editable, it prints the version only.
+- Installed from git, it adds the commit installed, `skill-graft 0.2.0 (e294a0e)`, and the revision if one was asked
+  for: `skill-graft 0.2.0 (main @ e294a0e)`. Installed otherwise, from a folder, an archive or editable, it prints the
+  version only.
 - The bug template asks for the output of `skill-graft --version` instead of a tag or commit.
 
 ## Capabilities

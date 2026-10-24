@@ -2,8 +2,8 @@
 
 ## Context
 
-`cli.py` builds an argparse parser; the version is `pyproject.toml`'s `version`, readable once installed through
-`importlib.metadata`. Installers that follow PEP 610 (pip, uv, pipx) write `direct_url.json` into the installed
+`cli.py` builds an argparse parser on every run; the version is `pyproject.toml`'s `version`, readable once installed
+through `importlib.metadata`. Installers that follow PEP 610 (pip, uv, pipx) write `direct_url.json` into the installed
 distribution's metadata, saying where it came from.
 
 ## Goals / Non-Goals
@@ -21,14 +21,20 @@ distribution's metadata, saying where it came from.
 
 - **`direct_url.json`, not `git`.** A git install keeps no repository to ask; the installer's record is the only
   source, and it needs no subprocess. Read with `importlib.metadata.distribution("skill-graft").read_text(...)`.
-  Alternative: write the commit into the package at build time (a version plugin for the build backend), rejected as a new
-  build dependency for one line.
+  Alternative: write the commit into the package at build time (a version plugin for the build backend), rejected as
+  a new build dependency for one line.
 - **Format `(<requested_revision> @ <commit_id[:7]>)`.** `requested_revision` is the ref the user typed (`main`,
-  `v0.2.0`), the commit what it pointed at then. PEP 610 makes `requested_revision` optional; without it, `(<commit>)`.
-- **Anything unexpected prints the version only.** A missing or malformed `direct_url.json`, or one without
-  `vcs_info`, is not an error: `--version` must not fail.
-- **argparse's `action="version"`** with the string computed when the parser is built. It exits 0 before the command
-  check, so `--version` needs no command; computing it on every run is one small file read.
+  `v0.2.0`), the commit what it pointed at then. PEP 610 makes `requested_revision` optional; without it, or when it
+  is the commit itself (a pinned install), `(<commit>)`. Only `vcs_info.vcs == "git"` gets a suffix, as the spec
+  speaks of git only. The README's install commands name no ref, so `(<commit>)` is what most users see.
+- **Anything unexpected prints the version only.** No `direct_url.json`, one that is not JSON, not an object, without
+  a `vcs_info` object, or without a string `commit_id`: none is an error, as `--version` must not fail.
+- **A custom `argparse.Action`, not `action="version"`.** The built-in one takes its string when the parser is built,
+  so every command would read the metadata, and one missing distribution (`PackageNotFoundError`, running from a
+  source tree uninstalled) would crash them all. It also passes the string through the help formatter, which
+  %-formats it, so a ref holding `%` would crash it, and `_Formatter` rewraps it. The custom action computes the line
+  only when `--version` is given, writes it to standard output as is, and exits 0, before the command check.
+  `PackageNotFoundError` there prints `skill-graft unknown`.
 
 ## Risks / Trade-offs
 
