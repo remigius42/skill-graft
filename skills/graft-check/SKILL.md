@@ -44,13 +44,15 @@ folder is `${CLAUDE_SKILL_DIR}`; in another harness, the folder you loaded this 
 
 ## 1. Hardened or not
 
-The **Check** is hardened when a probe, a reader run as every reader runs, answers before any **Skill** text is read.
+The **Check** is hardened only when a probe, a reader run as every reader runs, answers before any **Skill** text is
+read. Nothing else makes it hardened: not Claude Code, not the user's yes.
 
 1. Run `command -v claude`. No `claude` on `PATH` makes the **Check** unhardened: skip the rest of this list.
 
 1. Run `printenv CLAUDECODE`. When it prints nothing, this session is not Claude Code: tell the user the readers and
-   the patcher run as `claude` processes on their Claude Code account, and ask whether to use it. Anything but an
-   explicit yes makes the **Check** unhardened, with no `claude` process started: skip the rest of this list.
+   the patcher run as `claude` processes on their Claude Code account, and ask whether to use it; the **Check** is
+   neither hardened nor unhardened yet. A yes goes on to the probe. Anything else makes the **Check** unhardened, with
+   no `claude` process started: skip the rest of this list.
 
 1. The probe: `mktemp -d` makes an empty folder, `mktemp` a prompt file outside it; write `mode: probe` there. From
    the empty folder, with no `--add-dir`, run:
