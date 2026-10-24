@@ -22,7 +22,7 @@ diff** and **Hull digest** are this branch's first commit.
   `(removed)` or `(changed, <old> -> <new> bytes)`, then `(now executable)`, `(no longer executable)`; paths quoted and
   never cut; at most 20 lines then `… <n> more`. Tests for each file-line scenario of "Report the hull diff" ("File
   lines", "Made executable", "Many files", "Lookalike names", "Trailing space"); verify the tests fail first, then pass
-- [ ] 2.3 `deployed.diff(old, new, budget)`, the file hunks only (`update.py` writes each **Skill**'s own lines): a
+- [x] 2.3 `deployed.diff(old, new, budget)`, the file hunks only (`update.py` writes each **Skill**'s own lines): a
   Myers diff over lines mapped to integers, keeping only the 2D + 1 live diagonals per D as `array('i')`, counting
   each diagonal tried, each snake comparison and each stored entry against the run's budget of 10⁷; a file
   past the budget or over 1 MB all removed and all added; hunks with 3 lines of context, `\ No newline at end of file`;

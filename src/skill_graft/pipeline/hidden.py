@@ -57,7 +57,7 @@ def scan(folder: Path) -> tuple[list[str], list[str]]:
             data = entry.read_bytes()
         except OSError as error:
             raise SkillGraftError(f"{entry} cannot be read: {error.strerror}") from None
-        text = _decode(data, markdown)
+        text = decode(data, markdown, "replace")
         if text is None:
             if markdown:
                 found.append(f"{name}: not UTF-8, so its references cannot be read")
@@ -85,7 +85,7 @@ def not_utf8(folder: Path, entries: list[Path]) -> list[str]:
         for entry in entries
         if entry.name.lower().endswith(".md")
         and entry.is_file()
-        and _decode(entry.read_bytes(), markdown=True) is None
+        and decode(entry.read_bytes(), True, "replace") is None
     ]
 
 
@@ -110,8 +110,9 @@ def _report(name: str, text: str) -> tuple[list[str], list[str]]:
     return found, [f"{name}:{number}: {count}, the first U+{ord(char):04X}"]
 
 
-def _decode(data: bytes, markdown: bool) -> str | None:
+def decode(data: bytes, markdown: bool, errors: str) -> str | None:
     """`data`'s text, or None: Markdown not strictly UTF-8, or a binary file.
+    Lenient UTF-8 handles each byte it cannot decode as `errors` says.
 
     Strict UTF-8 takes NUL bytes, so a NUL cannot switch the scan off; lenient
     UTF-8, one bad byte hiding nothing, only a file without them, as scanning
@@ -130,7 +131,7 @@ def _decode(data: bytes, markdown: bool) -> str | None:
             pass
     if markdown or b"\0" in data:
         return None
-    return data.decode("utf-8", errors="replace")
+    return data.decode("utf-8", errors=errors)
 
 
 def characters(text: str) -> tuple[list[tuple[int, str]], list[tuple[int, str]]]:
