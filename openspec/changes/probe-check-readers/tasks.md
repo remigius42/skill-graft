@@ -28,7 +28,7 @@ checked by `tests/cli/test_check.py` for its shape and by the eval for its behav
 
 ## 3. Docs
 
-- [ ] 3.1 Update `docs/security.md` (hardened wherever a working Claude Code is installed; the probe; the account
+- [x] 3.1 Update `docs/security.md` (hardened wherever a working Claude Code is installed; the probe; the account
   question; the `CLAUDE_CODE_OAUTH_TOKEN` case now caught by the probe), the README's Security section, and ADR 0007's
   "enforced on Claude Code only", edited in place; verify `pre-commit run --all-files`
 - [ ] 3.2 Run `/graft-check` once by hand in Gemini CLI (free tier: one small package, one or two **Skills**): verify

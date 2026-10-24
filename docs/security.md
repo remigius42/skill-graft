@@ -27,10 +27,10 @@ harness.
 
 The check sees text, not intent: visible prompt injection passes it.
 
-## What the Check enforces on Claude Code
+## What the Check enforces with Claude Code
 
-On Claude Code, the **Check** reads **Skill** text only through confined, headless agents, checked on Claude Code
-2.1.309:
+Wherever a working Claude Code is installed, in any harness, the **Check** reads **Skill** text only through confined,
+headless agents, checked on Claude Code 2.1.309:
 
 - **Readers.** Each checked **Skill** gets its own `claude -p --restricted --strict-mcp-config`, with the tools `Read`,
   `Grep` and `Glob` only and no MCP server, run from a new empty folder holding a copy of that **Skill**'s own patch
@@ -46,8 +46,12 @@ On Claude Code, the **Check** reads **Skill** text only through confined, headle
 - **Fix arguments** must come from CLI output, the config or a report's names, each side of the slash a name
   skill-graft accepts, quoted. A finding whose fix fails this is reported without one.
 
-Where the skill cannot start a hardened reader (another harness, no `claude` on `PATH`, a `claude` without those
-flags), it says the **Check** is unhardened and why, and reads in its own session only on your yes.
+Before any **Skill** text is read, one probe, a reader run as every reader runs from a new empty folder, must answer
+`reader-ok`. Checked on Claude Code 2.1.310, it fails on a `claude` without those flags, without a login, or on a
+lapsed account, before any reader starts. Outside Claude Code the skill first says the readers and the patcher run on
+your Claude Code account, and probes only on your yes. With no `claude` on `PATH`, your account declined, or a failed
+probe, it says the **Check** is unhardened and why, naming the probe's error, and reads in its own session only on
+your yes.
 
 ## Residual risks
 
@@ -67,7 +71,7 @@ flags), it says the **Check** is unhardened and why, and reads in its own sessio
   the **Hidden character** check, visible injection and the scripts a **Skill** ships reach your agent as written.
   Vet the **Sources** you declare.
 
-Other harnesses are likely not secure: their **Check** reads **Skill** text in the session that holds your shell.
+An unhardened **Check** is likely not secure: it reads **Skill** text in the session that holds your shell.
 
 ## Running the Check
 
@@ -95,15 +99,15 @@ Other harnesses are likely not secure: their **Check** reads **Skill** text in t
   `failIfUnavailable` makes Claude Code refuse to start without the sandbox rather than run commands unsandboxed.
 
 - With a login the readers can find: Claude Code's Bash does not pass `CLAUDE_CODE_OAUTH_TOKEN` on, so a reader
-  started from a session authenticated by that variable alone reports "Not logged in", and the **Check** names each
-  **Skill** as having no report. A login stored by `claude /login` works.
+  started from a session authenticated by that variable alone reports "Not logged in". The probe catches it before
+  any reader starts and advises `claude auth login`, whose stored login works.
 
 ## OWASP Top 10
 
 How skill-graft meets each risk of the [OWASP Top 10 for LLM Applications 2025](https://genai.owasp.org/llm-top-10/)
 and the [OWASP Top 10 for Agentic Applications 2026](https://genai.owasp.org/resource/owasp-top-10-for-agentic-applications-for-2026/).
-Readers and the patcher are confined only when the **Check** runs hardened, on Claude Code; elsewhere it reads
-**Skill** text in the session that holds your shell.
+Readers and the patcher are confined only when the **Check** runs hardened, wherever a working Claude Code is
+installed; elsewhere it reads **Skill** text in the session that holds your shell.
 
 ### LLM Applications 2025
 

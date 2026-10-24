@@ -191,10 +191,11 @@ has the details.
 
 - skill-graft fails resolution on a skill holding a hidden character (tag characters, bidi controls, supplementary
   variation selectors), as APM's install does, so none reaches any agent through the hull.
-- On Claude Code, graft-check reads skill text only through `claude -p --restricted` readers limited to `Read`,
-  `Grep` and `Glob`, without MCP servers, confined to that skill's folders, and patches through a patcher confined
-  to a temporary folder. Elsewhere it says it is unhardened and reads only on your yes; other harnesses are likely
-  not secure.
+- Wherever a working Claude Code is installed, graft-check reads skill text only through `claude -p --restricted`
+  readers limited to `Read`, `Grep` and `Glob`, without MCP servers, confined to that skill's folders, and patches
+  through a patcher confined to a temporary folder. A probe reader must answer first; outside Claude Code it asks
+  before using your Claude Code account. Otherwise it says it is unhardened and why, and reads only on your yes; an
+  unhardened check is likely not secure.
 - Run it outside auto mode; in Claude Code's sandbox, allow the API's domain. Report text and fix arguments are
   checked at the prompt level only.
 
