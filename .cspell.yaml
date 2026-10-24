@@ -25,6 +25,7 @@ words:
   - copytree
   - dataviz
   - delenv
+  - difflib
   - diffutils
   - docstrings
   - EACCES
@@ -114,6 +115,7 @@ words:
   - unsandboxed
   - unsets
   - unstatable
+  - unvetted
   - usefixtures
   - venv
   - worktree
