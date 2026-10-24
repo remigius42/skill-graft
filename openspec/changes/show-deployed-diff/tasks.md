@@ -13,7 +13,7 @@ diff** and **Hull digest** are this branch's first commit.
 
 ## 2. Summary and diff
 
-- [ ] 2.1 `deployed.quote(path, prefix)`: git's `core.quotePath`, the prefix inside the quotes, and a path holding a
+- [x] 2.1 `deployed.quote(path, prefix)`: git's `core.quotePath`, the prefix inside the quotes, and a path holding a
   space quoted: letter escapes for `\a \b \t \n \v \f \r \" \\`, octal for other control and non-ASCII bytes, a space
   kept. Test a table of names (line break, tab, `"`, `\`, `é`, a zero-width space, U+2028) against real
   `git diff --no-index` header lines with `GIT_CONFIG_NOSYSTEM=1` and `HOME` in the test's folder, and `run.sh` with a
