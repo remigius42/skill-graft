@@ -1,5 +1,6 @@
 """Moves each git source's ref to the tip of its branch."""
 
+import os
 import re
 import shlex
 import stat
@@ -83,11 +84,14 @@ def _diff_target(file: Path) -> Path:
             f"--diff {file}: name a file ending in .diff, which no agent loads"
         )
     target = file.parent.resolve() / file.name
-    for folder in target.parents:
-        if folder.name.casefold() == ".apm":
+    # As given too, but without `..`: a link named `.apm` leads a harness there.
+    given = Path(os.path.normpath(file.absolute()))
+    for folder in [*given.parents, *target.parents]:
+        if paths.folded(folder).name == ".apm":
             raise SkillGraftError(
                 f"--diff {file}: inside {folder}, a folder named .apm"
             )
+    for folder in target.parents:
         if (folder / "SKILL.md").exists():
             raise SkillGraftError(
                 f"--diff {file}: inside {folder}, a skill's folder holding a SKILL.md"

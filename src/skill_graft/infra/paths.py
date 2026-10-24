@@ -51,6 +51,12 @@ def in_package(path: Path) -> bool:
     return any(parts[i : i + 2] == (".apm", "skill-graft") for i in range(len(parts)))
 
 
+def folded(path: Path) -> Path:
+    """`path` in lower case: on a case-insensitive filesystem `.APM/Skill-Graft` is
+    a package, and `~/Own` a source `~/own`. Refusing a lookalike elsewhere is harmless."""
+    return Path(str(path).lower())
+
+
 def package() -> Path:
     return _package_in(root())
 

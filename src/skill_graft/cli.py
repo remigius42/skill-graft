@@ -470,29 +470,23 @@ def _check_into(into: Path) -> None:
         raise SkillGraftError(f"--into {into}: not a folder")
     if any(into.iterdir()):
         raise SkillGraftError(f"--into {into}: not empty")
-    resolved = _folded(into.resolve())
+    resolved = paths.folded(into.resolve())
     # As given too, but without `..`: a path only passing through a package is fine.
-    given = _folded(Path(os.path.normpath(into.absolute())))
+    given = paths.folded(Path(os.path.normpath(into.absolute())))
     if any(paths.in_package(p) for p in (given, resolved)):
         raise SkillGraftError(f"--into {into}: inside a package (.apm/skill-graft)")
-    if paths.overlap(resolved, _folded(cache := paths.cache().resolve())):
+    if paths.overlap(resolved, paths.folded(cache := paths.cache().resolve())):
         raise SkillGraftError(f"--into {into}: overlaps the cache {cache}")
 
 
 def _check_into_sources(into: Path, loaded: config.Config) -> None:
     """Refuses an `--into` folder inside a path source, compared resolved."""
-    folded = _folded(into.resolve())
+    folded = paths.folded(into.resolve())
     for alias, source in sorted(loaded.sources.items()):
         if isinstance(source, config.PathSource) and folded.is_relative_to(
-            _folded(source.folder)
+            paths.folded(source.folder)
         ):
             raise SkillGraftError(f"--into {into}: inside source {alias!r}")
-
-
-def _folded(path: Path) -> Path:
-    """`path` in lower case: on a case-insensitive filesystem `.APM/Skill-Graft` is
-    a package, and `~/Own` a source `~/own`. Refusing a lookalike elsewhere is harmless."""
-    return Path(str(path).lower())
 
 
 def _undo_into(into: Path) -> None:

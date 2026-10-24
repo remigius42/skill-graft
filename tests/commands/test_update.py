@@ -1750,3 +1750,18 @@ def test_diff_file_in_no_folder(
 
     assert code == 1 and name in err and "no such folder" in err
     assert not paths.cache().exists()
+
+
+def test_diff_file_through_a_folder_named_apm(
+    home: Path, upstream: Upstream, capsys: Capsys
+) -> None:
+    upstream.commit({"tdd/SKILL.md": "1\n"})
+    write_config('entries = ["mp/tdd"]\n' + git_source("mp", upstream))
+    (home / "elsewhere").mkdir()
+    (home / "proj").mkdir()
+    (home / "proj" / ".Apm").symlink_to(home / "elsewhere")
+
+    code, _, err = update(capsys, "--dry-run", "--diff", "proj/.Apm/review.diff")
+
+    assert code == 1 and "proj/.Apm/review.diff" in err and ".apm" in err
+    assert not paths.cache().exists() and not list((home / "elsewhere").iterdir())
