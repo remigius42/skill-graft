@@ -1,4 +1,6 @@
+import errno
 import json
+import os
 import subprocess
 from importlib import metadata
 from pathlib import Path
@@ -284,6 +286,25 @@ def test_version_of_an_undecodable_origin(
             raise UnicodeDecodeError("utf-8", b"\xff", 0, 1, "invalid start byte")
 
     monkeypatch.setattr(metadata, "distribution", lambda name: Undecodable("0.2.0"))
+    assert run(["--version"], capsys) == (0, "skill-graft 0.2.0\n", "")
+
+
+@pytest.mark.parametrize("code", [errno.ELOOP, errno.EIO])
+def test_version_of_an_unreadable_origin(
+    code: int, capsys: pytest.CaptureFixture[str], monkeypatch: pytest.MonkeyPatch
+) -> None:
+    class Unreadable(FakeDistribution):
+        def read_text(self, filename: str) -> str | None:
+            raise OSError(code, os.strerror(code), filename)
+
+    monkeypatch.setattr(metadata, "distribution", lambda name: Unreadable("0.2.0"))
+    assert run(["--version"], capsys) == (0, "skill-graft 0.2.0\n", "")
+
+
+def test_version_of_a_deeply_nested_origin(
+    capsys: pytest.CaptureFixture[str], monkeypatch: pytest.MonkeyPatch
+) -> None:
+    install(monkeypatch, "0.2.0", "[" * 100_000 + "]" * 100_000)
     assert run(["--version"], capsys) == (0, "skill-graft 0.2.0\n", "")
 
 

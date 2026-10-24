@@ -68,10 +68,10 @@ class _Version(argparse.Action):
 
 def _origin(distribution: metadata.Distribution) -> str:
     """` (<revision> @ <commit>)` for a git install, from the installer's direct_url.json
-    (PEP 610); anything else, malformed included, adds nothing."""
+    (PEP 610); anything else, malformed or unreadable included, adds nothing."""
     try:
         direct_url = json.loads(distribution.read_text("direct_url.json") or "{}")
-    except ValueError:  # undecodable bytes or not JSON
+    except (OSError, ValueError, RecursionError):  # unreadable, not JSON, too deep
         return ""
     vcs_info = direct_url.get("vcs_info") if isinstance(direct_url, dict) else None
     if not isinstance(vcs_info, dict) or vcs_info.get("vcs") != "git":

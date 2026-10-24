@@ -5,7 +5,7 @@ Apply with the `tdd` skill: each task red-green-refactor, one commit. Tests fake
 
 ## 1. Never fail
 
-- [ ] 1.1 In `_origin`, catch `OSError` and `RecursionError` beside `ValueError`; tests in `tests/cli/test_cli.py`:
+- [x] 1.1 In `_origin`, catch `OSError` and `RecursionError` beside `ValueError`; tests in `tests/cli/test_cli.py`:
   the cli spec's "Unreadable record", a `read_text` raising `OSError` with `ELOOP` and with `EIO`, and a
   `direct_url.json` nested 100 000 deep, each printing `skill-graft 0.2.0` and exiting 0; verify they fail first,
   then pass
