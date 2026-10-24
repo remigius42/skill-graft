@@ -17,7 +17,7 @@ starts them.
   `claude` is found first, by `command -v claude`, and makes the **Check** unhardened without a question about it.
 - Outside Claude Code (`CLAUDECODE` unset), before the probe, the **Check** says its readers and patcher run on the
   user's Claude Code account, and probes only on a yes; on anything else it is unhardened and asks as today.
-- A probe that fails with "Not logged in" comes with the advice to run `claude /login`.
+- A probe that fails with "Not logged in" comes with the advice to run `claude auth login`.
 - The skill finds `reader.json` and `patcher.json` in its own folder in any harness, not through Claude Code's
   `${CLAUDE_SKILL_DIR}` alone.
 - `docs/security.md`, the README's Security section and ADR 0007 say the **Check** is hardened wherever a working

@@ -29,7 +29,7 @@ else it SHALL end the **Check**.
 #### Scenario: Not logged in
 
 - **WHEN** the probe reports "Not logged in"
-- **THEN** the skill says the **Check** is unhardened, naming that error and advising `claude /login`, and starts no
+- **THEN** the skill says the **Check** is unhardened, naming that error and advising `claude auth login`, and starts no
   other reader
 
 #### Scenario: Declined

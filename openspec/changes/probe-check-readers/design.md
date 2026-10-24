@@ -39,9 +39,10 @@ already records one such failure: a session authenticated only by `CLAUDE_CODE_O
   the user may still want an unhardened **Check**.
 - **The probe's error is shown as is.** The first line of its stderr, else of its stdout, held to 200 characters:
   `claude` writes option errors to stderr but "Not logged in · Please run /login" to stdout. It comes from `claude`,
-  not from **Skill** text, since the probe's folder is empty. "Not logged in" adds the advice to run `claude /login`,
+  not from **Skill** text, since the probe's folder is empty. "Not logged in" adds the advice to run `claude auth login`,
   so a user whose session runs on `CLAUDE_CODE_OAUTH_TOKEN` alone logs the readers in rather than choosing an
-  unhardened **Check**.
+  unhardened **Check**. Not `claude /login`: skill-graft would read `/login` in the skill's own text as a slash
+  **Reference** to a **Skill** no **Source** has.
 - **Order: `claude` found, account, probe.** `command -v claude` first: without it neither question nor probe makes
   sense, and the **Check** is unhardened, naming that.
 - **Locating the agent files.** The skill names `reader.json` and `patcher.json` as files in its own folder, by
