@@ -25,6 +25,7 @@ words:
   - delenv
   - docstrings
   - EACCES
+  - ELOOP
   - evals
   - fcntl
   - followlinks
@@ -39,6 +40,7 @@ words:
   - importlinter
   - isfile
   - isinstance
+  - isprintable
   - ISREG
   - iterdir
   - keepends
@@ -73,9 +75,11 @@ words:
   - pyproject
   - pytest
   - pytestmark
+  - PYTHONPATH
   - RDONLY
   - realpath
   - Remigius
+  - repr
   - rmtree
   - samefile
   - sandboxed
