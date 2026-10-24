@@ -281,18 +281,17 @@ against the new ones, a `+` **Skill**'s files all added, in `git diff`'s format:
 executable bit, and each header path quoted as git's `core.quotePath` quotes it, `a/` or `b/` inside the quotes, and
 quoted too when it holds a space. A file the **Hidden character** check reads as text SHALL be decoded in its encoding,
 and every other file as lenient UTF-8; each byte that cannot be decoded SHALL be shown as a `\x..` escape, and no file
-as `Binary files … differ`. Lines SHALL be split at line feeds only. In each line, every control character but tab,
-U+2028, U+2029 and U+FEFF, and every character the **Hidden character** check reports or warns of, SHALL be shown as
-an escape, `\x..` only below U+0080 so that no character reads as a byte that cannot be decoded, so no editor breaks a
-line where the diff does not and no two lines look alike that differ. In a shown file holding both a backslash and a
-character to escape, every backslash SHALL be shown doubled, so no typed escape reads as one; when a file's bytes
-differ but both sides decode to the same lines, both sides SHALL be shown byte for byte, as lenient UTF-8; when its two
-sides were read in different encodings, the diff SHALL name both. Each of these SHALL be said in a line before the
-file. Computing the diffs of a
-run SHALL take time and memory within a fixed step budget, whatever the length of its lines, plus linear time in the
-bytes read: a file over 1 MB, or
-one whose diff would overrun the budget, SHALL show as all its old lines removed and all its new ones added. The diff
-SHALL be the same on every machine: no git configuration of the user's changes it.
+as `Binary files … differ`. Lines SHALL be split at line feeds only. In each line, every control, format, line separator
+and paragraph separator character but tab, by its Unicode category, and every character the **Hidden character** check
+reports or warns of, SHALL be shown as an escape, `\x..` only below U+0080 so that no character reads as a byte that
+cannot be decoded, so no editor breaks a line where the diff does not and no two lines look alike that differ. In a
+shown file holding both a backslash and a character to escape, every backslash SHALL be shown doubled, so no typed
+escape reads as one; when a file's bytes differ but both sides decode to the same lines, both sides SHALL be shown byte
+for byte, as lenient UTF-8; when its two sides were read in different encodings, the diff SHALL name both. Each of these
+SHALL be said in a line before the file. Computing the diffs of a run SHALL take time and memory within a fixed step
+budget, whatever the length of its lines, plus linear time in the bytes read: a file over 1 MB, or one whose diff would
+overrun the budget, SHALL show as all its old lines removed and all its new ones added. The diff SHALL be the same on
+every machine: no git configuration of the user's changes it.
 
 #### Scenario: Patch applied on both sides
 
@@ -371,6 +370,12 @@ SHALL be the same on every machine: no git configuration of the user's changes i
 
 - **WHEN** at the new tip a line of `mp/tdd`'s `SKILL.md` gains U+FEFF
 - **THEN** the **Deployed diff** shows it as `\ufeff`
+
+#### Scenario: A format character
+
+- **WHEN** at the new tip a line of `mp/tdd`'s `SKILL.md` gains U+180E, a format character the **Hidden character**
+  check does not report
+- **THEN** the **Deployed diff** shows it as `\u180e`
 
 #### Scenario: Re-encoded beside an edit
 

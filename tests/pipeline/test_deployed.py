@@ -1,7 +1,9 @@
 """A skill as deployed, its summary and its diff (the `update` spec)."""
 
 import os
+import random
 import subprocess
+import unicodedata
 from pathlib import Path
 
 import pytest
@@ -516,3 +518,97 @@ def test_same_encoding_no_note() -> None:
     lines = diff_of("notes.txt", b"a\n", b"b\n")
 
     assert lines[0] == "diff --git a/notes.txt b/notes.txt"
+
+
+# Lookalikes: controls, invisible and format characters, escapes typed out, and
+# bytes that are not UTF-8, for one-line files that differ by a token or two.
+FUZZ_CODES = [
+    0x5C,
+    0x78,
+    0x75,
+    0x30,
+    0x61,
+    0x64,
+    0x20,
+    0x09,
+    0x0D,
+    0x0B,
+    0x0C,
+    0x1B,
+    0x00,
+    0x7F,
+    0x85,
+    0x9B,
+    0xAD,
+    0xE9,
+    0x200B,
+    0x200E,
+    0x2028,
+    0x2029,
+    0x202E,
+    0x2066,
+    0xFEFF,
+    0xFE0F,
+    0xFE00,
+    0xE0041,
+    0xE0100,
+    0x180E,
+    0x0600,
+    0x061C,
+    0x2061,
+    0xFFF9,
+    0x1D173,
+]
+FUZZ_TOKENS = [chr(c).encode() for c in FUZZ_CODES]
+FUZZ_TOKENS += [b"\\" + typed for typed in (b"x1b", b"xad", b"u00ad", b"ufeff", b"\\")]
+FUZZ_TOKENS += [bytes([b]) for b in (0x80, 0x85, 0xAD, 0xC3, 0xE2, 0xFF)]
+
+
+def fuzz_pair(r: random.Random) -> tuple[bytes, bytes]:
+    old = [r.choice(FUZZ_TOKENS) for _ in range(r.randrange(1, 6))]
+    new = list(old)
+    for _ in range(r.randrange(1, 3)):
+        new[r.randrange(len(new))] = r.choice(FUZZ_TOKENS)
+    a = b"".join(old) + r.choice([b"\n", b""])
+    b = b"".join(new) + r.choice([b"\n", b""])
+    if r.random() < 0.15:  # the new side re-encoded, if it is text
+        try:
+            b = b.decode().encode(r.choice(["utf-16", "utf-32"]))
+        except UnicodeDecodeError:
+            pass
+    return a, b
+
+
+def test_fuzz_no_two_files_read_alike() -> None:
+    r = random.Random(7)
+    for _ in range(2000):
+        old, new = fuzz_pair(r)
+        if old == new:
+            continue
+        path = r.choice(["run.sh", "SKILL.md"])
+
+        text = deployed.diff(
+            {path: (old, False)}, {path: (new, False)}, deployed.Budget()
+        )
+
+        raw = [
+            c
+            for c in text
+            if c not in "\t\n"
+            and unicodedata.category(c) in {"Cc", "Cf", "Zl", "Zp", "Cs"}
+        ]
+        assert not raw, (old, new, text)
+        body = hunks(text.split("\n"))
+        # Each line with whether the no-newline marker follows it, as a reader sees.
+        ends = [line.startswith("\\ No newline") for line in [*body[1:], ""]]
+        removed = {(x[1:], e) for x, e in zip(body, ends) if x.startswith("-")}
+        added = {(x[1:], e) for x, e in zip(body, ends) if x.startswith("+")}
+        assert not removed & added, (old, new, text)
+
+
+def test_format_character_escaped() -> None:
+    char = "\N{MONGOLIAN VOWEL SEPARATOR}"  # format, in neither of APM's sets
+
+    lines = diff_of("SKILL.md", b"# ab\n", f"# a{char}b\n".encode())
+
+    assert "+# a\\u180eb" in lines

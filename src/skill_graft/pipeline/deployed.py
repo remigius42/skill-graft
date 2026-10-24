@@ -1,9 +1,11 @@
 """A skill's files as deployed, compared: the summary and the Deployed diff. No git."""
 
+import functools
 import itertools
 import os
 import re
 import stat
+import unicodedata
 from collections.abc import Iterator
 from array import array
 from pathlib import Path
@@ -119,24 +121,37 @@ _CONTEXT = 3
 # Past this, on either side, a file shows as all removed and all added.
 _MAX_BYTES = 1_000_000
 
-# What an editor could break a line at or show as nothing, escaped in a line: every
-# control character but tab, the line and paragraph separators, hidden characters,
-# the zero-width no-break space, in neither of APM's sets the hidden check copies;
-# and each byte that cannot be decoded, which `surrogateescape` maps to U+DC80-DCFF.
-_BREAKS = [
-    (0x00, 0x08),
-    (0x0A, 0x1F),
-    (0x7F, 0x9F),
-    (0x2028, 0x2029),
-    (0xFEFF, 0xFEFF),
-    (0xDC80, 0xDCFF),
-]
-_ESCAPED = re.compile(
-    "[" + "".join(f"{chr(a)}-{chr(b)}" for a, b in _BREAKS) + "]|"
-    f"{hidden.CRITICAL_CHARS.pattern}|{hidden.WARNING_CHARS.pattern}"
-)
-# The same, each backslash doubled too: for a file a typed escape could hide in.
-_DOUBLED = re.compile(r"\\|" + _ESCAPED.pattern)
+# The Unicode categories whose characters an editor could break a line at or show
+# as nothing: controls, format characters, line and paragraph separators.
+_BREAKING = {"Cc", "Cf", "Zl", "Zp"}
+
+
+@functools.cache
+def _escaped(doubled: bool) -> re.Pattern[str]:
+    """What a line shows escaped: every character of `_BREAKING` but tab, every
+    character the hidden character check reports or warns of, and each byte that
+    cannot be decoded, which `surrogateescape` maps to U+DC80-DCFF; with `doubled`,
+    each backslash too, for a file a typed escape could hide in.
+
+    Built on first use, from the whole of Unicode: no command but a diff pays.
+    """
+    codes = [
+        c
+        for c in range(0x110000)
+        if c != 0x09 and unicodedata.category(chr(c)) in _BREAKING
+    ]
+    codes += range(0xDC80, 0xDD00)
+    ranges = [
+        (run[0][1], run[-1][1])
+        for _, group in itertools.groupby(enumerate(codes), lambda x: x[1] - x[0])
+        for run in [list(group)]
+    ]
+    pattern = (
+        "[" + "".join(f"{chr(a)}-{chr(b)}" for a, b in ranges) + "]|"
+        f"{hidden.CRITICAL_CHARS.pattern}|{hidden.WARNING_CHARS.pattern}"
+    )
+    return re.compile((r"\\|" + pattern) if doubled else pattern)
+
 
 # A changed block: old lines [i1, i2) replaced by new lines [j1, j2).
 _Block = tuple[int, int, int, int]
@@ -180,7 +195,7 @@ def _file_diff(
     doubled = _typed_escapes(a, b)
     too_big = any(f is not None and len(f[0]) > _MAX_BYTES for f in (before, after))
     blocks = _blocks(a, b, too_big, budget)
-    hunks = _hunks(a, b, blocks, _DOUBLED if doubled else _ESCAPED)
+    hunks = _hunks(a, b, blocks, _escaped(doubled))
     if hunks and doubled:
         notes.append("each backslash shown doubled, so no typed escape reads as one")
     if hunks:
@@ -194,7 +209,7 @@ def _typed_escapes(a: list[str], b: list[str]) -> bool:
     escape, so a typed escape could read as one."""
     lines = [*a, *b]
     return any("\\" in line for line in lines) and any(
-        _ESCAPED.search(line.removesuffix("\n")) for line in lines
+        _escaped(False).search(line.removesuffix("\n")) for line in lines
     )
 
 
