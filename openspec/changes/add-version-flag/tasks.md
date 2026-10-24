@@ -18,7 +18,7 @@ distribution with `monkeypatch` on `importlib.metadata`, whatever installer ran 
 
 ## 2. Docs
 
-- [ ] 2.1 In `.github/ISSUE_TEMPLATE/bug_report.md`, ask for the output of `skill-graft --version` instead of a tag or
+- [x] 2.1 In `.github/ISSUE_TEMPLATE/bug_report.md`, ask for the output of `skill-graft --version` instead of a tag or
   commit; in `README.md`'s Installation section, say `skill-graft --version` names what is installed, with the commit
   for a git install; verify `pre-commit run --all-files`
 

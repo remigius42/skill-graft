@@ -37,7 +37,9 @@ that project's environment: run it as `pipenv run skill-graft`.
 
 These install the latest `main`. To install a release instead, append its tag to the URL,
 `git+https://github.com/remigius42/skill-graft@v<version>`; the tags are listed under
-[releases](https://github.com/remigius42/skill-graft/releases).
+[releases](https://github.com/remigius42/skill-graft/releases). `skill-graft --version` names what is installed:
+the version, and for these installs the commit, `skill-graft 0.2.0 (e294a0e)`, with the tag or branch if you named
+one.
 
 skill-graft runs APM as a command, so `apm` must be on `PATH` as well, in version 0.33.0: the folders APM deploys
 to were measured on it, and another version may deploy elsewhere. Install it the same way, e.g.

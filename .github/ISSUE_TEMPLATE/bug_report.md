@@ -15,7 +15,7 @@ labels: bug
 
 - **OS**: <!-- e.g. macOS 15.3, Ubuntu 24.04 -->
 - **Python version**: <!-- output of: python3 --version -->
-- **skill-graft version**: <!-- release tag or commit you installed from -->
+- **skill-graft version**: <!-- output of: skill-graft --version -->
 - **Installation method**: <!-- uv tool / pipx / pip / pipenv -->
 - **APM version**: <!-- output of: apm --version -->
 - **Agent harness**: <!-- e.g. Claude Code 2.1.309, if relevant -->
