@@ -367,19 +367,22 @@ def test_version_when_not_installed(
     assert run(["--version"], capsys) == (0, "skill-graft unknown\n", "")
 
 
-@pytest.mark.parametrize(
-    "error",
-    [
-        OSError(errno.EIO, os.strerror(errno.EIO)),
-        UnicodeDecodeError("utf-8", b"\xff", 0, 1, "invalid start byte"),
-    ],
-)
 def test_version_of_unreadable_metadata(
-    error: Exception,
-    capsys: pytest.CaptureFixture[str],
-    monkeypatch: pytest.MonkeyPatch,
+    capsys: pytest.CaptureFixture[str], monkeypatch: pytest.MonkeyPatch
 ) -> None:
-    broken(monkeypatch, "METADATA", error)
+    broken(monkeypatch, "METADATA", OSError(errno.EIO, os.strerror(errno.EIO)))
+    assert run(["--version"], capsys) == (0, "skill-graft unknown\n", "")
+
+
+def test_version_of_metadata_not_utf8(
+    tmp_path: Path, capsys: pytest.CaptureFixture[str], monkeypatch: pytest.MonkeyPatch
+) -> None:
+    dist_info = tmp_path / "skill_graft-0.2.0.dist-info"
+    dist_info.mkdir()
+    (dist_info / "METADATA").write_bytes(b"Name: skill-graft\nVersion: 0.2.0\xff\n")
+    monkeypatch.setattr(
+        metadata, "distribution", lambda name: metadata.PathDistribution(dist_info)
+    )
     assert run(["--version"], capsys) == (0, "skill-graft unknown\n", "")
 
 
