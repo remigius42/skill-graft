@@ -64,9 +64,10 @@ class _Version(argparse.Action):
         try:
             distribution = metadata.distribution("skill-graft")
         except metadata.PackageNotFoundError:
-            print("skill-graft unknown")
+            version, origin = "unknown", ""
         else:
-            print(f"skill-graft {_version(distribution)}{_origin(distribution)}")
+            version, origin = _version(distribution), _origin(distribution)
+        print(f"skill-graft {version}{origin}")
         parser.exit()
 
 
