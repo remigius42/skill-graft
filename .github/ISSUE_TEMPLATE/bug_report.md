@@ -4,6 +4,8 @@ about: Report a bug in skill-graft
 labels: bug
 ---
 
+<!-- This issue is public: remove tokens, credentials and private URLs from anything you paste. -->
+
 ### Preflight Checklist
 
 - [ ] I have read the [README](https://github.com/remigius42/skill-graft#readme)
@@ -28,16 +30,14 @@ labels: bug
 
 ### Steps to Reproduce
 
-1.
-1.
-1.
+<!--
+1. ...
+2. ...
+-->
 
 ### skill-graft.toml (optional)
 
-<!-- The part of your config that triggers the bug. -->
-
-```toml
-```
+<!-- The part of your config that triggers the bug, in a ```toml block. -->
 
 ### Output (optional)
 

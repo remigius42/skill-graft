@@ -196,6 +196,8 @@ has the details.
 - Run it outside auto mode; in Claude Code's sandbox, allow the API's domain. Report text and fix arguments are
   checked at the prompt level only.
 
+Report a vulnerability privately, as [SECURITY.md](SECURITY.md) says, not in a public issue.
+
 ## Writing a patch
 
 A patch is a unified diff against the skill's upstream folder, which `skill-graft why <skill>` prints on its last
@@ -227,8 +229,8 @@ it, then run `update` again.
 
 ## Contributing
 
-Report bugs and suggest ideas in [GitHub issues](https://github.com/remigius42/skill-graft/issues). To change the
-code, see [CONTRIBUTING.md](CONTRIBUTING.md).
+Report bugs and suggest ideas in [GitHub issues](https://github.com/remigius42/skill-graft/issues), and
+vulnerabilities as [SECURITY.md](SECURITY.md) says. To change the code, see [CONTRIBUTING.md](CONTRIBUTING.md).
 
 This is a personal exploration project with best-effort maintenance. Responses to issues or pull requests may be
 slow, and changes that don't align with the project's direction are unlikely to merge.
