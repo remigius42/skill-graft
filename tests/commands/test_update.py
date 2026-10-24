@@ -1736,3 +1736,17 @@ def test_old_hull_removed_on_any_error(
 
     # Its traceback still alive, as when Ctrl-C reaches the top: no collector ran.
     assert stopped.traceback and list(work.iterdir()) == []
+
+
+@pytest.mark.parametrize("name", ["typo/review.diff", "file.txt/review.diff"])
+def test_diff_file_in_no_folder(
+    home: Path, upstream: Upstream, capsys: Capsys, name: str
+) -> None:
+    upstream.commit({"tdd/SKILL.md": "1\n"})
+    write_config('entries = ["mp/tdd"]\n' + git_source("mp", upstream))
+    (home / "file.txt").write_text("x\n")
+
+    code, _, err = update(capsys, "--dry-run", "--diff", name)
+
+    assert code == 1 and name in err and "no such folder" in err
+    assert not paths.cache().exists()

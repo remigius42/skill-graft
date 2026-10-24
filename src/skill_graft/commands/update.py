@@ -92,6 +92,8 @@ def _diff_target(file: Path) -> Path:
             raise SkillGraftError(
                 f"--diff {file}: inside {folder}, a skill's folder holding a SKILL.md"
             )
+    if not target.parent.is_dir():  # before any fetch, not at the last write
+        raise SkillGraftError(f"--diff {file}: no such folder {target.parent}")
     try:
         mode = target.lstat().st_mode
     except FileNotFoundError:
