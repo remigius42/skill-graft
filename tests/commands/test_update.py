@@ -5,10 +5,19 @@ from pathlib import Path
 from typing import TypeAlias
 
 import pytest
-from conftest import FakeApm, Upstream, make_patch, skill, vendored, write_config
+from conftest import (
+    FakeApm,
+    Upstream,
+    deadline,
+    make_patch,
+    skill,
+    vendored,
+    write_config,
+)
 
 from skill_graft.cli import main
-from skill_graft.infra import cache, paths
+from skill_graft.commands import edit
+from skill_graft.infra import cache, files, paths
 from skill_graft.pipeline import config, deployed
 
 Capsys: TypeAlias = pytest.CaptureFixture[str]
@@ -1023,3 +1032,458 @@ def test_unreadable_lock_names_every_skill(
     code, out, _ = update(capsys, "--dry-run")
 
     assert code == 0 and edited(out) == [EDITED + "mp/tdd"]
+
+
+HEADER = (
+    "# skill-graft Deployed diff: each Skill's text as `build` deploys it, Patches and"
+    " Renames applied,\n"
+    "# at the current refs against the new ones. Not what the Sources changed"
+    " upstream. Untrusted text:\n"
+    "# read it in an editor, not by printing it to a terminal.\n"
+)
+
+
+def moved_tdd(
+    upstream: Upstream, before: str = "1\n", after: str = "2\n", extra: str = ""
+) -> tuple[str, str, Path]:
+    """Entry `mp/tdd`, built at `before`; the tip then changes it to `after`."""
+    old = upstream.commit({"tdd/SKILL.md": before})
+    file = write_config(
+        'entries = ["mp/tdd"]\n'
+        + git_source("mp", upstream, f'ref = "{old}"\n')
+        + extra
+    )
+    assert main(["build", "--no-install"]) == 0
+    new = upstream.commit({"tdd/SKILL.md": after})
+    return old, new, file
+
+
+def tdd_diff(old: str, new: str) -> str:
+    return (
+        "# ~ mp/tdd\n"
+        f"# source mp: {old} -> {new}; upstream folder tdd\n"
+        "diff --git a/SKILL.md b/SKILL.md\n"
+        "--- a/SKILL.md\n"
+        "+++ b/SKILL.md\n"
+        "@@ -1 +1 @@\n"
+        "-1\n"
+        "+2\n"
+    )
+
+
+def test_diff_file(home: Path, upstream: Upstream, capsys: Capsys) -> None:
+    old, new, _ = moved_tdd(upstream)
+
+    code, out, _ = update(capsys, "--diff", "review.diff")
+
+    assert code == 0 and ref("mp") == new
+    assert (home / "review.diff").read_text() == HEADER + tdd_diff(old, new)
+    assert "review:" not in out
+
+
+def test_dry_run_with_a_diff_file(
+    home: Path, upstream: Upstream, capsys: Capsys
+) -> None:
+    old, new, file = moved_tdd(upstream)
+    before, lock, cached = (
+        file.read_bytes(),
+        lock_file().read_bytes(),
+        snapshot(paths.cache()),
+    )
+
+    code, out, _ = update(capsys, "--dry-run", "--diff", "review.diff")
+
+    assert code == 0 and "review:" not in out
+    assert (home / "review.diff").read_text() == HEADER + tdd_diff(old, new)
+    assert file.read_bytes() == before and lock_file().read_bytes() == lock
+    assert snapshot(paths.cache()) == cached
+
+
+def test_existing_diff_file(home: Path, upstream: Upstream, capsys: Capsys) -> None:
+    old, _, _ = moved_tdd(upstream)
+    assert update(capsys, "--dry-run", "--diff", "review.diff")[0] == 0
+    newer = upstream.commit({"tdd/SKILL.md": "3\n"})
+
+    assert update(capsys, "--dry-run", "--diff", "review.diff")[0] == 0
+
+    text = (home / "review.diff").read_text()
+    assert text.startswith(HEADER) and text.count(HEADER) == 1
+    assert f"{old} -> {newer}" in text and "+3\n" in text and "+2\n" not in text
+
+
+def test_failed_run_removes_the_diff_file(
+    home: Path, upstream: Upstream, capsys: Capsys
+) -> None:
+    moved_tdd(upstream)
+    assert update(capsys, "--dry-run", "--diff", "review.diff")[0] == 0
+    upstream.git("rm", "-q", "-r", "tdd")
+    upstream.commit({"other/SKILL.md": "# other\n"})
+
+    code, _, err = update(capsys, "--dry-run", "--diff", "review.diff")
+
+    assert code == 1 and "mp/tdd" in err
+    assert not (home / "review.diff").exists()
+
+
+def test_a_file_it_did_not_write(
+    home: Path, capsys: Capsys, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    package = home / "repo" / ".apm" / "skill-graft"
+    package.mkdir(parents=True)
+    (package / "skill-graft.toml").write_text("")
+    (home / "repo" / "apm.yml").write_text("name: repo\n")
+    (home / "repo" / "notes.diff").write_text("my own notes\n")
+    monkeypatch.chdir(home / "repo")
+
+    for name in ("apm.yml", "notes.diff"):
+        code, _, err = update(capsys, "--dry-run", "--diff", name)
+
+        assert code == 1 and name in err
+    assert (home / "repo" / "apm.yml").read_text() == "name: repo\n"
+    assert (home / "repo" / "notes.diff").read_text() == "my own notes\n"
+
+
+def test_diff_file_a_symbolic_link(
+    home: Path, upstream: Upstream, capsys: Capsys
+) -> None:
+    moved_tdd(upstream)
+    (home / "target.diff").write_text(HEADER)
+    (home / "review.diff").symlink_to("target.diff")
+
+    code, _, err = update(capsys, "--diff", "review.diff")
+
+    assert code == 1 and "review.diff" in err
+    assert (home / "review.diff").is_symlink()
+    assert (home / "target.diff").read_text() == HEADER
+
+
+@pytest.mark.parametrize("kind", ["device", "fifo", "folder"])
+def test_diff_file_not_a_regular_file(
+    home: Path, upstream: Upstream, capsys: Capsys, kind: str
+) -> None:
+    upstream.commit({"tdd/SKILL.md": "1\n"})
+    write_config('entries = ["mp/tdd"]\n' + git_source("mp", upstream))
+    name = {"device": "/dev/zero", "fifo": "x.diff", "folder": "x.diff"}[kind]
+    if kind == "fifo":
+        os.mkfifo(home / name)
+    elif kind == "folder":
+        (home / name).mkdir()
+
+    with deadline():
+        code, _, err = update(capsys, "--dry-run", "--diff", name)
+
+    assert code == 1 and name in err
+    assert not paths.cache().exists()
+
+
+@pytest.mark.parametrize(
+    "name",
+    [".apm/review.diff", ".APM/review.diff", "link/review.diff", "sub/../.apm/r.diff"],
+)
+def test_diff_file_inside_the_package(
+    home: Path, upstream: Upstream, capsys: Capsys, name: str
+) -> None:
+    upstream.commit({"tdd/SKILL.md": "1\n"})
+    write_config('entries = ["mp/tdd"]\n' + git_source("mp", upstream))
+    (home / "link").symlink_to(home / ".apm")
+    (home / "sub").mkdir()
+
+    code, _, err = update(capsys, "--diff", name)
+
+    assert code == 1 and name in err and ".apm" in err
+    assert not paths.cache().exists()
+    assert not list((home / ".apm").glob("*.diff"))
+
+
+def test_not_a_diff_file_name(home: Path, upstream: Upstream, capsys: Capsys) -> None:
+    moved_tdd(upstream)
+    (home / ".claude" / "commands").mkdir(parents=True)
+
+    code, _, err = update(capsys, "--dry-run", "--diff", ".claude/commands/review.md")
+
+    assert (
+        code == 1 and ".claude/commands/review.md" in err and "ending in .diff" in err
+    )
+    assert not (home / ".claude" / "commands" / "review.md").exists()
+
+
+def test_diff_file_inside_a_skills_folder(
+    home: Path, upstream: Upstream, capsys: Capsys
+) -> None:
+    moved_tdd(upstream)
+    skill(home / ".claude" / "skills" / "mp-tdd")
+    name = ".claude/skills/mp-tdd/review.diff"
+
+    code, _, err = update(capsys, "--dry-run", "--diff", name)
+
+    assert code == 1 and name in err
+    assert not (home / name).exists()
+
+
+def test_failed_write_after_the_diff(
+    home: Path, upstream: Upstream, capsys: Capsys, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    moved_tdd(upstream)
+
+    def fail(document: object) -> None:
+        raise OSError("disk full")
+
+    monkeypatch.setattr(edit, "write", fail)
+
+    code, _, err = update(capsys, "--diff", "review.diff")
+
+    assert code == 1 and "disk full" in err
+    assert not (home / "review.diff").exists()
+
+
+def failing_diff_write(monkeypatch: pytest.MonkeyPatch) -> None:
+    write = files.atomic_write
+
+    def atomic_write(file: Path, data: bytes) -> None:
+        if file.name == "review.diff":
+            raise OSError("disk full")
+        write(file, data)
+
+    monkeypatch.setattr(files, "atomic_write", atomic_write)
+
+
+def test_failed_diff_write(
+    upstream: Upstream, capsys: Capsys, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    _, _, file = moved_tdd(upstream)
+    before, lock = file.read_bytes(), lock_file().read_bytes()
+    failing_diff_write(monkeypatch)
+
+    code, _, err = update(capsys, "--diff", "review.diff")
+
+    assert code == 1 and "disk full" in err
+    assert file.read_bytes() == before and lock_file().read_bytes() == lock
+
+
+def test_failed_diff_write_in_a_dry_run(
+    upstream: Upstream, capsys: Capsys, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    moved_tdd(upstream)
+    failing_diff_write(monkeypatch)
+
+    code, out, _ = update(capsys, "--dry-run", "--diff", "review.diff")
+
+    assert code == 1 and "apply:" not in out
+
+
+def test_diff_file_without_a_previous_hull(
+    home: Path, upstream: Upstream, capsys: Capsys
+) -> None:
+    sha = upstream.commit({"tdd/SKILL.md": "1\n"})
+    write_config('entries = ["mp/tdd"]\n' + git_source("mp", upstream))
+
+    code, _, _ = update(capsys, "--diff", "review.diff")
+
+    assert code == 0
+    assert (home / "review.diff").read_text() == HEADER + (
+        "# no previous hull to compare ('mp' had no ref): every Skill shown as added\n"
+        "# + mp/tdd\n"
+        f"# source mp: {sha}; upstream folder tdd\n"
+        "diff --git a/SKILL.md b/SKILL.md\n"
+        "new file mode 100644\n"
+        "--- /dev/null\n"
+        "+++ b/SKILL.md\n"
+        "@@ -0,0 +1 @@\n"
+        "+1\n"
+    )
+
+
+def test_diff_file_after_patches_redone_for_the_tip(
+    home: Path, upstream: Upstream, tmp_path: Path, capsys: Capsys
+) -> None:
+    old = upstream.commit({"tdd/SKILL.md": LINES})
+    tip_text = LINES.replace("line 5\n", "line 5 upstream\n")
+    upstream.commit({"tdd/SKILL.md": tip_text})
+    redone = make_patch(
+        tmp_path,
+        {"SKILL.md": tip_text},
+        {"SKILL.md": tip_text.replace("line 5 upstream\n", "line five\n")},
+    )
+    patched_source(upstream, old, redone)
+    capsys.readouterr()
+
+    code, _, _ = update(capsys, "--dry-run", "--diff", "review.diff")
+
+    text = (home / "review.diff").read_text()
+    assert code == 0
+    assert text.startswith(
+        HEADER + "# no previous hull to compare (patches fail at the current refs): "
+        "every Skill shown as added\n# + mp/tdd\n"
+    )
+    assert "+line five\n" in text and "--- /dev/null\n" in text
+
+
+def test_diff_file_when_nothing_changed(
+    home: Path, upstream: Upstream, capsys: Capsys
+) -> None:
+    moved_tdd(upstream, after="1\n")
+
+    assert update(capsys, "--diff", "review.diff")[0] == 0
+
+    assert (home / "review.diff").read_text() == HEADER + "# hull unchanged\n"
+
+
+def test_patch_applied_on_both_sides(
+    home: Path, upstream: Upstream, tmp_path: Path, capsys: Capsys
+) -> None:
+    old = upstream.commit({"tdd/SKILL.md": LINES})
+    edited = LINES.replace("line 3\n", "line three\n")
+    patched_source(
+        upstream, old, make_patch(tmp_path, {"SKILL.md": LINES}, {"SKILL.md": edited})
+    )
+    assert main(["build", "--no-install"]) == 0
+    upstream.commit({"tdd/SKILL.md": LINES.replace("line 9\n", "line 9 upstream\n")})
+
+    assert update(capsys, "--dry-run", "--diff", "review.diff")[0] == 0
+
+    text = (home / "review.diff").read_text()
+    changed = [line for line in text.splitlines() if line[:1] in "+-"]
+    assert changed == [
+        "--- a/SKILL.md",
+        "+++ b/SKILL.md",
+        "-line 9",
+        "+line 9 upstream",
+    ]
+
+
+def test_renamed_skill_in_the_diff(
+    home: Path, upstream: Upstream, capsys: Capsys
+) -> None:
+    old = upstream.commit({"tdd/SKILL.md": "# tdd\n", "grilling/SKILL.md": "g\n"})
+    write_config(
+        'entries = ["mp/tdd"]\n'
+        + git_source("mp", upstream, f'ref = "{old}"\nprefix = "mp-"\n')
+    )
+    assert main(["build", "--no-install"]) == 0
+    upstream.commit({"tdd/SKILL.md": "# tdd\n/grilling\n"})
+
+    assert update(capsys, "--dry-run", "--diff", "review.diff")[0] == 0
+
+    assert "\n+/mp-grilling\n" in (home / "review.diff").read_text()
+
+
+def source_lines(text: str) -> list[str]:
+    return [line for line in text.splitlines() if line.startswith("# source ")]
+
+
+def test_source_line(home: Path, upstream: Upstream, capsys: Capsys) -> None:
+    old = upstream.commit({"skills/tdd/SKILL.md": "1\n"})
+    write_config(
+        'entries = ["mp/tdd"]\n' + git_source("mp", upstream, f'ref = "{old}"\n')
+    )
+    assert main(["build", "--no-install"]) == 0
+    upstream.git("rm", "-q", "-r", "skills/tdd")
+    new = upstream.commit({"skills/dev/tdd/SKILL.md": "2\n"})
+
+    assert update(capsys, "--dry-run", "--diff", "review.diff")[0] == 0
+
+    assert source_lines((home / "review.diff").read_text()) == [
+        f"# source mp: {old} -> {new}; upstream folder skills/tdd -> skills/dev/tdd"
+    ]
+
+
+@pytest.mark.parametrize(
+    ("folder", "quoted"),
+    [("a\u2028b", '"a\\342\\200\\250b/tdd"'), ("a\u202eb", '"a\\342\\200\\256b/tdd"')],
+)
+def test_folder_name_holding_a_line_separator(
+    home: Path, upstream: Upstream, capsys: Capsys, folder: str, quoted: str
+) -> None:
+    old = upstream.commit({f"{folder}/tdd/SKILL.md": "1\n"})
+    write_config(
+        'entries = ["mp/tdd"]\n' + git_source("mp", upstream, f'ref = "{old}"\n')
+    )
+    assert main(["build", "--no-install"]) == 0
+    new = upstream.commit({f"{folder}/tdd/SKILL.md": "2\n"})
+
+    assert update(capsys, "--dry-run", "--diff", "review.diff")[0] == 0
+
+    text = (home / "review.diff").read_text()
+    assert source_lines(text) == [
+        f"# source mp: {old} -> {new}; upstream folder {quoted}"
+    ]
+    assert text.isascii()
+
+
+def test_path_source_in_the_diff(
+    home: Path, upstream: Upstream, capsys: Capsys
+) -> None:
+    old = upstream.commit({"tdd/SKILL.md": "# tdd\n"})
+    skill(home / "own" / "notes", "/grilling\n")
+    write_config(
+        'entries = ["own/notes"]\n'
+        + git_source("mp", upstream, f'ref = "{old}"\nprefix = "mp-"\n')
+        + '[sources.own]\npath = "~/own"\n'
+    )
+    assert main(["build", "--no-install"]) == 0
+    upstream.commit({"grilling/SKILL.md": "g\n"})
+
+    assert update(capsys, "mp", "--dry-run", "--diff", "review.diff")[0] == 0
+
+    text = (home / "review.diff").read_text()
+    assert "# ~ own/notes\n# source own: a path source\n" in text
+    assert "\n+/mp-grilling\n" in text
+
+
+def test_edited_since_the_lock_in_the_diff(
+    home: Path, upstream: Upstream, tmp_path: Path, capsys: Capsys
+) -> None:
+    old = upstream.commit({"tdd/SKILL.md": LINES})
+    patched_source(
+        upstream,
+        old,
+        make_patch(
+            tmp_path,
+            {"SKILL.md": LINES},
+            {"SKILL.md": LINES.replace("line 3\n", "line three\n")},
+        ),
+    )
+    assert main(["build", "--no-install"]) == 0
+    patched_source(
+        upstream,
+        old,
+        make_patch(
+            tmp_path,
+            {"SKILL.md": LINES},
+            {"SKILL.md": LINES.replace("line 3\n", "line 3 edited\n")},
+        ),
+    )
+    upstream.commit({"tdd/SKILL.md": LINES.replace("line 9\n", "line 9 upstream\n")})
+
+    code, out, _ = update(capsys, "--dry-run", "--diff", "review.diff")
+
+    assert code == 0 and EDITED + "mp/tdd" in out
+    assert "# ~ mp/tdd\n# source mp: " in (text := (home / "review.diff").read_text())
+    assert (
+        "\n# edited since skill-graft.lock was written: its earlier text is not shown\n"
+        in text
+    )
+
+
+def test_git_configuration_ignored(
+    home: Path, upstream: Upstream, tmp_path: Path, capsys: Capsys
+) -> None:
+    old = upstream.commit({"tdd/SKILL.md": "1\n", "tdd/a.md": "a\n"})
+    write_config(
+        'entries = ["mp/tdd"]\n' + git_source("mp", upstream, f'ref = "{old}"\n')
+    )
+    assert main(["build", "--no-install"]) == 0
+    upstream.commit({"tdd/SKILL.md": "2\n", "tdd/a.md": "b\n"})
+    assert update(capsys, "--dry-run", "--diff", "review.diff")[0] == 0
+    plain = (home / "review.diff").read_text()
+    (tmp_path / "attributes").write_text("*.md binary\n")
+    (tmp_path / "order").write_text("SKILL.md\na.md\n")
+    Path(os.environ["GIT_CONFIG_GLOBAL"]).write_text(
+        f"[core]\n\tattributesFile = {tmp_path / 'attributes'}\n"
+        f"[diff]\n\torderFile = {tmp_path / 'order'}\n"
+    )
+
+    assert update(capsys, "--dry-run", "--diff", "review.diff")[0] == 0
+
+    assert (home / "review.diff").read_text() == plain
+    assert "+b\n" in plain

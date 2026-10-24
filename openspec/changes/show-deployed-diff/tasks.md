@@ -54,7 +54,7 @@ diff** and **Hull digest** are this branch's first commit.
   `docs/design.md`'s "never read back". Tests for "Path source edited since the lock", "Skill left since the lock",
   "Nothing edited since the lock" (a renamed **Skill** among them), and a missing lock; verify the tests fail first,
   then pass
-- [ ] 3.3 `--diff <file>` in `cli.py` and `update.update`: the path's folder resolved, its last part kept; refuse
+- [x] 3.3 `--diff <file>` in `cli.py` and `update.update`: the path's folder resolved, its last part kept; refuse
   first, naming it, a name not ending in `.diff`, a resolved path inside a folder named `.apm` in any case or one
   holding a `SKILL.md`, an existing
   path that `lstat` says is not a regular file, or a regular file whose first bytes, read up to the header's first

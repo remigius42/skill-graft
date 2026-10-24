@@ -212,6 +212,15 @@ def _parser() -> tuple[_Parser, dict[str, argparse.ArgumentParser]]:
     update_parser.add_argument(
         "--dry-run", action="store_true", help="show the new shas, write nothing"
     )
+    update_parser.add_argument(
+        "--diff",
+        type=Path,
+        metavar="FILE",
+        help=(
+            "write the Deployed diff, each changed skill's text as deployed, to FILE, "
+            "a new file or one it wrote before, named *.diff; read it in an editor"
+        ),
+    )
     tree = commands.add_parser(
         "tree",
         help="show the hull as a tree, writing nothing",
@@ -351,7 +360,7 @@ def main(argv: list[str] | None = None) -> int:
         if args.command == "init":
             init_package.init(args.project)
         elif args.command == "update":
-            update.update(_load(), args.aliases, args.dry_run)
+            update.update(_load(), args.aliases, args.dry_run, args.diff)
         elif args.command == "add":
             edit.add(args.skills)
         elif args.command == "remove":

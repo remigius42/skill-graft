@@ -1,6 +1,7 @@
 """Moves each git source's ref to the tip of its branch."""
 
 import shlex
+import stat
 import tempfile
 from collections.abc import Iterator, MutableMapping
 from contextlib import ExitStack, contextmanager
@@ -10,33 +11,94 @@ from typing import Any, cast
 import tomlkit
 
 from skill_graft.commands import edit, explain
-from skill_graft.infra import git, paths
+from skill_graft.infra import files, git, paths
 from skill_graft.infra.cache import Cache
 from skill_graft.infra.errors import SkillGraftError, warn
-from skill_graft.pipeline import compute, config, deployed, lock, patch, rename
+from skill_graft.pipeline import (
+    compute,
+    config,
+    deployed,
+    hidden,
+    lock,
+    patch,
+    rename,
+)
 from skill_graft.pipeline.config import Config, GitSource, SkillId
 from skill_graft.pipeline.hull import Hull
 
 
-def update(loaded: Config, aliases: list[str], dry_run: bool = False) -> None:
+# The Deployed diff's first lines; a file starting with the first is one it wrote.
+HEADER = (
+    "# skill-graft Deployed diff: each Skill's text as `build` deploys it, Patches and"
+    " Renames applied,\n"
+    "# at the current refs against the new ones. Not what the Sources changed"
+    " upstream. Untrusted text:\n"
+    "# read it in an editor, not by printing it to a terminal.\n"
+)
+
+
+def update(
+    loaded: Config,
+    aliases: list[str],
+    dry_run: bool = False,
+    diff_file: Path | None = None,
+) -> None:
     """Moves the selected git sources to their tips, if every entry resolves there.
 
     Prints one line per source first, so a resolution error still shows the shas
     it would have written. A dry run writes only to a temporary folder, reading
-    the real cache.
+    the real cache, and `diff_file`. Writes `diff_file`'s Deployed diff, if given.
     """
+    target = None if diff_file is None else _diff_target(diff_file)
     if not dry_run:
-        _update(loaded, aliases, Cache(paths.cache()), write=True)
+        _update(loaded, aliases, Cache(paths.cache()), True, target)
         return
     try:
         with tempfile.TemporaryDirectory(prefix="skill-graft-") as tmp:
             git_cache = Cache(Path(tmp), Cache(paths.cache()))
             try:
-                _update(loaded, aliases, git_cache, write=False)
+                _update(loaded, aliases, git_cache, False, target)
             except patch.PatchError as error:
                 raise _fetch_hint(error, Path(tmp)) from None
     finally:
         print("dry run: skill-graft.toml and skill-graft.lock not written")
+
+
+def _diff_target(file: Path) -> Path:
+    """Where to write `--diff`'s file: its folders resolved, its last part kept.
+
+    Refuses a name no harness would leave alone, a place inside a package or a
+    skill, and anything but a new file or a Deployed diff it wrote, which it
+    removes, so a run that fails leaves none.
+    """
+    if not file.name.endswith(".diff"):
+        raise SkillGraftError(
+            f"--diff {file}: name a file ending in .diff, which no agent loads"
+        )
+    target = file.parent.resolve() / file.name
+    for folder in target.parents:
+        if folder.name.casefold() == ".apm":
+            raise SkillGraftError(
+                f"--diff {file}: inside {folder}, a folder named .apm"
+            )
+        if (folder / "SKILL.md").exists():
+            raise SkillGraftError(
+                f"--diff {file}: inside {folder}, a skill's folder holding a SKILL.md"
+            )
+    try:
+        mode = target.lstat().st_mode
+    except FileNotFoundError:
+        return target
+    if not stat.S_ISREG(mode):
+        raise SkillGraftError(f"--diff {file}: not a regular file")
+    first = HEADER.partition("\n")[0].encode() + b"\n"
+    with open(target, "rb") as written:
+        if written.read(len(first)) != first:
+            raise SkillGraftError(
+                f"--diff {file}: not a Deployed diff skill-graft wrote; left as it is"
+            )
+    target.unlink()
+    return target
 
 
 def _fetch_hint(error: patch.PatchError, tmp: Path) -> patch.PatchError:
@@ -58,7 +120,13 @@ def _fetch_hint(error: patch.PatchError, tmp: Path) -> patch.PatchError:
     return patch.PatchError(error.failures, error.other, hints, hidden)
 
 
-def _update(loaded: Config, aliases: list[str], git_cache: Cache, write: bool) -> None:
+def _update(
+    loaded: Config,
+    aliases: list[str],
+    git_cache: Cache,
+    write: bool,
+    target: Path | None,
+) -> None:
     selected = _select(loaded, aliases)
     compute.check_refs(loaded, selected)
     for alias, source in selected.items():
@@ -80,17 +148,32 @@ def _update(loaded: Config, aliases: list[str], git_cache: Cache, write: bool) -
         hashes = lock.skill_hashes(hull)
         warn(hull.warnings)
         with _previous(loaded, selected, git_cache) as previous:
-            marked = _print_diff(previous, hull, hashes)
+            shown = _print_diff(previous, hull, hashes)
+            edited = []
             if not isinstance(previous, str):
-                _print_edited(previous[1], lock.read())
+                edited = _print_edited(previous[1], lock.read())
+            diff = ""  # built before any write
+            if target is not None:
+                diff = _deployed_diff(
+                    loaded, tips, previous, hull, hashes, shown, edited
+                )
     moved = {alias: tip for alias, tip in tips.items() if tip != selected[alias].ref}
     if write:
         text = lock.render(loaded, tips, hull, hashes)  # may fail: before any write
-        if moved:
-            _write_refs(moved)
-        lock.write(text)  # even if no ref moved: a path source may have changed
+        if target is not None:
+            files.atomic_write(target, diff.encode())
+        try:
+            if moved:
+                _write_refs(moved)
+            lock.write(text)  # even if no ref moved: a path source may have changed
+        except BaseException:
+            if target is not None:  # no diff of what was not written
+                target.unlink(missing_ok=True)
+            raise
     explain.announce_suggestions(hull, dry_run=not write)  # once the writes succeeded
-    if not write and marked:
+    if not write and target is not None:
+        files.atomic_write(target, diff.encode())
+    if not write and shown and target is None:
         given = "".join(f"{shlex.quote(alias)} " for alias in aliases)
         print(f"review: skill-graft update {given}--dry-run --diff <file>")
 
@@ -155,15 +238,15 @@ def _print_diff(
     previous: tuple[Hull, dict[SkillId, str]] | str,
     hull: Hull,
     new: dict[SkillId, str],
-) -> bool:
+) -> dict[SkillId, tuple[deployed.View, deployed.View]]:
     """`+`, `-` or `~` per skill added, removed or changed, by skill ID; under each
-    `+` and `~`, its files that differ. Whether it marked a skill `+` or `~`."""
+    `+` and `~`, its files that differ. Those skills, as deployed then and now."""
     if isinstance(previous, str):
         print(f"no previous hull to compare ({previous})")
-        return False
+        return {}
     old_hull, old = previous
     lines = []
-    marked = False
+    shown = {}
     old_rewrites, new_rewrites = rename.rewrites(old_hull), rename.rewrites(hull)
     for skill in sorted(old.keys() | new.keys()):
         if old.get(skill) == new.get(skill):
@@ -171,7 +254,6 @@ def _print_diff(
         if skill not in new:
             lines.append(f"- {skill}")
             continue
-        marked = True
         lines.append(f"{'+' if skill not in old else '~'} {skill}")
         before = (
             deployed.deployed_files(old_hull.skills[skill], old_rewrites.get(skill, {}))
@@ -180,12 +262,76 @@ def _print_diff(
         )
         after = deployed.deployed_files(hull.skills[skill], new_rewrites.get(skill, {}))
         lines += [f"  {line}" for line in deployed.summary(before, after)]
+        shown[skill] = (before, after)
     print(
         "\n".join(["hull (+ added, - removed, ~ changed):", *lines])
         if lines
         else "hull unchanged"
     )
-    return marked
+    return shown
+
+
+def _deployed_diff(
+    loaded: Config,
+    tips: dict[str, str],
+    previous: tuple[Hull, dict[SkillId, str]] | str,
+    hull: Hull,
+    hashes: dict[SkillId, str],
+    shown: dict[SkillId, tuple[deployed.View, deployed.View]],
+    edited: list[SkillId],
+) -> str:
+    """The Deployed diff of the `shown` skills, or of every skill as added when
+    there is no previous hull."""
+    out = [HEADER]
+    old_hull = None
+    if isinstance(previous, str):
+        out.append(
+            f"# no previous hull to compare ({hidden.show(previous)}): "
+            "every Skill shown as added\n"
+        )
+        rewrites = rename.rewrites(hull)
+        shown = {
+            skill: (
+                {},
+                deployed.deployed_files(hull.skills[skill], rewrites.get(skill, {})),
+            )
+            for skill in sorted(hull.skills)
+        }
+    else:
+        old_hull = previous[0]
+        if previous[1] == hashes:
+            out.append("# hull unchanged\n")
+    budget = deployed.Budget()  # one for the run: a crafted skill costs no more
+    for skill, (before, after) in shown.items():
+        was = old_hull if old_hull is not None and skill in old_hull.skills else None
+        out.append(f"# {'+' if was is None else '~'} {skill}\n")
+        out.append(_source_line(loaded, tips, skill, was, hull))
+        if skill in edited:
+            out.append(
+                "# edited since skill-graft.lock was written: "
+                "its earlier text is not shown\n"
+            )
+        out.append(deployed.diff(before, after, budget))
+    return "".join(out)
+
+
+def _source_line(
+    loaded: Config, tips: dict[str, str], skill: SkillId, old: Hull | None, hull: Hull
+) -> str:
+    """Where `skill` comes from, as data: its source, refs and upstream folders,
+    each once when unchanged, none old for an added skill (`old` None)."""
+    source = loaded.sources[skill.alias]
+    if not isinstance(source, GitSource):
+        return f"# source {skill.alias}: a path source\n"
+    new = tips.get(skill.alias) or source.ref
+    refs = f"{source.ref} -> {new}" if old is not None and source.ref != new else new
+    folders = [
+        deployed.quote(h.upstream[skill].relative_to(h.roots[skill.alias]).as_posix())
+        for h in (old, hull)
+        if h is not None
+    ]
+    shown = " -> ".join(folders) if len(set(folders)) > 1 else folders[-1]
+    return f"# source {skill.alias}: {refs}; upstream folder {shown}\n"
 
 
 def _print_edited(
