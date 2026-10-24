@@ -101,10 +101,10 @@ def _origin(distribution: metadata.Distribution) -> str:
     if not isinstance(vcs_info, dict) or vcs_info.get("vcs") != "git":
         return ""
     commit = vcs_info.get("commit_id")
-    if not isinstance(commit, str) or not commit:
+    if not isinstance(commit, str) or not re.fullmatch(r"[0-9a-fA-F]{7,}", commit):
         return ""
     revision = vcs_info.get("requested_revision")
-    if isinstance(revision, str) and revision and not _abbreviates(revision, commit):
+    if _printable(revision) and not _abbreviates(revision, commit):
         return f" ({revision} @ {commit[:7]})"
     return f" ({commit[:7]})"
 

@@ -18,7 +18,7 @@ Apply with the `tdd` skill: each task red-green-refactor, one commit. Tests fake
 
 ## 2. One printable line
 
-- [ ] 2.1 Drop a `requested_revision` that is not printable ASCII, and add nothing for a `commit_id` that does not
+- [x] 2.1 Drop a `requested_revision` that is not printable ASCII, and add nothing for a `commit_id` that does not
   match `[0-9a-fA-F]{7,}`; tests: "Revision that is not printable ASCII" (`main\nfoo`, `\x1b[2J`, U+202E, `ブランチ`)
   printing `skill-graft 0.2.0 (e294a0e)`, and "Commit that is not a hash" (`abc) x`, `\x1b[2J` followed by hex)
   printing `skill-graft 0.2.0`; verify they fail first, then pass

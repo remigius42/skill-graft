@@ -298,6 +298,24 @@ def test_version_of_a_branch_named_like_the_commit(
     assert run(["--version"], capsys)[1] == "skill-graft 0.2.0 (e2 @ e294a0e)\n"
 
 
+@pytest.mark.parametrize("revision", ["main\nfoo", "\x1b[2J", "main‮", "ブランチ"])
+def test_version_of_a_revision_not_printable_ascii(
+    revision: str,
+    capsys: pytest.CaptureFixture[str],
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    install(monkeypatch, "0.2.0", vcs(commit_id=COMMIT, requested_revision=revision))
+    assert run(["--version"], capsys)[1] == "skill-graft 0.2.0 (e294a0e)\n"
+
+
+@pytest.mark.parametrize("commit", ["abc) x", "\x1b[2J" + COMMIT, "e294a0"])
+def test_version_of_a_commit_not_a_hash(
+    commit: str, capsys: pytest.CaptureFixture[str], monkeypatch: pytest.MonkeyPatch
+) -> None:
+    install(monkeypatch, "0.2.0", vcs(commit_id=commit, requested_revision="main"))
+    assert run(["--version"], capsys)[1] == "skill-graft 0.2.0\n"
+
+
 def test_version_of_an_undecodable_origin(
     capsys: pytest.CaptureFixture[str], monkeypatch: pytest.MonkeyPatch
 ) -> None:
