@@ -288,7 +288,7 @@ def test_other_controls_escaped_but_tab() -> None:
     line = "a\tb\x1b[2J\x7f\x85\u2029\u202e\U000e0041\n"
     lines = diff_of("notes.txt", b"", line.encode())
 
-    assert "+a\tb\\x1b[2J\\x7f\\x85\\u2029\\u202e\\U000e0041" in lines
+    assert "+a\tb\\x1b[2J\\x7f\\u0085\\u2029\\u202e\\U000e0041" in lines
 
 
 def test_script_with_a_stray_byte() -> None:
@@ -442,3 +442,14 @@ def test_walk_reads_one_file_at_a_time(tmp_path: Path) -> None:
         assert next(walked) == ("SKILL.md", b"# tdd\n", False)
     finally:
         (folder / "z.bin").chmod(0o644)
+
+
+@pytest.mark.parametrize(
+    ("char", "shown"), [("\u00ad", "\\u00ad"), ("\u0085", "\\u0085")]
+)
+def test_byte_and_character_of_one_number_read_apart(char: str, shown: str) -> None:
+    stray = bytes([ord(char)])
+
+    lines = diff_of("notes.txt", f"a{char}\n".encode(), b"a" + stray + b"\n")
+
+    assert hunks(lines) == ["@@ -1 +1 @@", f"-a{shown}", f"+a\\x{ord(char):02x}", ""]

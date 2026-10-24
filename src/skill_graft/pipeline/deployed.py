@@ -358,8 +358,8 @@ def _escape_char(match: re.Match[str]) -> str:
     if char == "\\":
         return "\\\\"
     code = ord(char)
-    if 0xDC80 <= code <= 0xDCFF:  # a byte that cannot be decoded
+    if 0xDC80 <= code <= 0xDCFF:  # a byte that cannot be decoded, 0x80 or above
         return f"\\x{code - 0xDC00:02x}"
-    if code <= 0xFF:
+    if code < 0x80:  # so `\x80` and up are bytes, `\u0080` and up characters
         return f"\\x{code:02x}"
     return f"\\u{code:04x}" if code <= 0xFFFF else f"\\U{code:08x}"
