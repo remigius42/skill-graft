@@ -1,10 +1,13 @@
-"""Reads `skill-graft.toml`: sources, entries, binds, renames, reserved names."""
+"""Reads `skill-graft.toml`: sources, entries, binds, renames, reserved names, check limits."""
 
 import re
+from decimal import Decimal
 import tomllib
 from dataclasses import dataclass
 from pathlib import Path
 from typing import NamedTuple
+
+import tomlkit
 
 from skill_graft.infra import paths
 from skill_graft.infra.errors import SkillGraftError
@@ -106,7 +109,7 @@ def parse(text: str, file: Path) -> Config:
         data = tomllib.loads(text)
     except tomllib.TOMLDecodeError as error:
         raise SkillGraftError(f"{file}: {error}") from None
-    known = {"sources", "entries", "bind", "rename", "reserved", "patches"}
+    known = {"sources", "entries", "bind", "rename", "reserved", "patches", "check"}
     if unknown := sorted(data.keys() - known):
         raise SkillGraftError(f"{unknown[0]!r} is unsupported in skill-graft.toml")
     sources, prefixes = _sources(data.get("sources", {}), file.parent)
@@ -115,6 +118,7 @@ def parse(text: str, file: Path) -> Config:
     renames = _renames(data.get("rename", {}), sources)
     reserved = _reserved(data.get("reserved", []))
     patches = _patches(data.get("patches", {}), sources, file.parent)
+    _check(data.get("check", {}), text)
     return Config(
         sources,
         entries,
@@ -125,6 +129,38 @@ def parse(text: str, file: Path) -> Config:
         reserved,
         patches,
     )
+
+
+# Each `[check]` limit, written as the skill copies it into a command: decimal digits.
+COUNT = re.compile(r"[1-9][0-9]*")
+BUDGET = re.compile(r"[0-9]+(\.[0-9]+)?")
+LIMITS = {
+    "reader-turns": "count",
+    "patcher-turns": "count",
+    "readers-at-once": "count",
+    "reader-budget-usd": "budget",
+    "patcher-budget-usd": "budget",
+}
+
+
+def _check(raw: object, text: str) -> None:
+    """Checks `[check]` as written: the skill reads its text, not tomllib's numbers."""
+    if not isinstance(raw, dict):
+        raise SkillGraftError("'check' must be a table")
+    if unknown := sorted(raw.keys() - LIMITS.keys()):
+        raise SkillGraftError(f"'check.{unknown[0]}' is unsupported")
+    table = tomlkit.parse(text)["check"] if raw else {}
+    for key, kind in LIMITS.items():
+        if key not in raw:
+            continue
+        number = isinstance(raw[key], (int, float)) and not isinstance(raw[key], bool)
+        written = table[key].as_string() if number else ""
+        if kind == "count" and not COUNT.fullmatch(written):
+            raise SkillGraftError(f"'check.{key}' must be a positive integer, like 30")
+        if kind == "budget" and not (
+            BUDGET.fullmatch(written) and Decimal(written) > 0
+        ):
+            raise SkillGraftError(f"'check.{key}' must be a positive number, like 1.0")
 
 
 def _sources(raw: object, base: Path) -> tuple[dict[str, Source], dict[str, str]]:

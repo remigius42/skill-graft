@@ -409,3 +409,68 @@ def test_prefix_without_a_kind(capsys: Capsys) -> None:
     code, err = build(capsys)
 
     assert code == 1 and "'sources.mp' needs 'path' or 'git'" in err
+
+
+def test_check_limits_build(capsys: Capsys) -> None:
+    write_config(
+        "[check]\nreader-turns = 50\npatcher-budget-usd = 2\nreader-budget-usd = 0.25\n"
+    )
+
+    assert build(capsys) == (0, "")
+
+
+@pytest.mark.parametrize(
+    "value", ["0", "1.5", '"30"', "true", "0x1E", "3_0", "+30", "-1"]
+)
+@pytest.mark.parametrize("key", ["reader-turns", "patcher-turns", "readers-at-once"])
+def test_check_count_not_a_positive_integer(
+    capsys: Capsys, key: str, value: str
+) -> None:
+    write_config(f"[check]\n{key} = {value}\n")
+
+    code, err = build(capsys)
+
+    assert code == 1 and f"'check.{key}'" in err and "positive integer" in err
+
+
+@pytest.mark.parametrize(
+    "value", ["0", "0.0", "-1", "inf", "nan", '"1"', "true", "1e0", "+1", "1_0"]
+)
+@pytest.mark.parametrize("key", ["reader-budget-usd", "patcher-budget-usd"])
+def test_check_budget_not_a_positive_number(
+    capsys: Capsys, key: str, value: str
+) -> None:
+    write_config(f"[check]\n{key} = {value}\n")
+
+    code, err = build(capsys)
+
+    assert code == 1 and f"'check.{key}'" in err and "positive number" in err
+
+
+def test_check_not_a_table(capsys: Capsys) -> None:
+    write_config("check = 4\n")
+
+    code, err = build(capsys)
+
+    assert code == 1 and "'check' must be a table" in err
+
+
+def test_check_unknown_key(capsys: Capsys) -> None:
+    write_config("[check]\nreader-turns = 30\nmax-readers = 8\n")
+
+    code, err = build(capsys)
+
+    assert code == 1 and "'check.max-readers' is unsupported" in err
+    assert "reader-turns" not in err
+
+
+def test_check_dotted_keys_build(capsys: Capsys) -> None:
+    write_config("check.reader-turns = 30\ncheck.reader-budget-usd = 1.0\n")
+
+    assert build(capsys) == (0, "")
+
+
+def test_check_budget_too_small_for_a_float_builds(capsys: Capsys) -> None:
+    write_config(f"[check]\nreader-budget-usd = 0.{'0' * 400}1\n")
+
+    assert build(capsys) == (0, "")

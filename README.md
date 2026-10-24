@@ -125,6 +125,13 @@ path = "~/skills"
 
 [patches]
 "mp/implement" = ["patches/implement-no-pr.patch"]
+
+[check]  # optional; graft-check's limits, defaults shown
+reader-turns = 30
+reader-budget-usd = 1.0
+patcher-turns = 10
+patcher-budget-usd = 0.5
+readers-at-once = 4
 ```
 
 - `entries`: the skills you ask for. Slash references and Skill tool calls (`Skill(x)`, or "call the Skill tool
@@ -141,6 +148,9 @@ path = "~/skills"
 - `[patches]`: unified diffs, applied before renames, so a patch can change what a skill calls (see
   [Writing a patch](#writing-a-patch)).
 - `reserved`: deployed names to refuse, on top of the harness built-ins skill-graft warns about.
+- `[check]`: how far graft-check's readers and patcher may go: turns and spend in USD each, and how many readers
+  run at once. Each value is written in plain decimal digits; [docs/security.md](docs/security.md) says what reaching
+  a limit does.
 
 ## A package for one project
 

@@ -14,7 +14,7 @@ commit.
 
 ## 2. The `[check]` table
 
-- [ ] 2.1 In `tests/pipeline/test_config.py`, test the config spec's "Check limits" scenarios and its "Check key"
+- [x] 2.1 In `tests/pipeline/test_config.py`, test the config spec's "Check limits" scenarios and its "Check key"
   scenario: no table, some keys set, each wrong value of a turn count, the reader count and a budget (0, `0.0`,
   negative, `1.5` for a count, `inf`, a string, `true`, `0x1E`, `3_0`, `+30`, `1e0`), `check = 4`, a dotted
   `check.reader-turns = 30` accepted, and an unknown key named while a known one is not; accept `check` in
