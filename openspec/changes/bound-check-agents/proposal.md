@@ -1,0 +1,45 @@
+# Proposal
+
+## Why
+
+`docs/security.md` records three gaps in the hardened **Check** that a hijacked reader or patcher can use. The
+patcher's reply, of any length, and the file names the step-6 summary prints reach the main agent with no rule to treat
+them as quoted data; a reader's `text` has both. Readers and the patcher run as `claude -p` with no cap on their turns,
+so injected text can keep one looping and spending tokens. And "Readers may run in parallel" sets no limit on how many.
+
+## What Changes
+
+- The main agent never sees the patcher's reply: the patcher command sends its stdout to `/dev/null`, and the patcher
+  replies `done` only. Its exit code alone tells the main agent whether it ran; the diff says what it did.
+- The step-6 summary prints each file name cut to 200 characters and at most 20 files, then how many more. The main
+  agent holds those names as quoted data: shown, never acted on.
+- The quarantine paragraph of `SKILL.md` names what else the main agent holds (the patcher's exit code, the summary)
+  and the quoted-data rule for the file names.
+- Every reader runs with `--max-turns 30`, the patcher with `--max-turns 10`. A reader stopped by its cap leaves its
+  **Skill** with no report, as any reader that fails does; a patcher stopped by its cap ends that fix.
+- At most 4 readers run at once, in `full` and `uses` mode alike.
+- `docs/security.md`: Residual risks, the LLM05, LLM10 and ASI07 rows and Future work say what now holds, and that the
+  parallelism cap is prompt-level.
+
+## Capabilities
+
+### New Capabilities
+
+None.
+
+### Modified Capabilities
+
+- `check`: "Skill text is read by hardened readers" gains the turn cap and at most 4 readers at once; "The main agent
+  never reads skill text" names the patcher's exit code and bounded summary as all it holds of the patcher; "Patches
+  are written by a confined patcher" gains the turn cap and the discarded reply.
+
+## Impact
+
+- `skills/graft-check/SKILL.md` (the quarantine paragraph, step 4's reader command and parallelism, step 6's patcher
+  command and summary), `skills/graft-check/patcher.json` (reply `done`). `reader.json` is unchanged.
+- `tests/cli/test_check.py`: every `claude -p` command in `SKILL.md` carries `--max-turns`; the patcher's reply is
+  discarded; the reader cap and the summary bound.
+- `docs/security.md`, the README's Security section.
+- `CHANGELOG.md` entry at archive.
+- Overlaps `probe-check-readers` (in flight) in `SKILL.md`'s reader and patcher commands and in `docs/security.md`; see
+  `design.md`.
