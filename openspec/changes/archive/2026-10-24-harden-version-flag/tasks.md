@@ -32,5 +32,5 @@ Apply with the `tdd` skill: each task red-green-refactor, one commit. Tests fake
 
 ## 4. Archive
 
-- [ ] 4.1 In the archive commit, extend `CHANGELOG.md`'s unreleased `--version` entry under `### Added`: without an
+- [x] 4.1 In the archive commit, extend `CHANGELOG.md`'s unreleased `--version` entry under `### Added`: without an
   installation it prints `skill-graft unknown`; check the box there; verify `pre-commit run --all-files`

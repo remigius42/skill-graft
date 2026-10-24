@@ -10,7 +10,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Added
 
 - `skill-graft --version` prints the installed version; installed from git, also the commit, and the branch or tag
-  if one was named: `skill-graft 0.2.0 (main @ e294a0e)`
+  if one was named: `skill-graft 0.2.0 (main @ e294a0e)`; without a readable installation, `skill-graft unknown`
 - An OWASP Top 10 section in `docs/security.md`: how skill-graft meets each risk of the LLM and agentic
   lists, what is out of scope (judging whether a **Skill** is malicious), and future work
 

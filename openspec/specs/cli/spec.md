@@ -63,12 +63,12 @@ also list the commands.
 
 ### Requirement: Version
 
-`skill-graft --version` SHALL print `skill-graft <version>` on one line to standard output and exit 0, without
-reading `skill-graft.toml`. Installed from a git repository, the version SHALL be followed by the revision asked for
-and the commit installed, abbreviated to seven characters: `(<revision> @ <commit>)`, or `(<commit>)` when no revision
-was asked for or the revision is that commit, in full or abbreviated to
-seven or more characters. Installed from anywhere else, it SHALL print
-the version only.
+`skill-graft --version` SHALL print `skill-graft <version>` on one line to standard output and exit 0, without reading
+`skill-graft.toml`. Installed from a git repository, the version SHALL be followed by the revision asked for and the
+commit installed, abbreviated to seven characters: `(<revision> @ <commit>)`, or `(<commit>)` when no revision was asked
+for, the revision is not printable ASCII without spaces, or the revision is that commit, in full or abbreviated to seven
+or more characters. A commit that is not a hexadecimal hash of seven or more digits SHALL add nothing. Installed from
+anywhere else, it SHALL print the version only.
 
 #### Scenario: Release
 
@@ -94,6 +94,18 @@ the version only.
   or a short hash of commit `e294a0e…`
 - **THEN** it prints `skill-graft 0.2.0 (e294a0e)`
 
+#### Scenario: Revision that is not printable ASCII without spaces
+
+- **WHEN** skill-graft 0.2.0 was installed from git at commit `e294a0e…`, and the installer recorded the revision
+  `main` followed by a newline and `foo`, one holding an escape character, `ブランチ`, or `main @ abc1234`
+- **THEN** it prints `skill-graft 0.2.0 (e294a0e)` on one line
+
+#### Scenario: Commit that is not a hash
+
+- **WHEN** skill-graft 0.2.0 was installed from git, and the installer recorded the commit `abc) x`, or one holding an
+  escape character
+- **THEN** it prints `skill-graft 0.2.0`
+
 #### Scenario: Other version control
 
 - **WHEN** skill-graft 0.2.0 was installed from a Mercurial or Subversion repository
@@ -108,3 +120,37 @@ the version only.
 
 - **WHEN** the user runs `skill-graft --help`
 - **THEN** it lists `--version`
+
+### Requirement: Version on a damaged installation
+
+`skill-graft --version` SHALL exit 0 whatever the installation holds. When the installer's record of where it came
+from cannot be read or parsed, it SHALL print the version only. When no installed metadata is found, or it cannot be
+read or decoded, or its version, stripped of surrounding whitespace, is missing or not printable ASCII without spaces,
+the version SHALL read `unknown`, followed by the commit as for any version.
+
+#### Scenario: Unreadable record
+
+- **WHEN** skill-graft 0.2.0 is installed, and its `direct_url.json` is a symlink loop, sits on a failing disk, or holds
+  JSON nested too deeply to parse
+- **THEN** `skill-graft --version` exits 0 and prints `skill-graft 0.2.0`
+
+#### Scenario: Not installed
+
+- **WHEN** skill-graft runs from its source folder without installed metadata, and the user runs `skill-graft --version`
+- **THEN** it exits 0 and prints `skill-graft unknown`
+
+#### Scenario: Unreadable metadata
+
+- **WHEN** skill-graft's installed metadata cannot be read, is not UTF-8, names no version, or names one holding a
+  newline or a space, such as `0.2.0 (main @ abc1234)`
+- **THEN** `skill-graft --version` exits 0 and prints `skill-graft unknown`
+
+#### Scenario: Version padded with whitespace
+
+- **WHEN** skill-graft's installed metadata names the version `0.2.0` with a space before and after it
+- **THEN** `skill-graft --version` prints `skill-graft 0.2.0`
+
+#### Scenario: Unknown version from git
+
+- **WHEN** skill-graft's installed metadata names no version, and it was installed from git at `main`, commit `e294a0e…`
+- **THEN** `skill-graft --version` prints `skill-graft unknown (main @ e294a0e)`
