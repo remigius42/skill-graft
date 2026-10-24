@@ -401,10 +401,16 @@ every machine: no git configuration of the user's changes it.
 #### Scenario: A crafted file
 
 - **WHEN** at the new tip `mp/tdd`'s `notes.md`, of 20,000 unique lines, has them in reverse order, or a 1 MB file of
-  one-byte lines has 499 scattered edits, or 1,000 lines of 1,000 bytes that differ only in their last byte are
-  shuffled
+  alternating one-byte lines has 499 scattered replacements
 - **THEN** `update` stays within its step budget and shows the file as all its old lines removed and all its new ones
   added
+
+#### Scenario: A file over 1 MB
+
+- **WHEN** at the new tip `mp/tdd`'s `notes.md`, 1,000 lines of 1,000 bytes that differ only at their end, has them
+  shuffled
+- **THEN** `update` takes no step of its budget for it and shows the file as all its old lines removed and all its new
+  ones added
 
 #### Scenario: Git configuration ignored
 

@@ -113,8 +113,12 @@ path = "~/Documents/sync/2_areas/software/chisel_skill"
   without a source's `subdirectory` fails resolution, so `ref` stays.
 - `update --diff <file>`: writes the Deployed diff, a unified diff in git's format of each `+` and `~` skill as
   deployed, built by `pipeline/deployed.py`, no git: a Myers diff on one step budget for the run, a file past it or
-  over 1 MB shown whole; every file as text, each character an editor could break a line at, or the hidden
-  character check reports, escaped. Only to a new file or one it wrote before, named `*.diff`, never inside an
+  over 1 MB shown whole; every file as text, each control, format or separator character (by Unicode category) and
+  each character the hidden character check reports escaped, `\x..` only for ASCII controls and bytes that cannot be
+  decoded. A line before a file says when its backslashes are doubled (it holds a backslash and an escape, so no
+  typed escape reads as one), when its two sides were read in different encodings, or when it is shown byte for
+  byte (its bytes differ but its text does not); a removed skill gets a `# - <skill id>` line. Only to a new file or
+  one it wrote before, named `*.diff`, never inside an
   `.apm` folder or a skill's; removed first, so a failed run leaves none, and written before the TOML and the lock.
   With no previous hull, every skill shows as added. `--expect <digest>`: refuses, writing nothing, unless the new
   hull's digest (SHA-256 over each skill's ID, deployed name and hash) is `<digest>`.
