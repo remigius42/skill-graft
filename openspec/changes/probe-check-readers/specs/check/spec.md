@@ -3,10 +3,11 @@
 ### Requirement: Unhardened only on the user's yes
 
 A **Check** is hardened when its probe, a reader run as every reader runs on a prompt asking only that it answer, in a
-new empty folder, exits 0 with the expected answer. The skill SHALL run the probe before reading any **Skill** text.
-Otherwise the skill SHALL say the **Check** is unhardened and why, naming the probe's error, before reading any
-**Skill** text, and only after the user says yes read and patch the **Skills** in its own session, where the hardened
-requirements do not bind it; on anything else it SHALL end the **Check**.
+new empty folder, exits 0 with the expected answer. The skill SHALL run the probe before reading any **Skill** text,
+unless `claude` is not on `PATH` or the user declined their Claude Code account. Otherwise the skill SHALL say the
+**Check** is unhardened and why, naming the probe's error, before reading any **Skill** text, and only after the user
+says yes read and patch the **Skills** in its own session, where the hardened requirements do not bind it; on anything
+else it SHALL end the **Check**.
 
 #### Scenario: No claude
 
@@ -27,8 +28,9 @@ requirements do not bind it; on anything else it SHALL end the **Check**.
 
 #### Scenario: Not logged in
 
-- **WHEN** a reader started by the skill reports "Not logged in"
-- **THEN** the probe fails, the skill says the **Check** is unhardened, naming that error, and starts no other reader
+- **WHEN** the probe reports "Not logged in"
+- **THEN** the skill says the **Check** is unhardened, naming that error and advising `claude /login`, and starts no
+  other reader
 
 #### Scenario: Declined
 
@@ -39,9 +41,9 @@ requirements do not bind it; on anything else it SHALL end the **Check**.
 
 ### Requirement: Another harness's readers only on the user's yes
 
-When the skill's session does not run in Claude Code, the skill SHALL say, before the probe, that its readers and
-patcher run on the user's Claude Code account, and run the probe only after the user says yes. On anything else the
-**Check** SHALL be unhardened, as when the probe fails.
+When the skill's session does not run in Claude Code and `claude` is on `PATH`, the skill SHALL say, before the probe,
+that its readers and patcher run on the user's Claude Code account, and run the probe only after the user says yes. On
+anything else the **Check** SHALL be unhardened, as when the probe fails.
 
 #### Scenario: Another harness with Claude Code
 

@@ -5,21 +5,26 @@ checked by `tests/cli/test_check.py` for its shape and by the eval for its behav
 
 ## 1. Probe mode
 
-- [ ] 1.1 In `skills/graft-check/reader.json`, add `probe` to `mode`: reply `ready` and nothing else, reading nothing;
-  test in `tests/cli/test_check.py` that the reader's prompt names `probe` and `ready`; verify it passes
+- [ ] 1.1 In `skills/graft-check/reader.json`, add `probe` to `mode`: reply `reader-ok` and nothing else, reading
+  nothing, ahead of the Report section's `findings: none`; test in `tests/cli/test_check.py` that the prompt names
+  `probe` and `reader-ok`, and that the Report section's replies apply to `full` and `uses` modes only; verify it
+  passes
 
 ## 2. The skill
 
-- [ ] 2.1 Rewrite step 1 of `skills/graft-check/SKILL.md`: outside Claude Code (`CLAUDECODE` unset), say the readers
-  and patcher run on the user's Claude Code account and go on only on a yes; then the probe as the design has it,
-  hardened on exit 0 and `ready`; otherwise unhardened, naming the error (no `claude`, the account declined, or the
-  probe's first stderr line, at most 200 characters), and the yes-or-no as today. Drop the `--help` test. Name
+- [ ] 2.1 Rewrite step 1 of `skills/graft-check/SKILL.md`: `command -v claude`; outside Claude Code (`CLAUDECODE` unset),
+  say the readers and patcher run on the user's Claude Code account and go on only on a yes; then the probe as the
+  design has it, hardened on exit 0 and `reader-ok`; otherwise unhardened, naming the error (no `claude`, the account
+  declined, or the probe's first stderr line, else stdout's, at most 200 characters, with `claude /login` advised for
+  "Not logged in"), and the yes-or-no as today. Drop the `--help` test. Name
   `reader.json` and `patcher.json` by absolute path in the skill's folder, `${CLAUDE_SKILL_DIR}` in Claude Code;
   verify `pre-commit run --all-files`
 - [ ] 2.2 In `evals/graft-check/run.sh` and its README, make `unhardened` a `claude` wrapper whose calls with
-  `--agent` print `Not logged in` and exit 1, the outer session passing through; check it says unhardened, names
-  `Not logged in`, starts no reader after the probe, reads no **Skill**, and leaves the package unchanged; run
-  `run.sh unhardened injected clean` and verify every check is `ok`
+  `--agent` print `Not logged in · Please run /login` on stdout and exit 1, the outer session passing through; check
+  it says unhardened, names `Not logged in`, advises `claude /login`, starts no reader after the probe, reads no
+  **Skill**, and leaves the package unchanged. Add `older-claude`, a wrapper whose calls with `--restricted` print
+  `error: unknown option '--restricted'` on stderr and exit 1: check it names `--restricted` and reads no **Skill**.
+  Run `run.sh unhardened older-claude injected clean` and verify every check is `ok`
 
 ## 3. Docs
 
