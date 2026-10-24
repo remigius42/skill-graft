@@ -1801,3 +1801,18 @@ def test_only_removals_in_the_diff(
 
     assert code == 0 and diff_lines(out)[:2] == [LEGEND, "- mp/grilling"]
     assert (home / "review.diff").read_text() == HEADER + "# - mp/grilling\n"
+
+
+def test_diff_file_through_a_link_in_a_skills_folder(
+    home: Path, upstream: Upstream, capsys: Capsys
+) -> None:
+    upstream.commit({"tdd/SKILL.md": "1\n"})
+    write_config('entries = ["mp/tdd"]\n' + git_source("mp", upstream))
+    (home / "elsewhere").mkdir()
+    folder = skill(home / "skills" / "foo")
+    (folder / "out").symlink_to(home / "elsewhere")
+
+    code, _, err = update(capsys, "--dry-run", "--diff", "skills/foo/out/x.diff")
+
+    assert code == 1 and "skills/foo/out/x.diff" in err and "SKILL.md" in err
+    assert not paths.cache().exists() and not list((home / "elsewhere").iterdir())
