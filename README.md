@@ -194,8 +194,9 @@ has the details.
 - Wherever a working Claude Code is installed, graft-check reads skill text only through `claude -p --restricted`
   readers limited to `Read`, `Grep` and `Glob`, without MCP servers, confined to that skill's folders, and patches
   through a patcher confined to a temporary folder. A probe reader must answer first; outside Claude Code it asks
-  before using your Claude Code account. Otherwise it says it is unhardened and why, and reads only on your yes; an
-  unhardened check is likely not secure.
+  before using your Claude Code account. The probe and keeping skill text from the main agent are steps of the skill:
+  they hold only as far as your harness's model follows them. Otherwise it says it is unhardened and why, and reads
+  only on your yes; an unhardened check is likely not secure.
 - Run it outside auto mode; in Claude Code's sandbox, allow the API's domain. Report text and fix arguments are
   checked at the prompt level only.
 
