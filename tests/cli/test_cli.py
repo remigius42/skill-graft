@@ -285,3 +285,11 @@ def test_version_of_an_undecodable_origin(
 
     monkeypatch.setattr(metadata, "distribution", lambda name: Undecodable("0.2.0"))
     assert run(["--version"], capsys) == (0, "skill-graft 0.2.0\n", "")
+
+
+def test_version_of_this_installation() -> None:
+    result = subprocess.run(
+        ["skill-graft", "--version"], capture_output=True, text=True, check=False
+    )
+    assert result.returncode == 0
+    assert result.stdout.startswith(f"skill-graft {metadata.version('skill-graft')}")
