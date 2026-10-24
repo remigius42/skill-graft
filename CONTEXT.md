@@ -46,6 +46,20 @@ The **Entries** plus every **Skill** reachable from them through slash and Skill
 **References** never extend it.
 _Avoid_: Closure, graph, dependency tree
 
+**Hull diff**:
+What an `update` changes in the **Hull**: each **Skill** that joins it, leaves it, or changes as deployed.
+_Avoid_: Update diff, changelog
+
+**Deployed diff**:
+The text of each **Skill** an `update` changes or adds, as deployed, **Patches** and **Renames** applied, at the
+current **Refs** against the new ones. Not what the **Source** changed, and never a **Patch**.
+_Avoid_: Update diff, upstream diff, review patch
+
+**Hull digest**:
+One SHA-256 over every **Skill** of a **Hull**: its **Skill ID**, **Deployed name** and hash as deployed. Equal
+digests deploy the same text under the same names.
+_Avoid_: Lock hash, checksum, pin
+
 **Rename**:
 A user rule that sets one **Skill**'s **Deployed name**, carried into every **Reference** to it. It overrides its
 **Source**'s **Prefix**, so it may restore the **Skill**'s own name.
