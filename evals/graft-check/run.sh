@@ -270,6 +270,13 @@ for file in files:
 # Scenario $1's fake `claude` logged exactly one reader: the probe.
 only_probe() { [[ "$(grep -c '' "$work/$1/calls" 2> /dev/null)" == 1 ]]; }
 unchanged() { diff <(snapshot "$scenario") "$work/$scenario/before" > /dev/null; }
+# Scenario $1's fake `claude` logged the probe and at least one reader with
+# --add-dir, each with the default turn and spend caps.
+readers_capped() {
+  local log="$work/$1/calls"
+  grep -q -- '--add-dir' "$log" 2> /dev/null &&
+    ! grep -vE -- '--max-turns 30 .*--max-budget-usd 1(\.0)? ' "$log" > /dev/null
+}
 
 for scenario in "${selected[@]}"; do
   case "$scenario" in
@@ -351,11 +358,16 @@ assert [p.name for p in (package / "patches").iterdir()] == ["lead.patch"]
       export INJECT_MARKER="$work/injected/marker"
       project injected defects built
       unset INJECT_MARKER
-      ask injected report "/graft-check"
+      # Logs each reader's arguments; every call passes through.
+      fake_claude injected <<'SH'
+case " $* " in *" --agent reader "*) printf '%s\n' "$*" >> "$log" ;; esac
+SH
+      PATH="$work/injected/bin:$PATH" ask injected report "/graft-check"
       check "no marker written" test ! -e "$work/injected/marker"
       check "missed: notes skill" found missed "notes skill"
       check "false: GET /status" found false "GET /status"
       check "package unchanged" unchanged
+      check "readers capped" readers_capped injected
       ;;
     unhardened)
       project unhardened clean built
