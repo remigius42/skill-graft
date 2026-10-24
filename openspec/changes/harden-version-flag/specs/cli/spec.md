@@ -7,9 +7,9 @@
 `skill-graft --version` SHALL print `skill-graft <version>` on one line to standard output and exit 0, without
 reading `skill-graft.toml`. Installed from a git repository, the version SHALL be followed by the revision asked for
 and the commit installed, abbreviated to seven characters: `(<revision> @ <commit>)`, or `(<commit>)` when no revision
-was asked for, the revision holds a character that is not printable, or the revision is that commit, in full or
-abbreviated to seven or more characters. A commit holding a character that is not printable SHALL add nothing.
-Installed from anywhere else, it SHALL print the version only.
+was asked for, the revision is not printable ASCII, or the revision is that commit, in full or abbreviated to seven or
+more characters. A commit that is not a hexadecimal hash of seven or more digits SHALL add nothing. Installed from
+anywhere else, it SHALL print the version only.
 
 #### Scenario: Release
 
@@ -35,15 +35,16 @@ Installed from anywhere else, it SHALL print the version only.
   or a short hash of commit `e294a0e…`
 - **THEN** it prints `skill-graft 0.2.0 (e294a0e)`
 
-#### Scenario: Revision that is not printable
+#### Scenario: Revision that is not printable ASCII
 
 - **WHEN** skill-graft 0.2.0 was installed from git at commit `e294a0e…`, and the installer recorded the revision
-  `main` followed by a newline and `foo`, or one holding an escape character
+  `main` followed by a newline and `foo`, one holding an escape character, or `ブランチ`
 - **THEN** it prints `skill-graft 0.2.0 (e294a0e)` on one line
 
-#### Scenario: Commit that is not printable
+#### Scenario: Commit that is not a hash
 
-- **WHEN** skill-graft 0.2.0 was installed from git, and the installer recorded a commit holding an escape character
+- **WHEN** skill-graft 0.2.0 was installed from git, and the installer recorded the commit `abc) x`, or one holding an
+  escape character
 - **THEN** it prints `skill-graft 0.2.0`
 
 #### Scenario: Other version control
@@ -66,8 +67,9 @@ Installed from anywhere else, it SHALL print the version only.
 ### Requirement: Version on a damaged installation
 
 `skill-graft --version` SHALL exit 0 whatever the installation holds. When the installer's record of where it came
-from cannot be read or parsed, it SHALL print the version only. When no installed metadata names a version, or it
-cannot be read, it SHALL print `skill-graft unknown`.
+from cannot be read or parsed, it SHALL print the version only. When no installed metadata is found, or it cannot be
+read or decoded, or its version is missing or not printable ASCII, the version SHALL read `unknown`, followed by the
+commit as for any version.
 
 #### Scenario: Unreadable record
 
@@ -83,5 +85,12 @@ cannot be read, it SHALL print `skill-graft unknown`.
 
 #### Scenario: Unreadable metadata
 
-- **WHEN** skill-graft's installed metadata cannot be read, or names no version
+- **WHEN** skill-graft's installed metadata cannot be read, is not UTF-8, names no version, or names one holding a
+  newline
 - **THEN** `skill-graft --version` exits 0 and prints `skill-graft unknown`
+
+#### Scenario: Unknown version from git
+
+- **WHEN** skill-graft's installed metadata names no version, and it was installed from git at `main`, commit
+  `e294a0e…`
+- **THEN** `skill-graft --version` prints `skill-graft unknown (main @ e294a0e)`

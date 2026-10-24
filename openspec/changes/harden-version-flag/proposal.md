@@ -11,12 +11,13 @@ first on `PATH`, not the one under test.
 
 - `--version` never fails: a `direct_url.json` that cannot be read (a symlink loop, a disk error) or is nested too
   deeply to parse adds nothing, as a malformed one already does; without installed metadata, or with metadata that
-  cannot be read or names no version, it prints `skill-graft unknown`. Reverses `add-version-flag`'s "no fallback for
-  a missing installation".
-- A revision holding a character that is not printable (a newline, an escape) is dropped: `(<commit>)`. A commit
-  holding one adds nothing.
-- The end-to-end tests in `tests/cli/test_cli.py` run the `skill-graft` script beside the interpreter running the
-  suite, and the version test compares the whole version, not a prefix.
+  cannot be read or decoded, or whose version is missing or not printable ASCII, the version reads `unknown`:
+  `skill-graft unknown`, followed by the commit when the installer's record names one. Reverses `add-version-flag`'s
+  "no fallback for a missing installation".
+- A revision that is not printable ASCII (a newline, an escape, a non-ASCII name a terminal may not encode) is dropped:
+  `(<commit>)`. A commit that is not a hex hash adds nothing.
+- The end-to-end tests in `tests/cli/test_cli.py` run the `skill-graft` script installed for the interpreter running
+  the suite, and the version test compares the whole version, not a prefix.
 
 ## Capabilities
 
@@ -26,8 +27,8 @@ None.
 
 ### Modified Capabilities
 
-- `cli`: the Version requirement drops a revision or commit that is not printable; a new requirement says what
-  `--version` prints on a damaged or missing installation.
+- `cli`: the Version requirement drops a revision that is not printable ASCII and a commit that is not a hex hash; a
+  new requirement says what `--version` prints on a damaged or missing installation.
 
 ## Impact
 

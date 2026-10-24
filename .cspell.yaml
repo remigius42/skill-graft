@@ -5,6 +5,7 @@ words:
   - APFS
   - autocompact
   - autouse
+  - backslashreplace
   - backticked
   - bidi
   - blocklist
@@ -38,6 +39,7 @@ words:
   - heapdump
   - ignorewhitespace
   - importlinter
+  - isascii
   - isfile
   - isinstance
   - isprintable
@@ -97,6 +99,7 @@ words:
   - strerror
   - subpackages
   - symref
+  - sysconfig
   - testpaths
   - tomlkit
   - tomllib
