@@ -84,3 +84,67 @@ def test_quote_trailing_space_unlike_git() -> None:
 
 def test_quote_other_control_and_non_ascii_as_octal() -> None:
     assert deployed.quote("a\x01\x7f\u00e9") == '"a\\001\\177\\303\\251"'
+
+
+def test_summary_file_lines() -> None:
+    old = {"SKILL.md": (b"x" * 120, False)}
+    new = {"SKILL.md": (b"x" * 180, False), "run.sh": (b"y" * 40, True)}
+
+    assert deployed.summary(old, new) == [
+        "SKILL.md (changed, 120 -> 180 bytes)",
+        "run.sh (new, 40 bytes) (now executable)",
+    ]
+
+
+def test_summary_removed_and_unchanged() -> None:
+    old = {"SKILL.md": (b"same", False), "old.md": (b"gone", True)}
+    new = {"SKILL.md": (b"same", False)}
+
+    assert deployed.summary(old, new) == ["old.md (removed)"]
+
+
+def test_summary_made_executable() -> None:
+    old = {"run.sh": (b"y" * 40, False)}
+    new = {"run.sh": (b"y" * 40, True)}
+
+    assert deployed.summary(old, new) == [
+        "run.sh (changed, 40 -> 40 bytes) (now executable)"
+    ]
+
+
+def test_summary_no_longer_executable() -> None:
+    old = {"run.sh": (b"a", True)}
+    new = {"run.sh": (b"b", False)}
+
+    assert deployed.summary(old, new) == [
+        "run.sh (changed, 1 -> 1 bytes) (no longer executable)"
+    ]
+
+
+def test_summary_many_files() -> None:
+    new = {f"f{i:02}.md": (b"x", False) for i in range(50)}
+
+    lines = deployed.summary({}, new)
+
+    assert lines[:2] == ["f00.md (new, 1 bytes)", "f01.md (new, 1 bytes)"]
+    assert len(lines) == 21
+    assert lines[20] == "\u2026 30 more"
+
+
+def test_summary_lookalike_names() -> None:
+    old = {"SKILL.md": (b"x", False)}
+    new = {"SKILL.md": (b"y", False), "SKILL.md\u200b": (b"z", False)}
+
+    assert deployed.summary(old, new) == [
+        "SKILL.md (changed, 1 -> 1 bytes)",
+        '"SKILL.md\\342\\200\\213" (new, 1 bytes)',
+    ]
+
+
+def test_summary_trailing_space() -> None:
+    new = {"run.sh": (b"x", False), "run.sh ": (b"x", False)}
+
+    assert deployed.summary({}, new) == [
+        "run.sh (new, 1 bytes)",
+        '"run.sh " (new, 1 bytes)',
+    ]

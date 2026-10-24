@@ -22,6 +22,9 @@ _LETTERS = {
     92: "\\",
 }
 
+# File lines a summary prints per skill, at most.
+_LIMIT = 20
+
 
 def deployed_files(folder: Path, overrides: dict[Path, bytes]) -> View:
     """Each file of `folder` as vendored, sorted by its path's bytes.
@@ -40,6 +43,35 @@ def deployed_files(folder: Path, overrides: dict[Path, bytes]) -> View:
             content = file.read_bytes()
         view[relative.as_posix()] = (content, bool(file.stat().st_mode & stat.S_IXUSR))
     return view
+
+
+def changed(old: View, new: View) -> list[str]:
+    """Each path whose bytes or executable bit differ, sorted by its bytes."""
+    return sorted(
+        (path for path in old.keys() | new.keys() if old.get(path) != new.get(path)),
+        key=os.fsencode,
+    )
+
+
+def summary(old: View, new: View) -> list[str]:
+    """A line per file that differs, at most 20 of them; no diff, no text."""
+    lines = []
+    for path in changed(old, new):
+        name = quote(path)
+        if path not in new:
+            lines.append(f"{name} (removed)")
+            continue
+        size, executable = len(new[path][0]), new[path][1]
+        if path in old:
+            line = f"{name} (changed, {len(old[path][0])} -> {size} bytes)"
+        else:
+            line = f"{name} (new, {size} bytes)"
+        if executable != (path in old and old[path][1]):
+            line += " (now executable)" if executable else " (no longer executable)"
+        lines.append(line)
+    if len(lines) > _LIMIT:
+        return [*lines[:_LIMIT], f"\u2026 {len(lines) - _LIMIT} more"]
+    return lines
 
 
 def quote(path: str, prefix: str = "") -> str:

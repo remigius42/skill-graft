@@ -18,7 +18,7 @@ diff** and **Hull digest** are this branch's first commit.
   kept. Test a table of names (line break, tab, `"`, `\`, `é`, a zero-width space, U+2028) against real
   `git diff --no-index` header lines with `GIT_CONFIG_NOSYSTEM=1` and `HOME` in the test's folder, and `run.sh` with a
   trailing space quoted, unlike git; verify the tests fail first, then pass
-- [ ] 2.2 `deployed.summary(old, new)`, no diff: one line per differing file sorted by path, `(new, <n> bytes)`,
+- [x] 2.2 `deployed.summary(old, new)`, no diff: one line per differing file sorted by path, `(new, <n> bytes)`,
   `(removed)` or `(changed, <old> -> <new> bytes)`, then `(now executable)`, `(no longer executable)`; paths quoted and
   never cut; at most 20 lines then `… <n> more`. Tests for each file-line scenario of "Report the hull diff" ("File
   lines", "Made executable", "Many files", "Lookalike names", "Trailing space"); verify the tests fail first, then pass
