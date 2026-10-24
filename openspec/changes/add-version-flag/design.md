@@ -25,9 +25,10 @@ distribution's metadata, saying where it came from.
   a new build dependency for one line.
 - **Format `(<requested_revision> @ <commit_id[:7]>)`.** `requested_revision` is the ref the user typed (`main`,
   `v0.2.0`), the commit what it pointed at then. PEP 610 makes `requested_revision` optional; without it, when it is
-  not a non-empty string, or when `commit_id` starts with it (an install pinned to a full or short hash),
-  `(<commit>)`. Only `vcs_info.vcs == "git"` gets a suffix, as the spec speaks of git only. The README's install
-  commands name no ref, so `(<commit>)` is what most users see.
+  not a non-empty string, or when it is the commit, in full or abbreviated to seven or more characters, ignoring
+  case (an install pinned to a hash), `(<commit>)`; a shorter hex name is a branch or tag. Only
+  `vcs_info.vcs == "git"` gets a suffix, as the spec speaks of git only. The README's install commands name no ref,
+  so `(<commit>)` is what most users see.
 - **Anything unexpected prints the version only.** No `direct_url.json`, one that is not JSON, not an object, without
   a `vcs_info` object, or without a string `commit_id`: none is an error, as `--version` must not fail.
 - **A custom `argparse.Action`, not `action="version"`.** The built-in one passes its string through the help

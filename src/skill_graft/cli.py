@@ -56,7 +56,9 @@ class _Version(argparse.Action):
     """Prints the installed version and exits, read only when asked for."""
 
     def __init__(self, option_strings: list[str], dest: str, **kwargs: Any) -> None:
-        super().__init__(option_strings, dest, nargs=0, **kwargs)
+        super().__init__(
+            option_strings, dest, nargs=0, default=argparse.SUPPRESS, **kwargs
+        )
 
     def __call__(self, parser: argparse.ArgumentParser, *_: Any) -> NoReturn:
         distribution = metadata.distribution("skill-graft")
@@ -69,18 +71,24 @@ def _origin(distribution: metadata.Distribution) -> str:
     (PEP 610); anything else, malformed included, adds nothing."""
     try:
         direct_url = json.loads(distribution.read_text("direct_url.json") or "{}")
-    except json.JSONDecodeError:
+    except ValueError:  # undecodable bytes or not JSON
         return ""
     vcs_info = direct_url.get("vcs_info") if isinstance(direct_url, dict) else None
     if not isinstance(vcs_info, dict) or vcs_info.get("vcs") != "git":
         return ""
     commit = vcs_info.get("commit_id")
-    if not isinstance(commit, str):
+    if not isinstance(commit, str) or not commit:
         return ""
     revision = vcs_info.get("requested_revision")
-    if isinstance(revision, str) and revision and not commit.startswith(revision):
+    if isinstance(revision, str) and revision and not _abbreviates(revision, commit):
         return f" ({revision} @ {commit[:7]})"
     return f" ({commit[:7]})"
+
+
+def _abbreviates(revision: str, commit: str) -> bool:
+    """Whether `revision` is `commit`, in full or as git's shortest default abbreviation
+    or longer: a shorter hex name is a branch or tag."""
+    return len(revision) >= 7 and commit.lower().startswith(revision.lower())
 
 
 class _Parser(_Command):

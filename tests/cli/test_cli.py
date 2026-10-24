@@ -220,7 +220,7 @@ def test_version_of_a_git_install_at_a_branch(
     assert run(["--version"], capsys)[1] == "skill-graft 0.2.0 (main @ e294a0e)\n"
 
 
-@pytest.mark.parametrize("pinned", [COMMIT, "e294a0e"])
+@pytest.mark.parametrize("pinned", [COMMIT, "e294a0e", "E294A0E"])
 def test_version_of_a_git_install_at_a_commit(
     pinned: str, capsys: pytest.CaptureFixture[str], monkeypatch: pytest.MonkeyPatch
 ) -> None:
@@ -257,6 +257,7 @@ def test_version_without_a_usable_revision(
         json.dumps({"url": URL, "vcs_info": "git"}),
         vcs(),
         vcs(commit_id=7),
+        vcs(commit_id=""),
     ],
 )
 def test_version_of_an_unexpected_origin(
@@ -265,4 +266,22 @@ def test_version_of_an_unexpected_origin(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
     install(monkeypatch, "0.2.0", direct_url)
+    assert run(["--version"], capsys) == (0, "skill-graft 0.2.0\n", "")
+
+
+def test_version_of_a_branch_named_like_the_commit(
+    capsys: pytest.CaptureFixture[str], monkeypatch: pytest.MonkeyPatch
+) -> None:
+    install(monkeypatch, "0.2.0", vcs(commit_id=COMMIT, requested_revision="e2"))
+    assert run(["--version"], capsys)[1] == "skill-graft 0.2.0 (e2 @ e294a0e)\n"
+
+
+def test_version_of_an_undecodable_origin(
+    capsys: pytest.CaptureFixture[str], monkeypatch: pytest.MonkeyPatch
+) -> None:
+    class Undecodable(FakeDistribution):
+        def read_text(self, filename: str) -> str | None:
+            raise UnicodeDecodeError("utf-8", b"\xff", 0, 1, "invalid start byte")
+
+    monkeypatch.setattr(metadata, "distribution", lambda name: Undecodable("0.2.0"))
     assert run(["--version"], capsys) == (0, "skill-graft 0.2.0\n", "")
