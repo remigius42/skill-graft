@@ -2,6 +2,7 @@ import errno
 import json
 import os
 import subprocess
+import sysconfig
 from importlib import metadata
 from pathlib import Path
 
@@ -35,10 +36,15 @@ def run(argv: list[str], capsys: pytest.CaptureFixture[str]) -> tuple[int, str, 
     return code, out, err
 
 
+def run_installed(*args: str) -> subprocess.CompletedProcess[str]:
+    """Runs the `skill-graft` script installed for the interpreter running the suite,
+    whatever `PATH` holds."""
+    script = Path(sysconfig.get_path("scripts")) / "skill-graft"
+    return subprocess.run([script, *args], capture_output=True, text=True, check=False)
+
+
 def test_help_lists_commands() -> None:
-    result = subprocess.run(
-        ["skill-graft", "--help"], capture_output=True, text=True, check=False
-    )
+    result = run_installed("--help")
     assert result.returncode == 0
     assert "init" in result.stdout
     assert "build" in result.stdout
@@ -387,8 +393,6 @@ def test_unknown_version_of_a_git_install(
 
 
 def test_version_of_this_installation() -> None:
-    result = subprocess.run(
-        ["skill-graft", "--version"], capture_output=True, text=True, check=False
-    )
+    result = run_installed("--version")
     assert result.returncode == 0
-    assert result.stdout.startswith(f"skill-graft {metadata.version('skill-graft')}")
+    assert result.stdout.split()[:2] == ["skill-graft", metadata.version("skill-graft")]
