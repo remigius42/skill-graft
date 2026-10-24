@@ -37,8 +37,9 @@ already records one such failure: a session authenticated only by `CLAUDE_CODE_O
   the session already runs on that account, so asking adds nothing. Outside, `CLAUDECODE` is unset; the skill asks
   once, and a no goes to the unhardened question as a failed probe does. Two questions for one decline is accepted:
   the user may still want an unhardened **Check**.
-- **The probe's error is shown as is.** The first line of its stderr, else of its stdout, held to 200 characters:
-  `claude` writes option errors to stderr but "Not logged in · Please run /login" to stdout. It comes from `claude`,
+- **The probe's error is shown as is.** The first line of its output, held to 200 characters: `claude` writes option
+  errors to stderr and "Not logged in · Please run /login" to stdout, each with nothing on the other stream, and an
+  agent's shell tool shows the two merged. It comes from `claude`,
   not from **Skill** text, since the probe's folder is empty. "Not logged in" adds the advice to run `claude auth login`,
   so a user whose session runs on `CLAUDE_CODE_OAUTH_TOKEN` alone logs the readers in rather than choosing an
   unhardened **Check**. Not `claude /login`: skill-graft would read `/login` in the skill's own text as a slash
@@ -51,7 +52,7 @@ already records one such failure: a session authenticated only by `CLAUDE_CODE_O
 
 ## Risks / Trade-offs
 
-- [Another harness's agent cannot find its skill folder, or passes a wrong path] → the probe fails, as `ready` never
+- [Another harness's agent cannot find its skill folder, or passes a wrong path] → the probe fails, as `reader-ok` never
   comes: unhardened, with the error. Safe, not silent.
 - [The probe passes and a later reader still fails (rate limit, quota mid-run)] → that **Skill** has no report, as
   today.
