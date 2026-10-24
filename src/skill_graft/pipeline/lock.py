@@ -1,7 +1,8 @@
-"""Writes `skill-graft.lock`: where the hull came from. Output only, never read."""
+"""Writes `skill-graft.lock`, where the hull came from; reads back its hashes."""
 
 import hashlib
 import os
+import tomllib
 from pathlib import Path
 
 import tomlkit
@@ -65,7 +66,7 @@ def render(
         suggestions.append(tomlkit.item({"id": str(skill_id), "from": mentions}))
     document["suggestions"] = suggestions
     # A string, not a tomlkit comment: tomlkit hoists an empty section above that.
-    header = "# Written by skill-graft; never read. Do not edit.\n"
+    header = "# Written by skill-graft; update reads its hashes. Do not edit.\n"
     return header + tomlkit.dumps(document)
 
 
@@ -104,3 +105,26 @@ def write(text: str, file: Path | None = None) -> None:
     """Replaces the lock (default: the package's) atomically."""
     file = paths.package() / "skill-graft.lock" if file is None else file
     files.atomic_write(file, text.encode())
+
+
+def read(file: Path | None = None) -> dict[SkillId, str] | None:
+    """Each skill's hash as the lock (default: the package's) records it; None if
+    it is missing, unreadable or of another version."""
+    file = paths.package() / "skill-graft.lock" if file is None else file
+    try:
+        data = tomllib.loads(file.read_bytes().decode())
+    except (OSError, UnicodeDecodeError, tomllib.TOMLDecodeError):
+        return None
+    skills = data.get("skills")
+    if data.get("version") != 1 or not isinstance(skills, list):
+        return None
+    hashes = {}
+    for item in skills:
+        if not isinstance(item, dict):
+            return None
+        skill_id, digest = item.get("id"), item.get("hash")
+        if not (isinstance(skill_id, str) and isinstance(digest, str)):
+            return None
+        alias, _, name = skill_id.partition("/")
+        hashes[SkillId(alias, name)] = digest
+    return hashes

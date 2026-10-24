@@ -81,6 +81,8 @@ def _update(loaded: Config, aliases: list[str], git_cache: Cache, write: bool) -
         warn(hull.warnings)
         with _previous(loaded, selected, git_cache) as previous:
             marked = _print_diff(previous, hull, hashes)
+            if not isinstance(previous, str):
+                _print_edited(previous[1], lock.read())
     moved = {alias: tip for alias, tip in tips.items() if tip != selected[alias].ref}
     if write:
         text = lock.render(loaded, tips, hull, hashes)  # may fail: before any write
@@ -184,6 +186,26 @@ def _print_diff(
         else "hull unchanged"
     )
     return marked
+
+
+def _print_edited(
+    old: dict[SkillId, str], locked: dict[SkillId, str] | None
+) -> list[SkillId]:
+    """Each skill the old hull and the lock do not hold alike, named: edited since
+    the lock was written, by a path source, a patch or the config. Every skill of
+    the old hull if there is no lock to read."""
+    edited = sorted(
+        old
+        if locked is None
+        else {
+            skill
+            for skill in old.keys() | locked.keys()
+            if old.get(skill) != locked.get(skill)
+        }
+    )
+    for skill in edited:
+        print(f"edited since skill-graft.lock was written, not shown: {skill}")
+    return edited
 
 
 def _write_refs(refs: dict[str, str]) -> None:

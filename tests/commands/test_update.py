@@ -939,3 +939,87 @@ def test_error_while_both_hulls_are_open(
 
     assert code == 1 and "skill-graft: disk gone" in err
     assert "no previous hull" not in out and file.read_bytes() == before
+
+
+EDITED = "edited since skill-graft.lock was written, not shown: "
+
+
+def edited(out: str) -> list[str]:
+    return [line for line in out.splitlines() if line.startswith(EDITED)]
+
+
+def mp_and_own(home: Path, upstream: Upstream, entries: str, extra: str = "") -> Path:
+    """`mp` from `upstream`, at its tip, and path source `own` holding `notes`."""
+    upstream.commit({"tdd/SKILL.md": "1\n", "x/SKILL.md": "x\n"})
+    skill(home / "own" / "notes")
+    return write_config(
+        f"entries = {entries}\n"
+        + git_source("mp", upstream)
+        + '[sources.own]\npath = "~/own"\n'
+        + extra
+    )
+
+
+def test_path_source_edited_since_the_lock(
+    home: Path, upstream: Upstream, capsys: Capsys
+) -> None:
+    mp_and_own(home, upstream, '["mp/tdd", "own/notes"]')
+    assert update(capsys)[0] == 0
+    (home / "own" / "notes" / "SKILL.md").write_text("changed\n")
+    upstream.commit({"tdd/SKILL.md": "2\n"})
+
+    code, out, _ = update(capsys, "--dry-run")
+
+    assert code == 0 and edited(out) == [EDITED + "own/notes"]
+    assert out.index("~ mp/tdd") < out.index(EDITED)
+
+
+def test_skill_left_since_the_lock(
+    home: Path, upstream: Upstream, capsys: Capsys
+) -> None:
+    file = mp_and_own(home, upstream, '["mp/tdd", "mp/x"]')
+    assert update(capsys)[0] == 0
+    file.write_text(file.read_text().replace('"mp/tdd", "mp/x"', '"mp/tdd"'))
+
+    code, out, _ = update(capsys, "--dry-run")
+
+    assert code == 0 and edited(out) == [EDITED + "mp/x"]
+
+
+def test_nothing_edited_since_the_lock(
+    home: Path, upstream: Upstream, capsys: Capsys
+) -> None:
+    mp_and_own(
+        home, upstream, '["mp/tdd", "own/notes"]', '[rename]\n"mp/tdd" = "my-tdd"\n'
+    )
+    assert update(capsys)[0] == 0
+    upstream.commit({"tdd/SKILL.md": "2\n"})
+
+    code, out, _ = update(capsys, "--dry-run")
+
+    assert code == 0 and "~ mp/tdd" in out and edited(out) == []
+
+
+def test_missing_lock_names_every_skill(
+    home: Path, upstream: Upstream, capsys: Capsys
+) -> None:
+    mp_and_own(home, upstream, '["mp/tdd", "own/notes"]')
+    assert update(capsys)[0] == 0
+    lock_file().unlink()
+
+    code, out, _ = update(capsys, "--dry-run")
+
+    assert code == 0 and edited(out) == [EDITED + "mp/tdd", EDITED + "own/notes"]
+
+
+@pytest.mark.parametrize("text", ["version = 2\nskills = []\n", "not toml [", "\xff"])
+def test_unreadable_lock_names_every_skill(
+    home: Path, upstream: Upstream, capsys: Capsys, text: str
+) -> None:
+    mp_and_own(home, upstream, '["mp/tdd"]')
+    assert update(capsys)[0] == 0
+    lock_file().write_bytes(text.encode("latin-1"))
+
+    code, out, _ = update(capsys, "--dry-run")
+
+    assert code == 0 and edited(out) == [EDITED + "mp/tdd"]

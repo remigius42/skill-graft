@@ -264,15 +264,17 @@ deployed file as `modified` drift.
   cache) to redo the patch against, after the skill's earlier patches, as above; `ref` stays, and the next
   `update` moves it once the patches apply. Until then `build` at the old `ref` fails too. `--dry-run` writes no
   cache, so it reports the hunks and says to run without `--dry-run` to fetch the tip.
-- `update`'s hull diff applies today's patches at the current refs too (the lock is never read back), so `~`
-  covers upstream and patch changes alike. When they fail there, it says only "no previous hull to compare
-  (patches fail at the current refs)", without repeating the hunks, and likewise for hidden characters.
+- `update`'s hull diff applies today's patches at the current refs too, so `~` covers upstream and patch changes
+  alike. When the patches fail there, it says only "no previous hull to compare (patches fail at the current
+  refs)", without repeating the hunks, and likewise for hidden characters. A skill whose old side differs from the
+  lock's hash is named as edited since the lock was written.
 
 ## Feedback
 
-The lock (TOML, sorted except `patches`, never read back, the same on every machine for a project package whose path
-sources lie inside the project) records each source's `ref` and `subdirectory`, or folder (in project scope relative to
-the package when inside the project), each hull skill with a SHA-256 of its folder as vendored (patches and rewrites
+The lock (TOML, sorted except `patches`, read back only for `update`'s hashes, the same on every machine for a project
+package whose path sources lie inside the project) records each source's `ref` and `subdirectory`, or folder (in project
+scope relative to the package when inside the project), each hull skill with a SHA-256 of its folder as vendored
+(patches and rewrites
 applied), its `upstream` folder (relative to its source's root: the cache export, `subdirectory` included, or the path
 source's folder; `why` prints it absolute), its
 `deployed` name when renamed or prefixed and its `patches` in apply order when patched, each edge with its kind

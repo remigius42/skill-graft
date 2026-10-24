@@ -46,7 +46,7 @@ diff** and **Hull digest** are this branch's first commit.
   lines), "Old ref not cached", "Hint", "No hint after a real update", "Nothing
   changed" (no hint), and an `OSError` raised in the `with` body propagating unchanged; verify the tests fail first,
   then pass
-- [ ] 3.2 `lock.read()`: the lock with `tomllib`, `version` 1, its `skills` array of tables as **Skill ID** to
+- [x] 3.2 `lock.read()`: the lock with `tomllib`, `version` 1, its `skills` array of tables as **Skill ID** to
   `hash`; `update` names each
   **Skill** the old **Hull** and the lock do not
   hold alike, every **Skill** of the old **Hull** when the lock is missing, unreadable or of another `version`. Change
