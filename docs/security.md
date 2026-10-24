@@ -66,11 +66,13 @@ readers' defaults, since it runs before skill-graft has checked the config.
 | `reader-budget-usd`  | 1.0     | The reader stops; its **Skill** is named as having no report.   |
 | `patcher-turns`      | 10      | The patcher stops and that fix ends, with no **Patch** written. |
 | `patcher-budget-usd` | 0.5     | The patcher stops and that fix ends, with no **Patch** written. |
+| `readers-at-once`    | 4       | The next batch of readers starts once a batch has ended.        |
 
 Turns are capped with `claude -p --max-turns`, spend with `--max-budget-usd`. A budget is checked after each turn, so
 a run can pass it by what its last turn cost: measured on Claude Code 2.1.310, a 0.001 USD budget stopped at 0.0048
 USD. The spend is counted at list price, on a subscription too, so there it bounds tokens, not your bill. A capped
-reader or patcher exits non-zero, which the skill already takes as a failure.
+reader or patcher exits non-zero, which the skill already takes as a failure. `readers-at-once` is a step of the
+skill: the main agent starts each reader, and nothing between it and its shell counts them.
 
 ## Residual risks
 
@@ -79,6 +81,8 @@ reader or patcher exits non-zero, which the skill already takes as a failure.
 - **Patcher reply.** The patcher's reply and the names of the files it changed reach the main agent too, the reply
   with no bound on its length; nothing tells the main agent to treat either as quoted data.
 - **Fix arguments** are checked by the main agent, at the prompt level too.
+- **Readers at once.** How many readers run at once is up to the main agent following the skill, at the prompt level
+  too; each reader's own turns and spend are capped by `claude` itself.
 - **A file skipped as binary.** A file other than Markdown that holds a NUL byte and is not UTF-8, such as UTF-16 text
   without a byte order mark, is skipped. No Markdown file can be.
 - **Visible injection.** Readers are confined, not trusted: one can still misreport what a **Skill** says.
@@ -145,7 +149,7 @@ installed; elsewhere it reads **Skill** text in the session that holds your shel
 | [LLM07 System Prompt Leakage](https://genai.owasp.org/llmrisk/llm072025-system-prompt-leakage/)                       | Not applicable: the reader and patcher prompts are public (`skills/graft-check/reader.json`, `patcher.json`) and hold no secret.                                                                                                                                                                                 |
 | [LLM08 Vector and Embedding Weaknesses](https://genai.owasp.org/llmrisk/llm082025-vector-and-embedding-weaknesses/)   | Not applicable: no embeddings or retrieval.                                                                                                                                                                                                                                                                      |
 | [LLM09 Misinformation](https://genai.owasp.org/llmrisk/llm092025-misinformation/)                                     | A reader can misreport a **Skill** (Residual risks); you accept each fix.                                                                                                                                                                                                                                        |
-| [LLM10 Unbounded Consumption](https://genai.owasp.org/llmrisk/llm102025-unbounded-consumption/)                       | Each reader and the patcher stop at a cap on their turns and their spend (Limits). Open: one reader per checked **Skill**, possibly all in parallel (Future work).                                                                                                                                               |
+| [LLM10 Unbounded Consumption](https://genai.owasp.org/llmrisk/llm102025-unbounded-consumption/)                       | Each reader and the patcher stop at a cap on their turns and their spend, and at most 4 readers run at once by default, the last at the prompt level only (Limits).                                                                                                                                              |
 
 ### Agentic Applications 2026
 
@@ -170,6 +174,5 @@ Rudimentary checks that narrow, not close, the risks above:
 
 - `update` shows each changed **Skill**'s text diff, so vetting covers only what changed.
 - Flag scripts, URLs and shell commands in **Skill** text for you to review.
-- Cap how many readers run at once.
 - Bound the patcher's reply as a reader's `text` is, and have the main agent treat it and the names of the files it
   changed as quoted data.

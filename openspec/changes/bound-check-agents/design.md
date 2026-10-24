@@ -92,9 +92,10 @@ Checked against `skills/graft-check/` on main (`8c0bad8`, `probe-check-readers` 
   it, every reader and the patcher exit 1 with `unknown option`: each **Skill** has no report, and every **Patch** fix
   ends, its error line naming the option. Fail-closed: the probe, which carries the flag too, fails first and the
   **Check** says it is unhardened, naming the error.
-- **At most `readers-at-once` readers at once, 4 by default,** in step 4 and in step 5's `uses` readers alike: start
-  the next when one finishes. Four keeps a large **Hull** quick and its spend at any moment small. Prompt-level only,
-  recorded as such.
+- **At most `readers-at-once` readers at once, 4 by default,** in step 4 and in step 5's `uses` readers alike, in
+  batches: Claude Code returns parallel Bash calls of one message together, so "start the next when one ends" would need
+  background calls and polling, where a count is easier to lose. A batch waits on its slowest reader. Four keeps a large
+  **Hull** quick and its spend at any moment small. Prompt-level only, recorded as such.
 - **Exit at the cap, measured.** On Claude Code 2.1.310, the reader's flags with `--max-turns 1`, asked to glob and
   then read, exit 1 with `Error: Reached max turns (1)` on stdout and nothing on stderr (`--output-format json`:
   `subtype` `error_max_turns`). A capped reader fails the report shape and exits non-zero: no report. A capped

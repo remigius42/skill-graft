@@ -90,8 +90,21 @@ def test_skill_names_where_its_limits_come_from() -> None:
         ("reader-budget-usd", "1.0"),
         ("patcher-turns", "10"),
         ("patcher-budget-usd", "0.5"),
+        ("readers-at-once", "4"),
     ]:
         assert f"`<{key}>`, else {default}" in text
+
+
+def test_readers_run_at_most_readers_at_once() -> None:
+    text = " ".join((SKILLS / "graft-check" / "SKILL.md").read_text().split())
+    read, report = text.index("## 4. Read"), text.index("## 5. Report")
+    fixes = text.index("## 6. Fixes")
+
+    assert "in parallel" not in text
+    assert "At most `<readers-at-once>` readers run at once" in text[read:report]
+    assert "in batches of at most `<readers-at-once>`" in text[read:report]
+    assert "start the next when one ends" not in text
+    assert "`uses` mode, at most `<readers-at-once>` at once" in text[report:fixes]
 
 
 def test_patcher_only_edits() -> None:

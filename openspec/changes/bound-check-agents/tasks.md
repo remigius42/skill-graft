@@ -32,7 +32,7 @@ commit.
   it does, the budget's one-turn overshoot and list price, how to set it), drop the caps from the LLM10 row's "Open" and
   from Future work, and add the hidden-flag fail-closed note to "A later Claude Code"; verify the test fails first, then
   passes, and `pre-commit run --all-files`
-- [ ] 3.2 Reader count: test that `SKILL.md` step 4 says at most `<readers-at-once>` readers run at once, 4 by
+- [x] 3.2 Reader count: test that `SKILL.md` step 4 says at most `<readers-at-once>` readers run at once, 4 by
   default, and that step 5's `uses` readers follow it; replace "Readers may run in parallel"; in `docs/security.md`,
   the Limits section gains it, marked prompt-level, the LLM10 row says what is capped, Residual risks gains the
   prompt-level line, and Future work loses the cap; verify the test fails first, then passes, and

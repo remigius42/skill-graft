@@ -112,7 +112,7 @@ From the lock, for each **Skill** to check (`[[skills]]`, or only the arguments)
 
 The limits of every reader and patcher come from `[check]` in `skill-graft.toml`, which step 2's build has checked to
 be plain decimal digits: `<reader-turns>`, else 30; `<reader-budget-usd>`, else 1.0; `<patcher-turns>`, else 10;
-`<patcher-budget-usd>`, else 0.5.
+`<patcher-budget-usd>`, else 0.5; `<readers-at-once>`, else 4.
 
 Done when every **Skill** to check has its vendored copy, **Upstream** folder, patch paths, targets and binds, and
 every target its **Upstream** folder.
@@ -140,8 +140,10 @@ Hardened, each reader is its own `claude` process:
 
    The prompt goes on stdin: `--tools` and `--add-dir` take every argument after them.
 
-Readers may run in parallel. Its reply is the reader's report. A reply that is not in the report shape, or a non-zero
-exit, means that **Skill** has no report: say so in the report, naming the **Skill**.
+At most `<readers-at-once>` readers run at once: run them in batches of at most `<readers-at-once>`, each batch's
+Bash calls together, the next batch once all of them have returned. Its reply is the reader's report. A reply that is
+not in the report shape, or a non-zero exit, means that **Skill** has no report: say so in the report, naming the
+**Skill**.
 
 Unhardened, give each **Skill** a subagent in this session, or read them one by one yourself, following the reader's
 prompt in `reader.json` in this skill's folder.
@@ -172,9 +174,9 @@ Every name in a fix comes from a known source; a finding whose fix fails this is
 
 A **Bind** is source-wide. Before proposing one for `<alias>/<name>`, gather the uses of `<name>` in every **Hull**
 **Skill** of `<alias>` in the lock, whatever the arguments: a report that lists `use: <name>` covers its **Skill**;
-give each other one a reader in `uses` mode, with `names: <name>` and that **Skill**'s own targets and binds. Propose
-the **Bind** only when every use's `means` is what the **Bind** gives (its target, or `none` for `false`); when some
-are right, propose a **Patch** of the **Skill** holding the wrong one.
+give each other one a reader in `uses` mode, at most `<readers-at-once>` at once, with `names: <name>` and that
+**Skill**'s own targets and binds. Propose the **Bind** only when every use's `means` is what the **Bind** gives (its
+target, or `none` for `false`); when some are right, propose a **Patch** of the **Skill** holding the wrong one.
 
 With no finding, say the **Check** found nothing and go to step 7.
 
