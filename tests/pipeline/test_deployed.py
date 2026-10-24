@@ -387,3 +387,29 @@ def test_diff_past_what_is_left_shown_whole() -> None:
     body = hunks(deployed.diff(old, new, deployed.Budget(0)).split("\n"))
 
     assert body[0] == "@@ -1,40 +1,40 @@"
+
+
+NOTE = "# run.sh: each backslash shown doubled, as its lines would read alike"
+
+
+@pytest.mark.parametrize(
+    ("before", "after", "removed", "added"),
+    [
+        (b"echo \\x80\n", b"echo \x80\n", "-echo \\\\x80", "+echo \\x80"),
+        (b"echo \\x1b\n", b"echo \x1b\n", "-echo \\\\x1b", "+echo \\x1b"),
+    ],
+)
+def test_escape_alike_text_doubles_backslashes(
+    before: bytes, after: bytes, removed: str, added: str
+) -> None:
+    lines = diff_of("run.sh", before, after)
+
+    assert lines[0] == NOTE
+    assert hunks(lines) == ["@@ -1 +1 @@", removed, added, ""]
+
+
+def test_backslash_kept_single_when_nothing_reads_alike() -> None:
+    lines = diff_of("run.sh", b"echo \\n\n", b"echo \\n\necho \x80\n")
+
+    assert lines[0] == "diff --git a/run.sh b/run.sh"
+    assert hunks(lines) == ["@@ -1 +1,2 @@", " echo \\n", "+echo \\x80", ""]

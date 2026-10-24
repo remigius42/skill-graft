@@ -113,12 +113,15 @@ _CONTEXT = 3
 _MAX_BYTES = 1_000_000
 
 # What an editor could break a line at or show as nothing, escaped in a line: every
-# control character but tab, the line and paragraph separators, hidden characters.
-_BREAKS = [(0x00, 0x08), (0x0A, 0x1F), (0x7F, 0x9F), (0x2028, 0x2029)]
+# control character but tab, the line and paragraph separators, hidden characters;
+# and each byte that cannot be decoded, which `surrogateescape` maps to U+DC80-DCFF.
+_BREAKS = [(0x00, 0x08), (0x0A, 0x1F), (0x7F, 0x9F), (0x2028, 0x2029), (0xDC80, 0xDCFF)]
 _ESCAPED = re.compile(
     "[" + "".join(f"{chr(a)}-{chr(b)}" for a, b in _BREAKS) + "]|"
     f"{hidden.CRITICAL_CHARS.pattern}|{hidden.WARNING_CHARS.pattern}"
 )
+# The same, each backslash doubled too: for a file whose lines would read alike.
+_DOUBLED = re.compile(r"\\|" + _ESCAPED.pattern)
 
 # A changed block: old lines [i1, i2) replaced by new lines [j1, j2).
 _Block = tuple[int, int, int, int]
@@ -152,12 +155,25 @@ def _file_diff(
         out += [f"old mode {_mode(before[1])}\n", f"new mode {_mode(after[1])}\n"]
     a = _lines(path, before[0]) if before else []
     b = _lines(path, after[0]) if after else []
+    escaped = _ESCAPED
+    if _alike(a, b):  # a typed `\x80` and a stray byte: only the doubling tells
+        escaped = _DOUBLED
+        note = "each backslash shown doubled, as its lines would read alike"
+        out.insert(0, f"# {quote(path)}: {note}\n")
     too_big = any(f is not None and len(f[0]) > _MAX_BYTES for f in (before, after))
-    hunks = _hunks(a, b, _blocks(a, b, too_big, budget))
+    hunks = _hunks(a, b, _blocks(a, b, too_big, budget), escaped)
     if hunks:
         out.append(f"--- {a_name if before else '/dev/null'}\n")
         out.append(f"+++ {b_name if after else '/dev/null'}\n")
     return out + hunks
+
+
+def _alike(a: list[str], b: list[str]) -> bool:
+    """Whether two different lines of `a` and `b` would read alike, escaped."""
+    lines = set(a) | set(b)
+    if not any("\\" in line for line in lines):  # no escape can be typed out
+        return False
+    return len({_ESCAPED.sub(_escape_char, line) for line in lines}) < len(lines)
 
 
 def _mode(executable: bool) -> str:
@@ -166,9 +182,9 @@ def _mode(executable: bool) -> str:
 
 def _lines(path: str, data: bytes) -> list[str]:
     """`data` as text, split at line feeds only, each line with its own."""
-    text = hidden.decode(data, path.lower().endswith(".md"), "backslashreplace")
+    text = hidden.decode(data, path.lower().endswith(".md"), "surrogateescape")
     if text is None:
-        text = data.decode("utf-8", errors="backslashreplace")
+        text = data.decode("utf-8", errors="surrogateescape")
     *lines, last = text.split("\n")
     return [line + "\n" for line in lines] + ([last] if last else [])
 
@@ -275,7 +291,9 @@ def _backtrack(trace: "list[array[int]]", n: int, m: int) -> str:
     return "".join(reversed(ops))
 
 
-def _hunks(a: list[str], b: list[str], blocks: list[_Block]) -> list[str]:
+def _hunks(
+    a: list[str], b: list[str], blocks: list[_Block], escaped: re.Pattern[str]
+) -> list[str]:
     """The blocks as hunks, merged as `git diff` merges them, with their context."""
     groups: list[list[_Block]] = []
     for block in blocks:
@@ -291,10 +309,11 @@ def _hunks(a: list[str], b: list[str], blocks: list[_Block]) -> list[str]:
         out.append(f"@@ -{_range(i1, i2)} +{_range(j1, j2)} @@\n")
         i = i1
         for block_i1, block_i2, block_j1, block_j2 in group:
-            out += _show(" ", a[i:block_i1]) + _show("-", a[block_i1:block_i2])
-            out += _show("+", b[block_j1:block_j2])
+            out += _show(" ", a[i:block_i1], escaped)
+            out += _show("-", a[block_i1:block_i2], escaped)
+            out += _show("+", b[block_j1:block_j2], escaped)
             i = block_i2
-        out += _show(" ", a[i:i2])
+        out += _show(" ", a[i:i2], escaped)
     return out
 
 
@@ -306,17 +325,22 @@ def _range(start: int, end: int) -> str:
     return f"{start + 1 if count else start},{count}"
 
 
-def _show(mark: str, lines: list[str]) -> list[str]:
+def _show(mark: str, lines: list[str], escaped: re.Pattern[str]) -> list[str]:
     out = []
     for line in lines:
-        out.append(f"{mark}{_ESCAPED.sub(_escape_char, line.removesuffix(chr(10)))}\n")
+        out.append(f"{mark}{escaped.sub(_escape_char, line.removesuffix(chr(10)))}\n")
         if not line.endswith("\n"):
             out.append("\\ No newline at end of file\n")
     return out
 
 
 def _escape_char(match: re.Match[str]) -> str:
-    code = ord(match.group())
+    char = match.group()
+    if char == "\\":
+        return "\\\\"
+    code = ord(char)
+    if 0xDC80 <= code <= 0xDCFF:  # a byte that cannot be decoded
+        return f"\\x{code - 0xDC00:02x}"
     if code <= 0xFF:
         return f"\\x{code:02x}"
     return f"\\u{code:04x}" if code <= 0xFFFF else f"\\U{code:08x}"

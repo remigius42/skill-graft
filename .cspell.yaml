@@ -102,6 +102,7 @@ words:
   - steganography
   - strerror
   - subpackages
+  - surrogateescape
   - symref
   - sysconfig
   - testpaths
