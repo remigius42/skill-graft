@@ -6,7 +6,7 @@
 reading `skill-graft.toml`. Installed from a git repository, the version SHALL be followed by the revision asked for
 and the commit installed, abbreviated to seven characters: `(<revision> @ <commit>)`, or `(<commit>)` when no revision
 was asked for or the revision is that commit, in full or abbreviated. Installed from anywhere else, it SHALL print
-the version only, and `skill-graft unknown` when it cannot find its own installation.
+the version only.
 
 #### Scenario: Release
 
@@ -36,11 +36,6 @@ the version only, and `skill-graft unknown` when it cannot find its own installa
 
 - **WHEN** skill-graft 0.2.0 was installed from a Mercurial or Subversion repository
 - **THEN** it prints `skill-graft 0.2.0`
-
-#### Scenario: Not installed
-
-- **WHEN** skill-graft runs from a source tree without being installed, and the user runs `skill-graft --version`
-- **THEN** it exits 0 and prints `skill-graft unknown`
 
 #### Scenario: Broken package
 

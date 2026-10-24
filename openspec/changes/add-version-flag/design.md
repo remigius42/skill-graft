@@ -30,16 +30,14 @@ distribution's metadata, saying where it came from.
   commands name no ref, so `(<commit>)` is what most users see.
 - **Anything unexpected prints the version only.** No `direct_url.json`, one that is not JSON, not an object, without
   a `vcs_info` object, or without a string `commit_id`: none is an error, as `--version` must not fail.
-- **A custom `argparse.Action`, not `action="version"`.** The built-in one takes its string when the parser is built,
-  so every command would read the metadata, and one missing distribution (`PackageNotFoundError`, running from a
-  source tree uninstalled) would crash them all. It also passes the string through the help formatter, which
-  `_Formatter` rewraps. The custom action computes the line only when `--version` is given, writes it to standard
-  output as is, and exits 0, before the command check.
-  `PackageNotFoundError` there prints `skill-graft unknown`.
+- **A custom `argparse.Action`, not `action="version"`.** The built-in one passes its string through the help
+  formatter, which `_Formatter` rewraps at the terminal's width, and takes it when the parser is built, so every
+  command would read the metadata. The custom action computes the line only when `--version` is given, writes it to
+  standard output as is, and exits 0, before the command check.
+- **No fallback for a missing installation.** The `skill-graft` command exists only once installed, and each
+  installation's entry point finds its own metadata, so each reports its own version.
 
 ## Risks / Trade-offs
 
 - [An installer that skips PEP 610] → the version only, as for a release; no worse than today.
 - \[`requested_revision` is a moving branch\] → the commit beside it pins it.
-- [Run from a source tree while another skill-graft is installed] → `--version` names that installation, not the
-  code running. Only a developer gets there, and knows which tree they run.

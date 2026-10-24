@@ -8,9 +8,8 @@ Apply with the `tdd` skill: each task red-green-refactor, one commit.
 distribution with `monkeypatch` through `cli.metadata`, whatever installer ran the suite.
 
 - [ ] 1.1 Add `--version` to the top-level parser as a custom action printing `skill-graft <version>` from
-  `importlib.metadata`, computed only when given; tests in `tests/cli/test_cli.py`: the cli spec's "Release", "Not
-  installed", "Broken package" and "Listed in help" scenarios, and another command still running when the
-  distribution is missing; verify they pass
+  `importlib.metadata`, computed only when given; tests in `tests/cli/test_cli.py`: the cli spec's "Release",
+  "Broken package" and "Listed in help" scenarios; verify they pass
 - [ ] 1.2 Follow the version with `(<revision> @ <commit>)` or `(<commit>)` from `direct_url.json`'s `vcs_info`;
   tests: "Git install without a revision", "Git install at a branch", "Git install at a commit" with a full and a
   short hash, "Other version control", a `requested_revision` that is empty or not a string, and the version only
