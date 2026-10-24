@@ -5,7 +5,7 @@ checked by `tests/cli/test_check.py` for its shape and by the eval for its behav
 
 ## 1. Probe mode
 
-- [ ] 1.1 In `skills/graft-check/reader.json`, add `probe` to `mode`: reply `reader-ok` and nothing else, reading
+- [x] 1.1 In `skills/graft-check/reader.json`, add `probe` to `mode`: reply `reader-ok` and nothing else, reading
   nothing, ahead of the Report section's `findings: none`; test in `tests/cli/test_check.py` that the prompt names
   `probe` and `reader-ok`, and that the Report section's replies apply to `full` and `uses` modes only; verify it
   passes

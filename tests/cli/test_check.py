@@ -52,6 +52,15 @@ def test_reader_only_reads() -> None:
     assert "line of the `upstream` file" in prompt and "vendored: " in prompt
 
 
+def test_reader_answers_the_probe() -> None:
+    prompt = str(agent("reader")["prompt"])
+
+    assert "`probe`" in prompt and "`reader-ok`" in prompt
+    report = prompt.index("## Report")
+    assert prompt.index("`reader-ok`") < report
+    assert "In `full` and `uses` mode, reply" in prompt[report:]
+
+
 def test_patcher_only_edits() -> None:
     patcher = agent("patcher")
 
