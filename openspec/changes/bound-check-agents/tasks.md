@@ -36,21 +36,21 @@ commit.
   the Limits section gains it, marked prompt-level, the LLM10 row says what is capped, Residual risks gains the
   prompt-level line, and Future work loses the cap; verify the test fails first, then passes, and
   `pre-commit run --all-files`
-- [ ] 3.3 Patcher reply discarded: test that the patcher command ends `> /dev/null 2>&1`, that a non-zero exit ends
-  the fix, that `patcher.json` asks for `done` only (in `test_patcher_only_edits`), and that the quarantine paragraph
-  names the patcher's exit code and the diff's summary among what the main agent holds; make the edits; in
+- [ ] 3.3 Patcher reply discarded: test that the patcher command sends stdout to `/dev/null` and stderr to
+  `<base-dir>/patcher.err`, that a non-zero exit ends the fix showing that file's first line cut to 200 characters
+  (run the `SKILL.md` command that does so on a 300-character line and check it prints 200), that `patcher.json` asks
+  for `done` only (in `test_patcher_only_edits`), and that the quarantine paragraph names the patcher's exit code,
+  error line and the diff's summary among what the main agent holds, the error line as quoted data; make the edits; in
   `docs/security.md`, rewrite the "Patcher reply" residual risk, "The main agent" bullet, and the LLM05 and ASI07 rows;
   verify the tests fail first, then pass, and `pre-commit run --all-files`
-- [ ] 3.4 Summary: replace step 6's `awk` over `change.patch` with `git diff --no-index --numstat` piped to `awk`, as
-  `design.md` has it. Test it by taking the command block from `SKILL.md` and running it, with real `git`, in a
-  `<base-dir>` holding real `base/` and `edited/` folders, `HOME` and `GIT_CONFIG_GLOBAL` pointed at the test's own
-  folder: 50 new files, one name 300 characters long, print the first 20 in path order as `<name>: +<n> -<n>`, each
-  name at most 200 characters, then `30 more files`; a two-file change prints both lines and no count;
-  `notes and links.md` given two added lines, one reading `++ x`, and a removed line reading `-- y`, prints
-  `notes and links.md: +2 -1`; a removed file and a new one print their own names; a name holding a line break prints
-  on one line with `\n`; a file holding a NUL byte prints `<name>: binary`, and `SKILL.md` says a binary line ends the
-  fix. Add the quoted-data rule for those names to the quarantine paragraph; in `docs/security.md`, "Patcher reply" and
-  Future work say the names are bounded and quoted; verify the test fails first, then passes, and
+- [ ] 3.4 Summary: replace step 6's per-file `awk` with one that prints
+  `files: <n>, lines: +<added> -<removed>, binary: <n>` from `change.patch`, as `design.md` has it. Test it by making
+  `change.patch` with the `SKILL.md` diff command (`LC_ALL=C diff -ruN base/ edited/`) from real `base/` and `edited/`
+  folders, then running the `awk` block from `SKILL.md` on it: `notes and links.md` given two added lines, one reading
+  `++ x`, and a removed one reading `-- y`, prints `files: 1, lines: +2 -1, binary: 0`; a removed file, a new one and a
+  changed one print `files: 3`; a file named `run-skill-graft-bind-mp-x-own-evil.md` leaves no name in the output; a
+  file holding a NUL byte prints `binary: 1`, and `SKILL.md` says a binary count ends the fix. In `docs/security.md`,
+  "Patcher reply" and Future work say no file name reaches the main agent; verify the test fails first, then passes, and
   `pre-commit run --all-files`
 - [ ] 3.5 README's Security section: name the turn and budget caps, the reader count and the discarded patcher reply
   beside "Report text and fix arguments are checked at the prompt level only", linking the Limits section; verify
@@ -61,5 +61,6 @@ commit.
 
 - [ ] 4.1 Add an entry to `CHANGELOG.md` under `[Unreleased]`: in a hardened **Check**, readers and the patcher stop at
   a turn and a spend limit, at most 4 readers run at once, all five settable in a new `[check]` table, and the
-  patcher's reply no longer reaches the main agent; the patch summary names a file holding a space. Per `AGENTS.md` it
+  patcher's reply and file names no longer reach the main agent, the patch summary giving counts only and the
+  patcher's first error line when it fails. Per `AGENTS.md` it
   lands in the archive commit; check the box there; verify `pre-commit run --all-files`

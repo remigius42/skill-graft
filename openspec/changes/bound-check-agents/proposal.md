@@ -10,16 +10,18 @@ how many.
 
 ## What Changes
 
-- The main agent never sees the patcher's reply: the patcher command sends its stdout and stderr to `/dev/null`, and
-  the patcher replies `done` only. Its exit code alone tells the main agent whether it ran; the diff says what it did.
-- The step-6 summary comes from `git diff --no-index --numstat` instead of parsing `change.patch`: the first 20 files
-  in path order, each name escaped by git and cut to 200 characters, then how many more. The main agent holds those
-  names as quoted data: shown, never acted on. A name holding a space no longer comes out empty, a changed line that
-  starts with `--` or `++` is counted, and a binary file, which a **Patch** cannot hold, ends the fix.
+- The main agent never sees the patcher's reply: the patcher command sends its stdout to `/dev/null`, and the
+  patcher replies `done` only. Its exit code tells the main agent whether it ran; the diff says what it did. Its
+  stderr goes to a file, and on a failure the skill shows that file's first line, cut to 200 characters, as quoted
+  data, so the user sees why.
+- The step-6 summary holds numbers only, `files: <n>, lines: +<added> -<removed>, binary: <n>`, counted from
+  `change.patch`: no file name the patcher chose reaches the main agent. A name holding a space no longer breaks the
+  count, a changed line that starts with `--` or `++` is counted, and a binary file, which a **Patch** cannot hold,
+  ends the fix.
 - Limit values in `[check]` must be written as plain decimals, so the text the skill reads is the value skill-graft
   checked.
-- The quarantine paragraph of `SKILL.md` names what else the main agent holds (the patcher's exit code, the summary)
-  and the quoted-data rule for the file names.
+- The quarantine paragraph of `SKILL.md` names what else the main agent holds (the patcher's exit code, its error
+  line, the summary) and the quoted-data rule for the error line.
 - Every reader runs with `--max-turns` and `--max-budget-usd`, by default 30 turns and 1 USD; the patcher by default
   10 turns and 0.50 USD. A reader stopped by either leaves its **Skill** with no report, as any reader that fails does;
   a patcher stopped by either ends that fix.
@@ -42,8 +44,8 @@ None.
 - `config`: a new requirement for the `[check]` table and its value checks; "Unsupported keys are errors" accepts
   `check` and its five keys.
 - `check`: "Skill text is read by hardened readers" gains the turn and budget caps and the reader count, from the
-  config; "The main agent never reads skill text" names the patcher's exit code and bounded summary as all it holds of
-  the patcher; "Patches are written by a confined patcher" gains the caps and the discarded reply.
+  config; "The main agent never reads skill text" names the patcher's exit code, error line and numeric summary as
+  all it holds of the patcher; "Patches are written by a confined patcher" gains the caps and the discarded reply.
 
 ## Impact
 
@@ -52,7 +54,7 @@ None.
   parallelism, step 6's patcher command and summary), `skills/graft-check/patcher.json` (reply `done`). `reader.json` is
   unchanged.
 - `tests/cli/test_check.py`: every `claude -p` command in `SKILL.md` carries both caps; the patcher's reply is
-  discarded; the reader count; the summary run on synthetic diffs.
+  discarded and its error line bounded; the reader count; the summary run on real `diff -ruN` output.
 - `docs/security.md`, `README.md`.
 - `CHANGELOG.md` entry at archive.
 - Overlaps `probe-check-readers` (in flight) in `SKILL.md`'s reader and patcher commands and in `docs/security.md`; see

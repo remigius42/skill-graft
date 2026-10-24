@@ -103,7 +103,6 @@ words:
   - symref
   - sysconfig
   - testpaths
-  - textconv
   - tomlkit
   - tomllib
   - ufeff
