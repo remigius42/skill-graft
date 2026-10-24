@@ -1,7 +1,9 @@
 """Moves each git source's ref to the tip of its branch."""
 
+import shlex
 import tempfile
-from collections.abc import MutableMapping
+from collections.abc import Iterator, MutableMapping
+from contextlib import ExitStack, contextmanager
 from pathlib import Path
 from typing import Any, cast
 
@@ -11,8 +13,9 @@ from skill_graft.commands import edit, explain
 from skill_graft.infra import git, paths
 from skill_graft.infra.cache import Cache
 from skill_graft.infra.errors import SkillGraftError, warn
-from skill_graft.pipeline import compute, config, lock, patch
+from skill_graft.pipeline import compute, config, deployed, lock, patch, rename
 from skill_graft.pipeline.config import Config, GitSource, SkillId
+from skill_graft.pipeline.hull import Hull
 
 
 def update(loaded: Config, aliases: list[str], dry_run: bool = False) -> None:
@@ -75,8 +78,9 @@ def _update(loaded: Config, aliases: list[str], git_cache: Cache, write: bool) -
         print(f"{alias} {tips[alias]}{unchanged}")
     with compute.compute_hull(loaded, git_cache, tips) as hull:
         hashes = lock.skill_hashes(hull)
-    warn(hull.warnings)
-    _print_diff(_previous(loaded, selected, git_cache), hashes)
+        warn(hull.warnings)
+        with _previous(loaded, selected, git_cache) as previous:
+            marked = _print_diff(previous, hull, hashes)
     moved = {alias: tip for alias, tip in tips.items() if tip != selected[alias].ref}
     if write:
         text = lock.render(loaded, tips, hull, hashes)  # may fail: before any write
@@ -84,56 +88,102 @@ def _update(loaded: Config, aliases: list[str], git_cache: Cache, write: bool) -
             _write_refs(moved)
         lock.write(text)  # even if no ref moved: a path source may have changed
     explain.announce_suggestions(hull, dry_run=not write)  # once the writes succeeded
+    if not write and marked:
+        given = "".join(f"{shlex.quote(alias)} " for alias in aliases)
+        print(f"review: skill-graft update {given}--dry-run --diff <file>")
 
 
+@contextmanager
 def _previous(
     loaded: Config, selected: dict[str, GitSource], git_cache: Cache
-) -> dict[SkillId, str] | str:
-    """The hull at the current refs, each skill's hash, or why there is none.
+) -> Iterator[tuple[Hull, dict[SkillId, str]] | str]:
+    """The hull at the current refs and each skill's hash, open; or why there is none.
 
     Never fetches: the diff is not worth a remote call. A cached commit whose tree
-    was never exported is exported, as any command reading that ref would.
+    was never exported is exported, as any command reading that ref would. Yields
+    outside its `try`, so an error in the caller's `with` is never taken for one.
     """
+    reason = _uncached(selected, git_cache)
+    stack = ExitStack()
+    if reason is None:
+        try:
+            hull = stack.enter_context(compute.compute_hull(loaded, git_cache))
+            hashes = lock.skill_hashes(hull)
+        except patch.PatchError as error:  # patches likely rewritten for the tips
+            stack.close()
+            failed = " and ".join(
+                what
+                for what, found in [
+                    ("patches fail", error.failures),
+                    ("hidden characters", error.hidden),
+                ]
+                if found
+            )
+            if error.other:  # an error that is no patch's: that one matters
+                reason = (
+                    f"the current refs do not resolve: {failed} there; {error.other}"
+                )
+            else:
+                reason = f"{failed} at the current refs"
+        except (SkillGraftError, OSError) as error:  # the update itself is still fine
+            stack.close()
+            reason = f"the current refs do not resolve: {error}"
+    if reason is not None:
+        yield reason
+        return
+    with stack:
+        yield hull, hashes
+
+
+def _uncached(selected: dict[str, GitSource], git_cache: Cache) -> str | None:
+    """Why a selected source's current ref cannot be read without a fetch, if so."""
     for alias, source in selected.items():
         if source.ref is None:
             return f"{alias!r} had no ref"
         if not git_cache.has_commit(source.url, source.ref):
-            return f"{alias!r} ref {source.ref} not cached"
-    try:
-        with compute.compute_hull(loaded, git_cache) as hull:
-            return lock.skill_hashes(hull)
-    except patch.PatchError as error:  # patches likely rewritten for the tips
-        failed = " and ".join(
-            what
-            for what, found in [
-                ("patches fail", error.failures),
-                ("hidden characters", error.hidden),
-            ]
-            if found
+            return (
+                f"{alias!r} ref {source.ref} is not in the cache; likely its branch "
+                "not fetched since it was pushed, history rewritten upstream, or a "
+                "ref set to a commit on no branch, such as a tag's"
+            )
+    return None
+
+
+def _print_diff(
+    previous: tuple[Hull, dict[SkillId, str]] | str,
+    hull: Hull,
+    new: dict[SkillId, str],
+) -> bool:
+    """`+`, `-` or `~` per skill added, removed or changed, by skill ID; under each
+    `+` and `~`, its files that differ. Whether it marked a skill `+` or `~`."""
+    if isinstance(previous, str):
+        print(f"no previous hull to compare ({previous})")
+        return False
+    old_hull, old = previous
+    lines = []
+    marked = False
+    old_rewrites, new_rewrites = rename.rewrites(old_hull), rename.rewrites(hull)
+    for skill in sorted(old.keys() | new.keys()):
+        if old.get(skill) == new.get(skill):
+            continue
+        if skill not in new:
+            lines.append(f"- {skill}")
+            continue
+        marked = True
+        lines.append(f"{'+' if skill not in old else '~'} {skill}")
+        before = (
+            deployed.deployed_files(old_hull.skills[skill], old_rewrites.get(skill, {}))
+            if skill in old
+            else {}
         )
-        if error.other:  # an error that is no patch's: that one matters
-            return f"the current refs do not resolve: {failed} there; {error.other}"
-        return f"{failed} at the current refs"
-    except (SkillGraftError, OSError) as error:  # the update itself is still fine
-        return f"the current refs do not resolve: {error}"
-
-
-def _print_diff(old: dict[SkillId, str] | str, new: dict[SkillId, str]) -> None:
-    """`+`, `-` or `~` per skill added, removed or changed, by skill ID."""
-    if isinstance(old, str):
-        print(f"no previous hull to compare ({old})")
-        return
-    lines = [
-        f"{mark} {skill}"
-        for skill in sorted(old.keys() | new.keys())
-        for mark in ["+" if skill not in old else "-" if skill not in new else "~"]
-        if old.get(skill) != new.get(skill)
-    ]
+        after = deployed.deployed_files(hull.skills[skill], new_rewrites.get(skill, {}))
+        lines += [f"  {line}" for line in deployed.summary(before, after)]
     print(
         "\n".join(["hull (+ added, - removed, ~ changed):", *lines])
         if lines
         else "hull unchanged"
     )
+    return marked
 
 
 def _write_refs(refs: dict[str, str]) -> None:

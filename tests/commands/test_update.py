@@ -9,7 +9,7 @@ from conftest import FakeApm, Upstream, make_patch, skill, vendored, write_confi
 
 from skill_graft.cli import main
 from skill_graft.infra import cache, paths
-from skill_graft.pipeline import config
+from skill_graft.pipeline import config, deployed
 
 Capsys: TypeAlias = pytest.CaptureFixture[str]
 
@@ -528,7 +528,13 @@ def test_skill_added_upstream(upstream: Upstream, capsys: Capsys) -> None:
     code, out, _ = update(capsys)
 
     assert code == 0
-    assert diff_lines(out) == [LEGEND, "+ mp/grilling", "~ mp/tdd"]
+    assert diff_lines(out) == [
+        LEGEND,
+        "+ mp/grilling",
+        "  SKILL.md (new, 2 bytes)",
+        "~ mp/tdd",
+        "  SKILL.md (changed, 2 -> 10 bytes)",
+    ]
 
 
 def test_skill_dropped_upstream(upstream: Upstream, capsys: Capsys) -> None:
@@ -541,7 +547,13 @@ def test_skill_dropped_upstream(upstream: Upstream, capsys: Capsys) -> None:
 
     code, out, _ = update(capsys)
 
-    assert code == 0 and "- mp/grilling" in diff_lines(out)
+    assert code == 0
+    assert diff_lines(out) == [
+        LEGEND,
+        "- mp/grilling",
+        "~ mp/tdd",
+        "  SKILL.md (changed, 10 -> 2 bytes)",
+    ]
 
 
 def test_nothing_changed(upstream: Upstream, capsys: Capsys) -> None:
@@ -552,9 +564,10 @@ def test_nothing_changed(upstream: Upstream, capsys: Capsys) -> None:
     )
     main(["build", "--no-install"])
 
-    code, out, _ = update(capsys)
+    code, out, _ = update(capsys, "--dry-run")
 
-    assert code == 0 and diff_lines(out) == ["hull unchanged"]
+    assert code == 0 and diff_lines(out)[0] == "hull unchanged"
+    assert "review:" not in out
 
 
 def test_old_refs_unresolvable(upstream: Upstream, capsys: Capsys) -> None:
@@ -582,7 +595,11 @@ def test_old_ref_not_cached(upstream: Upstream, capsys: Capsys) -> None:
     code, out, _ = update(capsys)
 
     assert code == 0
-    assert "no previous hull to compare" in out and "not cached" in out
+    assert (
+        f"no previous hull to compare ('mp' ref {missing} is not in the cache; "
+        "likely its branch not fetched since it was pushed, history rewritten "
+        "upstream, or a ref set to a commit on no branch, such as a tag's)"
+    ) in out
     assert snapshot(repos) == before  # nothing fetched
 
 
@@ -849,3 +866,76 @@ def test_hidden_characters_at_the_current_refs(
 
     assert code == 0
     assert "no previous hull to compare (hidden characters at the current refs)" in out
+
+
+def test_file_lines(upstream: Upstream, capsys: Capsys) -> None:
+    old = upstream.commit({"tdd/SKILL.md": "x" * 119 + "\n"})
+    upstream.commit({"tdd/SKILL.md": "x" * 179 + "\n", "tdd/run.sh": "y" * 39 + "\n"})
+    (upstream.path / "tdd" / "run.sh").chmod(0o755)
+    upstream.commit({})
+    write_config(
+        'entries = ["mp/tdd"]\n' + git_source("mp", upstream, f'ref = "{old}"\n')
+    )
+    main(["build", "--no-install"])
+
+    code, out, _ = update(capsys)
+
+    assert code == 0
+    assert diff_lines(out) == [
+        LEGEND,
+        "~ mp/tdd",
+        "  SKILL.md (changed, 120 -> 180 bytes)",
+        "  run.sh (new, 40 bytes) (now executable)",
+    ]
+
+
+def test_hint(upstream: Upstream, capsys: Capsys) -> None:
+    old = upstream.commit({"tdd/SKILL.md": "1\n"})
+    upstream.commit({"tdd/SKILL.md": "2\n"})
+    write_config(
+        'entries = ["mp/tdd"]\n' + git_source("mp", upstream, f'ref = "{old}"\n')
+    )
+    main(["build", "--no-install"])
+
+    code, out, _ = update(capsys, "mp", "--dry-run")
+
+    assert code == 0
+    assert out.splitlines()[-2:] == [
+        "review: skill-graft update mp --dry-run --diff <file>",
+        "dry run: skill-graft.toml and skill-graft.lock not written",
+    ]
+
+
+def test_no_hint_after_a_real_update(upstream: Upstream, capsys: Capsys) -> None:
+    old = upstream.commit({"tdd/SKILL.md": "1\n"})
+    upstream.commit({"tdd/SKILL.md": "2\n"})
+    write_config(
+        'entries = ["mp/tdd"]\n' + git_source("mp", upstream, f'ref = "{old}"\n')
+    )
+    main(["build", "--no-install"])
+
+    code, out, _ = update(capsys)
+
+    assert code == 0 and "~ mp/tdd" in out and "review:" not in out
+
+
+def test_error_while_both_hulls_are_open(
+    upstream: Upstream, capsys: Capsys, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    old = upstream.commit({"tdd/SKILL.md": "1\n"})
+    upstream.commit({"tdd/SKILL.md": "2\n"})
+    file = write_config(
+        'entries = ["mp/tdd"]\n' + git_source("mp", upstream, f'ref = "{old}"\n')
+    )
+    main(["build", "--no-install"])
+    before = file.read_bytes()
+
+    def fail(old: object, new: object) -> list[str]:
+        raise OSError("disk gone")
+
+    monkeypatch.setattr(deployed, "summary", fail)
+
+    code, out, err = update(capsys)
+
+    assert code == 1 and "skill-graft: disk gone" in err
+    assert "no previous hull" not in out and file.read_bytes() == before

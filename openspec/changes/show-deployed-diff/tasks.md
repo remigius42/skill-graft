@@ -38,7 +38,7 @@ diff** and **Hull digest** are this branch's first commit.
 
 ## 3. update
 
-- [ ] 3.1 Keep both **Hulls** open in `_update` (`_previous` a context manager that works out its reason inside its
+- [x] 3.1 Keep both **Hulls** open in `_update` (`_previous` a context manager that works out its reason inside its
   `try` and yields outside it); print each `+` and `~` **Skill**'s summary under its line, building views for those
   **Skills** only; reword "not cached";
   in a dry run without `--diff` that marks `+` or `~`, print the hint with the given aliases before `dry run:`. Update
