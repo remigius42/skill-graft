@@ -2,13 +2,12 @@
 
 import hashlib
 import os
-import stat
 from pathlib import Path
 
 import tomlkit
 
 from skill_graft.infra import files, paths
-from skill_graft.pipeline import rename
+from skill_graft.pipeline import deployed, rename
 from skill_graft.pipeline.config import Config, GitSource, SkillId
 from skill_graft.pipeline.hull import Hull
 
@@ -89,23 +88,14 @@ def skill_hashes(hull: Hull) -> dict[SkillId, str]:
 
 
 def folder_hash(folder: Path, overrides: dict[Path, bytes] | None = None) -> str:
-    """SHA-256 of the folder as vendored: each file's path, exec bit and bytes.
-
-    Symlinks are followed, as the copy does; `.git` is skipped, as it is not copied.
-    A file in `overrides`, by path relative to `folder`, is hashed with its bytes.
-    """
-    overrides = overrides or {}
+    """SHA-256 of the folder as vendored: each file's path, exec bit and bytes,
+    as `deployed.deployed_files` reads them, `overrides` in place."""
     digest = hashlib.sha256()
-    for relative, file in sorted(
-        (b"/".join(os.fsencode(part) for part in f.relative_to(folder).parts), f)
-        for f in files.skill_entries(folder)
-        if not f.is_dir()
-    ):
-        content = overrides.get(file.relative_to(folder))
-        if content is None:
-            content = file.read_bytes()
-        executable = b"1" if file.stat().st_mode & stat.S_IXUSR else b"0"
-        digest.update(b"\0".join([relative, executable, b"%d" % len(content), b""]))
+    for relative, (content, executable) in deployed.deployed_files(
+        folder, overrides or {}
+    ).items():
+        fields = [os.fsencode(relative), b"1" if executable else b"0"]
+        digest.update(b"\0".join([*fields, b"%d" % len(content), b""]))
         digest.update(content)
     return f"sha256:{digest.hexdigest()}"
 

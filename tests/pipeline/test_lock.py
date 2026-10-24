@@ -177,6 +177,23 @@ def renaming(renames: str) -> None:
     )
 
 
+def test_hash_value_is_stable(tmp_path: Path) -> None:
+    folder = skill(tmp_path / "tdd", "# s\n")
+    (folder / "sub").mkdir()
+    (folder / "sub" / "run.sh").write_text("echo\n")
+    (folder / "sub" / "run.sh").chmod(0o755)
+    (folder / ".git").mkdir()
+    (folder / ".git" / "HEAD").write_text("x\n")
+    (folder / "link.md").symlink_to("SKILL.md")
+
+    assert lock.folder_hash(folder) == (
+        "sha256:6a8c71ed184542457c2c601c1c755bfae8244a0034d488bfb9a541da9638c75d"
+    )
+    assert lock.folder_hash(folder, {Path("SKILL.md"): b"# t\n"}) == (
+        "sha256:766a8278496236e3a888b1a7ddf33a861b85f515c476070f281d67153b5631be"
+    )
+
+
 def test_renamed_skill(home: Path) -> None:
     skill(home / "mp" / "tdd", "/grilling\n")
     skill(home / "mp" / "grilling")

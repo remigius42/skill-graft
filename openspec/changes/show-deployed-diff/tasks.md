@@ -5,7 +5,7 @@ diff** and **Hull digest** are this branch's first commit.
 
 ## 1. The deployed view
 
-- [ ] 1.1 In a new `pipeline/deployed.py`, `deployed_files(folder, overrides)`: each file's path, bytes (the override's
+- [x] 1.1 In a new `pipeline/deployed.py`, `deployed_files(folder, overrides)`: each file's path, bytes (the override's
   where given) and executable bit, walked as `lock.folder_hash` walks (symlinks followed, `.git` skipped); rebuild
   `lock.folder_hash` on it. Test in `tests/pipeline/test_deployed.py` (an override replaces bytes, the bit is read, a
   symlink followed) and that `tests/pipeline/test_lock.py`'s hashes are unchanged; verify the tests fail first, then
