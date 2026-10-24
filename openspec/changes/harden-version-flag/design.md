@@ -32,15 +32,17 @@ that is not UTF-8, and on 3.12+ warns that a missing `Version` will raise `KeyEr
   which CPython deprecates for a missing key and will make a `KeyError`. The typed `PackageMetadata` protocol has no
   `.get`, but has `__contains__`.
 - **`unknown` for the version, origin kept.** Keeps the `skill-graft <version>` shape a script may split on. Applies
-  when no distribution is found, its metadata cannot be read or decoded, or its version is missing or not printable
-  ASCII. When the distribution was found, `_origin` still runs: the commit is what a bug report needs most. Reverses
-  `add-version-flag`'s "no fallback for a missing installation": running from `src/` with `PYTHONPATH` is rare, but a
-  traceback for `--version` is worse than a word.
-- **A revision must be printable ASCII** (`isascii() and isprintable()`). It rejects control characters (newline,
-  escape), format characters (bidi overrides, zero-width), and anything a non-UTF-8 standard output cannot encode, so
-  `print` cannot raise `UnicodeEncodeError`. One that fails drops to `(<commit>)`: the commit still pins the code.
-  Alternatives: escape the characters (`repr`), noise in a bug report for a record no honest installer writes; or
-  print with `errors="backslashreplace"`, which keeps non-ASCII names but adds a second write path for a rare case.
+  when no distribution is found, its metadata cannot be read or decoded, or its version is missing or, stripped of the
+  whitespace the METADATA parser keeps, not printable ASCII without spaces. When the distribution was found, `_origin`
+  still runs: the commit is what a bug report needs most. Reverses `add-version-flag`'s "no fallback for a missing
+  installation": running from `src/` with `PYTHONPATH` is rare, but a traceback for `--version` is worse than a word.
+- **A revision must be printable ASCII without spaces** (`[!-~]+`). It rejects control characters (newline, escape),
+  format characters (bidi overrides, zero-width), anything a non-UTF-8 standard output cannot encode, so `print` cannot
+  raise `UnicodeEncodeError`, and spaces, so `main @ abc1234` cannot pose as the commit; git refuses spaces in ref names
+  anyway. The version passes the same check, keeping `skill-graft <version>` two words. One that fails drops to
+  `(<commit>)`: the commit still pins the code. Alternatives: escape the characters (`repr`), noise in a bug report for
+  a record no honest installer writes; or print with `errors="backslashreplace"`, which keeps non-ASCII names but adds a
+  second write path for a rare case.
 - **A commit must match `[0-9a-fA-F]{7,}`.** PEP 610's `commit_id` is a hash; anything else (`abc) x`) would break the
   `(<revision> @ <commit>)` shape. One that fails is as unexpected as a missing one, so the version only.
 - **Tests run the script in `sysconfig.get_path("scripts")`.** That is where the installer put `skill-graft` for the

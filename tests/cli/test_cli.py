@@ -304,7 +304,16 @@ def test_version_of_a_branch_named_like_the_commit(
     assert run(["--version"], capsys)[1] == "skill-graft 0.2.0 (e2 @ e294a0e)\n"
 
 
-@pytest.mark.parametrize("revision", ["main\nfoo", "\x1b[2J", "main‮", "ブランチ"])
+@pytest.mark.parametrize(
+    "revision",
+    [
+        "main\nfoo",
+        "\x1b[2J",
+        "main\u202e",
+        "\u30d6\u30e9\u30f3\u30c1",
+        "main @ abc1234",
+    ],
+)
 def test_version_of_a_revision_not_printable_ascii(
     revision: str,
     capsys: pytest.CaptureFixture[str],
@@ -375,7 +384,10 @@ def test_version_of_unreadable_metadata(
 
 
 @pytest.mark.filterwarnings("error::DeprecationWarning")
-@pytest.mark.parametrize("version", [None, "0.2.0\n foo", "0.2.0\x1b[2J", "0.2.ü"])
+@pytest.mark.parametrize(
+    "version",
+    [None, "0.2.0\n foo", "0.2.0\x1b[2J", "0.2.\u00fc", "0.2.0 (main @ abc1234)"],
+)
 def test_version_of_an_odd_version(
     version: str | None,
     capsys: pytest.CaptureFixture[str],
@@ -383,6 +395,13 @@ def test_version_of_an_odd_version(
 ) -> None:
     install(monkeypatch, version)
     assert run(["--version"], capsys) == (0, "skill-graft unknown\n", "")
+
+
+def test_version_padded_with_whitespace(
+    capsys: pytest.CaptureFixture[str], monkeypatch: pytest.MonkeyPatch
+) -> None:
+    install(monkeypatch, " 0.2.0 ")
+    assert run(["--version"], capsys) == (0, "skill-graft 0.2.0\n", "")
 
 
 def test_unknown_version_of_a_git_install(

@@ -5,23 +5,22 @@ Apply with the `tdd` skill: each task red-green-refactor, one commit. Tests fake
 
 ## 1. Never fail
 
-- [x] 1.1 In `_origin`, catch `OSError` and `RecursionError` beside `ValueError`; tests in `tests/cli/test_cli.py`:
-  the cli spec's "Unreadable record", a `read_text` raising `OSError` with `ELOOP` and with `EIO`, and a
-  `direct_url.json` nested 100 000 deep, each printing `skill-graft 0.2.0` and exiting 0; verify they fail first,
-  then pass
+- [x] 1.1 In `_origin`, catch `OSError` and `RecursionError` beside `ValueError`; tests in `tests/cli/test_cli.py`: the
+  cli spec's "Unreadable record", a `read_text` raising `OSError` with `ELOOP` and with `EIO`, and a `direct_url.json`
+  nested 100 000 deep, each printing `skill-graft 0.2.0` and exiting 0; verify they fail first, then pass
 - [x] 1.2 In `_Version`, read `Version` from `distribution.metadata` only when present, and let it read `unknown` when
-  `metadata.distribution` raises `PackageNotFoundError`, reading the metadata raises `OSError` or `ValueError`, or
-  the version is missing or not printable ASCII; keep the origin whenever a distribution was found; tests: "Not
-  installed", "Unreadable metadata" (`OSError`, a METADATA holding byte `0xff`, no `Version`, a version holding a
-  newline) and "Unknown version from git", each exiting 0, with `-W error::DeprecationWarning` raising nothing; verify
-  they fail first, then pass
+  `metadata.distribution` raises `PackageNotFoundError`, reading the metadata raises `OSError` or `ValueError`, or the
+  version, stripped, is missing or not printable ASCII without spaces; keep the origin whenever a distribution was
+  found; tests: "Not installed", "Unreadable metadata" (`OSError`, a real METADATA file holding byte `0xff`, no
+  `Version`, a version holding a newline or a space), "Version padded with whitespace" and "Unknown version from git",
+  each exiting 0, with `-W error::DeprecationWarning` raising nothing; verify they fail first, then pass
 
 ## 2. One printable line
 
-- [x] 2.1 Drop a `requested_revision` that is not printable ASCII, and add nothing for a `commit_id` that does not
-  match `[0-9a-fA-F]{7,}`; tests: "Revision that is not printable ASCII" (`main\nfoo`, `\x1b[2J`, U+202E, `ブランチ`)
-  printing `skill-graft 0.2.0 (e294a0e)`, and "Commit that is not a hash" (`abc) x`, `\x1b[2J` followed by hex)
-  printing `skill-graft 0.2.0`; verify they fail first, then pass
+- [x] 2.1 Drop a `requested_revision` that is not printable ASCII without spaces, and add nothing for a `commit_id` that
+  does not match `[0-9a-fA-F]{7,}`; tests: "Revision that is not printable ASCII without spaces" (`main\nfoo`,
+  `\x1b[2J`, U+202E, `ブランチ`, `main @ abc1234`) printing `skill-graft 0.2.0 (e294a0e)`, and "Commit that is not a hash"
+  (`abc) x`, `\x1b[2J` followed by hex) printing `skill-graft 0.2.0`; verify they fail first, then pass
 
 ## 3. Tests of the real installation
 

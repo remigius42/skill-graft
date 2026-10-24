@@ -72,22 +72,20 @@ class _Version(argparse.Action):
 
 def _version(distribution: metadata.Distribution) -> str:
     """The version its metadata names, or `unknown` when it cannot be read or is not
-    printable ASCII."""
+    printable ASCII without spaces."""
     try:
         fields = distribution.metadata
     except (OSError, ValueError):  # unreadable or undecodable
         return "unknown"
     # Indexing a missing field is deprecated, to raise KeyError.
-    version = fields["Version"] if "Version" in fields else None
+    version = fields["Version"].strip() if "Version" in fields else None
     return version if _printable(version) else "unknown"
 
 
 def _printable(text: object) -> TypeGuard[str]:
-    """Whether `text` is a non-empty string of printable ASCII, safe on one line of any
-    terminal."""
-    return (
-        isinstance(text, str) and text.isascii() and text.isprintable() and text != ""
-    )
+    """Whether `text` is a non-empty string of printable ASCII without spaces: one
+    word, safe on one line of any terminal."""
+    return isinstance(text, str) and re.fullmatch(r"[!-~]+", text) is not None
 
 
 def _origin(distribution: metadata.Distribution) -> str:
