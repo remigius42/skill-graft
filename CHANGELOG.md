@@ -7,6 +7,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+
+- `skill-graft --version` prints the installed version; installed from git, also the commit, and the branch or tag
+  if one was named: `skill-graft 0.2.0 (main @ e294a0e)`
+
 ## [0.2.0] - 2026-10-23
 
 ### Added

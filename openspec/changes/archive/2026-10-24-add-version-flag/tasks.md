@@ -24,6 +24,6 @@ distribution with `monkeypatch` on `importlib.metadata`, whatever installer ran 
 
 ## 3. Changelog
 
-- [ ] 3.1 Add an entry to `CHANGELOG.md` under `[Unreleased]`, `### Added`: `skill-graft --version` prints the
+- [x] 3.1 Add an entry to `CHANGELOG.md` under `[Unreleased]`, `### Added`: `skill-graft --version` prints the
   version, and for a git install the commit. Per `AGENTS.md` it lands in the archive commit; check the box there;
   verify `pre-commit run --all-files`
