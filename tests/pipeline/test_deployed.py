@@ -453,3 +453,9 @@ def test_byte_and_character_of_one_number_read_apart(char: str, shown: str) -> N
     lines = diff_of("notes.txt", f"a{char}\n".encode(), b"a" + stray + b"\n")
 
     assert hunks(lines) == ["@@ -1 +1 @@", f"-a{shown}", f"+a\\x{ord(char):02x}", ""]
+
+
+def test_zero_width_no_break_space_escaped() -> None:
+    lines = diff_of("SKILL.md", b"hi\n", "\N{ZERO WIDTH NO-BREAK SPACE}hi\n".encode())
+
+    assert hunks(lines) == ["@@ -1 +1 @@", "-hi", "+\\ufeff" + "hi", ""]

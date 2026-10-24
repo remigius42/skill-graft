@@ -120,9 +120,17 @@ _CONTEXT = 3
 _MAX_BYTES = 1_000_000
 
 # What an editor could break a line at or show as nothing, escaped in a line: every
-# control character but tab, the line and paragraph separators, hidden characters;
+# control character but tab, the line and paragraph separators, hidden characters,
+# the zero-width no-break space, in neither of APM's sets the hidden check copies;
 # and each byte that cannot be decoded, which `surrogateescape` maps to U+DC80-DCFF.
-_BREAKS = [(0x00, 0x08), (0x0A, 0x1F), (0x7F, 0x9F), (0x2028, 0x2029), (0xDC80, 0xDCFF)]
+_BREAKS = [
+    (0x00, 0x08),
+    (0x0A, 0x1F),
+    (0x7F, 0x9F),
+    (0x2028, 0x2029),
+    (0xFEFF, 0xFEFF),
+    (0xDC80, 0xDCFF),
+]
 _ESCAPED = re.compile(
     "[" + "".join(f"{chr(a)}-{chr(b)}" for a, b in _BREAKS) + "]|"
     f"{hidden.CRITICAL_CHARS.pattern}|{hidden.WARNING_CHARS.pattern}"
