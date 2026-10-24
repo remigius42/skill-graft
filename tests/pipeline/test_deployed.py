@@ -413,3 +413,19 @@ def test_backslash_kept_single_when_nothing_reads_alike() -> None:
 
     assert lines[0] == "diff --git a/run.sh b/run.sh"
     assert hunks(lines) == ["@@ -1 +1,2 @@", " echo \\n", "+echo \\x80", ""]
+
+
+def test_encoding_change_shown_byte_for_byte() -> None:
+    lines = diff_of("a.txt", b"hi\n", "hi\n".encode("utf-16"))
+
+    assert (
+        lines[0] == "# a.txt: shown byte for byte, as its two sides read alike as text"
+    )
+    assert hunks(lines) == [
+        "@@ -1 +1,2 @@",
+        "-hi",
+        "+\\xff\\xfe" + "h\\x00i\\x00",  # the byte order mark, then UTF-16LE
+        "+\\x00",
+        "\\ No newline at end of file",
+        "",
+    ]

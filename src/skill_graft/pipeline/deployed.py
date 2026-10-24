@@ -155,6 +155,10 @@ def _file_diff(
         out += [f"old mode {_mode(before[1])}\n", f"new mode {_mode(after[1])}\n"]
     a = _lines(path, before[0]) if before else []
     b = _lines(path, after[0]) if after else []
+    if before and after and before[0] != after[0] and a == b:  # re-encoded
+        a, b = _split(_raw(before[0])), _split(_raw(after[0]))
+        note = "shown byte for byte, as its two sides read alike as text"
+        out.insert(0, f"# {quote(path)}: {note}\n")
     escaped = _ESCAPED
     if _alike(a, b):  # a typed `\x80` and a stray byte: only the doubling tells
         escaped = _DOUBLED
@@ -183,8 +187,16 @@ def _mode(executable: bool) -> str:
 def _lines(path: str, data: bytes) -> list[str]:
     """`data` as text, split at line feeds only, each line with its own."""
     text = hidden.decode(data, path.lower().endswith(".md"), "surrogateescape")
-    if text is None:
-        text = data.decode("utf-8", errors="surrogateescape")
+    return _split(_raw(data) if text is None else text)
+
+
+def _raw(data: bytes) -> str:
+    """`data` as lenient UTF-8, each byte that cannot be decoded kept apart."""
+    return data.decode("utf-8", errors="surrogateescape")
+
+
+def _split(text: str) -> list[str]:
+    """`text` split at line feeds only, each line with its own."""
     *lines, last = text.split("\n")
     return [line + "\n" for line in lines] + ([last] if last else [])
 
