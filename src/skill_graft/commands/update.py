@@ -214,13 +214,14 @@ def _previous(
     outside its `try`, so an error in the caller's `with` is never taken for one.
     """
     reason = _uncached(selected, git_cache)
-    stack = ExitStack()
+    opened = ExitStack()
     if reason is None:
         try:
-            hull = stack.enter_context(compute.compute_hull(loaded, git_cache))
-            hashes = lock.skill_hashes(hull)
+            with ExitStack() as stack:  # closed on any error, Ctrl-C too
+                hull = stack.enter_context(compute.compute_hull(loaded, git_cache))
+                hashes = lock.skill_hashes(hull)
+                opened = stack.pop_all()  # kept open for the caller's `with`
         except patch.PatchError as error:  # patches likely rewritten for the tips
-            stack.close()
             failed = " and ".join(
                 what
                 for what, found in [
@@ -236,15 +237,11 @@ def _previous(
             else:
                 reason = f"{failed} at the current refs"
         except (SkillGraftError, OSError) as error:  # the update itself is still fine
-            stack.close()
             reason = f"the current refs do not resolve: {error}"
-        except BaseException:  # Ctrl-C too: the old hull's copies go now
-            stack.close()
-            raise
     if reason is not None:
         yield reason
         return
-    with stack:
+    with opened:
         yield hull, hashes
 
 
