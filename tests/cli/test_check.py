@@ -59,6 +59,7 @@ def test_reader_answers_the_probe() -> None:
     report = prompt.index("## Report")
     assert prompt.index("`reader-ok`") < report
     assert "In `full` and `uses` mode, reply" in prompt[report:]
+    assert "## Uses\n\nIn `full` and `uses` mode, find" in prompt
 
 
 def test_patcher_only_edits() -> None:
