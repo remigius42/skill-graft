@@ -51,7 +51,8 @@ Before any **Skill** text is read, one probe, a reader run as every reader runs 
 lapsed account, before any reader starts. Outside Claude Code the skill first says the readers and the patcher run on
 your Claude Code account, and probes only on your yes. With no `claude` on `PATH`, your account declined, or a failed
 probe, it says the **Check** is unhardened and why, naming the probe's error, and reads in its own session only on
-your yes.
+your yes. Tried by hand in OpenCode 1.3.0 on DeepSeek V4.1 Flash: the main agent asked, the probe passed, and each
+**Skill** had its own reader.
 
 ## Residual risks
 
@@ -63,6 +64,9 @@ your yes.
 - **A file skipped as binary.** A file other than Markdown that holds a NUL byte and is not UTF-8, such as UTF-16 text
   without a byte order mark, is skipped. No Markdown file can be.
 - **Visible injection.** Readers are confined, not trusted: one can still misreport what a **Skill** says.
+- **Another harness's model.** The probe and the main agent's quarantine are steps in the skill's text, which the
+  harness's model may skip. In OpenCode 1.3.0, Big Pickle asked about the account, then skipped the probe and opened
+  **Skill** text itself; its readers still ran confined.
 - **A later Claude Code** could change what `--restricted` confines. The `injected` eval scenario
   (`evals/graft-check/`) catches that when the skill changes.
 - **Approval.** A **Patch** diff or fix written to look harmless can still win your yes; every approval rests on
