@@ -7,6 +7,24 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+
+- `update --diff <file>` writes the **Deployed diff**: each changed or added **Skill**'s text as deployed, **Patches**
+  and **Renames** applied, as a unified diff to read in an editor, never printed. Every control, format and separator
+  character, and every **Hidden character**, is escaped, so no line hides or passes for another. It writes only a new
+  `*.diff` file or one it wrote before, never inside an `.apm` folder or a **Skill**'s folder
+- `update --expect <digest>` updates only to the **Hull** with that **Hull digest**: a dry run with `--diff` ends with
+  the `apply:` line to run, and a push, a path **Source**'s edit, a **Patch** or a **Rename** since then makes it
+  refuse, writing nothing
+
+### Changed
+
+- `update` names each changed file under each changed or added **Skill**, with its sizes and executable bit, never
+  its text; a dry run without `--diff` ends with the `review:` command to run
+- `update` names each **Skill** edited since `skill-graft.lock` was written, whose earlier text no diff can show, and
+  then prints no `apply:` line
+- An old **Ref** missing from the cache is named as such, with its likely causes, instead of "not cached"
+
 ## [0.2.1] - 2026-10-24
 
 ### Added

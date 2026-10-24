@@ -91,7 +91,7 @@ diff** and **Hull digest** are this branch's first commit.
 
 ## 5. Changelog
 
-- [ ] 5.1 Add an entry to `CHANGELOG.md` under `[Unreleased]`: `update` names each changed file of each changed or
+- [x] 5.1 Add an entry to `CHANGELOG.md` under `[Unreleased]`: `update` names each changed file of each changed or
   added **Skill**; `--diff <file>` writes its **Deployed diff**;
   `update --expect <digest>` applies only the **Hull** vetted; a **Skill** edited since the lock was written is named;
   an old **Ref** gone from the cache's branches is named so. Per `AGENTS.md` it lands in the archive commit; check the
