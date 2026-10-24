@@ -1,4 +1,5 @@
 import subprocess
+from importlib import metadata
 from pathlib import Path
 
 import pytest
@@ -149,3 +150,47 @@ def test_into_with_an_empty_value(
     assert (code, out) == (2, "")
     assert "--into" in err and "package:" not in err
     assert sorted(home.iterdir()) == before
+
+
+class FakeDistribution:
+    """An installed skill-graft, as `importlib.metadata` finds it."""
+
+    def __init__(self, version: str, direct_url: str | None = None) -> None:
+        self.version = version
+        self.direct_url = direct_url
+
+    def read_text(self, filename: str) -> str | None:
+        return self.direct_url if filename == "direct_url.json" else None
+
+
+def install(
+    monkeypatch: pytest.MonkeyPatch, version: str, direct_url: str | None = None
+) -> None:
+    """Fakes the installed distribution, whatever installer ran the suite."""
+    monkeypatch.setattr(
+        metadata, "distribution", lambda name: FakeDistribution(version, direct_url)
+    )
+
+
+def test_version_of_a_release(
+    capsys: pytest.CaptureFixture[str], monkeypatch: pytest.MonkeyPatch
+) -> None:
+    install(monkeypatch, "0.2.0")
+    assert run(["--version"], capsys) == (0, "skill-graft 0.2.0\n", "")
+
+
+def test_version_never_reads_the_config(
+    capsys: pytest.CaptureFixture[str], monkeypatch: pytest.MonkeyPatch
+) -> None:
+    install(monkeypatch, "0.2.0")
+    project = Path.cwd() / "project"
+    (project / ".apm" / "skill-graft").mkdir(parents=True)
+    (project / ".apm" / "skill-graft" / "skill-graft.toml").write_text("[not toml\n")
+    monkeypatch.chdir(project)
+    assert run(["--version"], capsys) == (0, "skill-graft 0.2.0\n", "")
+
+
+def test_help_lists_version(capsys: pytest.CaptureFixture[str]) -> None:
+    code, out, _ = run(["--help"], capsys)
+    assert code == 0
+    assert "--version" in out

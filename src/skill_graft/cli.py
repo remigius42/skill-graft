@@ -8,6 +8,7 @@ import shutil
 import sys
 import textwrap
 from collections.abc import Callable, Generator
+from importlib import metadata
 from pathlib import Path
 from typing import Any, NoReturn
 
@@ -50,6 +51,18 @@ class _Command(argparse.ArgumentParser):
         super().__init__(*args, **kwargs)
 
 
+class _Version(argparse.Action):
+    """Prints the installed version and exits, read only when asked for."""
+
+    def __init__(self, option_strings: list[str], dest: str, **kwargs: Any) -> None:
+        super().__init__(option_strings, dest, nargs=0, **kwargs)
+
+    def __call__(self, parser: argparse.ArgumentParser, *_: Any) -> NoReturn:
+        distribution = metadata.distribution("skill-graft")
+        print(f"skill-graft {distribution.version}")
+        parser.exit()
+
+
 class _Parser(_Command):
     """The top-level parser: a usage error also lists the commands."""
 
@@ -71,6 +84,9 @@ def _parser() -> tuple[_Parser, dict[str, argparse.ArgumentParser]]:
             "is the nearest .apm/skill-graft/ above the working folder, else "
             "~/.apm/skill-graft/."
         ),
+    )
+    parser.add_argument(
+        "--version", action=_Version, help="print the installed version and exit"
     )
     commands = parser.add_subparsers(
         dest="command", metavar="command", parser_class=_Command
