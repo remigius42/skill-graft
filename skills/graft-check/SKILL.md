@@ -213,17 +213,27 @@ Take the fixes one at a time: ask, and apply only on yes. Run only the commands 
      cat <err-file> <out-file> | LC_ALL=C tr -cd '\040-\176\n' | grep -m 1 . | cut -c 1-200
      ```
 
-  1. `(cd <work> && cp -r edited <base-dir>)`, then in `<base-dir>`, `LC_ALL=C diff -ruN base/ edited/ > change.patch`;
-     its exit code 1 means it wrote a diff, 0 that the patcher changed nothing, which ends this fix.
-
-  1. Show the changed lines per file, without opening the diff:
+  1. `(cd <work> && cp -r edited <base-dir>)`. Then, in `<base-dir>`, count the file names holding a control
+     character, such as a line break, which a diff can write across lines:
 
      ```sh
-     awk '/^diff /{f=substr($NF,8); n[f]} /^(\+\+\+|---) /{next} /^\+/{a[f]++} /^-/{r[f]++}
-       END{for (f in n) printf "%s: +%d -%d\n", f, a[f], r[f]}' change.patch
+     LC_ALL=C find base edited -name '*[[:cntrl:]]*' | wc -l
      ```
 
-     Give the user the path of `change.patch` in `<base-dir>` and ask them to read it. Only once they have read it and
+     A count above 0 ends this fix: a **Patch** of such a name could not be summed up safely.
+
+  1. In `<base-dir>`, `LC_ALL=C diff -ruN base/ edited/ > change.patch`; its exit code 1 means it wrote a diff, 0 that
+     the patcher changed nothing, which ends this fix.
+
+  1. Sum the diff up, without opening it. Only numbers come back: no file name the patcher chose.
+
+     ```sh
+     awk '/^diff /{f++; h=2; next} /^Binary files /{f++; b++; next} h{h--; next} /^\+/{a++} /^-/{r++}
+       END{printf "files: %d, lines: +%d -%d, binary: %d\n", f, a, r, b}' change.patch
+     ```
+
+     A `binary` count above 0 ends this fix: a **Patch** cannot hold a binary file. Otherwise show the summary, give
+     the user the path of `change.patch` in `<base-dir>` and ask them to read it. Only once they have read it and
      accept: `mkdir -p <package>/patches/ && cp change.patch <package>/patches/<n>.patch`.
 
   1. Append `"patches/<n>.patch"` to the **Skill**'s list under `[patches]` in the **Package**'s `skill-graft.toml`,

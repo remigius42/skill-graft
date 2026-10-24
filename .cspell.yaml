@@ -17,6 +17,7 @@ words:
   - casefold
   - chdir
   - CLAUDECODE
+  - cntrl
   - commitlint
   - conftest
   - copymode

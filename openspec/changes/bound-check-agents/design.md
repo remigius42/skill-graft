@@ -68,12 +68,19 @@ Checked against `skills/graft-check/` on main (`8c0bad8`, `probe-check-readers` 
   `diff -ruN` output every hunk line starts with a space, `+`, `-`, `@` or `\`, so a line starting with `diff` and a
   space in column 0 begins a file, its next two lines are the `---` and `+++` headers, skipped by position, and a line
   starting with `Binary files` and a space is a binary file. A removed `-- x` or an added `++ x` is counted, and a name
-  with spaces or quotes, however diff writes it, is never read. Counting from the patch itself keeps the summary and the
-  stored **Patch** in agreement: a file `diff -ruN` leaves out, such as an empty new one, is in neither. Alternatives:
-  per-file lines with names bounded and quoted; rejected after trying `git diff --no-index --numstat`, which disagrees
-  with `diff -ruN` on empty files and on how far into a file a NUL makes it binary, follows the user's `diff.orderFile`
-  and global attributes, and C-quotes names in forms a 200-character cut can split. Parsing names from `change.patch`
-  instead: GNU diffutils 3.12 quotes a name with a space or tab, BSD diff does not.
+  with spaces or quotes, quoted by GNU diff or not by BSD diff, is never read. Counting from the patch itself keeps the
+  summary and the stored **Patch** in agreement: a file `diff -ruN` leaves out, such as an empty new one, is in neither.
+  Alternatives: per-file lines with names bounded and quoted; rejected after trying `git diff --no-index --numstat`,
+  which disagrees with `diff -ruN` on empty files and on how far into a file a NUL makes it binary, follows the user's
+  `diff.orderFile` and global attributes, and C-quotes names in forms a 200-character cut can split. Parsing names from
+  `change.patch` instead: GNU diffutils 3.12 quotes a name with a space or tab, BSD diff does not.
+- **A name holding a control character ends the fix.** Skipping headers by position needs each header on one line. GNU
+  diffutils 3.12 C-quotes a name holding a line break; BSD diff writes it raw, across lines, so a header line would
+  count as a changed one, and a name holding a line break then `Binary files` would fake a binary count. Before the
+  diff, `LC_ALL=C find base edited -name '*[[:cntrl:]]*' | wc -l` counts such names, byte by byte like the diff; only a
+  number comes back, and above 0 ends the fix. No skill needs a control character in a file name. Alternative: count
+  from the hunk headers (`@@ -a,b +c,d @@`); rejected, as the file and binary counts would still read the `diff` and
+  `Binary files` lines.
 - **A binary file ends the fix.** `diff -ruN` writes one `Binary files … differ` line and no hunk for it, so the
   **Patch** could not carry it and `git apply` would refuse the line. A summary counting one ends that fix.
 - **Defaults: 30 turns per reader, 10 for the patcher.** A reader globs and reads its **Upstream** folder, its vendored

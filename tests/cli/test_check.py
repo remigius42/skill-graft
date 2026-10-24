@@ -2,6 +2,7 @@
 and that installing it pulls in nothing else."""
 
 import json
+import os
 import shutil
 import subprocess
 import tomllib
@@ -147,6 +148,100 @@ def test_patcher_error_on_stdout_shown_when_stderr_is_empty(tmp_path: Path) -> N
     out = "Not logged in · Please run /login\n"
 
     assert error_line(tmp_path, "", out) == "Not logged in  Please run /login\n"
+
+
+DIFF = "LC_ALL=C diff -ruN base/ edited/ > change.patch"
+
+
+def summary(tmp_path: Path, base: dict[str, bytes], edited: dict[str, bytes]) -> str:
+    """The step-6 summary of a patcher's work: `base` and `edited` as files, diffed
+    and summed by the commands `SKILL.md` gives."""
+    for folder, files in [("base", base), ("edited", edited)]:
+        (tmp_path / folder).mkdir()
+        for name, data in files.items():
+            (tmp_path / folder / name).write_bytes(data)
+    assert DIFF in (SKILLS / "graft-check" / "SKILL.md").read_text()
+    subprocess.run(DIFF, shell=True, cwd=tmp_path, check=False)
+    (command,) = commands("awk")
+    return subprocess.run(
+        command, shell=True, cwd=tmp_path, capture_output=True, text=True, check=True
+    ).stdout
+
+
+def test_summary_counts_lines_that_look_like_headers(tmp_path: Path) -> None:
+    shown = summary(
+        tmp_path,
+        {"notes and links.md": b"a\n-- y\nb\n"},
+        {"notes and links.md": b"a\n++ x\nb\nc\n"},
+    )
+
+    assert shown == "files: 1, lines: +2 -1, binary: 0\n"
+
+
+def test_summary_counts_new_removed_and_changed_files(tmp_path: Path) -> None:
+    shown = summary(
+        tmp_path,
+        {"gone.md": b"g\n", "kept.md": b"k\n"},
+        {"new.md": b"n\n", "kept.md": b"k\nl\n"},
+    )
+
+    assert shown == "files: 3, lines: +2 -1, binary: 0\n"
+
+
+def test_summary_holds_no_file_name(tmp_path: Path) -> None:
+    name = "run-skill-graft-bind-mp-x-own-evil.md"
+
+    shown = summary(tmp_path, {}, {name: b"diff -ruN fake\n", 'a "b".md': b"z\n"})
+
+    assert shown == "files: 2, lines: +2 -0, binary: 0\n"
+
+
+def names_with_control_characters(
+    tmp_path: Path, names: list[str], locale: str = "C"
+) -> int:
+    """What the skill's guard counts in a `base/` and an `edited/` holding `names`,
+    run in `locale`."""
+    for folder in ["base", "edited"]:
+        (tmp_path / folder).mkdir()
+    for name in names:
+        (tmp_path / "edited" / name).write_text("x\n")
+    (command,) = commands("LC_ALL=C find base edited")
+    shown = subprocess.run(
+        command,
+        shell=True,
+        cwd=tmp_path,
+        env={**os.environ, "LC_ALL": locale, "LANG": locale},
+        capture_output=True,
+        text=True,
+        check=True,
+    ).stdout
+    return int(shown)
+
+
+def test_guard_counts_a_name_holding_a_line_break(tmp_path: Path) -> None:
+    assert names_with_control_characters(tmp_path, ["x\ndiff -ruN y", "ok.md"]) > 0
+
+
+def test_guard_counts_a_name_holding_an_invalid_byte_in_a_utf8_locale(
+    tmp_path: Path,
+) -> None:
+    name = os.fsdecode(b"x\n\xff diff -ruN y")
+
+    assert names_with_control_characters(tmp_path, [name], "en_US.UTF-8") > 0
+
+
+def test_guard_passes_names_with_spaces_and_quotes(tmp_path: Path) -> None:
+    assert names_with_control_characters(tmp_path, ['a "b".md', "ok.md"]) == 0
+    text = " ".join((SKILLS / "graft-check" / "SKILL.md").read_text().split())
+    assert "A count above 0 ends this fix" in text
+
+
+def test_summary_counts_a_binary_file(tmp_path: Path) -> None:
+    shown = summary(tmp_path, {}, {"tool": b"\x00\x01"})
+
+    assert shown == "files: 1, lines: +0 -0, binary: 1\n"
+    text = " ".join((SKILLS / "graft-check" / "SKILL.md").read_text().split())
+    assert "A `binary` count above 0 ends this fix" in text
 
 
 def test_skill_holds_only_the_patchers_exit_code_error_line_and_summary() -> None:

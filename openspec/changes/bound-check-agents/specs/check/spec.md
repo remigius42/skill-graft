@@ -112,8 +112,9 @@ patches applied, into a base folder and a working copy, each in a new temporary 
 `--max-budget-usd` set to the **Package**'s `patcher-turns` and `patcher-budget-usd`, and the working copy's folder
 alone, edit the working copy, its reply discarded. A patcher that exits non-zero SHALL end that fix. It SHALL diff the
 base against the working copy, and show the diff's summary, counted from that diff, and its path; a summary counting a
-binary file SHALL end that fix, as a **Patch** cannot hold it. It SHALL add the **Patch** to the
-**Package** only once the user has read it and accepts.
+binary file SHALL end that fix, as a **Patch** cannot hold it. Before the diff, a file name holding a control
+character, in the base or the working copy, SHALL end that fix, counted with no name shown. It SHALL add the
+**Patch** to the **Package** only once the user has read it and accepts.
 
 #### Scenario: Patch declined after review
 
@@ -129,6 +130,11 @@ binary file SHALL end that fix, as a **Patch** cannot hold it. It SHALL add the 
 
 - **WHEN** the patcher, in `notes and links.md`, adds two lines, one reading `++ x`, and removes one reading `-- y`
 - **THEN** the summary reads `files: 1, lines: +2 -1, binary: 0`
+
+#### Scenario: A name holding a line break
+
+- **WHEN** the patcher writes a file whose name holds a line break followed by `diff -ruN x`
+- **THEN** that fix ends with no **Patch** written, and no file name reaches the main agent
 
 #### Scenario: A binary file
 

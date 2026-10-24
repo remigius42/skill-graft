@@ -45,7 +45,7 @@ commit.
   make the edits; in `docs/security.md`, rewrite the "Patcher reply" residual risk, "The main agent" bullet, and the
   LLM05 and ASI07 rows; verify the tests fail first, then pass, and `pre-commit run --all-files` (stdout later to
   `<out-file>`, read only on failure: review fix 1)
-- [ ] 3.4 Summary: replace step 6's per-file `awk` with one that prints
+- [x] 3.4 Summary: replace step 6's per-file `awk` with one that prints
   `files: <n>, lines: +<added> -<removed>, binary: <n>` from `change.patch`, as `design.md` has it. Test it by making
   `change.patch` with the `SKILL.md` diff command (`LC_ALL=C diff -ruN base/ edited/`) from real `base/` and `edited/`
   folders, then running the `awk` block from `SKILL.md` on it: `notes and links.md` given two added lines, one reading
