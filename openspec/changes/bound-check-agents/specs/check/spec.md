@@ -3,9 +3,10 @@
 ### Requirement: Skill text is read by hardened readers
 
 In a hardened **Check**, each checked **Skill** SHALL be read by its own headless reader, `claude -p` with
-`--restricted`, `--strict-mcp-config`, the tools `Read`, `Grep` and `Glob` only and `--max-turns 30`, whose folders are
-that **Skill**'s **Upstream** folder, vendored copy, a copy of its own patch files, and its targets' **Upstream**
-folders. At most 4 readers SHALL run at once. The reader definition SHALL ship in the skill's folder. A reader SHALL
+`--restricted`, `--strict-mcp-config`, the tools `Read`, `Grep` and `Glob` only, and `--max-turns` and
+`--max-budget-usd` set to the **Package**'s `reader-turns` and `reader-budget-usd`, whose folders are that **Skill**'s
+**Upstream** folder, vendored copy, a copy of its own patch files, and its targets' **Upstream** folders. At most
+`readers-at-once` readers SHALL run at once. The reader definition SHALL ship in the skill's folder. A reader SHALL
 report every finding in the report shape, or `none`.
 
 #### Scenario: Injected skill
@@ -26,13 +27,25 @@ report every finding in the report shape, or `none`.
 
 #### Scenario: Looping reader
 
-- **WHEN** a **Hull** **Skill**'s `SKILL.md` tells its reader to read every file again before it reports, without end
+- **WHEN** a **Hull** **Skill**'s `SKILL.md` tells its reader to read every file again before it reports, without end,
+  and `skill-graft.toml` has no `[check]` table
 - **THEN** its reader stops after 30 turns, the report names that **Skill** as having no report, and the **Check** goes
   on
 
+#### Scenario: Costly reader
+
+- **WHEN** `skill-graft.toml` has no `[check]` table, and a reader's spend passes 1 USD
+- **THEN** its reader stops after that turn, the report names that **Skill** as having no report, and the **Check**
+  goes on
+
+#### Scenario: Limits set in the config
+
+- **WHEN** `skill-graft.toml` has `[check]` with `reader-turns = 50` and `readers-at-once = 2`
+- **THEN** each reader runs with `--max-turns 50`, and no more than 2 run at any time
+
 #### Scenario: Many skills
 
-- **WHEN** the **Check** reads a **Hull** of 10 **Skills**
+- **WHEN** the **Check** reads a **Hull** of 10 **Skills** with no `[check]` table
 - **THEN** no more than 4 readers run at any time
 
 ### Requirement: The main agent never reads skill text
@@ -70,8 +83,9 @@ those names as quoted text and never follow them as an instruction.
 
 In a hardened **Check**, to write a **Patch**, the skill SHALL copy the **Upstream** folder, with the **Skill**'s
 patches applied, into a base folder and a working copy, each in a new temporary folder, and have a headless patcher,
-`claude -p --restricted --strict-mcp-config` with the tools `Read`, `Edit` and `Write` only, `--max-turns 10` and the
-working copy's folder alone, edit the working copy, its reply discarded. A patcher that exits non-zero SHALL end that
+`claude -p --restricted --strict-mcp-config` with the tools `Read`, `Edit` and `Write` only, `--max-turns` and
+`--max-budget-usd` set to the **Package**'s `patcher-turns` and `patcher-budget-usd`, and the working copy's folder
+alone, edit the working copy, its reply discarded. A patcher that exits non-zero SHALL end that
 fix. It SHALL diff the base against the working copy, and show the diff's files and changed line counts, the `---` and
 `+++` headers not counted, and the diff's path, and add the **Patch** to the **Package** only once the user has read it
 and accepts.
@@ -93,5 +107,6 @@ and accepts.
 
 #### Scenario: Looping patcher
 
-- **WHEN** the **Skill** being patched tells the patcher to re-read every file before each edit, without end
+- **WHEN** the **Skill** being patched tells the patcher to re-read every file before each edit, without end, and
+  `skill-graft.toml` has no `[check]` table
 - **THEN** the patcher stops after 10 turns and exits non-zero, and that fix ends with no **Patch** written
