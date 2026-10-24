@@ -62,6 +62,38 @@ def test_reader_answers_the_probe() -> None:
     assert "## Uses\n\nIn `full` and `uses` mode, find" in prompt
 
 
+def commands(start: str) -> list[str]:
+    """Each `sh` block of the skill's `SKILL.md` that starts with `start`."""
+    text = (SKILLS / "graft-check" / "SKILL.md").read_text()
+    blocks = [block.split("```")[0] for block in text.split("```sh\n")[1:]]
+    return [
+        " ".join(block.split()) for block in blocks if block.lstrip().startswith(start)
+    ]
+
+
+def test_every_claude_has_a_turn_and_budget_cap() -> None:
+    probe, reader, patcher = commands("claude -p")
+
+    assert "--max-turns 30 --max-budget-usd 1.0" in probe
+    assert "--max-turns <reader-turns> --max-budget-usd <reader-budget-usd>" in reader
+    assert (
+        "--max-turns <patcher-turns> --max-budget-usd <patcher-budget-usd>" in patcher
+    )
+
+
+def test_skill_names_where_its_limits_come_from() -> None:
+    text = " ".join((SKILLS / "graft-check" / "SKILL.md").read_text().split())
+
+    assert "`[check]` in `skill-graft.toml`" in text
+    for key, default in [
+        ("reader-turns", "30"),
+        ("reader-budget-usd", "1.0"),
+        ("patcher-turns", "10"),
+        ("patcher-budget-usd", "0.5"),
+    ]:
+        assert f"`<{key}>`, else {default}" in text
+
+
 def test_patcher_only_edits() -> None:
     patcher = agent("patcher")
 

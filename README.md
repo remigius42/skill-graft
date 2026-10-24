@@ -149,8 +149,8 @@ readers-at-once = 4
   [Writing a patch](#writing-a-patch)).
 - `reserved`: deployed names to refuse, on top of the harness built-ins skill-graft warns about.
 - `[check]`: how far graft-check's readers and patcher may go: turns and spend in USD each, and how many readers
-  run at once. Each value is written in plain decimal digits; [docs/security.md](docs/security.md) says what reaching
-  a limit does.
+  run at once. Each value is written in plain decimal digits; [docs/security.md](docs/security.md#limits) says what
+  reaching a limit does.
 
 ## A package for one project
 

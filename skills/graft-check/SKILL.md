@@ -58,11 +58,12 @@ read. Nothing else makes it hardened: not Claude Code, not the user's yes.
    the empty folder, with no `--add-dir`, run:
 
    ```sh
-   claude -p --restricted --strict-mcp-config --tools Read,Grep,Glob \
+   claude -p --max-turns 30 --max-budget-usd 1.0 --restricted --strict-mcp-config --tools Read,Grep,Glob \
      --agents <reader.json> --agent reader < <prompt file>
    ```
 
-   It passes when it exits 0 and replies `reader-ok`, and nothing else: the **Check** is hardened.
+   It passes when it exits 0 and replies `reader-ok`, and nothing else: the **Check** is hardened. Its caps are always
+   the readers' defaults: it runs before any build has checked `skill-graft.toml`.
 
 Otherwise tell the user the **Check** is unhardened and why: no `claude` on `PATH`, their Claude Code account declined,
 or the probe's error, the first line of its output, at most 200 characters. For an error holding
@@ -109,6 +110,10 @@ From the lock, for each **Skill** to check (`[[skills]]`, or only the arguments)
   by `as <deployed name>` when renamed, indented under the **Skill** it is from.
 - **Binds**: the `[bind]` keys in `skill-graft.toml` whose alias is the **Skill**'s, and their values.
 
+The limits of every reader and patcher come from `[check]` in `skill-graft.toml`, which step 2's build has checked to
+be plain decimal digits: `<reader-turns>`, else 30; `<reader-budget-usd>`, else 1.0; `<patcher-turns>`, else 10;
+`<patcher-budget-usd>`, else 0.5.
+
 Done when every **Skill** to check has its vendored copy, **Upstream** folder, patch paths, targets and binds, and
 every target its **Upstream** folder.
 
@@ -128,8 +133,8 @@ Hardened, each reader is its own `claude` process:
 1. From the working folder, with one `--add-dir` per folder, run:
 
    ```sh
-   claude -p --restricted --strict-mcp-config --tools Read,Grep,Glob \
-     --agents <reader.json> --agent reader \
+   claude -p --max-turns <reader-turns> --max-budget-usd <reader-budget-usd> \
+     --restricted --strict-mcp-config --tools Read,Grep,Glob --agents <reader.json> --agent reader \
      --add-dir <upstream> --add-dir <vendored copy> --add-dir <target upstream>… < <prompt file>
    ```
 
@@ -191,7 +196,8 @@ Take the fixes one at a time: ask, and apply only on yes. Run only the commands 
   1. From `<work>`, run the patcher:
 
      ```sh
-     claude -p --restricted --strict-mcp-config --tools Read,Edit,Write --permission-mode acceptEdits \
+     claude -p --max-turns <patcher-turns> --max-budget-usd <patcher-budget-usd> \
+       --restricted --strict-mcp-config --tools Read,Edit,Write --permission-mode acceptEdits \
        --agents <patcher.json> --agent patcher < <prompt file>
      ```
 

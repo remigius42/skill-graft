@@ -54,6 +54,24 @@ probe, it says the **Check** is unhardened and why, naming the probe's error, an
 your yes. Tried by hand in OpenCode 1.3.0 on DeepSeek V4.1 Flash: the main agent asked, the probe passed, and each
 **Skill** had its own reader.
 
+## Limits
+
+A hardened **Check** caps what its readers and patcher can spend. Set a limit under `[check]` in the **Package**'s
+`skill-graft.toml`, in plain decimal digits; skill-graft refuses any other form. The probe always runs with the
+readers' defaults, since it runs before skill-graft has checked the config.
+
+| Key                  | Default | Reaching it                                                     |
+| -------------------- | ------- | --------------------------------------------------------------- |
+| `reader-turns`       | 30      | The reader stops; its **Skill** is named as having no report.   |
+| `reader-budget-usd`  | 1.0     | The reader stops; its **Skill** is named as having no report.   |
+| `patcher-turns`      | 10      | The patcher stops and that fix ends, with no **Patch** written. |
+| `patcher-budget-usd` | 0.5     | The patcher stops and that fix ends, with no **Patch** written. |
+
+Turns are capped with `claude -p --max-turns`, spend with `--max-budget-usd`. A budget is checked after each turn, so
+a run can pass it by what its last turn cost: measured on Claude Code 2.1.310, a 0.001 USD budget stopped at 0.0048
+USD. The spend is counted at list price, on a subscription too, so there it bounds tokens, not your bill. A capped
+reader or patcher exits non-zero, which the skill already takes as a failure.
+
 ## Residual risks
 
 - **Report text.** A reader's quoted `text` reaches the main agent. It is short and shown, never followed, and you
@@ -68,7 +86,8 @@ your yes. Tried by hand in OpenCode 1.3.0 on DeepSeek V4.1 Flash: the main agent
   harness's model may skip. In OpenCode 1.3.0, Big Pickle asked about the account, then skipped the probe and opened
   **Skill** text itself; its readers still ran confined.
 - **A later Claude Code** could change what `--restricted` confines. The `injected` eval scenario
-  (`evals/graft-check/`) catches that when the skill changes.
+  (`evals/graft-check/`) catches that when the skill changes. It could also drop `--max-turns`, which `claude --help`
+  does not list on 2.1.310: the probe then fails with `unknown option`, and the **Check** says it is unhardened.
 - **Approval.** A **Patch** diff or fix written to look harmless can still win your yes; every approval rests on
   your reading.
 - **Deployed Skills.** skill-graft does not judge whether a **Skill** is malicious, and no tool reliably can: past
@@ -126,7 +145,7 @@ installed; elsewhere it reads **Skill** text in the session that holds your shel
 | [LLM07 System Prompt Leakage](https://genai.owasp.org/llmrisk/llm072025-system-prompt-leakage/)                       | Not applicable: the reader and patcher prompts are public (`skills/graft-check/reader.json`, `patcher.json`) and hold no secret.                                                                                                                                                                                 |
 | [LLM08 Vector and Embedding Weaknesses](https://genai.owasp.org/llmrisk/llm082025-vector-and-embedding-weaknesses/)   | Not applicable: no embeddings or retrieval.                                                                                                                                                                                                                                                                      |
 | [LLM09 Misinformation](https://genai.owasp.org/llmrisk/llm092025-misinformation/)                                     | A reader can misreport a **Skill** (Residual risks); you accept each fix.                                                                                                                                                                                                                                        |
-| [LLM10 Unbounded Consumption](https://genai.owasp.org/llmrisk/llm102025-unbounded-consumption/)                       | Open: one reader per checked **Skill**, possibly all in parallel, and the patcher, none with a cap on its turns (Future work).                                                                                                                                                                                   |
+| [LLM10 Unbounded Consumption](https://genai.owasp.org/llmrisk/llm102025-unbounded-consumption/)                       | Each reader and the patcher stop at a cap on their turns and their spend (Limits). Open: one reader per checked **Skill**, possibly all in parallel (Future work).                                                                                                                                               |
 
 ### Agentic Applications 2026
 
@@ -151,6 +170,6 @@ Rudimentary checks that narrow, not close, the risks above:
 
 - `update` shows each changed **Skill**'s text diff, so vetting covers only what changed.
 - Flag scripts, URLs and shell commands in **Skill** text for you to review.
-- Cap the turns of each reader and the patcher, and how many readers run at once.
+- Cap how many readers run at once.
 - Bound the patcher's reply as a reader's `text` is, and have the main agent treat it and the names of the files it
   changed as quoted data.

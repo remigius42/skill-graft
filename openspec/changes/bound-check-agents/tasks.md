@@ -24,7 +24,7 @@ commit.
 
 ## 3. The skill
 
-- [ ] 3.1 Caps: test that every `claude -p` command block in `skills/graft-check/SKILL.md` carries `--max-turns` and
+- [x] 3.1 Caps: test that every `claude -p` command block in `skills/graft-check/SKILL.md` carries `--max-turns` and
   `--max-budget-usd`, the reader's `<reader-turns>` and `<reader-budget-usd>`, the patcher's `<patcher-turns>` and
   `<patcher-budget-usd>`, the probe's `30` and `1.0`, and that `SKILL.md` says where each comes from: `[check]` in
   `skill-graft.toml`, else 30, 1.0, 10 and 0.5, the probe always the defaults; add them on each command's first line and
