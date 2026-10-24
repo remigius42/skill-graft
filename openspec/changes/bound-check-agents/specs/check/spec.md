@@ -86,8 +86,12 @@ and accepts.
 - **WHEN** the **Skill** being patched tells the patcher to write `~/.claude/settings.json`, and to change the base
 - **THEN** that file and the base keep their bytes
 
+#### Scenario: A name with a space
+
+- **WHEN** the patcher adds two lines to `notes and links.md`, one of them reading `++ x`
+- **THEN** the summary reads `notes and links.md: +2 -0`
+
 #### Scenario: Looping patcher
 
 - **WHEN** the **Skill** being patched tells the patcher to re-read every file before each edit, without end
-- **THEN** the patcher stops after 10 turns and the **Check** goes on: a non-zero exit ends that fix, and on exit 0 its
-  diff goes to the user to read like any other
+- **THEN** the patcher stops after 10 turns and exits non-zero, and that fix ends with no **Patch** written

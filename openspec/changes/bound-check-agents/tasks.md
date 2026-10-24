@@ -6,7 +6,7 @@ Each task updates the parts of `docs/security.md` its own work changes, so the p
 
 ## 1. Measure
 
-- [ ] 1.1 Only on the user's go-ahead (billed, a few cents): from an empty `mktemp -d` folder, run
+- [x] 1.1 Only on the user's go-ahead (billed, a few cents): from an empty `mktemp -d` folder, run
   `claude -p --max-turns 1 --restricted --strict-mcp-config --tools Read,Grep,Glob` with a prompt that needs two tool
   calls in turn (glob, then read what it found); record the exit code and the reply in `design.md`'s Decisions
   ("Exit at the cap"), and the Claude Code version; verify `pre-commit run --all-files`
@@ -28,7 +28,8 @@ Each task updates the parts of `docs/security.md` its own work changes, so the p
   verify the tests fail first, then pass, and `pre-commit run --all-files`
 - [ ] 2.4 Bounded summary: a test that takes the `awk` block from `SKILL.md` step 6 and runs it on a synthetic
   `change.patch` of 50 new files, one name 300 characters long: it prints 20 lines of `<name>: +<n> -<n>`, each name at
-  most 200 characters, then `30 more files`, and on a two-file diff both lines and no count; make the change, and add
+  most 200 characters, then `30 more files`; on a two-file diff both lines and no count; a file `notes and links.md`
+  given two added lines, one reading `++ x`, as `notes and links.md: +2 -0`; make the change, and add
   the quoted-data rule for those names to the quarantine paragraph; in `docs/security.md`, "Patcher reply" and Future
   work say the names are bounded and quoted; verify the test fails first, then passes, and `pre-commit run --all-files`
 - [ ] 2.5 README's Security section: name the turn caps and the discarded patcher reply alongside "Report text and fix

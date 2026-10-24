@@ -31,8 +31,6 @@ Checked against `skills/graft-check/` on main (`0f3c332`):
   subscription and would need its own measurement.
 - Enforcing the parallelism cap outside the prompt: the main agent starts readers through its own tool calls, and
   nothing between it and Bash counts them.
-- Fixing step 6's `awk` for file names holding spaces (`$NF` takes the last word): an existing defect, reported, not
-  in scope.
 
 ## Decisions
 
@@ -59,9 +57,15 @@ Checked against `skills/graft-check/` on main (`0f3c332`):
   naming the error.
 - **At most 4 readers at once,** in step 4 and in step 5's `uses` readers alike: start the next when one finishes.
   Four keeps a large **Hull** quick and its spend at any moment small. Prompt-level only, recorded as such.
-- **Exit at the cap measured, not assumed.** Whether `claude -p` exits non-zero at `--max-turns` decides only what the
-  report says (no report either way), and for the patcher whether the fix ends or the user reads a partial diff, both
-  safe. Task 1.1 measures it once on a tiny prompt (billed, a few cents) and records the result here.
+- **Exit at the cap, measured.** On Claude Code 2.1.310, the reader's flags with `--max-turns 1`, asked to glob and
+  then read, exit 1 with `Error: Reached max turns (1)` on stdout and nothing on stderr (`--output-format json`:
+  `subtype` `error_max_turns`). A capped reader fails the report shape and exits non-zero: no report. A capped
+  patcher exits non-zero: the fix ends, its partial edits never diffed.
+- **Name each file from its `+++` header.** Step 6's `awk` took the name from the `diff` line's last word, so
+  `foo bar.md` came out empty and its counts fell to that. `diff -ruN` writes `+++ edited/<name>` then a tab and the
+  date, so the name is everything between `edited/` and the first tab, spaces included. The two header lines after
+  each `diff` line are skipped by position, not by their `---`/`+++` prefix, so a removed line reading `-- x` or an
+  added `++ x` is counted. Alternative: `diff -q` names; rejected, as they give no line counts.
 
 ### Avoiding conflicts with `probe-check-readers`
 
