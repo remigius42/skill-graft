@@ -25,10 +25,9 @@ checked by `tests/cli/test_check.py` for its shape and by the eval for its behav
 
 - [ ] 3.1 Update `docs/security.md` (hardened wherever a working Claude Code is installed; the probe; the account
   question; the `CLAUDE_CODE_OAUTH_TOKEN` case now caught by the probe), the README's Security section, and ADR 0007's
-  "enforced on Claude Code only"; verify `pre-commit run --all-files`
-- [ ] 3.2 Run `/graft-check` once by hand in another installed harness (opencode or Gemini CLI) on a small package:
-  verify the account question, the probe, and a reader per **Skill**; record the harness and version in
-  `docs/security.md`
+  "enforced on Claude Code only", edited in place; verify `pre-commit run --all-files`
+- [ ] 3.2 Run `/graft-check` once by hand in Gemini CLI (free tier: one small package, one or two **Skills**): verify
+  the account question, the probe, and a reader per **Skill**; record the Gemini CLI version in `docs/security.md`
 
 ## 4. Changelog
 
