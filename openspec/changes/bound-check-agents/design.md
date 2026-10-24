@@ -2,23 +2,22 @@
 
 ## Context
 
-Checked against `skills/graft-check/` on main (`0f3c332`):
+Checked against `skills/graft-check/` on main (`8c0bad8`, `probe-check-readers` archived):
 
 - `SKILL.md:17-21`: the main agent holds "CLI output, `skill-graft.toml`, the lock, and the readers' reports"; the
   quoted-data rule covers a report's `text` only. Step 6 runs the patcher with its stdout returned to the main agent,
   and `patcher.json` asks for "one line per file you changed: `<path in edited/>: <what changed>`", with no length
   bound. Step 6's `awk` prints each file name of `change.patch` whole, as many as the diff holds; the patcher can
   `Write` files of any name.
-- `SKILL.md:110` and `:173`: neither command passes `--max-turns`. `SKILL.md:117`: "Readers may run in parallel", no
-  limit; step 5's `uses` readers inherit it.
+- `SKILL.md:61`, `:131` and `:194`: neither the probe, the reader nor the patcher command passes `--max-turns`.
+  `SKILL.md:138`: "Readers may run in parallel", no limit; step 5's `uses` readers inherit it.
 - Claude Code 2.1.310: `claude --help` does not list `--max-turns`, but `claude -p --max-turns 1` parses (an unknown
   option exits 1 with `unknown option`; `--max-turns 1` gets past option parsing to the `--agents` file check).
   `--max-budget-usd` is listed, for `--print` only.
 - `pipeline/config.py:109`: an unknown top-level key is an error, so a `[check]` table needs skill-graft's consent.
   Step 2's throwaway build parses the config before the skill reads any of it.
-- `probe-check-readers` (in flight, `feat/opsx-probe-check-readers`) rewrites step 1, adds a probe reader command,
-  replaces `${CLAUDE_SKILL_DIR}/reader.json` and `patcher.json` with `<reader.json>` and `<patcher.json>` in both
-  commands, adds a `probe` mode to `reader.json`, and will edit `docs/security.md` (its task 3.1).
+- `probe-check-readers`, now on main: step 1 runs a probe, a reader run as every reader runs, in an empty folder with
+  `mode: probe`, before step 2's build; the commands name `<reader.json>` and `<patcher.json>`.
 
 ## Goals / Non-Goals
 
@@ -91,7 +90,7 @@ Checked against `skills/graft-check/` on main (`0f3c332`):
   surface for five numbers.
 - **`--max-turns` though `--help` omits it.** It is the only turn bound `claude -p` has. Should a later Claude Code drop
   it, every reader and the patcher exit 1 with `unknown option`: each **Skill** has no report, and every **Patch** fix
-  ends, its error line naming the option. Fail-closed, and with `probe-check-readers` in, its probe fails first and the
+  ends, its error line naming the option. Fail-closed: the probe, which carries the flag too, fails first and the
   **Check** says it is unhardened, naming the error.
 - **At most `readers-at-once` readers at once, 4 by default,** in step 4 and in step 5's `uses` readers alike: start
   the next when one finishes. Four keeps a large **Hull** quick and its spend at any moment small. Prompt-level only,
@@ -101,25 +100,17 @@ Checked against `skills/graft-check/` on main (`0f3c332`):
   `subtype` `error_max_turns`). A capped reader fails the report shape and exits non-zero: no report. A capped
   patcher exits non-zero: the fix ends, its partial edits never diffed. The budget's stop exits 1 the same way.
 
-### Avoiding conflicts with `probe-check-readers`
+### The probe
 
 - `reader.json` is untouched here; the caps are flags, not prompt text.
-- This change's `check` delta modifies three requirements `probe-check-readers` leaves alone ("Skill text is read by
-  hardened readers", "The main agent never reads skill text", "Patches are written by a confined patcher").
-  `probe-check-readers` modifies "Unhardened only on the user's yes" and adds "Another harness's readers only on the
-  user's yes". This change's `config` delta touches nothing of that change. The deltas archive in either order.
-- In `SKILL.md`, the caps go on each command's first line
-  (`claude -p --max-turns <reader-turns> --max-budget-usd <reader-budget-usd> --restricted …`), which
-  `probe-check-readers` does not change; git still sees adjacent-line edits as one conflict in each command, resolved by
-  keeping both. Whichever change lands second rebases onto main and resolves them.
-- The probe is a reader "run as every reader runs", so it takes the reader's caps too. The test from task 3.1 asserts
-  every `claude -p` command block in `SKILL.md` carries both, so after either rebase it fails until the probe command
-  has them. The probe runs at step 1, before step 2's build has checked the config: it runs with the default caps,
-  never with a value from `skill-graft.toml`, which nothing has checked yet. It reads nothing and replies one word,
-  about 0.01 USD, so a lower `[check]` budget it ignores costs the user nothing they would notice.
-- `docs/security.md`: this change adds a Limits section and edits Residual risks, three OWASP rows and Future
-  work; `probe-check-readers` task 3.1 edits the Claude Code section and the login case. The second to land rebases
-  and merges by hand.
+- The probe is a reader "run as every reader runs", so it carries both caps, written as their defaults
+  (`--max-turns 30 --max-budget-usd 1.0`). It runs at step 1, before step 2's build has checked the config, so it
+  never takes a value from `skill-graft.toml`, which nothing has checked yet. It reads nothing and replies one word,
+  about 0.01 USD, so a lower `[check]` budget it ignores costs the user nothing they would notice. The test from task
+  3.1 asserts every `claude -p` command block in `SKILL.md` carries both caps.
+- The `check` delta modifies three requirements `probe-check-readers` left as they were ("Skill text is read by
+  hardened readers", "The main agent never reads skill text", "Patches are written by a confined patcher"); their main
+  text is unchanged since this change was proposed.
 
 ## Risks / Trade-offs
 

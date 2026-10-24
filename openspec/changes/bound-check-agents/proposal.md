@@ -57,5 +57,4 @@ None.
   discarded and its error line bounded; the reader count; the summary run on real `diff -ruN` output.
 - `docs/security.md`, `README.md`.
 - `CHANGELOG.md` entry at archive.
-- Overlaps `probe-check-readers` (in flight) in `SKILL.md`'s reader and patcher commands and in `docs/security.md`; see
-  `design.md`.
+- The probe `probe-check-readers` added carries the caps too, at their defaults; see `design.md`.

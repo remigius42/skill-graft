@@ -26,11 +26,12 @@ commit.
 
 - [ ] 3.1 Caps: test that every `claude -p` command block in `skills/graft-check/SKILL.md` carries `--max-turns` and
   `--max-budget-usd`, the reader's `<reader-turns>` and `<reader-budget-usd>`, the patcher's `<patcher-turns>` and
-  `<patcher-budget-usd>`, and that `SKILL.md` says where each comes from: `[check]` in `skill-graft.toml`, else 30,
-  1.0, 10 and 0.5; add them on each command's first line and the paragraph after step 3's binds; add a Limits section
-  to `docs/security.md` (each limit, its default, what reaching it does, the budget's one-turn overshoot and list price,
-  how to set it), drop the caps from the LLM10 row's "Open" and from Future work, and add the hidden-flag fail-closed
-  note to "A later Claude Code"; verify the test fails first, then passes, and `pre-commit run --all-files`
+  `<patcher-budget-usd>`, the probe's `30` and `1.0`, and that `SKILL.md` says where each comes from: `[check]` in
+  `skill-graft.toml`, else 30, 1.0, 10 and 0.5, the probe always the defaults; add them on each command's first line and
+  the paragraph after step 3's binds; add a Limits section to `docs/security.md` (each limit, its default, what reaching
+  it does, the budget's one-turn overshoot and list price, how to set it), drop the caps from the LLM10 row's "Open" and
+  from Future work, and add the hidden-flag fail-closed note to "A later Claude Code"; verify the test fails first, then
+  passes, and `pre-commit run --all-files`
 - [ ] 3.2 Reader count: test that `SKILL.md` step 4 says at most `<readers-at-once>` readers run at once, 4 by
   default, and that step 5's `uses` readers follow it; replace "Readers may run in parallel"; in `docs/security.md`,
   the Limits section gains it, marked prompt-level, the LLM10 row says what is capped, Residual risks gains the

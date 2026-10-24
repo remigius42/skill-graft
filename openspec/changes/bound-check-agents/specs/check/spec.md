@@ -6,7 +6,8 @@ In a hardened **Check**, each checked **Skill** SHALL be read by its own headles
 `--restricted`, `--strict-mcp-config`, the tools `Read`, `Grep` and `Glob` only, and `--max-turns` and
 `--max-budget-usd` set to the **Package**'s `reader-turns` and `reader-budget-usd`, whose folders are that **Skill**'s
 **Upstream** folder, vendored copy, a copy of its own patch files, and its targets' **Upstream** folders. At most
-`readers-at-once` readers SHALL run at once. The reader definition SHALL ship in the skill's folder. A reader SHALL
+`readers-at-once` readers SHALL run at once. The probe SHALL carry both caps at their defaults, as it runs before
+the config is checked. The reader definition SHALL ship in the skill's folder. A reader SHALL
 report every finding in the report shape, or `none`.
 
 #### Scenario: Injected skill
@@ -37,6 +38,11 @@ report every finding in the report shape, or `none`.
 - **WHEN** `skill-graft.toml` has no `[check]` table, and a reader's spend passes 1 USD
 - **THEN** its reader stops after that turn, the report names that **Skill** as having no report, and the **Check**
   goes on
+
+#### Scenario: The probe's caps
+
+- **WHEN** `skill-graft.toml` has `[check]` with `reader-turns = 50`
+- **THEN** the probe runs with `--max-turns 30 --max-budget-usd 1.0`
 
 #### Scenario: Limits set in the config
 
