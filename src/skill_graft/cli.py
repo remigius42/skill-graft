@@ -2,6 +2,7 @@
 
 import argparse
 import contextlib
+import json
 import os
 import re
 import shutil
@@ -59,8 +60,27 @@ class _Version(argparse.Action):
 
     def __call__(self, parser: argparse.ArgumentParser, *_: Any) -> NoReturn:
         distribution = metadata.distribution("skill-graft")
-        print(f"skill-graft {distribution.version}")
+        print(f"skill-graft {distribution.version}{_origin(distribution)}")
         parser.exit()
+
+
+def _origin(distribution: metadata.Distribution) -> str:
+    """` (<revision> @ <commit>)` for a git install, from the installer's direct_url.json
+    (PEP 610); anything else, malformed included, adds nothing."""
+    try:
+        direct_url = json.loads(distribution.read_text("direct_url.json") or "{}")
+    except json.JSONDecodeError:
+        return ""
+    vcs_info = direct_url.get("vcs_info") if isinstance(direct_url, dict) else None
+    if not isinstance(vcs_info, dict) or vcs_info.get("vcs") != "git":
+        return ""
+    commit = vcs_info.get("commit_id")
+    if not isinstance(commit, str):
+        return ""
+    revision = vcs_info.get("requested_revision")
+    if isinstance(revision, str) and revision and not commit.startswith(revision):
+        return f" ({revision} @ {commit[:7]})"
+    return f" ({commit[:7]})"
 
 
 class _Parser(_Command):

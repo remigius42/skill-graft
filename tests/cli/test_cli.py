@@ -1,3 +1,4 @@
+import json
 import subprocess
 from importlib import metadata
 from pathlib import Path
@@ -194,3 +195,74 @@ def test_help_lists_version(capsys: pytest.CaptureFixture[str]) -> None:
     code, out, _ = run(["--help"], capsys)
     assert code == 0
     assert "--version" in out
+
+
+COMMIT = "e294a0e5f3c1d2b4a6978877665544332211aabb"
+URL = "https://github.com/remigius42/skill-graft"
+
+
+def vcs(**vcs_info: object) -> str:
+    """A git install's direct_url.json, as PEP 610 has it."""
+    return json.dumps({"url": URL, "vcs_info": {"vcs": "git", **vcs_info}})
+
+
+def test_version_of_a_git_install(
+    capsys: pytest.CaptureFixture[str], monkeypatch: pytest.MonkeyPatch
+) -> None:
+    install(monkeypatch, "0.2.0", vcs(commit_id=COMMIT))
+    assert run(["--version"], capsys)[1] == "skill-graft 0.2.0 (e294a0e)\n"
+
+
+def test_version_of_a_git_install_at_a_branch(
+    capsys: pytest.CaptureFixture[str], monkeypatch: pytest.MonkeyPatch
+) -> None:
+    install(monkeypatch, "0.2.0", vcs(commit_id=COMMIT, requested_revision="main"))
+    assert run(["--version"], capsys)[1] == "skill-graft 0.2.0 (main @ e294a0e)\n"
+
+
+@pytest.mark.parametrize("pinned", [COMMIT, "e294a0e"])
+def test_version_of_a_git_install_at_a_commit(
+    pinned: str, capsys: pytest.CaptureFixture[str], monkeypatch: pytest.MonkeyPatch
+) -> None:
+    install(monkeypatch, "0.2.0", vcs(commit_id=COMMIT, requested_revision=pinned))
+    assert run(["--version"], capsys)[1] == "skill-graft 0.2.0 (e294a0e)\n"
+
+
+def test_version_of_another_version_control(
+    capsys: pytest.CaptureFixture[str], monkeypatch: pytest.MonkeyPatch
+) -> None:
+    direct_url = json.dumps(
+        {"url": URL, "vcs_info": {"vcs": "hg", "commit_id": COMMIT}}
+    )
+    install(monkeypatch, "0.2.0", direct_url)
+    assert run(["--version"], capsys)[1] == "skill-graft 0.2.0\n"
+
+
+@pytest.mark.parametrize("revision", ["", None, 123])
+def test_version_without_a_usable_revision(
+    revision: object,
+    capsys: pytest.CaptureFixture[str],
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    install(monkeypatch, "0.2.0", vcs(commit_id=COMMIT, requested_revision=revision))
+    assert run(["--version"], capsys)[1] == "skill-graft 0.2.0 (e294a0e)\n"
+
+
+@pytest.mark.parametrize(
+    "direct_url",
+    [
+        "not json",
+        "[]",
+        json.dumps({"url": "file:///src", "dir_info": {"editable": True}}),
+        json.dumps({"url": URL, "vcs_info": "git"}),
+        vcs(),
+        vcs(commit_id=7),
+    ],
+)
+def test_version_of_an_unexpected_origin(
+    direct_url: str,
+    capsys: pytest.CaptureFixture[str],
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    install(monkeypatch, "0.2.0", direct_url)
+    assert run(["--version"], capsys) == (0, "skill-graft 0.2.0\n", "")

@@ -5,12 +5,12 @@ Apply with the `tdd` skill: each task red-green-refactor, one commit.
 ## 1. The option
 
 `cli.py` imports `from importlib import metadata` and calls `metadata.distribution(...)`, so tests fake the installed
-distribution with `monkeypatch` through `cli.metadata`, whatever installer ran the suite.
+distribution with `monkeypatch` on `importlib.metadata`, whatever installer ran the suite.
 
 - [x] 1.1 Add `--version` to the top-level parser as a custom action printing `skill-graft <version>` from
   `importlib.metadata`, computed only when given; tests in `tests/cli/test_cli.py`: the cli spec's "Release",
   "Broken package" and "Listed in help" scenarios; verify they pass
-- [ ] 1.2 Follow the version with `(<revision> @ <commit>)` or `(<commit>)` from `direct_url.json`'s `vcs_info`;
+- [x] 1.2 Follow the version with `(<revision> @ <commit>)` or `(<commit>)` from `direct_url.json`'s `vcs_info`;
   tests: "Git install without a revision", "Git install at a branch", "Git install at a commit" with a full and a
   short hash, "Other version control", a `requested_revision` that is empty or not a string, and the version only
   for a `direct_url.json` that is missing, not JSON, not an object, holds `dir_info` instead of `vcs_info`, or a
