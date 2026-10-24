@@ -155,24 +155,44 @@ def test_into_with_an_empty_value(
     assert sorted(home.iterdir()) == before
 
 
-class FakeDistribution:
-    """An installed skill-graft, as `importlib.metadata` finds it."""
+class FakeDistribution(metadata.Distribution):
+    """An installed skill-graft, as `importlib.metadata` finds it: its METADATA names
+    `version`, or no version for None."""
 
-    def __init__(self, version: str, direct_url: str | None = None) -> None:
-        self.version = version
+    def __init__(self, version: str | None, direct_url: str | None = None) -> None:
+        self.metadata_text = "Name: skill-graft\n" + (
+            f"Version: {version}\n" if version is not None else ""
+        )
         self.direct_url = direct_url
 
     def read_text(self, filename: str) -> str | None:
+        if filename == "METADATA":
+            return self.metadata_text
         return self.direct_url if filename == "direct_url.json" else None
+
+    def locate_file(self, path: str | os.PathLike[str]) -> Path:
+        return Path(path)
 
 
 def install(
-    monkeypatch: pytest.MonkeyPatch, version: str, direct_url: str | None = None
+    monkeypatch: pytest.MonkeyPatch, version: str | None, direct_url: str | None = None
 ) -> None:
     """Fakes the installed distribution, whatever installer ran the suite."""
     monkeypatch.setattr(
         metadata, "distribution", lambda name: FakeDistribution(version, direct_url)
     )
+
+
+def broken(monkeypatch: pytest.MonkeyPatch, file: str, error: Exception) -> None:
+    """Fakes skill-graft 0.2.0 installed, reading whose `file` raises `error`."""
+
+    class Broken(FakeDistribution):
+        def read_text(self, filename: str) -> str | None:
+            if filename == file:
+                raise error
+            return super().read_text(filename)
+
+    monkeypatch.setattr(metadata, "distribution", lambda name: Broken("0.2.0"))
 
 
 def test_version_of_a_release(
@@ -281,11 +301,11 @@ def test_version_of_a_branch_named_like_the_commit(
 def test_version_of_an_undecodable_origin(
     capsys: pytest.CaptureFixture[str], monkeypatch: pytest.MonkeyPatch
 ) -> None:
-    class Undecodable(FakeDistribution):
-        def read_text(self, filename: str) -> str | None:
-            raise UnicodeDecodeError("utf-8", b"\xff", 0, 1, "invalid start byte")
-
-    monkeypatch.setattr(metadata, "distribution", lambda name: Undecodable("0.2.0"))
+    broken(
+        monkeypatch,
+        "direct_url.json",
+        UnicodeDecodeError("utf-8", b"\xff", 0, 1, "invalid start byte"),
+    )
     assert run(["--version"], capsys) == (0, "skill-graft 0.2.0\n", "")
 
 
@@ -293,11 +313,7 @@ def test_version_of_an_undecodable_origin(
 def test_version_of_an_unreadable_origin(
     code: int, capsys: pytest.CaptureFixture[str], monkeypatch: pytest.MonkeyPatch
 ) -> None:
-    class Unreadable(FakeDistribution):
-        def read_text(self, filename: str) -> str | None:
-            raise OSError(code, os.strerror(code), filename)
-
-    monkeypatch.setattr(metadata, "distribution", lambda name: Unreadable("0.2.0"))
+    broken(monkeypatch, "direct_url.json", OSError(code, os.strerror(code)))
     assert run(["--version"], capsys) == (0, "skill-graft 0.2.0\n", "")
 
 
@@ -306,6 +322,50 @@ def test_version_of_a_deeply_nested_origin(
 ) -> None:
     install(monkeypatch, "0.2.0", "[" * 100_000 + "]" * 100_000)
     assert run(["--version"], capsys) == (0, "skill-graft 0.2.0\n", "")
+
+
+def test_version_when_not_installed(
+    capsys: pytest.CaptureFixture[str], monkeypatch: pytest.MonkeyPatch
+) -> None:
+    def missing(name: str) -> metadata.Distribution:
+        raise metadata.PackageNotFoundError(name)
+
+    monkeypatch.setattr(metadata, "distribution", missing)
+    assert run(["--version"], capsys) == (0, "skill-graft unknown\n", "")
+
+
+@pytest.mark.parametrize(
+    "error",
+    [
+        OSError(errno.EIO, os.strerror(errno.EIO)),
+        UnicodeDecodeError("utf-8", b"\xff", 0, 1, "invalid start byte"),
+    ],
+)
+def test_version_of_unreadable_metadata(
+    error: Exception,
+    capsys: pytest.CaptureFixture[str],
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    broken(monkeypatch, "METADATA", error)
+    assert run(["--version"], capsys) == (0, "skill-graft unknown\n", "")
+
+
+@pytest.mark.filterwarnings("error::DeprecationWarning")
+@pytest.mark.parametrize("version", [None, "0.2.0\n foo", "0.2.0\x1b[2J", "0.2.ü"])
+def test_version_of_an_odd_version(
+    version: str | None,
+    capsys: pytest.CaptureFixture[str],
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    install(monkeypatch, version)
+    assert run(["--version"], capsys) == (0, "skill-graft unknown\n", "")
+
+
+def test_unknown_version_of_a_git_install(
+    capsys: pytest.CaptureFixture[str], monkeypatch: pytest.MonkeyPatch
+) -> None:
+    install(monkeypatch, None, vcs(commit_id=COMMIT, requested_revision="main"))
+    assert run(["--version"], capsys)[1] == "skill-graft unknown (main @ e294a0e)\n"
 
 
 def test_version_of_this_installation() -> None:

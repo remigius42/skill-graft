@@ -28,8 +28,9 @@ that is not UTF-8, and on 3.12+ warns that a missing `Version` will raise `KeyEr
   the read and parse; the version lookup catches `metadata.PackageNotFoundError`, `OSError` and `ValueError`
   (`UnicodeDecodeError`). A bare `except` would hide a bug in our own code behind a shorter line.
   `PackageNotFoundError` is an `ImportError`, so it is named.
-- **Read the version as `distribution.metadata.get("Version")`.** `distribution.version` indexes the metadata, which
-  CPython deprecates for a missing key and will make a `KeyError`; `.get` returns `None` now and later.
+- **Index `Version` only when `"Version" in distribution.metadata`.** `distribution.version` indexes the metadata,
+  which CPython deprecates for a missing key and will make a `KeyError`. The typed `PackageMetadata` protocol has no
+  `.get`, but has `__contains__`.
 - **`unknown` for the version, origin kept.** Keeps the `skill-graft <version>` shape a script may split on. Applies
   when no distribution is found, its metadata cannot be read or decoded, or its version is missing or not printable
   ASCII. When the distribution was found, `_origin` still runs: the commit is what a bug report needs most. Reverses

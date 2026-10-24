@@ -9,7 +9,7 @@ Apply with the `tdd` skill: each task red-green-refactor, one commit. Tests fake
   the cli spec's "Unreadable record", a `read_text` raising `OSError` with `ELOOP` and with `EIO`, and a
   `direct_url.json` nested 100 000 deep, each printing `skill-graft 0.2.0` and exiting 0; verify they fail first,
   then pass
-- [ ] 1.2 In `_Version`, read the version as `distribution.metadata.get("Version")`, and let it read `unknown` when
+- [x] 1.2 In `_Version`, read `Version` from `distribution.metadata` only when present, and let it read `unknown` when
   `metadata.distribution` raises `PackageNotFoundError`, reading the metadata raises `OSError` or `ValueError`, or
   the version is missing or not printable ASCII; keep the origin whenever a distribution was found; tests: "Not
   installed", "Unreadable metadata" (`OSError`, a METADATA holding byte `0xff`, no `Version`, a version holding a

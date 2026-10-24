@@ -11,7 +11,7 @@ import textwrap
 from collections.abc import Callable, Generator
 from importlib import metadata
 from pathlib import Path
-from typing import Any, NoReturn
+from typing import Any, NoReturn, TypeGuard
 
 from skill_graft.commands import edit, explain, init_package, update
 from skill_graft.infra import apm, paths
@@ -61,9 +61,33 @@ class _Version(argparse.Action):
         )
 
     def __call__(self, parser: argparse.ArgumentParser, *_: Any) -> NoReturn:
-        distribution = metadata.distribution("skill-graft")
-        print(f"skill-graft {distribution.version}{_origin(distribution)}")
+        try:
+            distribution = metadata.distribution("skill-graft")
+        except metadata.PackageNotFoundError:
+            print("skill-graft unknown")
+        else:
+            print(f"skill-graft {_version(distribution)}{_origin(distribution)}")
         parser.exit()
+
+
+def _version(distribution: metadata.Distribution) -> str:
+    """The version its metadata names, or `unknown` when it cannot be read or is not
+    printable ASCII."""
+    try:
+        fields = distribution.metadata
+    except (OSError, ValueError):  # unreadable or undecodable
+        return "unknown"
+    # Indexing a missing field is deprecated, to raise KeyError.
+    version = fields["Version"] if "Version" in fields else None
+    return version if _printable(version) else "unknown"
+
+
+def _printable(text: object) -> TypeGuard[str]:
+    """Whether `text` is a non-empty string of printable ASCII, safe on one line of any
+    terminal."""
+    return (
+        isinstance(text, str) and text.isascii() and text.isprintable() and text != ""
+    )
 
 
 def _origin(distribution: metadata.Distribution) -> str:
