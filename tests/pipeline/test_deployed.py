@@ -392,19 +392,28 @@ def test_diff_past_what_is_left_shown_whole() -> None:
 NOTE = "# run.sh: each backslash shown doubled, so no typed escape reads as one"
 
 
+LENIENT = "# run.sh: read as UTF-8, now as lenient UTF-8"
+
+
 @pytest.mark.parametrize(
-    ("before", "after", "removed", "added"),
+    ("before", "after", "notes", "removed", "added"),
     [
-        (b"echo \\x80\n", b"echo \x80\n", "-echo \\\\x80", "+echo \\x80"),
-        (b"echo \\x1b\n", b"echo \x1b\n", "-echo \\\\x1b", "+echo \\x1b"),
+        (
+            b"echo \\x80\n",
+            b"echo \x80\n",
+            [LENIENT, NOTE],
+            "-echo \\\\x80",
+            "+echo \\x80",
+        ),
+        (b"echo \\x1b\n", b"echo \x1b\n", [NOTE], "-echo \\\\x1b", "+echo \\x1b"),
     ],
 )
 def test_escape_alike_text_doubles_backslashes(
-    before: bytes, after: bytes, removed: str, added: str
+    before: bytes, after: bytes, notes: list[str], removed: str, added: str
 ) -> None:
     lines = diff_of("run.sh", before, after)
 
-    assert lines[0] == NOTE
+    assert lines[: len(notes) + 1] == [*notes, "diff --git a/run.sh b/run.sh"]
     assert hunks(lines) == ["@@ -1 +1 @@", removed, added, ""]
 
 
@@ -452,9 +461,10 @@ def test_typed_line_feed_escape_before_no_newline() -> None:
 def test_encoding_change_shown_byte_for_byte() -> None:
     lines = diff_of("a.txt", b"hi\n", "hi\n".encode("utf-16"))
 
-    assert (
-        lines[0] == "# a.txt: shown byte for byte, as its two sides read alike as text"
-    )
+    assert lines[:2] == [
+        "# a.txt: read as UTF-8, now as UTF-16",
+        "# a.txt: shown byte for byte, as its two sides read alike as text",
+    ]
     assert hunks(lines) == [
         "@@ -1 +1,2 @@",
         "-hi",
@@ -493,3 +503,16 @@ def test_zero_width_no_break_space_escaped() -> None:
     lines = diff_of("SKILL.md", b"hi\n", "\N{ZERO WIDTH NO-BREAK SPACE}hi\n".encode())
 
     assert hunks(lines) == ["@@ -1 +1 @@", "-hi", "+\\ufeff" + "hi", ""]
+
+
+def test_encoding_change_beside_an_edit() -> None:
+    lines = diff_of("notes.txt", b"a\n", "a\nb\n".encode("utf-16"))
+
+    assert lines[0] == "# notes.txt: read as UTF-8, now as UTF-16"
+    assert hunks(lines) == ["@@ -1 +1,2 @@", " a", "+b", ""]
+
+
+def test_same_encoding_no_note() -> None:
+    lines = diff_of("notes.txt", b"a\n", b"b\n")
+
+    assert lines[0] == "diff --git a/notes.txt b/notes.txt"

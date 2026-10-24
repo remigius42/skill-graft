@@ -168,24 +168,25 @@ def _file_diff(
         out.append(f"deleted file mode {_mode(before[1])}\n")
     elif before is not None and after is not None and before[1] != after[1]:
         out += [f"old mode {_mode(before[1])}\n", f"new mode {_mode(after[1])}\n"]
-    a = _lines(path, before[0]) if before else []
-    b = _lines(path, after[0]) if after else []
+    a, old_encoding = _lines(path, before[0]) if before else ([], "")
+    b, new_encoding = _lines(path, after[0]) if after else ([], "")
+    notes = []
+    if before and after and old_encoding != new_encoding:
+        notes.append(f"read as {old_encoding}, now as {new_encoding}")
     if before and after and before[0] != after[0] and a == b:  # re-encoded
         a, b = _split(_raw(before[0])), _split(_raw(after[0]))
-        note = "shown byte for byte, as its two sides read alike as text"
-        out.insert(0, f"# {quote(path)}: {note}\n")
+        notes.append("shown byte for byte, as its two sides read alike as text")
     # A typed `\x80` beside a stray byte: only doubling every backslash tells them apart.
     doubled = _typed_escapes(a, b)
     too_big = any(f is not None and len(f[0]) > _MAX_BYTES for f in (before, after))
     blocks = _blocks(a, b, too_big, budget)
     hunks = _hunks(a, b, blocks, _DOUBLED if doubled else _ESCAPED)
     if hunks and doubled:
-        note = "each backslash shown doubled, so no typed escape reads as one"
-        out.insert(0, f"# {quote(path)}: {note}\n")
+        notes.append("each backslash shown doubled, so no typed escape reads as one")
     if hunks:
         out.append(f"--- {a_name if before else '/dev/null'}\n")
         out.append(f"+++ {b_name if after else '/dev/null'}\n")
-    return out + hunks
+    return [f"# {quote(path)}: {note}\n" for note in notes] + out + hunks
 
 
 def _typed_escapes(a: list[str], b: list[str]) -> bool:
@@ -201,10 +202,12 @@ def _mode(executable: bool) -> str:
     return "100755" if executable else "100644"
 
 
-def _lines(path: str, data: bytes) -> list[str]:
-    """`data` as text, split at line feeds only, each line with its own."""
-    text = hidden.decode(data, path.lower().endswith(".md"), "surrogateescape")
-    return _split(_raw(data) if text is None else text)
+def _lines(path: str, data: bytes) -> tuple[list[str], str]:
+    """`data` as text, split at line feeds only, each line with its own; and the
+    encoding it was read in."""
+    decoded = hidden.decode_as(data, path.lower().endswith(".md"), "surrogateescape")
+    text, encoding = (_raw(data), hidden.LENIENT) if decoded is None else decoded
+    return _split(text), encoding
 
 
 def _raw(data: bytes) -> str:

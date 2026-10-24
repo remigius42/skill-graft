@@ -40,6 +40,10 @@ CRITICAL_CHARS = _ranges([(a, b) for a, b, _ in CRITICAL])
 WARNING_CHARS = _ranges(WARNING)
 
 
+# The encoding `decode_as` names for UTF-8 read with an `errors` handler.
+LENIENT = "lenient UTF-8"
+
+
 def scan(folder: Path) -> tuple[list[str], list[str]]:
     """Where in `folder` a hidden character is, and Markdown that is not UTF-8;
     then a warning per file holding debris. Paths are relative to `folder`.
@@ -111,27 +115,34 @@ def _report(name: str, text: str) -> tuple[list[str], list[str]]:
 
 
 def decode(data: bytes, markdown: bool, errors: str) -> str | None:
-    """`data`'s text, or None: Markdown not strictly UTF-8, or a binary file.
-    Lenient UTF-8 handles each byte it cannot decode as `errors` says.
+    """`data`'s text as `decode_as` reads it, or None."""
+    decoded = decode_as(data, markdown, errors)
+    return None if decoded is None else decoded[0]
+
+
+def decode_as(data: bytes, markdown: bool, errors: str) -> tuple[str, str] | None:
+    """`data`'s text and the encoding it was read in, or None: Markdown not strictly
+    UTF-8, or a binary file. Lenient UTF-8 handles each byte it cannot decode as
+    `errors` says.
 
     Strict UTF-8 takes NUL bytes, so a NUL cannot switch the scan off; lenient
     UTF-8, one bad byte hiding nothing, only a file without them, as scanning
     random bytes would turn up a bidi control about once per 2 MB.
     """
-    codecs = ["utf-8"]
+    codecs = ["UTF-8"]
     if not markdown:  # UTF-32LE's mark starts with UTF-16LE's: tried first
         if data.startswith((b"\xff\xfe\0\0", b"\0\0\xfe\xff")):
-            codecs.insert(0, "utf-32")
+            codecs.insert(0, "UTF-32")
         elif data.startswith((b"\xff\xfe", b"\xfe\xff")):
-            codecs.insert(0, "utf-16")
+            codecs.insert(0, "UTF-16")
     for codec in codecs:
         try:
-            return data.decode(codec)
+            return data.decode(codec), codec
         except UnicodeDecodeError:
             pass
     if markdown or b"\0" in data:
         return None
-    return data.decode("utf-8", errors=errors)
+    return data.decode("utf-8", errors=errors), LENIENT
 
 
 def characters(text: str) -> tuple[list[tuple[int, str]], list[tuple[int, str]]]:
