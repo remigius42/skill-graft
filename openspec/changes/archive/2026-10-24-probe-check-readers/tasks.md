@@ -37,6 +37,6 @@ checked by `tests/cli/test_check.py` for its shape and by the eval for its behav
 
 ## 4. Changelog
 
-- [ ] 4.1 Add an entry to `CHANGELOG.md` under `[Unreleased]`: the **Check** is hardened in any harness with a working
+- [x] 4.1 Add an entry to `CHANGELOG.md` under `[Unreleased]`: the **Check** is hardened in any harness with a working
   Claude Code, asking first outside Claude Code, and falls back to unhardened, naming why, when a probe reader fails.
   Per `AGENTS.md` it lands in the archive commit; check the box there; verify `pre-commit run --all-files`

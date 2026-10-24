@@ -14,6 +14,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - An OWASP Top 10 section in `docs/security.md`: how skill-graft meets each risk of the LLM and agentic
   lists, what is out of scope (judging whether a **Skill** is malicious), and future work
 
+### Changed
+
+- `/graft-check` is hardened in any harness with a working Claude Code, not only in Claude Code: before reading any
+  **Skill** text it runs one probe reader, and outside Claude Code it first asks to use your Claude Code account. A
+  failed probe makes the **Check** unhardened, naming the probe's error and, when not logged in, advising
+  `claude auth login`
+
 ## [0.2.0] - 2026-10-23
 
 ### Added
