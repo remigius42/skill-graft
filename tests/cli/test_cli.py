@@ -342,11 +342,23 @@ def test_version_of_an_undecodable_origin(
     assert run(["--version"], capsys) == (0, "skill-graft 0.2.0\n", "")
 
 
-@pytest.mark.parametrize("code", [errno.ELOOP, errno.EIO])
 def test_version_of_an_unreadable_origin(
-    code: int, capsys: pytest.CaptureFixture[str], monkeypatch: pytest.MonkeyPatch
+    capsys: pytest.CaptureFixture[str], monkeypatch: pytest.MonkeyPatch
 ) -> None:
-    broken(monkeypatch, "direct_url.json", OSError(code, os.strerror(code)))
+    broken(monkeypatch, "direct_url.json", OSError(errno.EIO, os.strerror(errno.EIO)))
+    assert run(["--version"], capsys) == (0, "skill-graft 0.2.0\n", "")
+
+
+def test_version_of_an_origin_in_a_symlink_loop(
+    tmp_path: Path, capsys: pytest.CaptureFixture[str], monkeypatch: pytest.MonkeyPatch
+) -> None:
+    dist_info = tmp_path / "skill_graft-0.2.0.dist-info"
+    dist_info.mkdir()
+    (dist_info / "METADATA").write_text("Name: skill-graft\nVersion: 0.2.0\n")
+    (dist_info / "direct_url.json").symlink_to("direct_url.json")
+    monkeypatch.setattr(
+        metadata, "distribution", lambda name: metadata.PathDistribution(dist_info)
+    )
     assert run(["--version"], capsys) == (0, "skill-graft 0.2.0\n", "")
 
 
