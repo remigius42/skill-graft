@@ -58,14 +58,18 @@ def update(
             f"--expect {expect}: expected 64 hex digits, as an `apply:` line gives"
         )
     target = None if diff_file is None else _diff_target(diff_file)
+    # The flags to run again with: `--expect`'s digest changes with the sources.
+    flags = " --dry-run" if dry_run or expect is not None else ""
+    if diff_file is not None:
+        flags += f" --diff {shlex.quote(str(diff_file))}"
     if not dry_run:
-        _update(loaded, aliases, Cache(paths.cache()), True, target, expect)
+        _update(loaded, aliases, Cache(paths.cache()), True, target, expect, flags)
         return
     try:
         with tempfile.TemporaryDirectory(prefix="skill-graft-") as tmp:
             git_cache = Cache(Path(tmp), Cache(paths.cache()))
             try:
-                _update(loaded, aliases, git_cache, False, target, expect)
+                _update(loaded, aliases, git_cache, False, target, expect, flags)
             except patch.PatchError as error:
                 raise _fetch_hint(error, Path(tmp)) from None
     finally:
@@ -140,9 +144,10 @@ def _update(
     write: bool,
     target: Path | None,
     expect: str | None,
+    flags: str,
 ) -> None:
     selected = _select(loaded, aliases)
-    compute.check_refs(loaded, selected)
+    compute.check_refs(loaded, selected, flags)
     for alias, source in selected.items():
         if source.branch is not None:
             _check_branch(alias, source.branch)

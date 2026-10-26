@@ -16,7 +16,7 @@ Apply with the `tdd` skill: each task red-green-refactor, one commit.
 
 ## 2. Update's flags
 
-- [ ] 2.1 Give `check_refs` a `flags` suffix, which `update` fills: `--dry-run` when given or `--expect` was,
+- [x] 2.1 Give `check_refs` a `flags` suffix, which `update` fills: `--dry-run` when given or `--expect` was,
   `--diff <file>` as given and shell-quoted, `--expect` dropped; tests: "Hint keeps the review", both forms, and
   `skill-graft.toml` unchanged; verify they fail first, then pass
 

@@ -82,6 +82,26 @@ def test_several_sources_without_a_ref(upstream: Upstream, capsys: Capsys) -> No
     assert update(capsys, "a", "b")[0] == 0
 
 
+@pytest.mark.parametrize(
+    "flags",
+    [["--dry-run"], ["--expect", "0" * 64], ["--dry-run", "--expect", "0" * 64]],
+)
+def test_hint_keeps_the_review(
+    upstream: Upstream, tmp_path: Path, capsys: Capsys, flags: list[str]
+) -> None:
+    sha = upstream.commit({"tdd/SKILL.md": "# tdd\n"})
+    config = write_config(
+        git_source("a", upstream, f'ref = "{sha}"\n') + git_source("b", upstream)
+    )
+    text = config.read_text()
+    review = tmp_path / "my review.diff"
+
+    code, _, err = update(capsys, "a", *flags, "--diff", str(review))
+
+    assert code == 1 and config.read_text() == text
+    assert f"skill-graft update a b --dry-run --diff '{review}'`" in err
+
+
 def test_entries_clash_before_update_fetches(
     home: Path, tmp_path: Path, capsys: Capsys
 ) -> None:

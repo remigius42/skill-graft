@@ -21,11 +21,11 @@ from skill_graft.pipeline.config import (
 from skill_graft.pipeline.hull import Hull
 
 
-def check_refs(config: Config, given: Iterable[str]) -> None:
+def check_refs(config: Config, given: Iterable[str], flags: str = "") -> None:
     """Every git source needs a ref, its own or a `given` one, used or not.
 
     The hint updates the `given` ones too: naming only those without a ref, it
-    would fail on a `given` one without in turn.
+    would fail on a `given` one without in turn. `flags` end it.
     """
     given = set(given)
     missing = [
@@ -40,7 +40,7 @@ def check_refs(config: Config, given: Iterable[str]) -> None:
             alias for alias in config.sources if alias in given or alias in missing
         ]
         raise SkillGraftError(
-            f"{noun} no ref: run `skill-graft update {' '.join(aliases)}`"
+            f"{noun} no ref: run `skill-graft update {' '.join(aliases)}{flags}`"
         )
 
 
