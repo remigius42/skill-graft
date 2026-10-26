@@ -22,7 +22,7 @@ Apply with the `tdd` skill: each task red-green-refactor, one commit.
 
 ## 3. Archive
 
-- [ ] 3.1 In the archive commit, add a `### Fixed` entry under `[Unreleased]` in `CHANGELOG.md`: with git
+- [x] 3.1 In the archive commit, add a `### Fixed` entry under `[Unreleased]` in `CHANGELOG.md`: with git
   **Sources** without `ref`, every command names all of them, and `update` suggests the command run again with
   them added, keeping a dry run a dry run, instead of hints that send the user back and forth; verify
   `pre-commit run --all-files`

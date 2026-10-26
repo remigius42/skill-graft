@@ -45,7 +45,10 @@ An alias naming a path **Source** or no declared **Source**, an unselected git *
 cannot be resolved), a `branch` that is not a valid branch name (revision syntax such as `main~3` included), a
 `branch` the remote lacks (including one deleted since an earlier fetch), and a remote that reports no default
 branch when `branch` is absent SHALL be errors naming the alias, and `update` SHALL then write nothing. The
-first three SHALL be reported before any remote is contacted.
+first three SHALL be reported before any remote is contacted. An unselected git **Source** without `ref` SHALL be
+reported in one error naming every unselected git **Source** without `ref`, suggesting the command run again with
+those added, each alias once and in config order, keeping `--dry-run` and `--diff`, and replacing `--expect` with
+`--dry-run`.
 
 #### Scenario: Path source named
 
@@ -76,7 +79,20 @@ first three SHALL be reported before any remote is contacted.
 #### Scenario: Other source without a ref
 
 - **WHEN** `a` has a `ref`, git source `b` has none, and the user runs `update a`
-- **THEN** `update` exits non-zero naming `b` and `skill-graft update b`, before fetching
+- **THEN** `update` exits non-zero naming `b` and `skill-graft update a b`, before fetching
+
+#### Scenario: Several sources without a ref
+
+- **WHEN** git sources `a` and `b` both have no `ref` and the user runs `update a`
+- **THEN** `update` exits non-zero naming `b` and `skill-graft update a b`, before fetching, and running
+  `skill-graft update a b` then succeeds
+
+#### Scenario: Hint keeps the review
+
+- **WHEN** git source `b` has no `ref` and the user runs `update a --dry-run --diff review.diff`, or
+  `update a --expect <digest> --diff review.diff`
+- **THEN** `update` exits non-zero suggesting `skill-graft update a b --dry-run --diff review.diff` either way, and
+  `skill-graft.toml` is unchanged
 
 #### Scenario: No default branch
 

@@ -25,6 +25,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   then prints no `apply:` line
 - An old **Ref** missing from the cache is named as such, with its likely causes, instead of "not cached"
 
+### Fixed
+
+- With several git **Sources** without a `ref`, every command names them all and suggests one `skill-graft update`
+  that works: `update a` suggests `skill-graft update a b`, keeping `--dry-run` and `--diff` (and turning `--expect`
+  into `--dry-run`), instead of hints sending the user from `a` to `b` and back
+
 ## [0.2.1] - 2026-10-24
 
 ### Added
