@@ -4,7 +4,7 @@ Apply with the `tdd` skill: each task red-green-refactor, one commit.
 
 ## 1. Name every source without a ref
 
-- [ ] 1.1 Make `compute.check_refs` name every git **Source** without `ref` not in `given` (`source 'b' has no ref`
+- [x] 1.1 Make `compute.check_refs` name every git **Source** without `ref` not in `given` (`source 'b' has no ref`
   for one, `sources 'b', 'c' have no ref` for several) and suggest `skill-graft update` with the aliases in `given`
   plus those, each once, in config order; test: the git-sources spec's "Several new git sources" in
   `tests/cli/test_git_build.py`; `test_git_source_without_ref` still passes unchanged; verify the new test fails

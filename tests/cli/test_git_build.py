@@ -169,6 +169,19 @@ def test_git_source_without_ref(
     assert not (home / ".cache").exists()
 
 
+def test_several_new_git_sources(tmp_path: Path, capsys: Capsys) -> None:
+    upstream = Upstream(tmp_path / "up")
+    upstream.commit({"tdd/SKILL.md": "# tdd\n"})
+    write_config(
+        f'[sources.a]\ngit = "{upstream.url}"\n[sources.b]\ngit = "{upstream.url}"\n'
+    )
+
+    code, err = build(capsys)
+
+    assert code == 1
+    assert "sources 'a', 'b' have no ref" in err and "skill-graft update a b" in err
+
+
 def test_build_into_fetches_an_uncached_ref(home: Path, tmp_path: Path) -> None:
     upstream = Upstream(tmp_path / "up")
     sha = upstream.commit({"tdd/SKILL.md": "# tdd\n"})
