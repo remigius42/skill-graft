@@ -9,7 +9,7 @@ Apply with the `tdd` skill: each task red-green-refactor, one commit.
   plus those, each once, in config order; test: the git-sources spec's "Several new git sources" in
   `tests/cli/test_git_build.py`; `test_git_source_without_ref` still passes unchanged; verify the new test fails
   first, then passes
-- [ ] 1.2 Through `update`, which passes its selection as `given`; tests in `tests/commands/test_update.py`:
+- [x] 1.2 Through `update`, which passes its selection as `given`; tests in `tests/commands/test_update.py`:
   "Several sources without a ref" (exit 1, `'b'` and `skill-graft update a b` in stderr, no cache; then
   `update a b` exits 0), and `test_other_source_without_a_ref` changed to expect `skill-graft update a b`; verify
   they fail first, then pass

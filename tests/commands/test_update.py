@@ -67,8 +67,19 @@ def test_other_source_without_a_ref(upstream: Upstream, capsys: Capsys) -> None:
 
     code, _, err = update(capsys, "a")
 
-    assert code == 1 and "'b'" in err and "skill-graft update b" in err
+    assert code == 1 and "'b'" in err and "skill-graft update a b" in err
     assert not paths.cache().exists()
+
+
+def test_several_sources_without_a_ref(upstream: Upstream, capsys: Capsys) -> None:
+    upstream.commit({"tdd/SKILL.md": "# tdd\n"})
+    write_config(git_source("a", upstream) + git_source("b", upstream))
+
+    code, _, err = update(capsys, "a")
+
+    assert code == 1 and "source 'b' has no ref" in err
+    assert "skill-graft update a b`" in err and not paths.cache().exists()
+    assert update(capsys, "a", "b")[0] == 0
 
 
 def test_entries_clash_before_update_fetches(
