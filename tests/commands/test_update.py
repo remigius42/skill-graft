@@ -82,6 +82,16 @@ def test_several_sources_without_a_ref(upstream: Upstream, capsys: Capsys) -> No
     assert update(capsys, "a", "b")[0] == 0
 
 
+def test_hint_in_config_order(upstream: Upstream, capsys: Capsys) -> None:
+    upstream.commit({"tdd/SKILL.md": "# tdd\n"})
+    write_config("".join(git_source(alias, upstream) for alias in "abc"))
+
+    code, _, err = update(capsys, "c")
+
+    assert code == 1 and "sources 'a', 'b' have no ref" in err
+    assert "skill-graft update a b c`" in err
+
+
 @pytest.mark.parametrize(
     "flags",
     [["--dry-run"], ["--expect", "0" * 64], ["--dry-run", "--expect", "0" * 64]],
