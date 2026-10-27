@@ -18,6 +18,7 @@ words:
   - chdir
   - CLAUDECODE
   - cntrl
+  - Codeberg
   - commitlint
   - conftest
   - copymode
@@ -38,6 +39,7 @@ words:
   - fstat
   - geteuid
   - gitdir
+  - Gitea
   - gitlink
   - heapdump
   - ignorewhitespace
@@ -119,6 +121,7 @@ words:
   - unsets
   - unstatable
   - unvetted
+  - urlsplit
   - usefixtures
   - venv
   - worktree
