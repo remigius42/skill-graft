@@ -1,6 +1,7 @@
 """Runs APM. skill-graft never writes APM's `apm.yml`; APM does (ADR 0003)."""
 
 import re
+import shlex
 import shutil
 import subprocess
 from pathlib import Path
@@ -22,6 +23,11 @@ def _command() -> list[str]:
     return ["apm", "install", "-g", str(paths.package().absolute())]
 
 
+def command_line() -> str:
+    """The scope's `apm install` command, shell-quoted, for a hint."""
+    return shlex.join(_command())
+
+
 def require() -> None:
     """Fails unless `apm` is on `PATH`."""
     if shutil.which("apm") is None:
@@ -39,7 +45,7 @@ def install() -> None:
         raise SkillGraftError(f"cannot run `apm`: {error}") from None
     if result.returncode != 0:
         raise SkillGraftError(
-            f"`{' '.join(command)}` failed with exit code {result.returncode}"
+            f"`{shlex.join(command)}` failed with exit code {result.returncode}"
         )
     if not registered():
         raise SkillGraftError(

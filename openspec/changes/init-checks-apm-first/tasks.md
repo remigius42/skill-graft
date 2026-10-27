@@ -15,7 +15,7 @@ Apply with the `tdd` skill: each task red-green-refactor, one commit.
 
 ## 2. One quoted command line
 
-- [ ] 2.1 Add `apm.command_line()`, `shlex.join` of `_command()`, and use it for the user-scope retry hint; test:
+- [x] 2.1 Add `apm.command_line()`, `shlex.join` of `_command()`, and use it for the user-scope retry hint; test:
   `test_apm_fails` with a home folder containing a space expects the quoted path; verify it fails first, then
   passes
 

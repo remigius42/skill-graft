@@ -95,6 +95,26 @@ def test_apm_fails(
     assert (package / "skill-graft.toml").exists()
 
 
+def test_retry_hint_quotes_the_package(
+    tmp_path: Path,
+    fake_apm: FakeApm,
+    monkeypatch: pytest.MonkeyPatch,
+    capsys: pytest.CaptureFixture[str],
+) -> None:
+    home = tmp_path / "a b"
+    home.mkdir()
+    monkeypatch.setenv("HOME", str(home))
+    monkeypatch.chdir(home)
+    fake_apm.exit_code = 1
+
+    assert main(["init"]) == 1
+
+    package = home / ".apm" / "skill-graft"
+    err = capsys.readouterr().err
+    assert f"`apm install -g '{package}'` failed" in err
+    assert f"to retry, run: apm install -g '{package}'\n" in err
+
+
 def test_apm_not_installed(
     home: Path,
     tmp_path: Path,

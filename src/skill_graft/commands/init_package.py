@@ -63,7 +63,7 @@ def init(project: bool = False) -> None:
         apm.install()
     except (SkillGraftError, OSError) as error:
         if not project:
-            retry = f"apm install -g {package.absolute()}"
+            retry = apm.command_line()
             raise SkillGraftError(f"{error}\nto retry, run: {retry}") from None
         if _listed():
             raise SkillGraftError(
