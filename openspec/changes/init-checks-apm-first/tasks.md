@@ -21,7 +21,7 @@ Apply with the `tdd` skill: each task red-green-refactor, one commit.
 
 ## 3. Hint for an unregistered folder
 
-- [ ] 3.1 Check existence as `exists() or is_symlink()` before the `apm` check, and route `mkdir`'s
+- [x] 3.1 Check existence as `exists() or is_symlink()` before the `apm` check, and route `mkdir`'s
   `FileExistsError` through the same refusal; when `_listed()` is false and the folder holds `apm.yml`, add
   `to register it, run: <command line>`, at project scope `to register it, run in <root>: <command line>`; fix
   `_listed()`'s docstring, which names only the project's `apm.yml`; tests: the "Init refuses an existing folder"

@@ -1,6 +1,7 @@
 """Creates a package, `~/.apm/skill-graft/` or a project's, and registers it with APM."""
 
 import shutil
+from pathlib import Path
 
 from skill_graft.infra import apm, paths
 from skill_graft.infra.errors import SkillGraftError, notice
@@ -46,8 +47,8 @@ def init(project: bool = False) -> None:
     package = paths.package()
     notice(f"package: {package.absolute()}")
     made = package.parent if not package.parent.exists() else package
-    if package.exists():
-        raise SkillGraftError(f"{package} already exists; init does nothing")
+    if package.exists() or package.is_symlink():
+        raise _exists(package)
     try:
         apm.require()
     except SkillGraftError as error:
@@ -56,7 +57,7 @@ def init(project: bool = False) -> None:
     try:
         package.mkdir(parents=True)
     except FileExistsError:
-        raise SkillGraftError(f"{package} already exists; init does nothing") from None
+        raise _exists(package) from None
     try:
         paths.config_file().write_text(CONFIG_TEMPLATE)
         (package / "apm.yml").write_text(APM_YML)
@@ -80,8 +81,18 @@ def init(project: bool = False) -> None:
         raise SkillGraftError(f"{error}\nfix that, then run: {retry}") from None
 
 
+def _exists(package: Path) -> SkillGraftError:
+    """The refusal of an existing folder, with the command that registers it when APM
+    does not list it and it holds the `apm.yml` APM needs."""
+    message = f"{package} already exists; init does nothing"
+    if (package / "apm.yml").exists() and not _listed():
+        where = f" in {paths.root()}" if paths.scope() == "project" else ""
+        message += f"\nto register it, run{where}: {apm.command_line()}"
+    return SkillGraftError(message)
+
+
 def _listed() -> bool:
-    """Whether the project's `apm.yml` lists the package; not when unreadable."""
+    """Whether the scope's `apm.yml` lists the package; not when unreadable."""
     try:
         return apm.registered()
     except (SkillGraftError, OSError):

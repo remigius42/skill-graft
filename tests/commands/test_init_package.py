@@ -60,14 +60,119 @@ def test_folder_exists(
 ) -> None:
     package = home / ".apm" / "skill-graft"
     package.mkdir(parents=True)
+    (package / "apm.yml").write_text("name: skill-graft\n")
+    (home / ".apm" / "apm.yml").write_text(f"dependencies:\n  apm:\n    - {package}\n")
+
+    assert main(["init"]) == 1
+
+    err = capsys.readouterr().err
+    assert str(package) in err
+    assert "apm install" not in err
+    assert (package / "apm.yml").read_text() == "name: skill-graft\n"
+    assert fake_apm.calls == []
+
+
+def test_folder_without_its_apm_yml(
+    home: Path, fake_apm: FakeApm, capsys: pytest.CaptureFixture[str]
+) -> None:
+    package = home / ".apm" / "skill-graft"
+    package.mkdir(parents=True)
     (package / "skill-graft.toml").write_text("entries = []\n")
 
     assert main(["init"]) == 1
 
-    assert str(package) in capsys.readouterr().err
+    err = capsys.readouterr().err
+    assert str(package) in err
+    assert "apm install" not in err
     assert [p.name for p in package.iterdir()] == ["skill-graft.toml"]
     assert (package / "skill-graft.toml").read_text() == "entries = []\n"
     assert fake_apm.calls == []
+
+
+def test_unregistered_folder_exists(
+    home: Path, fake_apm: FakeApm, capsys: pytest.CaptureFixture[str]
+) -> None:
+    package = home / ".apm" / "skill-graft"
+    package.mkdir(parents=True)
+    (package / "apm.yml").write_text("name: skill-graft\n")
+
+    assert main(["init"]) == 1
+
+    err = capsys.readouterr().err
+    assert f"to register it, run: apm install -g {package}\n" in err
+    assert (package / "apm.yml").read_text() == "name: skill-graft\n"
+    assert fake_apm.calls == []
+
+
+def test_unregistered_folder_exists_without_apm(
+    home: Path,
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+    capsys: pytest.CaptureFixture[str],
+) -> None:
+    package = home / ".apm" / "skill-graft"
+    package.mkdir(parents=True)
+    (package / "apm.yml").write_text("name: skill-graft\n")
+    monkeypatch.setenv("PATH", str(tmp_path / "empty"))
+
+    assert main(["init"]) == 1
+
+    err = capsys.readouterr().err
+    assert f"to register it, run: apm install -g {package}\n" in err
+    assert "skill-graft init" not in err
+
+
+def test_dangling_symlink(
+    home: Path,
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+    capsys: pytest.CaptureFixture[str],
+) -> None:
+    package = home / ".apm" / "skill-graft"
+    package.parent.mkdir()
+    package.symlink_to(tmp_path / "gone")
+    monkeypatch.setenv("PATH", str(tmp_path / "empty"))
+
+    assert main(["init"]) == 1
+
+    err = capsys.readouterr().err
+    assert f"{package} already exists" in err
+    assert [p.name for p in (home / ".apm").iterdir()] == ["skill-graft"]
+    assert not (tmp_path / "gone").exists()
+
+
+def test_symlink_to_itself(
+    home: Path, fake_apm: FakeApm, capsys: pytest.CaptureFixture[str]
+) -> None:
+    package = home / ".apm" / "skill-graft"
+    package.parent.mkdir()
+    (home / ".apm" / "apm.yml").write_text("dependencies:\n  apm:\n    - ./x\n")
+    package.symlink_to(package)
+
+    assert main(["init"]) == 1
+
+    err = capsys.readouterr().err
+    assert f"{package} already exists" in err
+    assert "apm install" not in err
+    assert fake_apm.calls == []
+
+
+def test_register_hint_quotes_the_package(
+    tmp_path: Path,
+    fake_apm: FakeApm,
+    monkeypatch: pytest.MonkeyPatch,
+    capsys: pytest.CaptureFixture[str],
+) -> None:
+    home = tmp_path / "a b"
+    package = home / ".apm" / "skill-graft"
+    package.mkdir(parents=True)
+    (package / "apm.yml").write_text("name: skill-graft\n")
+    monkeypatch.setenv("HOME", str(home))
+    monkeypatch.chdir(home)
+
+    assert main(["init"]) == 1
+
+    assert f"run: apm install -g '{package}'\n" in capsys.readouterr().err
 
 
 @pytest.mark.parametrize("failure", ["exit", "unregistered", "missing"])
@@ -288,14 +393,61 @@ def test_apm_fails_after_registering(
 
 
 def test_project_folder_exists(
-    home: Path, fake_apm: FakeApm, monkeypatch: pytest.MonkeyPatch
+    home: Path,
+    fake_apm: FakeApm,
+    monkeypatch: pytest.MonkeyPatch,
+    capsys: pytest.CaptureFixture[str],
+) -> None:
+    repo = project_root(home, monkeypatch)
+    (repo / ".apm" / "skill-graft").mkdir(parents=True)
+    (repo / ".apm" / "skill-graft" / "apm.yml").write_text("name: skill-graft\n")
+    (repo / "apm.yml").write_text("dependencies:\n  apm:\n    - ./.apm/skill-graft\n")
+
+    assert main(["init", "--project"]) == 1
+
+    assert "apm install" not in capsys.readouterr().err
+    assert [p.name for p in (repo / ".apm" / "skill-graft").iterdir()] == ["apm.yml"]
+    assert fake_apm.calls == []
+
+
+def test_project_folder_without_its_apm_yml(
+    home: Path,
+    fake_apm: FakeApm,
+    monkeypatch: pytest.MonkeyPatch,
+    capsys: pytest.CaptureFixture[str],
 ) -> None:
     repo = project_root(home, monkeypatch)
     (repo / ".apm" / "skill-graft").mkdir(parents=True)
 
     assert main(["init", "--project"]) == 1
 
+    assert "apm install" not in capsys.readouterr().err
     assert list((repo / ".apm" / "skill-graft").iterdir()) == []
+    assert fake_apm.calls == []
+
+
+@pytest.mark.parametrize("manifest", ["missing", "unreadable", "not-listing"])
+def test_unregistered_project_folder_exists(
+    home: Path,
+    fake_apm: FakeApm,
+    monkeypatch: pytest.MonkeyPatch,
+    capsys: pytest.CaptureFixture[str],
+    manifest: str,
+) -> None:
+    repo = project_root(home, monkeypatch)
+    package = repo / ".apm" / "skill-graft"
+    package.mkdir(parents=True)
+    (package / "apm.yml").write_text("name: skill-graft\n")
+    if manifest == "unreadable":
+        (repo / "apm.yml").write_bytes(b"\xff\n")
+    elif manifest == "not-listing":
+        (repo / "apm.yml").write_text("dependencies:\n  apm: []\n")
+
+    assert main(["init", "--project"]) == 1
+
+    err = capsys.readouterr().err
+    assert f"to register it, run in {repo}: apm install ./.apm/skill-graft\n" in err
+    assert (package / "apm.yml").read_text() == "name: skill-graft\n"
     assert fake_apm.calls == []
 
 

@@ -61,10 +61,12 @@ path = "~/Documents/sync/2_areas/software/chisel_skill"
 
 - `init`: creates `~/.apm/skill-graft/` with a commented `skill-graft.toml`, including the lines that install
   graft-check, and the two-line `apm.yml`, then
-  registers it with `apm install -g <absolute path of ~/.apm/skill-graft>`. Refuses if the folder exists. Without
-  `apm` on `PATH`, creates nothing and says to run `init` again once APM is installed.
+  registers it with `apm install -g <absolute path of ~/.apm/skill-graft>`. Refuses if the folder exists, naming
+  that command (shell-quoted) when `~/.apm/apm.yml` does not list the folder or cannot be read, and the folder
+  holds its `apm.yml`. Without `apm` on `PATH`, creates nothing and says to run `init` again once APM is installed.
   `init --project` does the same in `./.apm/skill-graft/`, registering it with `apm install ./.apm/skill-graft`
-  run there; refused in the home folder, and if APM leaves it unregistered, the folder is removed again.
+  run there; refused in the home folder, and if APM leaves it unregistered, the folder is removed again. Refusing
+  an existing folder it names the same command, and the folder to run it in.
 - `add <skill-id>…`, `remove <skill-id>…`, `rename <skill-id> <name>`, `bind <alias>/<name> <target>`,
   `unbind <alias>/<name>`: resolve the edited config in memory and only if that succeeds write the TOML (in place,
   as `update` does), then the lock, and print what `resolve` prints. Notices go to stderr with the warnings. Never
