@@ -46,6 +46,13 @@ def init(project: bool = False) -> None:
     package = paths.package()
     notice(f"package: {package.absolute()}")
     made = package.parent if not package.parent.exists() else package
+    if package.exists():
+        raise SkillGraftError(f"{package} already exists; init does nothing")
+    try:
+        apm.require()
+    except SkillGraftError as error:
+        retry = "skill-graft init --project" if project else "skill-graft init"
+        raise SkillGraftError(f"{error}\ninstall APM, then run: {retry}") from None
     try:
         package.mkdir(parents=True)
     except FileExistsError:

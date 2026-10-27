@@ -1,6 +1,7 @@
 """Runs APM. skill-graft never writes APM's `apm.yml`; APM does (ADR 0003)."""
 
 import re
+import shutil
 import subprocess
 from pathlib import Path
 
@@ -9,6 +10,8 @@ from skill_graft.infra.errors import SkillGraftError
 
 # A YAML comment in `apm.yml`: `#` after whitespace, to the end of the line.
 COMMENT = re.compile(r"\s+#.*$")
+
+MISSING = "APM is not installed: no `apm` on PATH"
 
 
 def _command() -> list[str]:
@@ -19,13 +22,19 @@ def _command() -> list[str]:
     return ["apm", "install", "-g", str(paths.package().absolute())]
 
 
+def require() -> None:
+    """Fails unless `apm` is on `PATH`."""
+    if shutil.which("apm") is None:
+        raise SkillGraftError(MISSING)
+
+
 def install() -> None:
     """Registers and deploys the package."""
     command = _command()
     try:
         result = subprocess.run(command, cwd=paths.root(), check=False)
     except FileNotFoundError:
-        raise SkillGraftError("APM is not installed: no `apm` on PATH") from None
+        raise SkillGraftError(MISSING) from None
     except OSError as error:
         raise SkillGraftError(f"cannot run `apm`: {error}") from None
     if result.returncode != 0:

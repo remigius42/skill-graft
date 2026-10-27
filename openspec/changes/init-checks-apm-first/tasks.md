@@ -4,7 +4,7 @@ Apply with the `tdd` skill: each task red-green-refactor, one commit.
 
 ## 1. Check for APM before writing
 
-- [ ] 1.1 Add `apm.require()` to `infra/apm.py`, raising the `MISSING` message `install()` also uses when
+- [x] 1.1 Add `apm.require()` to `infra/apm.py`, raising the `MISSING` message `install()` also uses when
   `shutil.which("apm")` finds nothing; call it in `init` after the existing-folder check and before `mkdir`, adding
   `install APM, then run: skill-graft init` (with `--project` when given); tests in
   `tests/commands/test_init_package.py`: "APM not installed" and "APM not installed for a project" (exit 1, the

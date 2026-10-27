@@ -1,3 +1,4 @@
+import os
 import re
 import shutil
 import tomllib
@@ -7,6 +8,7 @@ import pytest
 from conftest import FakeApm, write_config
 
 from skill_graft.cli import main
+from skill_graft.infra import apm
 from skill_graft.pipeline import config
 
 
@@ -83,12 +85,43 @@ def test_apm_fails(
     elif failure == "unregistered":
         fake_apm.register = False
     else:
+        # Found by the check, gone when `init` runs it.
+        monkeypatch.setattr(apm, "require", lambda: None)
         monkeypatch.setenv("PATH", str(tmp_path / "empty"))
 
     assert main(["init"]) == 1
 
     assert f"apm install -g {package}" in capsys.readouterr().err
     assert (package / "skill-graft.toml").exists()
+
+
+def test_apm_not_installed(
+    home: Path,
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+    capsys: pytest.CaptureFixture[str],
+) -> None:
+    monkeypatch.setenv("PATH", str(tmp_path / "empty"))
+
+    assert main(["init"]) == 1
+
+    err = capsys.readouterr().err
+    assert "APM is not installed" in err
+    assert "install APM, then run: skill-graft init\n" in err
+    assert not (home / ".apm").exists()
+
+
+def test_retry_after_installing_apm(
+    home: Path, fake_apm: FakeApm, tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    installed = os.environ["PATH"]
+    monkeypatch.setenv("PATH", str(tmp_path / "empty"))
+    assert main(["init"]) == 1
+
+    monkeypatch.setenv("PATH", installed)
+
+    assert main(["init"]) == 0
+    assert (home / ".apm" / "skill-graft" / "skill-graft.toml").exists()
 
 
 def project_root(home: Path, monkeypatch: pytest.MonkeyPatch) -> Path:
@@ -113,6 +146,23 @@ def test_project_package(
     assert fake_apm.calls == [["install", "./.apm/skill-graft"]]
     assert fake_apm.working_folders == [str(repo)]
     assert "    - ./.apm/skill-graft\n" in (repo / "apm.yml").read_text()
+
+
+def test_apm_not_installed_for_a_project(
+    home: Path,
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+    capsys: pytest.CaptureFixture[str],
+) -> None:
+    repo = project_root(home, monkeypatch)
+    monkeypatch.setenv("PATH", str(tmp_path / "empty"))
+
+    assert main(["init", "--project"]) == 1
+
+    err = capsys.readouterr().err
+    assert "APM is not installed" in err
+    assert "install APM, then run: skill-graft init --project\n" in err
+    assert not (repo / ".apm").exists()
 
 
 def test_no_harness_in_the_project(
