@@ -7,6 +7,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Fixed
+
+- Without APM, `init` creates nothing and says to install APM and run `init` again, instead of leaving a **Package**
+  that a second `init` refuses with no way forward
+- Refusing an existing **Package** that APM does not list, `init` gives the `apm install` command that registers it
+- The `apm install` commands `init` suggests, and the one named when APM fails, are shell-quoted
+
 ## [0.2.2] - 2026-10-26
 
 ### Added

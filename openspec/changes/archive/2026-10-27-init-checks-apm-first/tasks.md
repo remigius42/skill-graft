@@ -33,7 +33,7 @@ Apply with the `tdd` skill: each task red-green-refactor, one commit.
 
 ## 4. Archive
 
-- [ ] 4.1 In the archive commit, add a `### Fixed` entry under `[Unreleased]` in `CHANGELOG.md`: without APM,
+- [x] 4.1 In the archive commit, add a `### Fixed` entry under `[Unreleased]` in `CHANGELOG.md`: without APM,
   `skill-graft init` creates nothing and says to run it again once APM is installed; refusing an existing
   **Package** APM does not list, it gives the command that registers it; the commands `init` suggests are
   shell-quoted; verify `pre-commit run --all-files`
