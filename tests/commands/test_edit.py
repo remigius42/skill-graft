@@ -8,6 +8,7 @@ import pytest
 from conftest import after_package_line, skill, write_config
 
 from skill_graft.cli import main
+from skill_graft.pipeline import lock
 
 Capsys: TypeAlias = pytest.CaptureFixture[str]
 
@@ -448,6 +449,26 @@ def test_edit_keeps_the_config_when_the_lock_fails(home: Path, capsys: Capsys) -
     assert main(["add", "mp/notes"]) == 1
 
     assert config.read_bytes() == before
+
+
+def test_lock_write_interrupted(
+    home: Path, capsys: Capsys, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    mp_skills(home, "tdd", "notes")
+    config = write_config('entries = ["mp/tdd"]\n' + SOURCES)
+    assert main(["resolve"]) == 0
+    lock_file = package(home) / "skill-graft.lock"
+    before = (config.read_bytes(), lock_file.read_bytes())
+
+    def interrupt(text: str, file: Path | None = None) -> None:
+        raise KeyboardInterrupt
+
+    monkeypatch.setattr(lock, "write", interrupt)
+
+    with pytest.raises(KeyboardInterrupt):
+        main(["add", "mp/notes"])
+
+    assert (config.read_bytes(), lock_file.read_bytes()) == before
 
 
 def test_edit_fails_to_resolve(home: Path, capsys: Capsys) -> None:

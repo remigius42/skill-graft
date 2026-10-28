@@ -47,7 +47,7 @@ every commit, but those task 3.1 moves to the new warning position; `pre-commit 
   goes through `lock.write`; `skill_hashes` is not called when `hashes` is set; `write=False` renders and writes
   nothing; `hashes` set in the block is what the lock records; the **Hull**'s warnings are in the list though the
   lock write fails; verify they fail first, then pass. `tests/cli/test_resolve.py` passes unchanged
-- [ ] 4.2 `edit._finish` uses `resolving`, appending `(the config file resolved, edit.write(document))`; the edit
+- [x] 4.2 `edit._finish` uses `resolving`, appending `(the config file resolved, edit.write(document))`; the edit
   commands take the `Scope` and the list; test in `tests/commands/test_edit.py`: a `KeyboardInterrupt` from
   `lock.write` leaves `skill-graft.toml` byte for byte as before (the edit spec's "Lock write interrupted"; red
   today: only `OSError` restores); verify it fails first, then passes

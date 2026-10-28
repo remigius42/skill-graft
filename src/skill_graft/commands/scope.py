@@ -16,7 +16,8 @@ WRITERS = ("resolve", "build", "update", "add", "remove", "rename", "bind", "unb
 def of(command: str, project: bool) -> Generator[paths.Scope]:
     """The scope `command` acts on, in use inside the `with`: the home folder for
     `init`, the working folder for `init --project`, else the package `discover`
-    finds. Only these read the working folder, so plain `init` works in a deleted one."""
+    finds. Only these read the working folder, so plain `init` works in a deleted
+    one."""
     if command != "init":
         root = paths.discover(_working_folder())
     elif project:

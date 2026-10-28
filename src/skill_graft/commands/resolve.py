@@ -18,7 +18,8 @@ from skill_graft.pipeline.hull import Hull
 @dataclass
 class Resolution:
     """The hull; the hashes the lock records, `None` for the patched copies'; and
-    the caller's writes, each a file and the call that replaces it, run before the lock."""
+    the caller's writes, each a file and the call that replaces it, run before the
+    lock."""
 
     hull: Hull
     hashes: dict[SkillId, str] | None = None

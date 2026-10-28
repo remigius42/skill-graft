@@ -376,15 +376,15 @@ def main(argv: list[str] | None = None) -> int:
                     args.expect,
                 )
             elif args.command == "add":
-                edit.add(warnings, args.skills)
+                edit.add(current, warnings, args.skills)
             elif args.command == "remove":
-                edit.remove(warnings, args.skills)
+                edit.remove(current, warnings, args.skills)
             elif args.command == "rename":
-                edit.rename(warnings, args.skill, args.name)
+                edit.rename(current, warnings, args.skill, args.name)
             elif args.command == "bind":
-                edit.bind(warnings, args.key, args.target)
+                edit.bind(current, warnings, args.key, args.target)
             elif args.command == "unbind":
-                edit.unbind(warnings, args.key)
+                edit.unbind(current, warnings, args.key)
             elif args.command == "why":
 
                 def why(loaded: config.Config, resolved: Hull) -> None:
