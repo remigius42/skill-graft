@@ -38,7 +38,7 @@ Apply with the `mp-tdd` skill: each task red-green-refactor, one commit.
   `quote(…, safe="")`; tests through `main`, URLs seeded into the cache: "GitHub Source", "GitLab Source without
   subdirectory", "Folder names encoded", "Skill folder through a symbolic link", plus a symbolic link leaving the
   tree (no link for that **Skill**); "Labels quoted" with a GitHub **Source**; verify they fail first, then pass
-- [ ] 3.3 Manual check: generate `tree --format mermaid --link` for a config with a GitHub and a GitLab **Source**,
+- [x] 3.3 Manual check: generate `tree --format mermaid --link` for a config with a GitHub and a GitLab **Source**,
   open it in mermaid.live, confirm subgraph title and node links open the right tree in a new tab; if node links
   fail, stop and report before changing the spec
 
