@@ -7,11 +7,11 @@ its scope (user when the root is the home folder) and every other path, the user
 folders included. `paths.use` and its module globals go: the import-linter contracts see only imports, so a
 global read three layers down was a dependency no check could see, and an explicit parameter shows it in every
 signature, where mypy checks it. The home folder still comes from `HOME`, as the environment gives it; that is
-input, not state skill-graft keeps. `commands` builds the `Package` from the working folder `cli` hands it:
-`init` takes the home folder, `init --project` the working folder, every other command the one `discover` finds.
-A `Package` may name a folder `init` has yet to create. The git cache is not part of it: it lives under
-`XDG_CACHE_HOME`, or `~/.cache` when that is unset or relative, shared by every package, so each command builds
-the `Cache` it needs once and passes it down too.
+input, not state skill-graft keeps. `commands` builds the `Package`, reading the working folder itself and only
+when it needs it, so plain `init` works in a deleted one: `init` takes the home folder, `init --project` the
+working folder, every other command the one `discover` finds. A `Package` may name a folder `init` has yet to
+create. The git cache is not part of it: it lives under `XDG_CACHE_HOME`, or `~/.cache` when that is unset or
+relative, shared by every package, so each command builds the `Cache` it needs once and passes it down too.
 
 ## Considered Options
 
