@@ -6,7 +6,7 @@ import zlib
 from collections.abc import Callable
 
 from skill_graft.infra.errors import SkillGraftError, notice
-from skill_graft.pipeline.config import SkillId
+from skill_graft.pipeline.config import SkillId, Source
 from skill_graft.pipeline.hull import Edge, Hull
 
 
@@ -181,22 +181,33 @@ def _entry(hull: Hull, skill: SkillId) -> str:
     return " (entry)" if skill in hull.entries else ""
 
 
-def mermaid(hull: Hull) -> str:
+def mermaid(hull: Hull, sources: dict[str, Source]) -> str:
     """The hull as a Mermaid `flowchart TD`: one arrow per tree line, no repeats.
 
-    Nodes are `n0…` in hull order, as skill IDs hold `/`. Prose arrows are dotted.
+    Nodes are `n0…` in hull order, as skill IDs hold `/`, inside one subgraph
+    `s0…` per source in order of its first skill. Arrows follow every subgraph,
+    so Mermaid moves no node into the subgraph an arrow is written in. Prose
+    arrows are dotted.
     """
     ids = {skill: f"n{i}" for i, skill in enumerate(hull.skills)}
+    groups: dict[str, list[SkillId]] = {}
+    for skill in hull.skills:
+        groups.setdefault(skill.alias, []).append(skill)
     lines = ["flowchart TD"]
-    for skill, node in ids.items():
-        entry = ":::entry" if skill in hull.entries else ""
-        lines.append(f"  {node}[{_quote(_node_label(hull, skill))}]{entry}")
+    for i, (alias, skills) in enumerate(groups.items()):
+        lines.append(f"  subgraph s{i}[{_quote(alias)}]")
+        for skill in skills:
+            entry = ":::entry" if skill in hull.entries else ""
+            lines.append(f"    {ids[skill]}[{_quote(_node_label(hull, skill))}]{entry}")
+        lines.append("  end")
     for source, edges in _shown_edges(hull).items():
         for edge in edges:
             arrow = "-.->" if edge.kind == "prose" else "-->"
             label = _quote(_edge_label(edge))
             lines.append(f"  {ids[source]} {arrow}|{label}| {ids[edge.target]}")
-    lines.append("  classDef entry stroke-width:3px")
+    lines.append(
+        "  classDef entry fill:#fde68a,stroke:#b45309,stroke-width:3px,color:#451a03"
+    )
     return "".join(f"{line}\n" for line in lines)
 
 

@@ -2,6 +2,7 @@
 
 import base64
 import json
+import os
 import re
 import zlib
 from pathlib import Path
@@ -52,11 +53,36 @@ def test_mermaid_diagram(home: Path, capsys: Capsys) -> None:
 
     assert capsys.readouterr().out == (
         "flowchart TD\n"
-        '  n0["mp/tdd"]:::entry\n'
-        '  n1["mp/grilling as mp-grilling"]\n'
+        '  subgraph s0["mp"]\n'
+        '    n0["mp/tdd"]:::entry\n'
+        '    n1["mp/grilling as mp-grilling"]\n'
+        "  end\n"
         '  n0 -->|"/grilling"| n1\n'
         '  n0 -.->|"#96;grilling#96;, prose"| n1\n'
-        "  classDef entry stroke-width:3px\n"
+        "  classDef entry fill:#fde68a,stroke:#b45309,stroke-width:3px,color:#451a03\n"
+    )
+
+
+def test_mermaid_subgraphs_in_hull_order(home: Path, capsys: Capsys) -> None:
+    skill(home / "a" / "x", "/y\n")
+    skill(home / "b" / "y", "/z\n")
+    skill(home / "a" / "z")
+    configure(["a/x"], a="~/a", b="~/b")
+
+    assert main(["tree", "--format", "mermaid"]) == 0
+
+    assert capsys.readouterr().out == (
+        "flowchart TD\n"
+        '  subgraph s0["a"]\n'
+        '    n0["a/x"]:::entry\n'
+        '    n2["a/z"]\n'
+        "  end\n"
+        '  subgraph s1["b"]\n'
+        '    n1["b/y"]\n'
+        "  end\n"
+        '  n0 -->|"/y"| n1\n'
+        '  n1 -->|"/z"| n2\n'
+        "  classDef entry fill:#fde68a,stroke:#b45309,stroke-width:3px,color:#451a03\n"
     )
 
 
@@ -73,7 +99,7 @@ def test_mermaid_labels_quoted(home: Path, capsys: Capsys) -> None:
 
     out = capsys.readouterr().out
     labels = re.findall(r"\[(.*?)\]|\|(.*?)\|", out)
-    assert len(labels) == 6  # three nodes, three arrows
+    assert len(labels) == 7  # a subgraph title, three nodes, three arrows
     for label in (a or b for a, b in labels):
         assert label.startswith('"') and label.endswith('"'), label
         assert "`" not in label and '"' not in label[1:-1], label
@@ -85,9 +111,13 @@ def test_mermaid_has_no_source_links(
     upstream = Upstream(tmp_path / "upstream")
     sha = upstream.commit({"tdd/SKILL.md": "/notes\n"})
     skill(home / "own" / "notes")
+    url = "https://user:secret@example.com/mp.git?private_token=t0k3n"
+    Path(os.environ["GIT_CONFIG_GLOBAL"]).write_text(
+        f'[url "{upstream.url}"]\n\tinsteadOf = {url}\n'
+    )
     write_config(
         'entries = ["mp/tdd"]\n'
-        f'[sources.mp]\ngit = "{upstream.url}"\nref = "{sha}"\n'
+        f'[sources.mp]\ngit = "{url}"\nref = "{sha}"\n'
         '[sources.own]\npath = "~/own"\n'
     )
 
@@ -95,8 +125,10 @@ def test_mermaid_has_no_source_links(
     first = capsys.readouterr().out
     assert main(["tree", "--format", "mermaid"]) == 0
 
+    assert 'subgraph s0["mp"]\n' in first and 'subgraph s1["own"]\n' in first
     assert "own/notes" in first
-    assert "click" not in first and "://" not in first
+    for text in ["<a", "click", "://", "user", "secret", "example.com", "t0k3n"]:
+        assert text not in first, text
     assert capsys.readouterr().out == first
 
 

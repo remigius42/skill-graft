@@ -4,7 +4,7 @@ Apply with the `mp-tdd` skill: each task red-green-refactor, one commit.
 
 ## 1. One subgraph per Source, amber Entries
 
-- [ ] 1.1 Change `explain.mermaid` to `mermaid(hull, sources)`, `cli.py` passing `config.sources` for both
+- [x] 1.1 Change `explain.mermaid` to `mermaid(hull, sources)`, `cli.py` passing `config.sources` for both
   `--format mermaid` and `--link`; group nodes into subgraphs `s0…` per alias in order of first **Skill**, titled
   with the alias, arrows after the last `end`; `classDef entry` amber as in the spec; tests in
   `tests/commands/test_explain.py`: "Diagram" with the new expected output, "Subgraphs in hull order" (`a/x`

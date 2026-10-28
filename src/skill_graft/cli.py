@@ -400,11 +400,11 @@ def main(argv: list[str] | None = None) -> int:
             _explain(why)
         elif args.command == "tree":
 
-            def tree(_: config.Config, resolved: Hull) -> None:
+            def tree(loaded: config.Config, resolved: Hull) -> None:
                 if args.link:
-                    print(explain.link(explain.mermaid(resolved)))
+                    print(explain.link(explain.mermaid(resolved, loaded.sources)))
                 elif args.format == "mermaid":
-                    print(explain.mermaid(resolved), end="")
+                    print(explain.mermaid(resolved, loaded.sources), end="")
                 else:
                     print(explain.tree(resolved), end="")
                 warn(resolved.warnings)
