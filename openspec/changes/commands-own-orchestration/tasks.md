@@ -76,7 +76,7 @@ every commit, but those task 3.1 moves to the new warning position; `pre-commit 
 
 ## 7. cli only parses and dispatches
 
-- [ ] 7.1 Add the forbidden contract from design.md to `pyproject.toml`; remove what `cli` no longer uses; check
+- [x] 7.1 Add the forbidden contract from design.md to `pyproject.toml`; remove what `cli` no longer uses; check
   it bites: a temporary `from skill_graft.pipeline import config` in `cli.py` makes `lint-imports` fail, and so
   does `from skill_graft.infra import paths`, then revert; verify `lint-imports` passes. Update
   `docs/design.md`'s "Stack" entry: `cli.py` parses and dispatches, `commands/` lists `scope`, `resolve`,

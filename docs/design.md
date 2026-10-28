@@ -334,9 +334,11 @@ for the user to accept. It takes no part in resolution.
   writes. `git` and `apm` run as subprocesses.
 - Packaged with `uv`, installed with `uv tool install`. The CLI is `skill-graft`, not a shorter name that could
   clash on `PATH`; it runs rarely, so the length costs little.
-- `src/skill_graft/` is layered, each layer importing only those below it: `cli.py` (the console entry point);
-  `commands/` (`edit`, `update`, `explain`, `init_package`); `pipeline/` (config to **Hull** to vendored skills
-  and lock, `compute.compute_hull` computing the **Hull**); `infra/` (file system, `git`, `apm`, errors).
+- `src/skill_graft/` is layered, each layer importing only those below it: `cli.py` (the console entry point:
+  it parses and dispatches, reaching `pipeline/` and `infra/` only through `commands/`, `infra.errors` aside);
+  `commands/` (`scope`, `resolve`, `build`, `edit`, `update`, `explain`, `init_package`; `scope` builds the
+  `Scope`); `pipeline/` (config to **Hull** to vendored skills and lock, `compute.compute_hull` computing the
+  **Hull**); `infra/` (file system, `git`, `apm`, errors).
 
 ## Measured APM behavior
 

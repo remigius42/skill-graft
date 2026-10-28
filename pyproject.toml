@@ -55,3 +55,11 @@ type = "layers"
 containers = ["skill_graft"]
 layers = ["cli", "commands", "pipeline", "infra"]
 exhaustive = true
+
+[[tool.importlinter.contracts]]
+name = "cli reaches pipeline and infra only through commands"
+type = "forbidden"
+source_modules = ["skill_graft.cli"]
+forbidden_modules = ["skill_graft.pipeline", "skill_graft.infra"]
+ignore_imports = ["skill_graft.cli -> skill_graft.infra.errors"]
+allow_indirect_imports = true
