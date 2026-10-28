@@ -8,12 +8,12 @@ import re
 import shutil
 import sys
 import textwrap
-from collections.abc import Callable, Generator
+from collections.abc import Callable
 from importlib import metadata
 from pathlib import Path
 from typing import Any, NoReturn, TypeGuard
 
-from skill_graft.commands import edit, explain, init_package, scope, update
+from skill_graft.commands import edit, explain, init_package, resolve, scope, update
 from skill_graft.infra import apm, paths
 from skill_graft.infra.cache import Cache
 from skill_graft.infra.errors import SkillGraftError, notice, warnings_last
@@ -360,7 +360,7 @@ def main(argv: list[str] | None = None) -> int:
         commands["tree"].error("--link needs --format mermaid")
     try:
         project = args.command == "init" and args.project
-        with warnings_last() as warnings, scope.of(args.command, project):
+        with warnings_last() as warnings, scope.of(args.command, project) as current:
             if args.command == "build" and args.into is not None:
                 notice(f"into: {args.into.absolute()}")
                 _check_into(args.into)
@@ -369,7 +369,7 @@ def main(argv: list[str] | None = None) -> int:
             elif args.command == "update":
                 update.update(
                     warnings,
-                    _load(warnings),
+                    resolve.load(warnings),
                     args.aliases,
                     args.dry_run,
                     args.diff,
@@ -414,10 +414,7 @@ def main(argv: list[str] | None = None) -> int:
 
                 _explain(warnings, tree)
             elif args.command == "resolve":
-                with _hull(warnings) as (loaded, resolved):
-                    warnings.extend(resolved.warnings)
-                    lock.write(lock.render(loaded, {}, resolved))
-                print(explain.tree(resolved) + explain.suggestions(resolved), end="")
+                resolve.resolve(current, warnings)
             elif args.command == "build":
                 # `--into` mirrors the package's layout in another folder.
                 given: Path | None = args.into
@@ -425,7 +422,7 @@ def main(argv: list[str] | None = None) -> int:
                 skills = paths.skills() if into is None else into / ".apm" / "skills"
                 started = False
                 try:
-                    loaded = _load(warnings)
+                    loaded = resolve.load(warnings)
                     if given is not None:
                         _check_into_sources(given, loaded)
                     with compute.compute_hull(loaded) as resolved:
@@ -506,25 +503,10 @@ def _undo_into(into: Path) -> None:
         folder.rmdir()
 
 
-def _load(warnings: list[str]) -> config.Config:
-    """The config, its warnings added to `warnings`."""
-    loaded = config.load()
-    warnings.extend(loaded.warnings)
-    return loaded
-
-
-@contextlib.contextmanager
-def _hull(warnings: list[str]) -> Generator[tuple[config.Config, Hull]]:
-    """The config and its hull, every source at its ref, valid inside the `with`."""
-    loaded = _load(warnings)
-    with compute.compute_hull(loaded) as hull:
-        yield loaded, hull
-
-
 def _explain(warnings: list[str], show: Callable[[config.Config, Hull], None]) -> None:
     """Runs `show` on the hull; on one failing only on hidden characters, on the
     hull as walked, so the user sees what pulls them in, then fails."""
-    loaded = _load(warnings)
+    loaded = resolve.load(warnings)
     try:
         with compute.compute_hull(loaded) as resolved:
             show(loaded, resolved)

@@ -37,7 +37,7 @@ every commit, but those task 3.1 moves to the new warning position; `pre-commit 
 
 ## 4. The shared resolve-and-lock
 
-- [ ] 4.1 Add `commands/resolve.py` with `resolving(...)`, `Resolution`, `show(hull)` and `load()` as design.md
+- [x] 4.1 Add `commands/resolve.py` with `resolving(...)`, `Resolution`, `show(hull)` and `load()` as design.md
   says, and move `resolve` there as `resolve(scope, warnings)`, `cli` dispatching to it; tests in
   `tests/commands/test_resolve.py` against `resolving` directly: nothing rendered or written when the block
   raises; `render` failing runs no write; a failing lock write restores the written files in reverse, a missing
