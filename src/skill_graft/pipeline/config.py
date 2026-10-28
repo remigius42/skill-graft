@@ -52,7 +52,7 @@ REF = re.compile(r"[0-9a-f]{40}|[0-9a-f]{64}")
 # The URL forms git is handed. Other schemes, and `<transport>::<address>`, make
 # git run a remote helper; a relative path would resolve against git's folder.
 URL = re.compile(r"(https?|ssh|git|file)://.+")
-SCP = re.compile(r"([^@/:\s]+@)?[^/:\s]+:.+")
+SCP = re.compile(r"([^@/:\s]+@)?(?P<host>[^/:\s]+):(?P<path>.+)")
 
 
 @dataclass(frozen=True)

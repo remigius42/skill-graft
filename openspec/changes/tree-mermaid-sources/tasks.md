@@ -15,7 +15,7 @@ Apply with the `mp-tdd` skill: each task red-green-refactor, one commit.
 
 ## 2. Recognize GitHub and GitLab repositories
 
-- [ ] 2.1 Add `explain.repository(url) -> str | None` as the design's "Rebuild, never strip" describes; test it
+- [x] 2.1 Add `explain.repository(url) -> str | None` as the design's "Rebuild, never strip" describes; test it
   with a parametrized table holding every URL of the spec's "Repository URLs" and "Not a repository" scenarios,
   plus `HTTPS://GITHUB.COM/o/r` and `https://github.com:443/o/r` (accepted), `https://github.com/o/r.git.git`
   (repository `r.git`), and `https://github.com/o/r//`, `https://github.com/o/r?`, `https://github.com/o/r#` and

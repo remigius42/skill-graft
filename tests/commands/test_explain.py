@@ -12,6 +12,7 @@ import pytest
 from conftest import Upstream, configure, make_patch, skill, write_config
 
 from skill_graft.cli import main
+from skill_graft.commands import explain
 
 Capsys: TypeAlias = pytest.CaptureFixture[str]
 
@@ -412,3 +413,52 @@ def test_why_names_a_remote_sources_upstream_folder(
     folder = Path(line.removeprefix("upstream: "))
     assert line.startswith("upstream: ") and folder.is_absolute()
     assert (folder / "SKILL.md").read_text().endswith("upstream text\n")
+
+
+@pytest.mark.parametrize(
+    ("url", "repository"),
+    [
+        ("https://github.com/o/r.git", "https://github.com/o/r"),
+        ("https://github.com/o/r/", "https://github.com/o/r"),
+        ("http://GitHub.com/o/r", "https://github.com/o/r"),
+        ("git://github.com/o/r.git", "https://github.com/o/r"),
+        ("ssh://git@github.com/o/r.git", "https://github.com/o/r"),
+        ("ssh://git@github.com:22/o/r.git", "https://github.com/o/r"),
+        ("git@github.com:o/r.git", "https://github.com/o/r"),
+        ("github.com:o/r", "https://github.com/o/r"),
+        ("https://user:secret@github.com/o/r.git", "https://github.com/o/r"),
+        ("git@gitlab.com:g/sub/r.git", "https://gitlab.com/g/sub/r"),
+        ("https://oauth2:secret@gitlab.com/g/r", "https://gitlab.com/g/r"),
+        ("HTTPS://GITHUB.COM/o/r", "https://github.com/o/r"),
+        ("https://github.com:443/o/r", "https://github.com/o/r"),
+        ("https://github.com/o/r.git.git", "https://github.com/o/r.git"),
+        ("https://github.com@evil.example/o/r", None),
+        ("https://evil.example/github.com/o/r", None),
+        ("https://github.com.evil.example/o/r", None),
+        ("https://www.github.com/o/r", None),
+        ("https://github.com/o", None),
+        ("https://github.com/o/r/x", None),
+        ("https://gitlab.com/g", None),
+        ("https://github.com/o/r?private_token=t", None),
+        ("https://github.com/o/r#x", None),
+        ("https://github.com/o/%72", None),
+        ("https://github.com/o/../r", None),
+        ("https://github.com//o/r", None),
+        ("https://github.com/o/r.git/x", None),
+        ("git@github.com:~o/r", None),
+        ("git@github.com:/o/r", None),
+        ("file:///srv/github.com/o/r", None),
+        ("/srv/github.com/o/r", None),
+        ("user:tok@github.com:o/r", None),
+        ("https://git\thub.com/o/r", None),
+        ("https://github.com/o/r//", None),
+        ("https://github.com/o/r?", None),
+        ("https://github.com/o/r#", None),
+        ("ssh://git@github.com:o/r", None),
+        ("https://github.com/o/r x", None),
+        ("https://github.com/o/r\n", None),
+        ("https://github.com/o/r\x00", None),
+    ],
+)
+def test_repository(url: str, repository: str | None) -> None:
+    assert explain.repository(url) == repository

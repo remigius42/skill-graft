@@ -2,11 +2,13 @@
 
 import base64
 import json
+import re
 import zlib
 from collections.abc import Callable
+from urllib.parse import urlsplit
 
 from skill_graft.infra.errors import SkillGraftError, notice
-from skill_graft.pipeline.config import SkillId, Source
+from skill_graft.pipeline.config import NAME, SCP, SkillId, Source
 from skill_graft.pipeline.hull import Edge, Hull
 
 
@@ -179,6 +181,43 @@ def why(hull: Hull, skill: SkillId) -> str:
 
 def _entry(hull: Hull, skill: SkillId) -> str:
     return " (entry)" if skill in hull.entries else ""
+
+
+# The forges whose repository paths are names a token in them would not fetch,
+# and the number of path segments a repository has there: (exactly, or at least).
+_FORGES = {"github.com": (2, False), "gitlab.com": (2, True)}
+
+
+def repository(url: str) -> str | None:
+    """The GitHub or GitLab repository a git source URL names, as `https://host/path`.
+
+    Rebuilt from the host and the path's name segments only, so no user info,
+    port, query or token is copied; None for any other URL.
+    """
+    if re.search(r"[?#\s\x00-\x1f\x7f]", url):
+        return None  # urlsplit drops tabs and newlines; a query holds tokens
+    scp = SCP.fullmatch(url)
+    if scp and "://" not in url:
+        host, path = scp["host"].lower(), scp["path"]
+    else:
+        parts = urlsplit(url)
+        if parts.scheme.lower() not in {"https", "http", "ssh", "git"}:
+            return None
+        try:
+            parts.port  # a port that is not a number raises
+        except ValueError:
+            return None
+        host, path = parts.hostname or "", parts.path.removeprefix("/")
+    if host not in _FORGES:
+        return None
+    segments = path.removesuffix("/").split("/")
+    segments[-1] = segments[-1].removesuffix(".git")
+    count, more = _FORGES[host]
+    if not (len(segments) == count or (more and len(segments) > count)):
+        return None
+    if not all(NAME.fullmatch(segment) for segment in segments):
+        return None
+    return f"https://{host}/{'/'.join(segments)}"
 
 
 def mermaid(hull: Hull, sources: dict[str, Source]) -> str:
