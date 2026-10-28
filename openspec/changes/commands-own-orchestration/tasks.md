@@ -24,7 +24,7 @@ every commit, but those task 3.1 moves to the new warning position; `pre-commit 
 
 ## 3. Warnings come last
 
-- [ ] 3.1 Add `errors.warnings_last()` as design.md says, printing each distinct warning once; `cli.main` enters
+- [x] 3.1 Add `errors.warnings_last()` as design.md says, printing each distinct warning once; `cli.main` enters
   it inside its `try`, around `scope.of`, and passes the list as the `warnings` parameter of `resolve`, `build`,
   `tree`, `why`, `update` and the edits, which append config and **Hull** warnings as soon as they have them
   instead of calling `warn` (`cli`'s inline `resolve`, `build`, `tree` and `why` too, until they move: inline

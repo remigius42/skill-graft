@@ -1,4 +1,6 @@
+import contextlib
 import sys
+from collections.abc import Generator
 
 
 class SkillGraftError(Exception):
@@ -14,3 +16,14 @@ def warn(warnings: list[str]) -> None:
 def notice(text: str) -> None:
     """Prints a notice to stderr, beside the warnings; the command goes on."""
     print(f"skill-graft: {text}", file=sys.stderr)
+
+
+@contextlib.contextmanager
+def warnings_last() -> Generator[list[str]]:
+    """A list a command adds its warnings to; on exit, also on failure, prints each
+    distinct one, in the order first added, after all else but the error line."""
+    warnings: list[str] = []
+    try:
+        yield warnings
+    finally:
+        warn(list(dict.fromkeys(warnings)))

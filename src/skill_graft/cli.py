@@ -16,7 +16,7 @@ from typing import Any, NoReturn, TypeGuard
 from skill_graft.commands import edit, explain, init_package, scope, update
 from skill_graft.infra import apm, paths
 from skill_graft.infra.cache import Cache
-from skill_graft.infra.errors import SkillGraftError, notice, warn
+from skill_graft.infra.errors import SkillGraftError, notice, warnings_last
 from skill_graft.pipeline import compute, config, lock, patch, vendor
 from skill_graft.pipeline.hull import Hull
 
@@ -359,7 +359,8 @@ def main(argv: list[str] | None = None) -> int:
     if args.command == "tree" and args.link and args.format != "mermaid":
         commands["tree"].error("--link needs --format mermaid")
     try:
-        with scope.of(args.command, args.command == "init" and args.project):
+        project = args.command == "init" and args.project
+        with warnings_last() as warnings, scope.of(args.command, project):
             if args.command == "build" and args.into is not None:
                 notice(f"into: {args.into.absolute()}")
                 _check_into(args.into)
@@ -367,35 +368,39 @@ def main(argv: list[str] | None = None) -> int:
                 init_package.init(args.project)
             elif args.command == "update":
                 update.update(
-                    _load(), args.aliases, args.dry_run, args.diff, args.expect
+                    warnings,
+                    _load(warnings),
+                    args.aliases,
+                    args.dry_run,
+                    args.diff,
+                    args.expect,
                 )
             elif args.command == "add":
-                edit.add(args.skills)
+                edit.add(warnings, args.skills)
             elif args.command == "remove":
-                edit.remove(args.skills)
+                edit.remove(warnings, args.skills)
             elif args.command == "rename":
-                edit.rename(args.skill, args.name)
+                edit.rename(warnings, args.skill, args.name)
             elif args.command == "bind":
-                edit.bind(args.key, args.target)
+                edit.bind(warnings, args.key, args.target)
             elif args.command == "unbind":
-                edit.unbind(args.key)
+                edit.unbind(warnings, args.key)
             elif args.command == "why":
 
                 def why(loaded: config.Config, resolved: Hull) -> None:
-                    try:
-                        target = explain.find(
-                            resolved,
-                            args.skill,
-                            lambda text: compute.known(loaded, "why", text),
-                        )
-                        print(explain.why(resolved, target), end="")
-                    finally:  # after the output, as `tree` and `resolve` print them
-                        warn(resolved.warnings)
+                    warnings.extend(resolved.warnings)
+                    target = explain.find(
+                        resolved,
+                        args.skill,
+                        lambda text: compute.known(loaded, "why", text),
+                    )
+                    print(explain.why(resolved, target), end="")
 
-                _explain(why)
+                _explain(warnings, why)
             elif args.command == "tree":
 
                 def tree(loaded: config.Config, resolved: Hull) -> None:
+                    warnings.extend(resolved.warnings)
                     if args.format == "mermaid":  # --link needs it
                         cache = Cache(paths.cache())
                         repositories = explain.repositories(loaded, cache, resolved)
@@ -406,14 +411,13 @@ def main(argv: list[str] | None = None) -> int:
                             print(diagram, end="")
                     else:
                         print(explain.tree(resolved), end="")
-                    warn(resolved.warnings)
 
-                _explain(tree)
+                _explain(warnings, tree)
             elif args.command == "resolve":
-                with _hull() as (loaded, resolved):
+                with _hull(warnings) as (loaded, resolved):
+                    warnings.extend(resolved.warnings)
                     lock.write(lock.render(loaded, {}, resolved))
                 print(explain.tree(resolved) + explain.suggestions(resolved), end="")
-                warn(resolved.warnings)
             elif args.command == "build":
                 # `--into` mirrors the package's layout in another folder.
                 given: Path | None = args.into
@@ -421,11 +425,11 @@ def main(argv: list[str] | None = None) -> int:
                 skills = paths.skills() if into is None else into / ".apm" / "skills"
                 started = False
                 try:
-                    loaded = _load()
+                    loaded = _load(warnings)
                     if given is not None:
                         _check_into_sources(given, loaded)
                     with compute.compute_hull(loaded) as resolved:
-                        warn(resolved.warnings)
+                        warnings.extend(resolved.warnings)
                         started = True  # from here on `into` may hold our writes
                         vendor.vendor(resolved, skills)
                     # Hashes the vendored copies, so the lock holds what was vendored.
@@ -502,25 +506,25 @@ def _undo_into(into: Path) -> None:
         folder.rmdir()
 
 
-def _load() -> config.Config:
-    """The config, its warnings printed."""
+def _load(warnings: list[str]) -> config.Config:
+    """The config, its warnings added to `warnings`."""
     loaded = config.load()
-    warn(loaded.warnings)
+    warnings.extend(loaded.warnings)
     return loaded
 
 
 @contextlib.contextmanager
-def _hull() -> Generator[tuple[config.Config, Hull]]:
+def _hull(warnings: list[str]) -> Generator[tuple[config.Config, Hull]]:
     """The config and its hull, every source at its ref, valid inside the `with`."""
-    loaded = _load()
+    loaded = _load(warnings)
     with compute.compute_hull(loaded) as hull:
         yield loaded, hull
 
 
-def _explain(show: Callable[[config.Config, Hull], None]) -> None:
+def _explain(warnings: list[str], show: Callable[[config.Config, Hull], None]) -> None:
     """Runs `show` on the hull; on one failing only on hidden characters, on the
     hull as walked, so the user sees what pulls them in, then fails."""
-    loaded = _load()
+    loaded = _load(warnings)
     try:
         with compute.compute_hull(loaded) as resolved:
             show(loaded, resolved)

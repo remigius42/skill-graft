@@ -15,7 +15,7 @@ import tomlkit
 from skill_graft.commands import edit, explain
 from skill_graft.infra import files, git, paths
 from skill_graft.infra.cache import Cache
-from skill_graft.infra.errors import SkillGraftError, warn
+from skill_graft.infra.errors import SkillGraftError
 from skill_graft.pipeline import (
     compute,
     config,
@@ -40,6 +40,7 @@ HEADER = (
 
 
 def update(
+    warnings: list[str],
     loaded: Config,
     aliases: list[str],
     dry_run: bool = False,
@@ -63,13 +64,16 @@ def update(
     if diff_file is not None:
         flags += f" --diff {shlex.quote(str(diff_file))}"
     if not dry_run:
-        _update(loaded, aliases, Cache(paths.cache()), True, target, expect, flags)
+        git_cache = Cache(paths.cache())
+        _update(warnings, loaded, aliases, git_cache, True, target, expect, flags)
         return
     try:
         with tempfile.TemporaryDirectory(prefix="skill-graft-") as tmp:
             git_cache = Cache(Path(tmp), Cache(paths.cache()))
             try:
-                _update(loaded, aliases, git_cache, False, target, expect, flags)
+                _update(
+                    warnings, loaded, aliases, git_cache, False, target, expect, flags
+                )
             except patch.PatchError as error:
                 raise _fetch_hint(error, Path(tmp)) from None
     finally:
@@ -138,6 +142,7 @@ def _fetch_hint(error: patch.PatchError, tmp: Path) -> patch.PatchError:
 
 
 def _update(
+    warnings: list[str],
     loaded: Config,
     aliases: list[str],
     git_cache: Cache,
@@ -165,7 +170,7 @@ def _update(
         print(f"{alias} {tips[alias]}{unchanged}")
     with compute.compute_hull(loaded, git_cache, tips) as hull:
         hashes = lock.skill_hashes(hull)
-        warn(hull.warnings)
+        warnings.extend(hull.warnings)
         with _previous(loaded, selected, git_cache) as previous:
             shown = _print_diff(previous, hull, hashes)
             edited = []
