@@ -109,14 +109,14 @@ def digest(hull: Hull, hashes: dict[SkillId, str]) -> str:
 
 def write(text: str, file: Path | None = None) -> None:
     """Replaces the lock (default: the package's) atomically."""
-    file = paths.package() / "skill-graft.lock" if file is None else file
+    file = paths.in_use().lock_file if file is None else file
     files.atomic_write(file, text.encode())
 
 
 def read(file: Path | None = None) -> dict[SkillId, str] | None:
     """Each skill's hash as the lock (default: the package's) records it; None if
     it is missing, unreadable or of another version."""
-    file = paths.package() / "skill-graft.lock" if file is None else file
+    file = paths.in_use().lock_file if file is None else file
     try:
         data = tomllib.loads(file.read_bytes().decode())
     except (OSError, UnicodeDecodeError, tomllib.TOMLDecodeError):

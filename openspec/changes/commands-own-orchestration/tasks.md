@@ -5,7 +5,7 @@ every commit, but those task 3.1 moves to the new warning position; `pre-commit 
 
 ## 1. The Scope type
 
-- [ ] 1.1 Add `paths.Scope` (frozen dataclass, `root`; `package`, `user` as a `cached_property`, `lock_file`,
+- [x] 1.1 Add `paths.Scope` (frozen dataclass, `root`; `package`, `user` as a `cached_property`, `lock_file`,
   `skills`) and replace `_root` and `_scope` with one module-level `Scope | None` that `use` sets and `in_use()`
   returns (a new `Scope(Path.home())` per call while `None`), `paths.package()`, `scope()`, `skills()` and
   `lock.write`'s and `lock.read`'s default file reading it; tests in a new `tests/infra/test_paths.py`:

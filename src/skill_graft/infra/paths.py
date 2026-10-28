@@ -4,28 +4,56 @@ The root is the home folder (user scope) or a project folder (project scope).
 """
 
 import os
+from dataclasses import dataclass
+from functools import cached_property
 from pathlib import Path
 
-_root: Path | None = None
-_scope = "user"
+
+@dataclass(frozen=True)
+class Scope:
+    """A scope, known by its root; every other path derives from it."""
+
+    root: Path
+
+    @cached_property
+    def user(self) -> bool:
+        """Whether the root is the home folder, compared resolved."""
+        return self.root.resolve() == Path.home().resolve()
+
+    @property
+    def package(self) -> Path:
+        return _package_in(self.root)
+
+    @property
+    def lock_file(self) -> Path:
+        return self.package / "skill-graft.lock"
+
+    @property
+    def skills(self) -> Path:
+        return self.package / ".apm" / "skills"
+
+
+_in_use: Scope | None = None
 
 
 def use(root: Path | None) -> None:
-    """Sets the root for this invocation; `None` falls back to the home folder.
-    The scope is decided here, once: `user` when the root is the home folder."""
-    global _root, _scope
-    _root = root
-    home = root is None or root.resolve() == Path.home().resolve()
-    _scope = "user" if home else "project"
+    """Sets the scope for this invocation; `None` falls back to the home folder."""
+    global _in_use
+    _in_use = None if root is None else Scope(root)
+
+
+def in_use() -> Scope:
+    """The scope `use` set, else a new one at the home folder, read from `HOME` now."""
+    return Scope(Path.home()) if _in_use is None else _in_use
 
 
 def root() -> Path:
-    return Path.home() if _root is None else _root
+    return in_use().root
 
 
 def scope() -> str:
-    """`user` or `project`, as `use` decided."""
-    return _scope
+    """`user` or `project`, as the scope in use is."""
+    return "user" if in_use().user else "project"
 
 
 def discover(start: Path) -> Path:
@@ -58,7 +86,7 @@ def folded(path: Path) -> Path:
 
 
 def package() -> Path:
-    return _package_in(root())
+    return in_use().package
 
 
 def config_file() -> Path:
@@ -115,7 +143,7 @@ def overlap(a: Path, b: Path) -> bool:
 
 
 def skills() -> Path:
-    return package() / ".apm" / "skills"
+    return in_use().skills
 
 
 def manifest() -> Path:
