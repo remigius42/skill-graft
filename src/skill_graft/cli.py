@@ -13,16 +13,12 @@ from importlib import metadata
 from pathlib import Path
 from typing import Any, NoReturn, TypeGuard
 
-from skill_graft.commands import edit, explain, init_package, update
+from skill_graft.commands import edit, explain, init_package, scope, update
 from skill_graft.infra import apm, paths
 from skill_graft.infra.cache import Cache
 from skill_graft.infra.errors import SkillGraftError, notice, warn
 from skill_graft.pipeline import compute, config, lock, patch, vendor
 from skill_graft.pipeline.hull import Hull
-
-
-# Commands that write: they name the package they act on before anything else.
-WRITERS = ("resolve", "build", "update", "add", "remove", "rename", "bind", "unbind")
 
 
 class _Formatter(argparse.HelpFormatter):
@@ -363,100 +359,97 @@ def main(argv: list[str] | None = None) -> int:
     if args.command == "tree" and args.link and args.format != "mermaid":
         commands["tree"].error("--link needs --format mermaid")
     try:
-        if args.command != "init":
-            paths.use(paths.discover(_working_folder()))
-        elif args.project:
-            paths.use(_working_folder())
-        if args.command in WRITERS:  # init names it once its own checks pass
-            notice(f"package: {paths.package().absolute()}")
-        if args.command == "build" and args.into is not None:
-            notice(f"into: {args.into.absolute()}")
-            _check_into(args.into)
-        if args.command == "init":
-            init_package.init(args.project)
-        elif args.command == "update":
-            update.update(_load(), args.aliases, args.dry_run, args.diff, args.expect)
-        elif args.command == "add":
-            edit.add(args.skills)
-        elif args.command == "remove":
-            edit.remove(args.skills)
-        elif args.command == "rename":
-            edit.rename(args.skill, args.name)
-        elif args.command == "bind":
-            edit.bind(args.key, args.target)
-        elif args.command == "unbind":
-            edit.unbind(args.key)
-        elif args.command == "why":
+        with scope.of(args.command, args.command == "init" and args.project):
+            if args.command == "build" and args.into is not None:
+                notice(f"into: {args.into.absolute()}")
+                _check_into(args.into)
+            if args.command == "init":
+                init_package.init(args.project)
+            elif args.command == "update":
+                update.update(
+                    _load(), args.aliases, args.dry_run, args.diff, args.expect
+                )
+            elif args.command == "add":
+                edit.add(args.skills)
+            elif args.command == "remove":
+                edit.remove(args.skills)
+            elif args.command == "rename":
+                edit.rename(args.skill, args.name)
+            elif args.command == "bind":
+                edit.bind(args.key, args.target)
+            elif args.command == "unbind":
+                edit.unbind(args.key)
+            elif args.command == "why":
 
-            def why(loaded: config.Config, resolved: Hull) -> None:
-                try:
-                    target = explain.find(
-                        resolved,
-                        args.skill,
-                        lambda text: compute.known(loaded, "why", text),
-                    )
-                    print(explain.why(resolved, target), end="")
-                finally:  # after the output, as `tree` and `resolve` print them
-                    warn(resolved.warnings)
+                def why(loaded: config.Config, resolved: Hull) -> None:
+                    try:
+                        target = explain.find(
+                            resolved,
+                            args.skill,
+                            lambda text: compute.known(loaded, "why", text),
+                        )
+                        print(explain.why(resolved, target), end="")
+                    finally:  # after the output, as `tree` and `resolve` print them
+                        warn(resolved.warnings)
 
-            _explain(why)
-        elif args.command == "tree":
+                _explain(why)
+            elif args.command == "tree":
 
-            def tree(loaded: config.Config, resolved: Hull) -> None:
-                if args.format == "mermaid":  # --link needs it
-                    cache = Cache(paths.cache())
-                    repositories = explain.repositories(loaded, cache, resolved)
-                    diagram = explain.mermaid(resolved, repositories)
-                    if args.link:
-                        print(explain.link(diagram))
+                def tree(loaded: config.Config, resolved: Hull) -> None:
+                    if args.format == "mermaid":  # --link needs it
+                        cache = Cache(paths.cache())
+                        repositories = explain.repositories(loaded, cache, resolved)
+                        diagram = explain.mermaid(resolved, repositories)
+                        if args.link:
+                            print(explain.link(diagram))
+                        else:
+                            print(diagram, end="")
                     else:
-                        print(diagram, end="")
-                else:
-                    print(explain.tree(resolved), end="")
-                warn(resolved.warnings)
-
-            _explain(tree)
-        elif args.command == "resolve":
-            with _hull() as (loaded, resolved):
-                lock.write(lock.render(loaded, {}, resolved))
-            print(explain.tree(resolved) + explain.suggestions(resolved), end="")
-            warn(resolved.warnings)
-        elif args.command == "build":
-            # `--into` mirrors the package's layout in another folder.
-            given: Path | None = args.into
-            into = None if given is None else given.resolve()
-            skills = paths.skills() if into is None else into / ".apm" / "skills"
-            started = False
-            try:
-                loaded = _load()
-                if given is not None:
-                    _check_into_sources(given, loaded)
-                with compute.compute_hull(loaded) as resolved:
+                        print(explain.tree(resolved), end="")
                     warn(resolved.warnings)
-                    started = True  # from here on `into` may hold our writes
-                    vendor.vendor(resolved, skills)
-                # Hashes the vendored copies, so the lock holds what was vendored.
-                copies = {
-                    s: lock.folder_hash(skills / resolved.deployed[s])
-                    for s in resolved.skills
-                }
-                lock_file = None if into is None else into / "skill-graft.lock"
-                lock.write(lock.render(loaded, {}, resolved, copies), lock_file)
-            except BaseException:
-                # After the work folder is gone, which a TMPDIR may put in `into`.
-                if into is not None and started:
-                    _undo_into(into)
-                raise
-            if into is None:  # its hint, `resolve`, would rewrite the package's lock
-                # Once nothing before APM can fail.
-                explain.announce_suggestions(resolved)
-                if not args.no_install:
-                    apm.install()
+
+                _explain(tree)
+            elif args.command == "resolve":
+                with _hull() as (loaded, resolved):
+                    lock.write(lock.render(loaded, {}, resolved))
+                print(explain.tree(resolved) + explain.suggestions(resolved), end="")
+                warn(resolved.warnings)
+            elif args.command == "build":
+                # `--into` mirrors the package's layout in another folder.
+                given: Path | None = args.into
+                into = None if given is None else given.resolve()
+                skills = paths.skills() if into is None else into / ".apm" / "skills"
+                started = False
+                try:
+                    loaded = _load()
+                    if given is not None:
+                        _check_into_sources(given, loaded)
+                    with compute.compute_hull(loaded) as resolved:
+                        warn(resolved.warnings)
+                        started = True  # from here on `into` may hold our writes
+                        vendor.vendor(resolved, skills)
+                    # Hashes the vendored copies, so the lock holds what was vendored.
+                    copies = {
+                        s: lock.folder_hash(skills / resolved.deployed[s])
+                        for s in resolved.skills
+                    }
+                    lock_file = None if into is None else into / "skill-graft.lock"
+                    lock.write(lock.render(loaded, {}, resolved, copies), lock_file)
+                except BaseException:
+                    # After the work folder is gone, which a TMPDIR may put in `into`.
+                    if into is not None and started:
+                        _undo_into(into)
+                    raise
+                if (
+                    into is None
+                ):  # its hint, `resolve`, would rewrite the package's lock
+                    # Once nothing before APM can fail.
+                    explain.announce_suggestions(resolved)
+                    if not args.no_install:
+                        apm.install()
     except (SkillGraftError, OSError) as error:
         print(f"skill-graft: {error}", file=sys.stderr)
         return 1
-    finally:
-        paths.use(None)
     return 0
 
 
@@ -507,15 +500,6 @@ def _undo_into(into: Path) -> None:
         (into / "skill-graft.lock").unlink(missing_ok=True)
     with contextlib.suppress(OSError):  # kept if another process wrote into it
         folder.rmdir()
-
-
-def _working_folder() -> Path:
-    try:
-        return Path.cwd()
-    except FileNotFoundError:
-        # The shell's PWD still names the deleted folder.
-        folder = f" {os.environ['PWD']}" if os.environ.get("PWD") else ""
-        raise SkillGraftError(f"the working folder{folder} no longer exists") from None
 
 
 def _load() -> config.Config:

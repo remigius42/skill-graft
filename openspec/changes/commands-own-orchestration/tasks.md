@@ -15,7 +15,7 @@ every commit, but those task 3.1 moves to the new warning position; `pre-commit 
 
 ## 2. One place builds the Scope
 
-- [ ] 2.1 Add `commands/scope.py`: `of(command, project)` context manager as design.md says, `WRITERS` and
+- [x] 2.1 Add `commands/scope.py`: `of(command, project)` context manager as design.md says, `WRITERS` and
   `_working_folder` moved from `cli`; `cli.main` enters it around dispatch instead of its `paths.use` calls and
   `package:` notice; tests in `tests/commands/test_scope.py`: `init` yields the home folder without reading the
   working folder (passes in a deleted one), `init --project` the working folder, `tree` the discovered package
