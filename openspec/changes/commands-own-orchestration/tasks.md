@@ -60,7 +60,7 @@ every commit, but those task 3.1 moves to the new warning position; `pre-commit 
 
 ## 5. Build
 
-- [ ] 5.1 Move `build` to `commands/build.py` as `build(scope, warnings, into, no_install)` with `_check_into`,
+- [x] 5.1 Move `build` to `commands/build.py` as `build(scope, warnings, into, no_install)` with `_check_into`,
   `_check_into_sources` and `_undo_into`, printing `into:` and checking first; vendoring and the vendored hashes
   inside a `resolving` block with `lock_file` for `--into`; `cli` keeps `_into` and dispatches; verify
   `tests/cli/test_build.py` (its `lock.write` patches included), `test_git_build.py` and
