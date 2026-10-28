@@ -12,6 +12,8 @@ from types import FrameType
 import pytest
 
 from skill_graft.cli import main
+from skill_graft.infra import paths
+from skill_graft.infra.cache import Cache
 
 # Stands in for `apm`: logs its argv and working folder, and for `install -g <path>`
 # adds the path to ~/.apm/apm.yml the way APM 0.33.0 does, or for `install <path>`
@@ -158,6 +160,13 @@ class Upstream:
         self.git("add", "-A")
         self.git("commit", "-q", "--allow-empty", "-m", "commit")
         return self.git("rev-parse", "HEAD")
+
+
+def seed(upstream: Upstream, url: str) -> None:
+    """Clones `upstream` into the cache as `url`'s repository, so `url` needs no fetch."""
+    repo = Cache(paths.cache()).repository(url)
+    repo.parent.mkdir(parents=True, exist_ok=True)
+    upstream.git("clone", "-q", "--bare", upstream.url, str(repo))
 
 
 def write_config(text: str) -> Path:

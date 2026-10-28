@@ -9,10 +9,12 @@ from pathlib import Path
 from typing import TypeAlias
 
 import pytest
-from conftest import Upstream, configure, make_patch, skill, write_config
+from conftest import Upstream, configure, make_patch, seed, skill, write_config
 
 from skill_graft.cli import main
 from skill_graft.commands import explain
+from skill_graft.infra import paths
+from skill_graft.infra.cache import Cache
 
 Capsys: TypeAlias = pytest.CaptureFixture[str]
 
@@ -131,6 +133,56 @@ def test_mermaid_has_no_source_links(
     for text in ["<a", "click", "://", "user", "secret", "example.com", "t0k3n"]:
         assert text not in first, text
     assert capsys.readouterr().out == first
+
+
+def test_mermaid_names_a_github_source(
+    home: Path, tmp_path: Path, capsys: Capsys
+) -> None:
+    upstream = Upstream(tmp_path / "upstream")
+    sha = upstream.commit({"tdd/SKILL.md": "# tdd\n"})
+    url = "https://github.com/o/mp.git"
+    seed(upstream, url)
+    write_config(f'entries = ["mp/tdd"]\n[sources.mp]\ngit = "{url}"\nref = "{sha}"\n')
+
+    assert main(["tree", "--format", "mermaid"]) == 0
+
+    assert "mp · github.com/o/mp" in capsys.readouterr().out
+
+
+def test_mermaid_rewritten_url(home: Path, tmp_path: Path, capsys: Capsys) -> None:
+    upstream = Upstream(tmp_path / "upstream")
+    sha = upstream.commit({"tdd/SKILL.md": "# tdd\n"})
+    url = "https://github.com/o/mp.git"
+    seed(upstream, url)
+    Path(os.environ["GIT_CONFIG_GLOBAL"]).write_text(
+        f'[url "{tmp_path / "other"}/"]\n\tinsteadOf = https://github.com/\n'
+    )
+    write_config(f'entries = ["mp/tdd"]\n[sources.mp]\ngit = "{url}"\nref = "{sha}"\n')
+
+    assert main(["tree", "--format", "mermaid"]) == 0
+
+    out = capsys.readouterr().out
+    assert 'subgraph s0["mp"]\n' in out
+    assert "<a" not in out and "github.com" not in out
+
+
+def test_mermaid_without_a_readable_cache_repository(
+    home: Path, tmp_path: Path, capsys: Capsys
+) -> None:
+    upstream = Upstream(tmp_path / "upstream")
+    sha = upstream.commit({"tdd/SKILL.md": "/missing\n"})
+    url = "https://github.com/o/mp.git"
+    seed(upstream, url)
+    write_config(f'entries = ["mp/tdd"]\n[sources.mp]\ngit = "{url}"\nref = "{sha}"\n')
+    assert main(["tree", "--format", "mermaid"]) == 0  # caches the tree
+    capsys.readouterr()
+    (Cache(paths.cache()).repository(url) / "config").write_text("[broken\n")
+
+    assert main(["tree", "--format", "mermaid"]) == 0
+
+    out, err = capsys.readouterr()
+    assert 'subgraph s0["mp"]\n' in out and "<a" not in out
+    assert "`/missing`" in err  # the hull's warnings still follow the diagram
 
 
 def test_mermaid_link_decodes_to_the_diagram(home: Path, capsys: Capsys) -> None:

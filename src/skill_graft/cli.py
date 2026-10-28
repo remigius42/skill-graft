@@ -15,6 +15,7 @@ from typing import Any, NoReturn, TypeGuard
 
 from skill_graft.commands import edit, explain, init_package, update
 from skill_graft.infra import apm, paths
+from skill_graft.infra.cache import Cache
 from skill_graft.infra.errors import SkillGraftError, notice, warn
 from skill_graft.pipeline import compute, config, lock, patch, vendor
 from skill_graft.pipeline.hull import Hull
@@ -401,10 +402,14 @@ def main(argv: list[str] | None = None) -> int:
         elif args.command == "tree":
 
             def tree(loaded: config.Config, resolved: Hull) -> None:
-                if args.link:
-                    print(explain.link(explain.mermaid(resolved, loaded.sources)))
-                elif args.format == "mermaid":
-                    print(explain.mermaid(resolved, loaded.sources), end="")
+                if args.format == "mermaid":  # --link needs it
+                    cache = Cache(paths.cache())
+                    repositories = explain.repositories(loaded, cache, resolved)
+                    diagram = explain.mermaid(resolved, loaded.sources, repositories)
+                    if args.link:
+                        print(explain.link(diagram))
+                    else:
+                        print(diagram, end="")
                 else:
                     print(explain.tree(resolved), end="")
                 warn(resolved.warnings)

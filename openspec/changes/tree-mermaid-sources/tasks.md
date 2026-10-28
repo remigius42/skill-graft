@@ -25,7 +25,7 @@ Apply with the `mp-tdd` skill: each task red-green-refactor, one commit.
 
 ## 3. Links for GitHub and GitLab Sources
 
-- [ ] 3.1 Add a `tests/conftest.py` helper cloning an `Upstream` into `Cache.repository(url)` for a given URL, and
+- [x] 3.1 Add a `tests/conftest.py` helper cloning an `Upstream` into `Cache.repository(url)` for a given URL, and
   `explain.repositories(config, cache)`: alias → repository URL for each git **Source** `repository()` accepts
   whose cache repository exists and for which `git --git-dir <it> ls-remote --get-url <url>` prints `<url>`
   unchanged; `cli.py` passes it to `mermaid(hull, sources, repositories)`; tests through `main`: a seeded GitHub

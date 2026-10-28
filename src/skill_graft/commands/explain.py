@@ -7,8 +7,10 @@ import zlib
 from collections.abc import Callable
 from urllib.parse import urlsplit
 
+from skill_graft.infra import git
+from skill_graft.infra.cache import Cache
 from skill_graft.infra.errors import SkillGraftError, notice
-from skill_graft.pipeline.config import NAME, SCP, SkillId, Source
+from skill_graft.pipeline.config import NAME, SCP, Config, GitSource, SkillId, Source
 from skill_graft.pipeline.hull import Edge, Hull
 
 
@@ -220,7 +222,42 @@ def repository(url: str) -> str | None:
     return f"https://{host}/{'/'.join(segments)}"
 
 
-def mermaid(hull: Hull, sources: dict[str, Source]) -> str:
+def repositories(config: Config, cache: Cache, hull: Hull) -> dict[str, str]:
+    """Each hull skill's git source's repository URL, by alias, if it names one git
+    fetches as is.
+
+    An `insteadOf` rule could send the URL elsewhere, a token in its path; git
+    prints the URL it fetches without contacting the remote. A source with no
+    cache repository was served by another cache, and one git cannot read there
+    may be fetched otherwise: no repository either.
+    """
+    found: dict[str, str] = {}
+    for alias in dict.fromkeys(skill.alias for skill in hull.skills):
+        source = config.sources[alias]
+        if not isinstance(source, GitSource):
+            continue
+        url = repository(source.url)
+        repo = cache.repository(source.url)
+        if url is None or not repo.exists():
+            continue
+        try:
+            fetched = git.run(
+                "ls-remote",
+                "--get-url",
+                source.url,
+                repo=repo,
+                context=f"source {alias!r}",
+            )
+        except SkillGraftError:  # a link is not worth failing `tree` over
+            continue
+        if fetched.decode().strip() == source.url:
+            found[alias] = url
+    return found
+
+
+def mermaid(
+    hull: Hull, sources: dict[str, Source], repositories: dict[str, str]
+) -> str:
     """The hull as a Mermaid `flowchart TD`: one arrow per tree line, no repeats.
 
     Nodes are `n0…` in hull order, as skill IDs hold `/`, inside one subgraph
@@ -234,7 +271,10 @@ def mermaid(hull: Hull, sources: dict[str, Source]) -> str:
         groups.setdefault(skill.alias, []).append(skill)
     lines = ["flowchart TD"]
     for i, (alias, skills) in enumerate(groups.items()):
-        lines.append(f"  subgraph s{i}[{_quote(alias)}]")
+        title = alias
+        if alias in repositories:
+            title += f" · {repositories[alias].removeprefix('https://')}"
+        lines.append(f"  subgraph s{i}[{_quote(title)}]")
         for skill in skills:
             entry = ":::entry" if skill in hull.entries else ""
             lines.append(f"    {ids[skill]}[{_quote(_node_label(hull, skill))}]{entry}")
