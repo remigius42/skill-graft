@@ -255,7 +255,8 @@ def _parser() -> tuple[_Parser, dict[str, argparse.ArgumentParser]]:
         action="store_true",
         help=(
             "with --format mermaid: print a mermaid.live URL that holds the diagram "
-            "in its fragment instead; nothing is uploaded"
+            "in its fragment instead; nothing is uploaded, but the URL names the "
+            "GitHub and GitLab repositories of the sources"
         ),
     )
     why = commands.add_parser(

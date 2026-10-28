@@ -44,7 +44,7 @@ Apply with the `mp-tdd` skill: each task red-green-refactor, one commit.
 
 ## 4. Documentation
 
-- [ ] 4.1 Update `docs/design.md`'s `tree` entry: subgraphs per **Source**, amber **Entries**, links only for
+- [x] 4.1 Update `docs/design.md`'s `tree` entry: subgraphs per **Source**, amber **Entries**, links only for
   GitHub and GitLab and why (the design's first decision, in short), the URL rebuilt not stripped, none for a URL
   git rewrites, a shared `--link` naming the repositories, renderers that
   strip HTML or disable links; drop "no links to sources"; `tree --help` for `--link` says the link names the

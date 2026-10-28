@@ -134,14 +134,28 @@ path = "~/Documents/sync/2_areas/software/chisel_skill"
   skill ID or by the bare name of a prose suggestion, is an error saying so, plus who mentions it in prose and
   the `add` hint.
 - `tree [--format text|mermaid] [--link]`: the hull as `resolve`'s tree (without the suggestions), or as a
-  Mermaid `flowchart TD`: nodes `n0…` in hull order labelled as tree lines are (`as <deployed>`, `(patched)`),
-  entries in `classDef entry`, one edge per source, target, kind and bind labelled with the reference as written
-  (`, bind`), prose edges dotted and only where the build rewrites them, no code fence, no links to sources.
-  Labels are quoted, with `"` as `#quot;` and every backtick as `#96;`: a quoted label opening with a backtick is
-  a Mermaid Markdown string. `--link` (Mermaid only) prints a `https://mermaid.live/edit#pako:…` URL instead: the
-  diagram lives in the fragment, so nothing is uploaded and skill-graft makes no network call. The fragment is
-  mermaid-live-editor's `pako` form, the JSON state `{"code": <diagram>, "mermaid": "{\"theme\": \"default\"}"}`
-  zlib-deflated at level 9 in url-safe base64 without padding; the editor merges it over its default state.
+  Mermaid `flowchart TD`: one subgraph `s0…` per source, in order of its first skill, titled with its alias,
+  holding nodes `n0…` in hull order labelled as tree lines are (`as <deployed>`, `(patched)`); entries in
+  `classDef entry`, drawn amber; then, after every subgraph so Mermaid moves no node, one edge per source, target,
+  kind and bind labelled with the reference as written (`, bind`), prose edges dotted and only where the build
+  rewrites them; no code fence. Labels are quoted, with `"` as `#quot;` and every backtick as `#96;`: a quoted
+  label opening with a backtick is a Mermaid Markdown string.
+  - Links only for a git source on `github.com` or `gitlab.com`: a URL can hold a token in its user info, query
+    or path, and only there is the path `owner/repo` (GitLab `group/…/repo`), names a token would not fetch. Its
+    title becomes `alias · <host>/<path>`, linked to `/tree/<ref>` (GitLab `/-/tree/<ref>`) plus its
+    `subdirectory`, and each of its skills links to its folder, symlinks resolved, segments percent-encoded, as
+    `<a href='…' target='_blank' rel='noopener'>`; no `click` line, which mermaid.live opens in the same tab.
+    The repository URL is rebuilt from the host and the name segments, never stripped of credentials, so nothing
+    else from the configured URL appears. A URL `git ls-remote --get-url` shows git rewrites (`insteadOf`) gets
+    no link: git may fetch it from a host taking a token in the path. Every other source shows its alias only.
+    Renderers that escape or strip HTML show the markup or plain text; GitHub shows plain text.
+  - `--link` (Mermaid only) prints a `https://mermaid.live/edit#pako:…` URL instead: the diagram lives in the
+    fragment, so nothing is uploaded and skill-graft makes no network call. The fragment is mermaid-live-editor's
+    `pako` form, the JSON state `{"code": <diagram>, "mermaid": "{\"theme\": \"default\"}"}` zlib-deflated at
+    level 9 in url-safe base64 without padding; the editor merges it over its default state. A shared link names
+    the GitHub and GitLab repositories, private ones too. mermaid.live, a third-party site whose page code can
+    read the diagram, then sees which upstream repositories and refs you use, a target list for a supply-chain
+    attack on them.
 - `help [command]`: the same text as `-h`/`--help`, which every command takes. No command, or an unknown one,
   prints the error and the command list to stderr and exits 2.
 

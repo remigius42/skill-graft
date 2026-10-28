@@ -98,6 +98,8 @@ to exactly the hull you read; a push, a path source's edit, a patch or a rename 
   added skill, never its text; `--diff <file>` writes that text as deployed, the Deployed diff, to a new `*.diff`
   file; `--expect <digest>` updates only to the hull a dry run showed.
 - `tree [--format text|mermaid] [--link]`: print the hull, writing nothing; `--link` gives a mermaid.live URL.
+  mermaid.live, a third-party site whose page code can read the diagram, then sees which upstream repositories
+  and refs you use, a target list for a supply-chain attack on them.
 - `why <skill>`: print the paths from the entries that reach a skill, and its upstream folder.
 - `add <skill-id>…`, `remove <skill-id>…`: change `entries`, keeping the file's comments, once the result resolves.
 - `rename <skill-id> <name>`: set a skill's deployed name; the name it would deploy as without a key undoes it.
