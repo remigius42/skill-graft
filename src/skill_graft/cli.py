@@ -368,8 +368,8 @@ def main(argv: list[str] | None = None) -> int:
                 init_package.init(args.project)
             elif args.command == "update":
                 update.update(
+                    current,
                     warnings,
-                    resolve.load(warnings),
                     args.aliases,
                     args.dry_run,
                     args.diff,

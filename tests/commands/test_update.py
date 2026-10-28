@@ -1313,6 +1313,44 @@ def test_failed_diff_write_in_a_dry_run(
     assert code == 1 and "apply:" not in out
 
 
+def failing_lock_write(
+    monkeypatch: pytest.MonkeyPatch, error: BaseException, file: Path, before: bytes
+) -> None:
+    """`lock.write` raises `error`, once the new refs are in `file`."""
+
+    def fail(text: str, lock_file: Path | None = None) -> None:
+        assert file.read_bytes() != before, "the refs are written before the lock"
+        raise error
+
+    monkeypatch.setattr(lock, "write", fail)
+
+
+def test_lock_write_fails(
+    upstream: Upstream, capsys: Capsys, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    _, _, file = moved_tdd(upstream)
+    before, lock_before = file.read_bytes(), lock_file().read_bytes()
+    failing_lock_write(monkeypatch, OSError("disk full"), file, before)
+
+    code, _, err = update(capsys)
+
+    assert code == 1 and "disk full" in err
+    assert file.read_bytes() == before and lock_file().read_bytes() == lock_before
+
+
+def test_lock_write_interrupted(
+    upstream: Upstream, capsys: Capsys, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    _, _, file = moved_tdd(upstream)
+    before, lock_before = file.read_bytes(), lock_file().read_bytes()
+    failing_lock_write(monkeypatch, KeyboardInterrupt(), file, before)
+
+    with pytest.raises(KeyboardInterrupt):
+        update(capsys)
+
+    assert file.read_bytes() == before and lock_file().read_bytes() == lock_before
+
+
 def test_diff_file_without_a_previous_hull(
     home: Path, upstream: Upstream, capsys: Capsys
 ) -> None:

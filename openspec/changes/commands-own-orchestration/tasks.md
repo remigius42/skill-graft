@@ -51,7 +51,7 @@ every commit, but those task 3.1 moves to the new warning position; `pre-commit 
   commands take the `Scope` and the list; test in `tests/commands/test_edit.py`: a `KeyboardInterrupt` from
   `lock.write` leaves `skill-graft.toml` byte for byte as before (the edit spec's "Lock write interrupted"; red
   today: only `OSError` restores); verify it fails first, then passes
-- [ ] 4.3 `update._update` uses `resolving` (`refs=tips`, its `cache`, `hashes` set, `write=not dry_run`),
+- [x] 4.3 `update._update` uses `resolving` (`refs=tips`, its `cache`, `hashes` set, `write=not dry_run`),
   appending `(the diff file, its atomic_write)` and `(the config file resolved, _write_refs(moved))`;
   `update.update` takes the `Scope` and the list and loads the config; tests in `tests/commands/test_update.py`:
   the spec's "Lock write fails" and "Lock write interrupted" scenarios, `lock.write` patched to raise `OSError`

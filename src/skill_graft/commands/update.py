@@ -12,7 +12,7 @@ from typing import Any, cast
 
 import tomlkit
 
-from skill_graft.commands import edit, explain
+from skill_graft.commands import edit, explain, resolve
 from skill_graft.infra import files, git, paths
 from skill_graft.infra.cache import Cache
 from skill_graft.infra.errors import SkillGraftError
@@ -40,8 +40,8 @@ HEADER = (
 
 
 def update(
+    scope: paths.Scope,
     warnings: list[str],
-    loaded: Config,
     aliases: list[str],
     dry_run: bool = False,
     diff_file: Path | None = None,
@@ -54,6 +54,7 @@ def update(
     the real cache, and `diff_file`. Writes `diff_file`'s Deployed diff, if given;
     refuses a hull whose digest is not `expect`, if given.
     """
+    loaded = resolve.load(warnings)
     if expect is not None and not re.fullmatch("[0-9a-f]{64}", expect):
         raise SkillGraftError(
             f"--expect {expect}: expected 64 hex digits, as an `apply:` line gives"
@@ -65,14 +66,24 @@ def update(
         flags += f" --diff {shlex.quote(str(diff_file))}"
     if not dry_run:
         git_cache = Cache(paths.cache())
-        _update(warnings, loaded, aliases, git_cache, True, target, expect, flags)
+        _update(
+            scope, warnings, loaded, aliases, git_cache, True, target, expect, flags
+        )
         return
     try:
         with tempfile.TemporaryDirectory(prefix="skill-graft-") as tmp:
             git_cache = Cache(Path(tmp), Cache(paths.cache()))
             try:
                 _update(
-                    warnings, loaded, aliases, git_cache, False, target, expect, flags
+                    scope,
+                    warnings,
+                    loaded,
+                    aliases,
+                    git_cache,
+                    False,
+                    target,
+                    expect,
+                    flags,
                 )
             except patch.PatchError as error:
                 raise _fetch_hint(error, Path(tmp)) from None
@@ -142,6 +153,7 @@ def _fetch_hint(error: patch.PatchError, tmp: Path) -> patch.PatchError:
 
 
 def _update(
+    scope: paths.Scope,
     warnings: list[str],
     loaded: Config,
     aliases: list[str],
@@ -168,9 +180,12 @@ def _update(
             git_cache.fetch(alias, source.url)
         unchanged = " (unchanged)" if tips[alias] == source.ref else ""
         print(f"{alias} {tips[alias]}{unchanged}")
-    with compute.compute_hull(loaded, git_cache, tips) as hull:
-        hashes = lock.skill_hashes(hull)
-        warnings.extend(hull.warnings)
+    # The lock even if no ref moved: a path source may have changed.
+    with resolve.resolving(
+        scope, loaded, warnings, git_cache, tips, write=write
+    ) as resolution:
+        hull = resolution.hull
+        hashes = resolution.hashes = lock.skill_hashes(hull)
         with _previous(loaded, selected, git_cache) as previous:
             shown = _print_diff(previous, hull, hashes)
             edited = []
@@ -189,19 +204,17 @@ def _update(
                 diff = _deployed_diff(
                     loaded, tips, previous, hull, hashes, shown, edited
                 )
-    moved = {alias: tip for alias, tip in tips.items() if tip != selected[alias].ref}
-    if write:
-        text = lock.render(loaded, tips, hull, hashes)  # may fail: before any write
-        if target is not None:
-            files.atomic_write(target, diff.encode())
-        try:
-            if moved:
-                _write_refs(moved)
-            lock.write(text)  # even if no ref moved: a path source may have changed
-        except BaseException:
-            if target is not None:  # no diff of what was not written
-                target.unlink(missing_ok=True)
-            raise
+        moved = {
+            alias: tip for alias, tip in tips.items() if tip != selected[alias].ref
+        }
+        if write and target is not None:  # first: no diff of what was not written
+            resolution.writes.append(
+                (target, lambda: files.atomic_write(target, diff.encode()))
+            )
+        if write and moved:
+            resolution.writes.append(
+                (paths.config_file().resolve(), lambda: _write_refs(moved))
+            )
     explain.announce_suggestions(hull, dry_run=not write)  # once the writes succeeded
     if write:
         return
