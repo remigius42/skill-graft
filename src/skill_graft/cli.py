@@ -406,7 +406,7 @@ def main(argv: list[str] | None = None) -> int:
                 if args.format == "mermaid":  # --link needs it
                     cache = Cache(paths.cache())
                     repositories = explain.repositories(loaded, cache, resolved)
-                    diagram = explain.mermaid(resolved, loaded.sources, repositories)
+                    diagram = explain.mermaid(resolved, repositories)
                     if args.link:
                         print(explain.link(diagram))
                     else:

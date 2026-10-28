@@ -68,9 +68,10 @@ Manual check in mermaid.live (v12.2.0, theme `default`, its default `securityLev
 - **Ask git whether it rewrites the URL.** `git --git-dir <the Source's cache repository> ls-remote --get-url <url>`
   prints the URL after every `insteadOf` rule, without contacting the remote; run in the cache repository, it reads the
   configuration the fetch reads. A **Source** gets links only if git prints the URL unchanged, and none if its cache
-  repository is missing (another cache served it). `explain.repositories(config, cache)` does this once per **Source**,
-  after the **Hull** is computed, and returns alias → repository URL; `mermaid` takes that mapping, so it runs no git
-  itself and its tests need no git configuration.
+  repository is missing (another cache served it) or git cannot read it. `explain.repositories(config, cache, hull)`
+  does this once per **Source** with a **Hull** **Skill**, after the **Hull** is computed, and returns alias →
+  `Repository` (`host/path`, the tree URL at the **Ref**, the `subdirectory`); `mermaid` takes that mapping, so it
+  runs no git itself and its tests need no git configuration.
 - **Tests seed the cache instead of rewriting URLs.** A test clones its local upstream into
   `Cache.repository(<https URL>)`; `checkout` finds the **Ref** there and never fetches. Rewriting with
   `insteadOf`, as other tests do, would now remove the links under test. One test does rewrite, to check that.
@@ -82,9 +83,9 @@ Manual check in mermaid.live (v12.2.0, theme `default`, its default `securityLev
   `upstream` is the folder before any **Patch**, as the upstream tree at the **Ref** shows it. Each segment goes
   through `urllib.parse.quote(segment, safe="")`, so `#`, `?`, `%`, `'`, `<` and spaces cannot end the path, the
   attribute or the tag. The **Ref** is hex, the repository URL `NAME` segments: neither needs encoding.
-- **`mermaid(hull, sources, repositories)`**: `sources` the `Config`'s mapping, for the **Ref** and
-  `subdirectory`; `repositories` from `explain.repositories`. They belong to the config, not the **Hull**; adding
-  them to `Hull` would widen a pipeline type for one view. `link()` is unchanged.
+- **`mermaid(hull, repositories)`**: `repositories` from `explain.repositories`, which reads the **Ref** and
+  `subdirectory` from the `Config`. They belong to the config, not the **Hull**; adding them to `Hull` would widen
+  a pipeline type for one view. `link()` is unchanged.
 - **Subgraphs in order of each alias's first Skill in hull order, `s0…`; nodes inside in hull order; arrows after
   all subgraphs.** Node IDs stay `n0…`, so `n` and `s` never clash. Arrows outside every subgraph keep Mermaid from
   moving a node into the subgraph where an arrow happens to be written.

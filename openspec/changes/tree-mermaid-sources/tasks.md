@@ -37,10 +37,16 @@ Apply with the `mp-tdd` skill: each task red-green-refactor, one commit.
   resolved tree root (`.` adds nothing; outside the root, no link), each path segment through
   `quote(…, safe="")`; tests through `main`, URLs seeded into the cache: "GitHub Source", "GitLab Source without
   subdirectory", "Folder names encoded", "Skill folder through a symbolic link", plus a symbolic link leaving the
-  tree (no link for that **Skill**); "Labels quoted" with a GitHub **Source**; verify they fail first, then pass
+  tree (no link for that **Skill**); "Labels quoted" with a GitHub **Source**; verify they fail first, then pass.
+  The symbolic link leaving the tree cannot be built: discovery of a git **Source** follows only links that stay
+  inside it, and a `subdirectory` holds none, so that guard stays untested
 - [x] 3.3 Manual check: generate `tree --format mermaid --link` for a config with a GitHub and a GitLab **Source**,
   open it in mermaid.live, confirm subgraph title and node links open the right tree in a new tab; if node links
   fail, stop and report before changing the spec
+- [x] 3.4 After review: no link, and no failure, when git cannot read a **Source**'s cache repository
+  ("Unreadable cache repository"); `ls-remote` only for **Sources** with a **Hull** **Skill**; `host:/path` refused.
+  Then `repositories(config, cache, hull)` returns a `Repository` (`host/path`, the tree URL at the **Ref**, the
+  `subdirectory`) and `mermaid(hull, repositories)` takes only that, replacing the signatures of 1.1, 3.1 and 3.2
 
 ## 4. Documentation
 

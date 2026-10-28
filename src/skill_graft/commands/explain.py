@@ -6,12 +6,13 @@ import re
 import zlib
 from collections.abc import Callable
 from pathlib import Path
+from typing import NamedTuple
 from urllib.parse import quote, urlsplit
 
 from skill_graft.infra import git
 from skill_graft.infra.cache import Cache
 from skill_graft.infra.errors import SkillGraftError, notice
-from skill_graft.pipeline.config import NAME, SCP, Config, GitSource, SkillId, Source
+from skill_graft.pipeline.config import NAME, SCP, Config, GitSource, SkillId
 from skill_graft.pipeline.hull import Edge, Hull
 
 
@@ -186,10 +187,25 @@ def _entry(hull: Hull, skill: SkillId) -> str:
     return " (entry)" if skill in hull.entries else ""
 
 
-# The forges whose repository paths are names a token in them would not fetch:
-# the number of path segments a repository has there (exactly, or at least), and
-# what its tree's URL puts between the repository and the ref.
-_FORGES = {"github.com": (2, False, "/tree/"), "gitlab.com": (2, True, "/-/tree/")}
+class _Forge(NamedTuple):
+    segments: int  # the path segments of a repository there
+    deeper: bool  # whether it may have more (GitLab's subgroups)
+    tree: str  # what its tree's URL puts between the repository and the ref
+
+
+# The forges whose repository paths are names a token in them would not fetch.
+_FORGES = {
+    "github.com": _Forge(2, False, "/tree/"),
+    "gitlab.com": _Forge(2, True, "/-/tree/"),
+}
+
+
+class Repository(NamedTuple):
+    """Where a source's subgraph and skills link to."""
+
+    name: str  # `host/path`, as the subgraph title shows it
+    tree: str  # the forge's page of the tree at the source's ref
+    subdirectory: str  # the folder walked, relative to the tree; "" for all of it
 
 
 def repository(url: str) -> str | None:
@@ -216,16 +232,19 @@ def repository(url: str) -> str | None:
         return None
     segments = path.removesuffix("/").split("/")
     segments[-1] = segments[-1].removesuffix(".git")
-    count, more, _ = _FORGES[host]
-    if not (len(segments) == count or (more and len(segments) > count)):
+    forge = _FORGES[host]
+    if not (
+        len(segments) == forge.segments
+        or (forge.deeper and len(segments) > forge.segments)
+    ):
         return None
     if not all(NAME.fullmatch(segment) for segment in segments):
         return None
     return f"https://{host}/{'/'.join(segments)}"
 
 
-def repositories(config: Config, cache: Cache, hull: Hull) -> dict[str, str]:
-    """Each hull skill's git source's repository URL, by alias, if it names one git
+def repositories(config: Config, cache: Cache, hull: Hull) -> dict[str, Repository]:
+    """Each hull skill's git source's repository, by alias, if its URL names one git
     fetches as is.
 
     An `insteadOf` rule could send the URL elsewhere, a token in its path; git
@@ -233,7 +252,7 @@ def repositories(config: Config, cache: Cache, hull: Hull) -> dict[str, str]:
     cache repository was served by another cache, and one git cannot read there
     may be fetched otherwise: no repository either.
     """
-    found: dict[str, str] = {}
+    found: dict[str, Repository] = {}
     for alias in dict.fromkeys(skill.alias for skill in hull.skills):
         source = config.sources[alias]
         if not isinstance(source, GitSource):
@@ -253,7 +272,13 @@ def repositories(config: Config, cache: Cache, hull: Hull) -> dict[str, str]:
         except SkillGraftError:  # a link is not worth failing `tree` over
             continue
         if fetched.decode().strip() == source.url:
-            found[alias] = url
+            assert source.ref  # `tree` refuses a git source without one
+            tree = _FORGES[urlsplit(url).netloc].tree
+            found[alias] = Repository(
+                url.removeprefix("https://"),
+                f"{url}{tree}{source.ref}",
+                source.subdirectory or "",
+            )
     return found
 
 
@@ -266,9 +291,7 @@ def _anchor(url: str, text: str) -> str:
     return f"<a href='{url}' target='_blank' rel='noopener'>{text}</a>"
 
 
-def mermaid(
-    hull: Hull, sources: dict[str, Source], repositories: dict[str, str]
-) -> str:
+def mermaid(hull: Hull, repositories: dict[str, Repository]) -> str:
     """The hull as a Mermaid `flowchart TD`: one arrow per tree line, no repeats.
 
     Nodes are `n0…` in hull order, as skill IDs hold `/`, inside one subgraph
@@ -277,32 +300,25 @@ def mermaid(
     arrows are dotted. A source in `repositories` and its skills link to the
     forge's tree at its ref, unless a skill's folder resolves outside the tree.
     """
-    trees: dict[str, str] = {}  # the forge's page of the tree at the ref
-    titles: dict[str, str] = {}
-    roots: dict[str, Path] = {}
-    for alias, url in repositories.items():
-        git_source = sources[alias]
-        assert isinstance(git_source, GitSource) and git_source.ref  # `tree` needs it
-        trees[alias] = f"{url}{_FORGES[urlsplit(url).netloc][2]}{git_source.ref}"
-        titles[alias] = _anchor(
-            _path_url(trees[alias], git_source.subdirectory or ""),
-            f"{alias} · {url.removeprefix('https://')}",
-        )
-        roots[alias] = hull.roots[alias].resolve()
+    roots = {alias: hull.roots[alias].resolve() for alias in repositories}
     ids = {skill: f"n{i}" for i, skill in enumerate(hull.skills)}
     groups: dict[str, list[SkillId]] = {}
     for skill in hull.skills:
         groups.setdefault(skill.alias, []).append(skill)
     lines = ["flowchart TD"]
     for i, (alias, skills) in enumerate(groups.items()):
-        lines.append(f"  subgraph s{i}[{_quote(titles.get(alias, alias))}]")
+        title = alias
+        if found := repositories.get(alias):
+            url = _path_url(found.tree, found.subdirectory)
+            title = _anchor(url, f"{alias} · {found.name}")
+        lines.append(f"  subgraph s{i}[{_quote(title)}]")
         for skill in skills:
             entry = ":::entry" if skill in hull.entries else ""
             label = _node_label(hull, skill)
-            if alias in trees:
+            if found:
                 folder = hull.upstream[skill].resolve()
                 if folder.is_relative_to(roots[alias]):
-                    url = _path_url(trees[alias], folder.relative_to(roots[alias]))
+                    url = _path_url(found.tree, folder.relative_to(roots[alias]))
                     label = _anchor(url, label)
             lines.append(f"    {ids[skill]}[{_quote(label)}]{entry}")
         lines.append("  end")
