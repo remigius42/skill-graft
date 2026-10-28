@@ -5,7 +5,6 @@ import json
 import re
 import sys
 import textwrap
-from collections.abc import Callable
 from importlib import metadata
 from pathlib import Path
 from typing import Any, NoReturn, TypeGuard
@@ -19,11 +18,7 @@ from skill_graft.commands import (
     scope,
     update,
 )
-from skill_graft.infra import paths
-from skill_graft.infra.cache import Cache
 from skill_graft.infra.errors import SkillGraftError, warnings_last
-from skill_graft.pipeline import compute, config, patch
-from skill_graft.pipeline.hull import Hull
 
 
 class _Formatter(argparse.HelpFormatter):
@@ -388,33 +383,10 @@ def main(argv: list[str] | None = None) -> int:
             elif args.command == "unbind":
                 edit.unbind(current, warnings, args.key)
             elif args.command == "why":
-
-                def why(loaded: config.Config, resolved: Hull) -> None:
-                    warnings.extend(resolved.warnings)
-                    target = explain.find(
-                        resolved,
-                        args.skill,
-                        lambda text: compute.known(loaded, "why", text),
-                    )
-                    print(explain.why(resolved, target), end="")
-
-                _explain(warnings, why)
+                explain.show_why(current, warnings, args.skill)
             elif args.command == "tree":
-
-                def tree(loaded: config.Config, resolved: Hull) -> None:
-                    warnings.extend(resolved.warnings)
-                    if args.format == "mermaid":  # --link needs it
-                        cache = Cache(paths.cache())
-                        repositories = explain.repositories(loaded, cache, resolved)
-                        diagram = explain.mermaid(resolved, repositories)
-                        if args.link:
-                            print(explain.link(diagram))
-                        else:
-                            print(diagram, end="")
-                    else:
-                        print(explain.tree(resolved), end="")
-
-                _explain(warnings, tree)
+                mermaid = args.format == "mermaid"
+                explain.show_tree(current, warnings, mermaid, args.link)
             elif args.command == "resolve":
                 resolve.resolve(current, warnings)
             elif args.command == "build":
@@ -430,23 +402,6 @@ def _into(value: str) -> Path:
     if not value:
         raise argparse.ArgumentTypeError("must not be empty")
     return Path(value)
-
-
-def _explain(warnings: list[str], show: Callable[[config.Config, Hull], None]) -> None:
-    """Runs `show` on the hull; on one failing only on hidden characters, on the
-    hull as walked, so the user sees what pulls them in, then fails."""
-    loaded = resolve.load(warnings)
-    try:
-        with compute.compute_hull(loaded) as resolved:
-            show(loaded, resolved)
-    except patch.PatchError as error:
-        if error.hull is None:
-            raise
-        try:
-            show(loaded, error.hull)
-        except SkillGraftError as shown:  # both matter: the hidden characters too
-            raise SkillGraftError(f"{shown}\n{error}") from None
-        raise
 
 
 if __name__ == "__main__":

@@ -69,7 +69,7 @@ every commit, but those task 3.1 moves to the new warning position; `pre-commit 
 
 ## 6. Tree and why
 
-- [ ] 6.1 Move `tree` and `why` into `commands/explain.py` as `show_tree(scope, warnings, mermaid, link)` and
+- [x] 6.1 Move `tree` and `why` into `commands/explain.py` as `show_tree(scope, warnings, mermaid, link)` and
   `show_why(scope, warnings, text)`, `_explain` moved as is, appending to the list instead of `warn`; `cli` keeps
   the `--link` usage error and dispatches; verify `tests/commands/test_explain.py` and
   `tests/cli/test_hidden_characters.py` pass unchanged

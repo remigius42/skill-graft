@@ -9,11 +9,62 @@ from pathlib import Path
 from typing import NamedTuple
 from urllib.parse import quote, urlsplit
 
-from skill_graft.infra import git
+from skill_graft.infra import git, paths
 from skill_graft.infra.cache import Cache
 from skill_graft.infra.errors import SkillGraftError, notice
+from skill_graft.pipeline import compute, config, patch
 from skill_graft.pipeline.config import NAME, SCP, Config, GitSource, SkillId
 from skill_graft.pipeline.hull import Edge, Hull
+
+
+def show_tree(
+    scope: paths.Scope, warnings: list[str], as_mermaid: bool, as_link: bool
+) -> None:
+    """Prints the hull's tree, or its Mermaid diagram, or that diagram's
+    mermaid.live link."""
+
+    def show(loaded: Config, resolved: Hull) -> None:
+        warnings.extend(resolved.warnings)
+        if as_mermaid:  # --link needs it
+            cache = Cache(paths.cache())
+            diagram = mermaid(resolved, repositories(loaded, cache, resolved))
+            if as_link:
+                print(link(diagram))
+            else:
+                print(diagram, end="")
+        else:
+            print(tree(resolved), end="")
+
+    _explain(warnings, show)
+
+
+def show_why(scope: paths.Scope, warnings: list[str], text: str) -> None:
+    """Prints why the hull holds the skill `text` names."""
+
+    def show(loaded: Config, resolved: Hull) -> None:
+        warnings.extend(resolved.warnings)
+        target = find(resolved, text, lambda text: compute.known(loaded, "why", text))
+        print(why(resolved, target), end="")
+
+    _explain(warnings, show)
+
+
+def _explain(warnings: list[str], show: Callable[[Config, Hull], None]) -> None:
+    """Runs `show` on the hull; on one failing only on hidden characters, on the
+    hull as walked, so the user sees what pulls them in, then fails."""
+    loaded = config.load()  # not resolve.load: resolve imports this module
+    warnings.extend(loaded.warnings)
+    try:
+        with compute.compute_hull(loaded) as resolved:
+            show(loaded, resolved)
+    except patch.PatchError as error:
+        if error.hull is None:
+            raise
+        try:
+            show(loaded, error.hull)
+        except SkillGraftError as shown:  # both matter: the hidden characters too
+            raise SkillGraftError(f"{shown}\n{error}") from None
+        raise
 
 
 def find(hull: Hull, text: str, parse: Callable[[str], SkillId]) -> SkillId:
