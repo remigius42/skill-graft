@@ -63,6 +63,7 @@ words:
   - mypy
   - NOCTTY
   - NONBLOCK
+  - noopener
   - nosystem
   - nowarn
   - numstat

@@ -5,7 +5,8 @@ import json
 import re
 import zlib
 from collections.abc import Callable
-from urllib.parse import urlsplit
+from pathlib import Path
+from urllib.parse import quote, urlsplit
 
 from skill_graft.infra import git
 from skill_graft.infra.cache import Cache
@@ -185,9 +186,10 @@ def _entry(hull: Hull, skill: SkillId) -> str:
     return " (entry)" if skill in hull.entries else ""
 
 
-# The forges whose repository paths are names a token in them would not fetch,
-# and the number of path segments a repository has there: (exactly, or at least).
-_FORGES = {"github.com": (2, False), "gitlab.com": (2, True)}
+# The forges whose repository paths are names a token in them would not fetch:
+# the number of path segments a repository has there (exactly, or at least), and
+# what its tree's URL puts between the repository and the ref.
+_FORGES = {"github.com": (2, False, "/tree/"), "gitlab.com": (2, True, "/-/tree/")}
 
 
 def repository(url: str) -> str | None:
@@ -214,7 +216,7 @@ def repository(url: str) -> str | None:
         return None
     segments = path.removesuffix("/").split("/")
     segments[-1] = segments[-1].removesuffix(".git")
-    count, more = _FORGES[host]
+    count, more, _ = _FORGES[host]
     if not (len(segments) == count or (more and len(segments) > count)):
         return None
     if not all(NAME.fullmatch(segment) for segment in segments):
@@ -255,6 +257,15 @@ def repositories(config: Config, cache: Cache, hull: Hull) -> dict[str, str]:
     return found
 
 
+def _path_url(tree: str, folder: str | Path) -> str:
+    """`tree`'s page of `folder`, each segment percent-encoded; `.` adds nothing."""
+    return tree + "".join(f"/{quote(part, safe='')}" for part in Path(folder).parts)
+
+
+def _anchor(url: str, text: str) -> str:
+    return f"<a href='{url}' target='_blank' rel='noopener'>{text}</a>"
+
+
 def mermaid(
     hull: Hull, sources: dict[str, Source], repositories: dict[str, str]
 ) -> str:
@@ -263,21 +274,37 @@ def mermaid(
     Nodes are `n0…` in hull order, as skill IDs hold `/`, inside one subgraph
     `s0…` per source in order of its first skill. Arrows follow every subgraph,
     so Mermaid moves no node into the subgraph an arrow is written in. Prose
-    arrows are dotted.
+    arrows are dotted. A source in `repositories` and its skills link to the
+    forge's tree at its ref, unless a skill's folder resolves outside the tree.
     """
+    trees: dict[str, str] = {}  # the forge's page of the tree at the ref
+    titles: dict[str, str] = {}
+    roots: dict[str, Path] = {}
+    for alias, url in repositories.items():
+        git_source = sources[alias]
+        assert isinstance(git_source, GitSource) and git_source.ref  # `tree` needs it
+        trees[alias] = f"{url}{_FORGES[urlsplit(url).netloc][2]}{git_source.ref}"
+        titles[alias] = _anchor(
+            _path_url(trees[alias], git_source.subdirectory or ""),
+            f"{alias} · {url.removeprefix('https://')}",
+        )
+        roots[alias] = hull.roots[alias].resolve()
     ids = {skill: f"n{i}" for i, skill in enumerate(hull.skills)}
     groups: dict[str, list[SkillId]] = {}
     for skill in hull.skills:
         groups.setdefault(skill.alias, []).append(skill)
     lines = ["flowchart TD"]
     for i, (alias, skills) in enumerate(groups.items()):
-        title = alias
-        if alias in repositories:
-            title += f" · {repositories[alias].removeprefix('https://')}"
-        lines.append(f"  subgraph s{i}[{_quote(title)}]")
+        lines.append(f"  subgraph s{i}[{_quote(titles.get(alias, alias))}]")
         for skill in skills:
             entry = ":::entry" if skill in hull.entries else ""
-            lines.append(f"    {ids[skill]}[{_quote(_node_label(hull, skill))}]{entry}")
+            label = _node_label(hull, skill)
+            if alias in trees:
+                folder = hull.upstream[skill].resolve()
+                if folder.is_relative_to(roots[alias]):
+                    url = _path_url(trees[alias], folder.relative_to(roots[alias]))
+                    label = _anchor(url, label)
+            lines.append(f"    {ids[skill]}[{_quote(label)}]{entry}")
         lines.append("  end")
     for source, edges in _shown_edges(hull).items():
         for edge in edges:

@@ -31,7 +31,7 @@ Apply with the `mp-tdd` skill: each task red-green-refactor, one commit.
   unchanged; `cli.py` passes it to `mermaid(hull, sources, repositories)`; tests through `main`: a seeded GitHub
   URL is linked, "Rewritten URL" (an `insteadOf` rule in the test's `GIT_CONFIG_GLOBAL` file) is not; verify they
   fail first, then pass
-- [ ] 3.2 For a **Source** in `repositories`, title the subgraph
+- [x] 3.2 For a **Source** in `repositories`, title the subgraph
   `alias · <repository without https://>` wrapped in a link to `<repository>/tree/<Ref>` (GitLab `/-/tree/<Ref>`)
   plus the `subdirectory`, and wrap each of its node labels in a link to its folder, resolved, relative to the
   resolved tree root (`.` adds nothing; outside the root, no link), each path segment through

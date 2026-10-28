@@ -89,12 +89,19 @@ def test_mermaid_subgraphs_in_hull_order(home: Path, capsys: Capsys) -> None:
     )
 
 
-def test_mermaid_labels_quoted(home: Path, capsys: Capsys) -> None:
-    skill(home / "mp" / "tdd", 'Skill(skill="grilling"), /notes, see `notes`\n')
-    skill(home / "mp" / "grilling")
-    skill(home / "mp" / "notes")
+def test_mermaid_labels_quoted(home: Path, tmp_path: Path, capsys: Capsys) -> None:
+    upstream = Upstream(tmp_path / "upstream")
+    sha = upstream.commit(
+        {
+            "tdd/SKILL.md": 'Skill(skill="grilling"), /notes, see `notes`\n',
+            "grilling/SKILL.md": "# grilling\n",
+            "notes/SKILL.md": "# notes\n",
+        }
+    )
+    url = "https://github.com/o/mp"
+    seed(upstream, url)
     write_config(
-        'entries = ["mp/tdd"]\n[sources.mp]\npath = "~/mp"\n'
+        f'entries = ["mp/tdd"]\n[sources.mp]\ngit = "{url}"\nref = "{sha}"\n'
         '[rename]\n"mp/notes" = "n"\n'
     )
 
@@ -103,6 +110,7 @@ def test_mermaid_labels_quoted(home: Path, capsys: Capsys) -> None:
     out = capsys.readouterr().out
     labels = re.findall(r"\[(.*?)\]|\|(.*?)\|", out)
     assert len(labels) == 7  # a subgraph title, three nodes, three arrows
+    assert out.count("<a href=") == 4
     for label in (a or b for a, b in labels):
         assert label.startswith('"') and label.endswith('"'), label
         assert "`" not in label and '"' not in label[1:-1], label
@@ -183,6 +191,91 @@ def test_mermaid_without_a_readable_cache_repository(
     out, err = capsys.readouterr()
     assert 'subgraph s0["mp"]\n' in out and "<a" not in out
     assert "`/missing`" in err  # the hull's warnings still follow the diagram
+
+
+def test_mermaid_github_source(home: Path, tmp_path: Path, capsys: Capsys) -> None:
+    upstream = Upstream(tmp_path / "upstream")
+    sha = upstream.commit({"skills/tdd/SKILL.md": "# tdd\n"})
+    url = "https://user:secret@github.com/o/mp.git"
+    seed(upstream, url)
+    write_config(
+        f'entries = ["mp/tdd"]\n[sources.mp]\ngit = "{url}"\nref = "{sha}"\n'
+        'subdirectory = "skills"\n'
+    )
+
+    assert main(["tree", "--format", "mermaid"]) == 0
+
+    out = capsys.readouterr().out
+    tree = f"https://github.com/o/mp/tree/{sha}"
+    assert (
+        f"  subgraph s0[\"<a href='{tree}/skills' target='_blank' rel='noopener'>"
+        'mp · github.com/o/mp</a>"]\n'
+    ) in out
+    assert (
+        f"    n0[\"<a href='{tree}/skills/tdd' target='_blank' rel='noopener'>"
+        'mp/tdd</a>"]:::entry\n'
+    ) in out
+    assert "user:" not in out and "secret" not in out
+    assert "click" not in out
+
+
+def test_mermaid_gitlab_source_without_subdirectory(
+    home: Path, tmp_path: Path, capsys: Capsys
+) -> None:
+    upstream = Upstream(tmp_path / "upstream")
+    sha = upstream.commit({"tdd/SKILL.md": "# tdd\n"})
+    url = "git@gitlab.com:g/sub/mp.git"
+    seed(upstream, url)
+    write_config(f'entries = ["mp/tdd"]\n[sources.mp]\ngit = "{url}"\nref = "{sha}"\n')
+
+    assert main(["tree", "--format", "mermaid"]) == 0
+
+    out = capsys.readouterr().out
+    tree = f"https://gitlab.com/g/sub/mp/-/tree/{sha}"
+    assert (
+        f"  subgraph s0[\"<a href='{tree}' target='_blank' rel='noopener'>"
+        'mp · gitlab.com/g/sub/mp</a>"]\n'
+    ) in out
+    assert f"    n0[\"<a href='{tree}/tdd' target='_blank'" in out
+
+
+def test_mermaid_folder_names_encoded(
+    home: Path, tmp_path: Path, capsys: Capsys
+) -> None:
+    upstream = Upstream(tmp_path / "upstream")
+    sha = upstream.commit({"c#/my skills/a?b/SKILL.md": "---\nname: tdd\n---\n"})
+    url = "https://github.com/o/mp"
+    seed(upstream, url)
+    write_config(
+        f'entries = ["mp/tdd"]\n[sources.mp]\ngit = "{url}"\nref = "{sha}"\n'
+        'subdirectory = "c#/my skills"\n'
+    )
+
+    assert main(["tree", "--format", "mermaid"]) == 0
+
+    out = capsys.readouterr().out
+    tree = f"https://github.com/o/mp/tree/{sha}"
+    assert f"<a href='{tree}/c%23/my%20skills' target=" in out
+    assert f"<a href='{tree}/c%23/my%20skills/a%3Fb' target=" in out
+
+
+def test_mermaid_skill_folder_through_a_symbolic_link(
+    home: Path, tmp_path: Path, capsys: Capsys
+) -> None:
+    upstream = Upstream(tmp_path / "upstream")
+    upstream.commit({"src/skills/tdd/SKILL.md": "# tdd\n"})
+    (upstream.path / "skills").symlink_to("src/skills")
+    upstream.git("add", "-A")
+    upstream.git("commit", "-q", "-m", "link")
+    sha = upstream.git("rev-parse", "HEAD")
+    url = "https://github.com/o/mp"
+    seed(upstream, url)
+    write_config(f'entries = ["mp/tdd"]\n[sources.mp]\ngit = "{url}"\nref = "{sha}"\n')
+
+    assert main(["tree", "--format", "mermaid"]) == 0
+
+    out = capsys.readouterr().out
+    assert f"<a href='https://github.com/o/mp/tree/{sha}/src/skills/tdd' " in out
 
 
 def test_mermaid_link_decodes_to_the_diagram(home: Path, capsys: Capsys) -> None:
