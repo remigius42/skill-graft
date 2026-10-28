@@ -94,7 +94,8 @@ _Avoid_: Built-in, blocklist
 
 **Package**:
 The APM package skill-graft builds: the folder holding the user's `skill-graft.toml`, into which the **Hull**
-is vendored and from which APM deploys it. Not the **Hull** itself. One per **Scope**.
+is vendored (unless `build --into` names another folder) and from which APM deploys it. Not the **Hull** itself.
+One per **Scope**.
 _Avoid_: Bundle, output
 
 **Scope**:
