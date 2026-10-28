@@ -7,6 +7,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+
+- `tree --format mermaid` groups **Skills** by **Source** and draws **Entries** amber. A **Source** from GitHub or
+  GitLab, and each of its **Skills**, link to the upstream tree at its **Ref**; the link is rebuilt from the
+  repository's host and path, so nothing else from its URL, such as a token, reaches the diagram. A shared `--link`
+  names those repositories
+
 ### Fixed
 
 - Without APM, `init` creates nothing and says to install APM and run `init` again, instead of leaving a **Package**

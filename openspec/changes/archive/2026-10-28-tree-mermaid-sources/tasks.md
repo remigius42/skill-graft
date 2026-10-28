@@ -59,6 +59,6 @@ Apply with the `mp-tdd` skill: each task red-green-refactor, one commit.
 
 ## 5. Archive
 
-- [ ] 5.1 In the archive commit, add an `### Added` entry under `[Unreleased]` in `CHANGELOG.md`:
+- [x] 5.1 In the archive commit, add an `### Added` entry under `[Unreleased]` in `CHANGELOG.md`:
   `tree --format mermaid` groups **Skills** by **Source**, draws **Entries** amber, and links a GitHub or GitLab
   **Source** and its **Skills** to the upstream tree at its **Ref**; verify `pre-commit run --all-files`
