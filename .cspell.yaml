@@ -21,9 +21,11 @@ words:
   - Codeberg
   - commitlint
   - conftest
+  - contextvars
   - copymode
   - copystat
   - copytree
+  - dataclass
   - dataviz
   - delenv
   - difflib
