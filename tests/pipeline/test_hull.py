@@ -18,6 +18,7 @@ from conftest import (
 )
 
 from skill_graft.cli import main
+from skill_graft.infra import paths
 from skill_graft.pipeline import compute, config
 from skill_graft.pipeline.config import SkillId
 from skill_graft.pipeline.hull import Hull
@@ -357,23 +358,23 @@ def prose_edges(hull: Hull) -> set[tuple[str, str, bool]]:
     }
 
 
-def test_prose_inside_the_hull(home: Path) -> None:
+def test_prose_inside_the_hull(scope: paths.Scope, home: Path) -> None:
     skill(home / "mp" / "grilling")
     skill(home / "mp" / "notes")
     two_sources(home, "/grilling, then `notes`\n")
     configure(["mp/tdd", "mp/notes"], mp="~/mp", own="~/own")
 
-    with compute.compute_hull(config.load()) as hull:
+    with compute.compute_hull(config.load(scope)) as hull:
         assert prose_edges(hull) == {("mp/tdd", "mp/notes", False)}
         assert hull.suggestions == {}
 
 
-def test_prose_outside_the_hull(home: Path) -> None:
+def test_prose_outside_the_hull(scope: paths.Scope, home: Path) -> None:
     skill(home / "mp" / "diagnosing-bugs")
     skill(home / "mp" / "grilling", "see diagnosing-bugs\n")
     two_sources(home, "/grilling, then diagnosing-bugs\n")
 
-    with compute.compute_hull(config.load()) as hull:
+    with compute.compute_hull(config.load(scope)) as hull:
         assert list(hull.skills) == [SkillId("mp", "tdd"), SkillId("mp", "grilling")]
         assert prose_edges(hull) == set()
         assert hull.suggestions == {
@@ -393,7 +394,9 @@ def test_prose_outside_the_hull(home: Path) -> None:
         "matches-nothing",
     ],
 )
-def test_prose_is_no_reference(home: Path, capsys: Capsys, layout: str) -> None:
+def test_prose_is_no_reference(
+    scope: paths.Scope, home: Path, capsys: Capsys, layout: str
+) -> None:
     if layout == "only-another-source-has-it":
         skill(home / "own" / "notes")
     elif layout == "ambiguous-in-its-own-source":
@@ -403,28 +406,28 @@ def test_prose_is_no_reference(home: Path, capsys: Capsys, layout: str) -> None:
         skill(home / "mp" / "notes", "---\nname: [x]\n---\n")
     two_sources(home, "see `notes`\n")
 
-    with compute.compute_hull(config.load()) as hull:
+    with compute.compute_hull(config.load(scope)) as hull:
         assert prose_edges(hull) == set() and hull.suggestions == {}
     assert main(["resolve"]) == 0
     assert after_package_line(capsys.readouterr().err) == ""
 
 
-def test_bound_prose(home: Path) -> None:
+def test_bound_prose(scope: paths.Scope, home: Path) -> None:
     skill(home / "own" / "notes")
     two_sources(home, "/x and `notes`\n")
     configure(["mp/tdd", "own/notes"], mp="~/mp", own="~/own")
     with_binds('"mp/notes" = "own/notes"\n"mp/x" = false')
 
-    with compute.compute_hull(config.load()) as hull:
+    with compute.compute_hull(config.load(scope)) as hull:
         assert prose_edges(hull) == {("mp/tdd", "own/notes", True)}
 
 
-def test_bound_prose_outside_the_hull(home: Path) -> None:
+def test_bound_prose_outside_the_hull(scope: paths.Scope, home: Path) -> None:
     skill(home / "own" / "notes")
     two_sources(home, "see `notes`\n")
     with_binds('"mp/notes" = "own/notes"')
 
-    with compute.compute_hull(config.load()) as hull:
+    with compute.compute_hull(config.load(scope)) as hull:
         assert list(hull.skills) == [SkillId("mp", "tdd")]
         assert hull.suggestions == {SkillId("own", "notes"): {SkillId("mp", "tdd")}}
         assert "binds no reference" not in " ".join(hull.warnings)
@@ -439,14 +442,14 @@ def test_bound_prose_to_a_missing_skill(home: Path, capsys: Capsys) -> None:
     assert "mp/notes" in err and "nope" in err
 
 
-def test_prose_bound_to_nothing(home: Path) -> None:
+def test_prose_bound_to_nothing(scope: paths.Scope, home: Path) -> None:
     skill(home / "mp" / "pre-commit")
     skill(home / "mp" / "grilling")
     two_sources(home, "/grilling\n```\npre-commit run\n```\n")
     configure(["mp/tdd", "mp/pre-commit"], mp="~/mp", own="~/own")
     with_binds('"mp/pre-commit" = false')
 
-    with compute.compute_hull(config.load()) as hull:
+    with compute.compute_hull(config.load(scope)) as hull:
         assert prose_edges(hull) == set() and hull.suggestions == {}
         assert hull.warnings == []
 

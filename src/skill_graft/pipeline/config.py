@@ -83,28 +83,30 @@ def default_name(config: Config, skill: SkillId) -> str:
     return config.prefixes.get(skill.alias, "") + skill.name
 
 
-def load() -> Config:
-    return parse(text(), paths.config_file())
+def load(scope: paths.Scope) -> Config:
+    return parse(scope, text(scope))
 
 
-def text() -> str:
+def text(scope: paths.Scope) -> str:
     """The config file's text, decoded from UTF-8 bytes: no newline translation."""
-    file = paths.config_file()
+    file = scope.config_file
     try:
         return file.read_bytes().decode()
     except FileNotFoundError:
-        if paths.scope() == "project":
+        if not scope.user:
             raise SkillGraftError(
-                f"{file} not found: restore it, or delete {paths.package()} and run "
-                f"`skill-graft init --project` in {paths.root()}"
+                f"{file} not found: restore it, or delete {scope.package} and run "
+                f"`skill-graft init --project` in {scope.root}"
             ) from None
         raise SkillGraftError(f"{file} not found: run `skill-graft init`") from None
     except UnicodeDecodeError as error:
         raise SkillGraftError(f"{file}: {error}") from None
 
 
-def parse(text: str, file: Path) -> Config:
-    """The config `text` holds, read as `file`: relative paths start at its folder."""
+def parse(scope: paths.Scope, text: str) -> Config:
+    """The config `text` holds, read as the scope's config file: relative paths
+    start at its folder."""
+    file = scope.config_file
     try:
         data = tomllib.loads(text)
     except tomllib.TOMLDecodeError as error:
@@ -112,7 +114,7 @@ def parse(text: str, file: Path) -> Config:
     known = {"sources", "entries", "bind", "rename", "reserved", "patches", "check"}
     if unknown := sorted(data.keys() - known):
         raise SkillGraftError(f"{unknown[0]!r} is unsupported in skill-graft.toml")
-    sources, prefixes = _sources(data.get("sources", {}), file.parent)
+    sources, prefixes = _sources(scope, data.get("sources", {}), file.parent)
     entries = _entries(data.get("entries", []), sources)
     binds = _binds(data.get("bind", {}), sources)
     renames = _renames(data.get("rename", {}), sources)
@@ -122,7 +124,7 @@ def parse(text: str, file: Path) -> Config:
     return Config(
         sources,
         entries,
-        _overlap_warnings(sources),
+        _overlap_warnings(scope, sources),
         binds,
         renames,
         prefixes,
@@ -163,7 +165,9 @@ def _check(raw: object, text: str) -> None:
             raise SkillGraftError(f"'check.{key}' must be a positive number, like 1.0")
 
 
-def _sources(raw: object, base: Path) -> tuple[dict[str, Source], dict[str, str]]:
+def _sources(
+    scope: paths.Scope, raw: object, base: Path
+) -> tuple[dict[str, Source], dict[str, str]]:
     """The sources by alias, and the prefix of each source that has one."""
     if not isinstance(raw, dict):
         raise SkillGraftError("'sources' must hold [sources.<alias>] tables")
@@ -180,7 +184,7 @@ def _sources(raw: object, base: Path) -> tuple[dict[str, Source], dict[str, str]
             raise SkillGraftError(f"'sources.{alias}' has both 'path' and 'git'")
         if "path" in table:
             _check_keys(alias, table, {"path", "prefix"})
-            folder = _source_folder(alias, _string(alias, table, "path"), base)
+            folder = _source_folder(scope, alias, _string(alias, table, "path"), base)
             sources[alias] = PathSource(folder)
         elif "git" in table:
             _check_keys(
@@ -257,11 +261,11 @@ def _relative_folder(path: str) -> bool:
     )
 
 
-def _source_folder(alias: str, raw: str, base: Path) -> Path:
+def _source_folder(scope: paths.Scope, alias: str, raw: str, base: Path) -> Path:
     folder = (base / Path(raw).expanduser()).resolve()
     if not folder.is_dir():
         raise SkillGraftError(f"source {alias!r}: {raw} is not a folder")
-    for package in paths.packages():
+    for package in scope.packages:
         if paths.overlap(folder, package.resolve()):
             raise SkillGraftError(
                 f"source {alias!r}: {raw} overlaps {package}, which build rewrites"
@@ -269,8 +273,8 @@ def _source_folder(alias: str, raw: str, base: Path) -> Path:
     return folder
 
 
-def _overlap_warnings(sources: dict[str, Source]) -> list[str]:
-    deploys = [(deploy, deploy.resolve()) for deploy in paths.deploy_folders()]
+def _overlap_warnings(scope: paths.Scope, sources: dict[str, Source]) -> list[str]:
+    deploys = [(deploy, deploy.resolve()) for deploy in scope.deploy_folders]
     return [
         f"source {alias!r} overlaps {deploy}, where APM deploys skills"
         for alias, source in sources.items()

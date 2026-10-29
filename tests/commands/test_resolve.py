@@ -354,7 +354,7 @@ def test_nothing_written_when_the_block_raises(
     file = tmp_path / "file"
 
     with pytest.raises(RuntimeError):
-        with resolve.resolving(scope, config.load(), []) as resolution:
+        with resolve.resolving(scope, config.load(scope), []) as resolution:
             resolution.writes.append(writing(file, b"new"))
             raise RuntimeError
 
@@ -368,7 +368,7 @@ def test_render_failing_runs_no_write(
     file = tmp_path / "file"
 
     with pytest.raises(OSError, match="render"):
-        with resolve.resolving(scope, config.load(), []) as resolution:
+        with resolve.resolving(scope, config.load(scope), []) as resolution:
             resolution.writes.append(writing(file, b"new"))
 
     assert not file.exists()
@@ -382,7 +382,7 @@ def test_failing_lock_write_restores_the_writes(
     monkeypatch.setattr(lock, "write", failing(OSError("disk full")))
 
     with pytest.raises(OSError, match="disk full"):
-        with resolve.resolving(scope, config.load(), []) as resolution:
+        with resolve.resolving(scope, config.load(scope), []) as resolution:
             resolution.writes.append(writing(kept, b"new"))
             resolution.writes.append(writing(missing, b"new"))
 
@@ -400,7 +400,7 @@ def test_restores_in_reverse_order(
     monkeypatch.setattr(lock, "write", failing(OSError("disk full")))
 
     with pytest.raises(OSError):
-        with resolve.resolving(scope, config.load(), []) as resolution:
+        with resolve.resolving(scope, config.load(scope), []) as resolution:
             resolution.writes.append(writing(first, b"new"))
             resolution.writes.append(writing(second, b"new"))
 
@@ -419,7 +419,7 @@ def test_interrupted_write_restores_itself_and_the_earlier(
         raise KeyboardInterrupt
 
     with pytest.raises(KeyboardInterrupt):
-        with resolve.resolving(scope, config.load(), []) as resolution:
+        with resolve.resolving(scope, config.load(scope), []) as resolution:
             resolution.writes.append(writing(first, b"new"))
             resolution.writes.append((second, replace_then_interrupt))
 
@@ -435,7 +435,7 @@ def test_restores_the_bytes_found_right_before_the_write(
     monkeypatch.setattr(lock, "write", failing(OSError("disk full")))
 
     with pytest.raises(OSError):
-        with resolve.resolving(scope, config.load(), []) as resolution:
+        with resolve.resolving(scope, config.load(scope), []) as resolution:
             file.write_bytes(b"saved meanwhile")
             resolution.writes.append(writing(file, b"new"))
 
@@ -462,7 +462,7 @@ def test_failed_restore_is_a_notice_and_the_next_still_runs(
     monkeypatch.setattr(lock, "write", failing(OSError("disk full")))
 
     with pytest.raises(OSError, match="disk full"):
-        with resolve.resolving(scope, config.load(), []) as resolution:
+        with resolve.resolving(scope, config.load(scope), []) as resolution:
             resolution.writes.append(writing(first, b"new"))
             resolution.writes.append(writing(second, b"new"))
 
@@ -478,9 +478,9 @@ def test_lock_goes_through_lock_write(
     monkeypatch.setattr(lock, "write", lambda text, file=None: written.append(file))
     other = tmp_path / "other.lock"
 
-    with resolve.resolving(scope, config.load(), []):
+    with resolve.resolving(scope, config.load(scope), []):
         pass
-    with resolve.resolving(scope, config.load(), [], lock_file=other):
+    with resolve.resolving(scope, config.load(scope), [], lock_file=other):
         pass
 
     assert written == [scope.lock_file, other]
@@ -492,7 +492,7 @@ def test_set_hashes_are_recorded_and_none_computed(
     computed = []
     monkeypatch.setattr(lock, "skill_hashes", lambda hull: computed.append(hull))
 
-    with resolve.resolving(scope, config.load(), []) as resolution:
+    with resolve.resolving(scope, config.load(scope), []) as resolution:
         resolution.hashes = {SkillId("own", "tdd"): "f" * 64}
 
     assert computed == []
@@ -506,7 +506,7 @@ def test_no_write_renders_and_writes_nothing(
     monkeypatch.setattr(lock, "render", recording(rendered))
     file = tmp_path / "file"
 
-    with resolve.resolving(scope, config.load(), [], write=False) as resolution:
+    with resolve.resolving(scope, config.load(scope), [], write=False) as resolution:
         resolution.writes.append(writing(file, b"new"))
 
     assert rendered == [] and not file.exists() and not scope.lock_file.exists()
@@ -519,7 +519,7 @@ def test_hull_warnings_kept_though_the_lock_write_fails(
     warnings: list[str] = []
 
     with pytest.raises(OSError):
-        with resolve.resolving(scope, config.load(), warnings):
+        with resolve.resolving(scope, config.load(scope), warnings):
             pass
 
     assert any("`own/tdd` calls `/foo`" in warning for warning in warnings)

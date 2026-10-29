@@ -8,7 +8,7 @@ import pytest
 from conftest import FakeApm, write_config
 
 from skill_graft.cli import main
-from skill_graft.infra import apm
+from skill_graft.infra import apm, paths
 from skill_graft.pipeline import config
 
 
@@ -32,7 +32,9 @@ def test_template_shows_a_git_source(home: Path, fake_apm: FakeApm) -> None:
         assert word in text
 
 
-def test_template_shows_graft_check(home: Path, fake_apm: FakeApm) -> None:
+def test_template_shows_graft_check(
+    scope: paths.Scope, home: Path, fake_apm: FakeApm
+) -> None:
     assert main(["init"]) == 0
 
     text = (home / ".apm" / "skill-graft" / "skill-graft.toml").read_text()
@@ -44,7 +46,7 @@ def test_template_shows_graft_check(home: Path, fake_apm: FakeApm) -> None:
             break
         block.append(line.removeprefix("# "))
     write_config("\n".join(block) + "\n")
-    source = config.load().sources["skill-graft"]
+    source = config.load(scope).sources["skill-graft"]
     assert isinstance(source, config.GitSource)
     assert source.url == "https://github.com/remigius42/skill-graft.git"
     assert source.subdirectory == "skills"

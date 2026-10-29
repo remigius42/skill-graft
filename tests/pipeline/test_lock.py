@@ -15,7 +15,7 @@ from skill_graft.pipeline import compute, config, lock
 
 
 def render() -> str:
-    loaded = config.load()
+    loaded = config.load(paths.Scope(Path.home()))
     with compute.compute_hull(loaded) as hull:
         return lock.render(loaded, {}, hull)
 
@@ -377,7 +377,7 @@ def test_version_1_keys(home: Path, tmp_path: Path) -> None:
 
 
 def digest() -> str:
-    with compute.compute_hull(config.load()) as hull:
+    with compute.compute_hull(config.load(paths.Scope(Path.home()))) as hull:
         return lock.digest(hull, lock.skill_hashes(hull))
 
 
@@ -401,10 +401,10 @@ def test_digest_follows_a_hash(home: Path) -> None:
     assert digest() != first
 
 
-def test_digest_follows_a_deployed_name_alone(home: Path) -> None:
+def test_digest_follows_a_deployed_name_alone(scope: paths.Scope, home: Path) -> None:
     skill(home / "own" / "tdd")
     configure(["own/tdd"], own="~/own")
-    with compute.compute_hull(config.load()) as hull:
+    with compute.compute_hull(config.load(scope)) as hull:
         hashes = lock.skill_hashes(hull)
         renamed = replace(
             hull, deployed={skill_id: "other" for skill_id in hull.deployed}

@@ -36,7 +36,7 @@ def show_tree(
         else:
             print(tree(resolved), end="")
 
-    _explain(warnings, view)
+    _explain(scope, warnings, view)
 
 
 def show_why(scope: paths.Scope, warnings: list[str], text: str) -> None:
@@ -47,13 +47,15 @@ def show_why(scope: paths.Scope, warnings: list[str], text: str) -> None:
         target = find(resolved, text, lambda text: compute.known(loaded, "why", text))
         print(why(resolved, target), end="")
 
-    _explain(warnings, view)
+    _explain(scope, warnings, view)
 
 
-def _explain(warnings: list[str], view: Callable[[Config, Hull], None]) -> None:
+def _explain(
+    scope: paths.Scope, warnings: list[str], view: Callable[[Config, Hull], None]
+) -> None:
     """Runs `view` on the hull; on one failing only on hidden characters, on the
     hull as walked, so the user sees what pulls them in, then fails."""
-    loaded = resolve.load(warnings)
+    loaded = resolve.load(scope, warnings)
     try:
         with compute.compute_hull(loaded) as resolved:
             view(loaded, resolved)

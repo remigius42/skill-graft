@@ -243,7 +243,7 @@ def test_tip_already_cached(upstream: Upstream, capsys: Capsys) -> None:
 
 
 def ref(alias: str) -> str | None:
-    source = config.load().sources[alias]
+    source = config.load(paths.Scope(Path.home())).sources[alias]
     assert isinstance(source, config.GitSource)
     return source.ref
 

@@ -24,7 +24,7 @@ def build(
     lock_file = None if into is None else into / "skill-graft.lock"
     started = False
     try:
-        loaded = resolve.load(warnings)
+        loaded = resolve.load(scope, warnings)
         if given is not None:
             _check_into_sources(given, loaded)
         with resolve.resolving(

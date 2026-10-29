@@ -6,6 +6,8 @@ from typing import TypeAlias
 import pytest
 from conftest import build, configure, skill, vendored, write_config
 
+from skill_graft.infra import paths
+from skill_graft.infra.errors import SkillGraftError
 from skill_graft.pipeline import config
 
 Capsys: TypeAlias = pytest.CaptureFixture[str]
@@ -159,19 +161,19 @@ SHA256 = "b" * 64
         "/srv/skills",
     ],
 )
-def test_git_source_forms_load(url: str) -> None:
+def test_git_source_forms_load(scope: paths.Scope, url: str) -> None:
     write_config(f'[sources.mp]\ngit = "{url}"\n')
 
-    assert config.load().sources == {"mp": config.GitSource(url, None, None)}
+    assert config.load(scope).sources == {"mp": config.GitSource(url, None, None)}
 
 
-def test_git_source_with_branch_and_ref_loads() -> None:
+def test_git_source_with_branch_and_ref_loads(scope: paths.Scope) -> None:
     write_config(
         f'[sources.a]\ngit = "/srv/a"\nbranch = "dev"\nref = "{SHA1}"\n'
         f'[sources.b]\ngit = "/srv/b"\nref = "{SHA256}"\n'
     )
 
-    assert config.load().sources == {
+    assert config.load(scope).sources == {
         "a": config.GitSource("/srv/a", "dev", SHA1),
         "b": config.GitSource("/srv/b", None, SHA256),
     }
@@ -185,7 +187,7 @@ def test_uppercase_ref_is_rejected(capsys: Capsys) -> None:
     assert code == 1 and "'sources.mp.ref'" in err
 
 
-def test_valid_bind_loads(home: Path) -> None:
+def test_valid_bind_loads(scope: paths.Scope, home: Path) -> None:
     (home / "a").mkdir()
     (home / "b").mkdir()
     write_config(
@@ -193,7 +195,7 @@ def test_valid_bind_loads(home: Path) -> None:
         '[bind]\n"mp/grilling" = "own/grill"\n"mp/tmp" = false\n'
     )
 
-    assert config.load().binds == {
+    assert config.load(scope).binds == {
         config.SkillId("mp", "grilling"): config.SkillId("own", "grill"),
         config.SkillId("mp", "tmp"): None,
     }
@@ -226,13 +228,13 @@ def test_bad_bind(home: Path, capsys: Capsys, bind: str, expected: list[str]) ->
         assert text in err
 
 
-def test_valid_rename_loads(home: Path) -> None:
+def test_valid_rename_loads(scope: paths.Scope, home: Path) -> None:
     (home / "a").mkdir()
     write_config(
         '[sources.mp]\npath = "~/a"\n[rename]\n"mp/code-review" = "mp-code-review"\n'
     )
 
-    assert config.load().renames == {
+    assert config.load(scope).renames == {
         config.SkillId("mp", "code-review"): "mp-code-review"
     }
 
@@ -260,7 +262,7 @@ def test_bad_rename(
         assert text in err
 
 
-def test_valid_patches_load(home: Path) -> None:
+def test_valid_patches_load(scope: paths.Scope, home: Path) -> None:
     (home / "a").mkdir()
     folder = home / ".apm" / "skill-graft" / "patches"
     folder.mkdir(parents=True)
@@ -269,7 +271,7 @@ def test_valid_patches_load(home: Path) -> None:
         '[sources.mp]\npath = "~/a"\n[patches]\n"mp/tdd" = ["patches/tdd.patch"]\n'
     )
 
-    assert config.load().patches == {
+    assert config.load(scope).patches == {
         config.SkillId("mp", "tdd"): [
             config.PatchFile("patches/tdd.patch", b"--- a/SKILL.md\n")
         ]
@@ -330,7 +332,7 @@ def test_bad_patches(
         assert text in err
 
 
-def test_shared_patch_loads(home: Path) -> None:
+def test_shared_patch_loads(scope: paths.Scope, home: Path) -> None:
     (home / "a").mkdir()
     folder = home / ".apm" / "skill-graft" / "patches"
     folder.mkdir(parents=True)
@@ -340,7 +342,7 @@ def test_shared_patch_loads(home: Path) -> None:
         '"mp/tdd" = ["patches/common.patch"]\n"mp/notes" = ["patches/common.patch"]\n'
     )
 
-    assert len(config.load().patches) == 2
+    assert len(config.load(scope).patches) == 2
 
 
 def test_patches_not_a_table(capsys: Capsys) -> None:
@@ -351,10 +353,10 @@ def test_patches_not_a_table(capsys: Capsys) -> None:
     assert code == 1 and "'patches'" in err
 
 
-def test_valid_reserved_list_loads() -> None:
+def test_valid_reserved_list_loads(scope: paths.Scope) -> None:
     write_config('reserved = ["review"]\n')
 
-    assert config.load().reserved == ["review"]
+    assert config.load(scope).reserved == ["review"]
 
 
 @pytest.mark.parametrize("value", ['"review"', '["a/b"]', "[1]", '[""]'])
@@ -382,7 +384,7 @@ def test_bind_not_a_table(capsys: Capsys) -> None:
     assert code == 1 and "'bind'" in err
 
 
-def test_valid_prefix_loads(home: Path) -> None:
+def test_valid_prefix_loads(scope: paths.Scope, home: Path) -> None:
     (home / "a").mkdir()
     write_config(
         '[sources.mp]\ngit = "/srv/mp"\nprefix = "mp-"\n'
@@ -390,7 +392,7 @@ def test_valid_prefix_loads(home: Path) -> None:
         '[sources.x]\ngit = "/srv/x"\n'
     )
 
-    assert config.load().prefixes == {"mp": "mp-", "own": "own."}
+    assert config.load(scope).prefixes == {"mp": "mp-", "own": "own."}
 
 
 @pytest.mark.parametrize("prefix", ['""', '"-x"', '"a/"', "1"])
@@ -474,3 +476,27 @@ def test_check_budget_too_small_for_a_float_builds(capsys: Capsys) -> None:
     write_config(f"[check]\nreader-budget-usd = 0.{'0' * 400}1\n")
 
     assert build(capsys) == (0, "")
+
+
+def test_project_scope_refuses_a_source_overlapping_the_user_package(
+    home: Path, tmp_path: Path
+) -> None:
+    (home / ".apm" / "skill-graft").mkdir(parents=True)
+    scope = paths.Scope(tmp_path / "project")
+    text = '[sources.own]\npath = "~/.apm"\n'
+
+    with pytest.raises(SkillGraftError, match="overlaps .*, which build rewrites"):
+        config.parse(scope, text)
+
+
+def test_project_scope_warns_of_a_source_overlapping_its_deploy_folder(
+    tmp_path: Path,
+) -> None:
+    project = tmp_path / "project"
+    (project / ".claude" / "skills").mkdir(parents=True)
+    scope = paths.Scope(project)
+    text = f'[sources.own]\npath = "{project / ".claude"}"\n'
+
+    assert config.parse(scope, text).warnings == [
+        f"source 'own' overlaps {project / '.claude/skills'}, where APM deploys skills"
+    ]

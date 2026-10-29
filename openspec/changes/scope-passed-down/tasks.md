@@ -24,7 +24,7 @@ Apply with the `mp-tdd` skill: each task red-green-refactor, one commit. Red is 
 
 ## 3. pipeline takes the Scope
 
-- [ ] 3.1 `config.load(scope)`, `config.text(scope)`, `config.parse(scope, text)` (no `file`), the source checks
+- [x] 3.1 `config.load(scope)`, `config.text(scope)`, `config.parse(scope, text)` (no `file`), the source checks
   reading `scope.packages` and `scope.deploy_folders`; `edit.read` and `edit._finish` pass theirs;
   `tests/pipeline/test_config.py` passes the `scope` fixture, plus a test that a project `Scope` refuses a
   source overlapping the user scope's package; patches of `config.load` take the new signature; verify red, then green

@@ -29,7 +29,7 @@ See proposal.md for why. Today, after `commands-own-orchestration`:
 - No module-level scope state; every function that depends on the **Scope** says so in its signature, checked by
   mypy.
 - Byte-identical stdout, stderr, files and exit codes: every test under `tests/cli/` and every `main(...)`-driven
-  test passes unchanged.
+  test passes unchanged, but for the one that calls `config.load` itself (see the tests decision).
 
 **Non-Goals:**
 
@@ -86,7 +86,9 @@ See proposal.md for why. Today, after `commands-own-orchestration`:
   needing project scope build `paths.Scope(tmp_path / "project")`. Pipeline tests that compute a **Hull** pass
   `Cache(paths.cache())`. Monkeypatched replacements (`lock.write`, `lock.render`, `vendor.vendor`,
   `config.load`, `apm.require`) take the new signatures. `HOME` and `XDG_*` stay redirected by the `home`
-  fixture. `test_in_use_follows_home_while_unset` goes with `in_use`.
+  fixture. `test_in_use_follows_home_while_unset` goes with `in_use`. One test under `tests/cli/`,
+  `test_remove_the_skill_holding_one`, reads the config with `config.load` after `main`, so it takes the `scope`
+  fixture too; its assertion stays.
 
 ## Risks / Trade-offs
 

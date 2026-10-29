@@ -25,8 +25,9 @@ def read() -> tuple[tomlkit.TOMLDocument, config.Config]:
 
     Checked as `load` checks it first, so an edit only ever sees a valid config.
     """
-    text = config.text()
-    loaded = config.parse(text, paths.config_file())  # before tomlkit sees it
+    scope = paths.in_use()
+    text = config.text(scope)
+    loaded = config.parse(scope, text)  # before tomlkit sees it
     return tomlkit.parse(text), loaded
 
 
@@ -168,7 +169,7 @@ def _finish(
     leaving neither changed if the lock fails."""
     text = tomlkit.dumps(document)
     # Relative paths start where `load` starts them, even for a symlinked file.
-    loaded = config.parse(text, paths.config_file())
+    loaded = config.parse(scope, text)
     warnings.extend(loaded.warnings)
     with resolve.resolving(scope, loaded, warnings) as resolution:
         resolution.writes.append(

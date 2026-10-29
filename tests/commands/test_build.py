@@ -477,12 +477,14 @@ def test_registration_removed_by_hand(home: Path, fake_apm: FakeApm) -> None:
     assert f"- {home / '.apm' / 'skill-graft'}" in manifest.read_text()
 
 
-def test_vendor_and_lock_into_a_given_folder(home: Path, tmp_path: Path) -> None:
+def test_vendor_and_lock_into_a_given_folder(
+    scope: paths.Scope, home: Path, tmp_path: Path
+) -> None:
     skill(home / "src" / "chisel")
     write_config('entries = ["own/chisel"]\n[sources.own]\npath = "~/src"\n')
     into = tmp_path / "into"
 
-    with compute.compute_hull(config.load()) as hull:
+    with compute.compute_hull(config.load(scope)) as hull:
         vendor.vendor(hull, into / ".apm" / "skills")
     lock.write("lock\n", into / "skill-graft.lock")
 
@@ -857,9 +859,9 @@ def test_into_untouched_when_the_config_fails(
     into = empty_folder(tmp_path)
     load = config.load
 
-    def another_process_writes_first() -> config.Config:
+    def another_process_writes_first(scope: paths.Scope) -> config.Config:
         (into / "skill-graft.lock").write_text("theirs\n")
-        return load()
+        return load(scope)
 
     monkeypatch.setattr(config, "load", another_process_writes_first)
 

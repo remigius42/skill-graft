@@ -7,6 +7,7 @@ import pytest
 from conftest import FakeApm, Upstream, configure, skill, vendored, write_config
 
 from skill_graft.cli import main
+from skill_graft.infra import paths
 from skill_graft.pipeline import config
 
 Capsys: TypeAlias = pytest.CaptureFixture[str]
@@ -98,7 +99,9 @@ def test_add_keeps_the_config(home: Path, capsys: Capsys) -> None:
     assert file.read_bytes() == before
 
 
-def test_remove_the_skill_holding_one(home: Path, capsys: Capsys) -> None:
+def test_remove_the_skill_holding_one(
+    scope: paths.Scope, home: Path, capsys: Capsys
+) -> None:
     skill(home / "mp" / "tdd")
     skill(home / "mp" / "notes", f"{TAG}\n")
     configure(["mp/tdd", "mp/notes"], mp="~/mp")
@@ -106,7 +109,7 @@ def test_remove_the_skill_holding_one(home: Path, capsys: Capsys) -> None:
     code, _, _ = run(capsys, "remove", "mp/notes")
 
     assert code == 0
-    assert config.load().entries == [config.SkillId("mp", "tdd")]
+    assert config.load(scope).entries == [config.SkillId("mp", "tdd")]
 
 
 def test_why_prints_the_path_first(home: Path, capsys: Capsys) -> None:

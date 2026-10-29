@@ -28,14 +28,14 @@ class Resolution:
 
 def resolve(scope: paths.Scope, warnings: list[str]) -> None:
     """Resolves the hull, writes the lock, and prints the tree and suggestions."""
-    with resolving(scope, load(warnings), warnings) as resolution:
+    with resolving(scope, load(scope, warnings), warnings) as resolution:
         pass
     explain.show(resolution.hull)
 
 
-def load(warnings: list[str]) -> config.Config:
+def load(scope: paths.Scope, warnings: list[str]) -> config.Config:
     """The config, its warnings added to `warnings`."""
-    loaded = config.load()
+    loaded = config.load(scope)
     warnings.extend(loaded.warnings)
     return loaded
 

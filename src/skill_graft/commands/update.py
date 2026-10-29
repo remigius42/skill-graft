@@ -54,7 +54,7 @@ def update(
     the real cache, and `diff_file`. Writes `diff_file`'s Deployed diff, if given;
     refuses a hull whose digest is not `expect`, if given.
     """
-    loaded = resolve.load(warnings)
+    loaded = resolve.load(scope, warnings)
     if expect is not None and not re.fullmatch("[0-9a-f]{64}", expect):
         raise SkillGraftError(
             f"--expect {expect}: expected 64 hex digits, as an `apply:` line gives"
@@ -414,7 +414,7 @@ def _write_refs(refs: dict[str, str]) -> None:
     Replaces the file a symlinked `skill-graft.toml` points to, not the link.
     """
     # Not edit.read: the config was checked when update loaded it.
-    document = tomlkit.parse(config.text())
+    document = tomlkit.parse(config.text(paths.in_use()))
     # A table, inline table, or proxy over split tables, by how the user wrote
     # it; config.load already checked that each is a table.
     sources = cast(MutableMapping[str, Any], document["sources"])
