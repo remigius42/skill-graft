@@ -7,7 +7,7 @@ import re
 import shutil
 import tempfile
 from collections.abc import Callable, Generator
-from contextlib import contextmanager
+from contextlib import contextmanager, suppress
 from pathlib import Path
 
 from skill_graft.infra import git, paths
@@ -35,6 +35,7 @@ class Cache:
         self.root = root
         self.reference = reference
         self._fetched: set[str] = set()
+        self._pinned: set[tuple[str, str]] = set()
 
     @classmethod
     def default(cls) -> "Cache":
@@ -77,7 +78,7 @@ class Cache:
         """
         tree = self._tree(url, ref, subdirectory)
         if tree.exists():  # renamed into place only once complete
-            self._pin(url, ref)
+            self._use(tree, url, ref)
             return tree
         if (
             self.reference
@@ -94,14 +95,31 @@ class Cache:
                 )
         context = f"source {alias!r} ({url})"
         records, tips = _listing(repo, ref, subdirectory, context)
-        if repo != self.repository(url) and _missing(repo, records, tips, context):
-            repo = self._overlay(url, repo, context)  # the reference's is never written
-        if repo == self.repository(url):
+        # Listed without the lock: an export with its files at hand waits for no
+        # other run's clone or fetch.
+        missing: list[bytes] | None = _missing(repo, records, tips, context)
+        if missing:
+            if repo != self.repository(url):
+                # The reference's stays as is; the overlay sees the same objects.
+                repo = self._overlay(url, repo, context)
+            else:
+                missing = None  # listed again under the lock: another run may fetch
             with lock(repo):
-                self._fill(repo, records, tips, context)
+                self._fill(repo, records, tips, context, missing)
         _build(tree, lambda tmp: _export(repo, records, tmp, context))
-        self._pin(url, ref)
+        self._use(tree, url, ref)
         return tree
+
+    def _use(self, tree: Path, url: str, sha: str) -> None:
+        """Marks export `tree` used now, so `prune` keeps it, and pins `sha`.
+
+        A dry run does neither. Best effort, as reading needs neither: a cache
+        the user cannot write, or a prune removing `tree` this moment.
+        """
+        if self.reference is None:
+            with suppress(OSError):
+                os.utime(tree)
+            self._pin(url, sha)
 
     def _pin(self, url: str, sha: str) -> None:
         """Keeps commit `sha`, its trees and the files fetched for it, in its
@@ -109,11 +127,12 @@ class Cache:
 
         Best effort, and under git's own lock on the one ref, not the
         repository's: a missing repository, or one lacking the commit, is
-        skipped. A dry run pins nothing.
+        skipped. Once per commit in this cache's lifetime: one command.
         """
         repo = self.repository(url)
-        if self.reference is not None or not repo.exists():
+        if (url, sha) in self._pinned or not repo.exists():
             return
+        self._pinned.add((url, sha))
         pin = f"refs/skill-graft/{sha}"
         try:
             git.run("rev-parse", "--verify", "-q", pin, repo=repo, context=str(repo))
@@ -124,15 +143,22 @@ class Cache:
                 pass
 
     def _fill(
-        self, repo: Path, records: list[bytes], tips: list[str], context: str
+        self,
+        repo: Path,
+        records: list[bytes],
+        tips: list[str],
+        context: str,
+        missing: list[bytes] | None,
     ) -> None:
-        """Fetches the blobs of `records` that `repo` lacks.
+        """Fetches the blobs of `records` that `repo` lacks, `missing` if
+        already listed.
 
         A remote refusing them by name has the repository fetched whole, and
         whole from then on, once no blob is missing; any other failure leaves
         it as it was.
         """
-        missing = _missing(repo, records, tips, context)
+        if missing is None:
+            missing = _missing(repo, records, tips, context)
         if not missing:
             return
         try:
@@ -246,6 +272,42 @@ class Cache:
                 context=context,
             ),
         )
+
+
+# An export, or a killed run's leftover, unused for longer is removed.
+UNUSED = 30 * 24 * 3600
+
+
+def prune(root: Path, now: float) -> None:
+    """Removes from the cache at `root` each export, and each leftover of a
+    killed export or clone, unused for UNUSED seconds before `now`.
+
+    Never a repository, nor a `trees/<key>` folder, which a concurrent export
+    may be about to fill. Never fails: an entry another run removed or holds
+    is skipped, and an empty or missing cache is nothing to prune.
+    """
+    for entries in [*_children(root / "trees"), root / "repos"]:
+        for entry in _children(entries):
+            if entries.name == "repos" and entry.suffix != ".tmp":
+                continue
+            try:
+                if now - entry.lstat().st_mtime <= UNUSED:
+                    continue
+                doomed = _temporary(entry)
+            except OSError:
+                continue
+            # Renamed first, so no run takes it for complete while it goes; if
+            # another run got there first, only the empty `doomed` goes.
+            with suppress(OSError):
+                entry.rename(doomed)
+            shutil.rmtree(doomed, ignore_errors=True)
+
+
+def _children(folder: Path) -> list[Path]:
+    try:
+        return list(folder.iterdir())
+    except OSError:
+        return []
 
 
 @contextmanager
