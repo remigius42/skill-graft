@@ -21,7 +21,7 @@ last touched those lines.
 
 ## 2. One export per commit and subdirectory
 
-- [ ] 2.1 `Cache.checkout` takes `subdirectory: str | None`; with one, it exports into
+- [x] 2.1 `Cache.checkout` takes `subdirectory: str | None`; with one, it exports into
   `trees/<key>/<sha>-<12 hex of sha256(subdirectory)>` only the files under it, plus the blob at each proper prefix, as
   design.md says (`--literal-pathspecs`, `-c core.ignorecase=false`, prefix records filtered to exact paths); the
   reference's export is looked up under the same name. `compute._folder` passes `source.subdirectory`. Tests in

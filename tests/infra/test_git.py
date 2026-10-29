@@ -117,6 +117,11 @@ def test_no_git(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
         git.apply(folder, b"", home_in(tmp_path))
 
 
+def test_failure_without_a_subcommand() -> None:
+    with pytest.raises(SkillGraftError, match="^mp: `git ` failed"):
+        git.run("-c", "a.b=c", "--literal-pathspecs", context="mp")
+
+
 @no_lazy_fetch
 def test_lookup_never_fetches(tmp_path: Path) -> None:
     upstream = Upstream(tmp_path / "up")
