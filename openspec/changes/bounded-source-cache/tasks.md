@@ -55,7 +55,7 @@ last touched those lines.
   removed, a commit in the cache whose files are not fails naming the alias and URL (scenario **Commit cached, files
   not**); an export removed by hand re-exports with the upstream removed (scenario **Pruned export read offline**).
   Verify red, then green
-- [ ] 3.3 When the blob fetch fails with a refusal by name (`unadvertised object`, `not our ref`), and only then,
+- [x] 3.3 When the blob fetch fails with a refusal by name (`unadvertised object`, `not our ref`), and only then,
   `checkout` runs `fetch --refetch --no-filter` of every branch with `git.FSCK`, lists the missing blobs again, unsets
   `remote.origin.partialclonefilter` only when none is left, and exports; on git before 2.36 it fails saying it needs
   git 2.36. Tests: an `Upstream` cloned and fetched with `-c protocol.version=0` (set through

@@ -718,6 +718,110 @@ def test_reference_layered_checkout_refused_by_name(
     assert contents(paths.cache()) == before
 
 
+def recorded_filter(repo: Path) -> str:
+    return subprocess.run(
+        ["git", "--git-dir", str(repo), "config", "remote.origin.partialclonefilter"],
+        capture_output=True,
+        text=True,
+    ).stdout.strip()
+
+
+def test_remote_refusing_files_by_name(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    protocol_v0(monkeypatch)
+    upstream = Upstream(tmp_path / "up")
+    sha = upstream.commit({"x/a.md": "a\n", "y.md": "y\n"})
+
+    tree = cache.Cache.default().checkout("mp", upstream.url, sha, "x")
+
+    repo = cache.Cache.default().repository(upstream.url)
+    assert (tree / "x" / "a.md").read_text() == "a\n"
+    assert missing_blobs(repo) == set() and recorded_filter(repo) == ""
+
+    later = upstream.commit({"x/a.md": "b\n"})
+    calls = recorded(monkeypatch)
+    tree = cache.Cache.default().checkout("mp", upstream.url, later, "x")
+
+    assert (tree / "x" / "a.md").read_text() == "b\n"
+    assert blob_fetches(calls) == []
+
+
+def test_refusal_recognized_in_any_language(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    monkeypatch.setenv("LC_ALL", "de_CH.UTF-8")
+    monkeypatch.setenv("LANGUAGE", "de")
+    probe = subprocess.run(["git", "no-such-command"], capture_output=True, text=True)
+    if "is not a git command" in probe.stderr:
+        pytest.skip("git has no German messages here")
+    protocol_v0(monkeypatch)
+    upstream = Upstream(tmp_path / "up")
+    sha = upstream.commit({"x/a.md": "a\n"})
+
+    tree = cache.Cache.default().checkout("mp", upstream.url, sha, "x")
+
+    assert (tree / "x" / "a.md").read_text() == "a\n"
+
+
+def test_refused_again_after_the_conversion(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    protocol_v0(monkeypatch)
+    upstream = Upstream(tmp_path / "up")
+    sha = upstream.commit({"x/a.md": "a\n"})
+    repo = blobless(upstream)
+    # As fetched whole once already, files read at a pinned commit since lacking.
+    # The refused blob fetch records the filter again, so unsetting it works.
+    upstream.git(
+        "--git-dir", str(repo), "config", "--unset", "remote.origin.partialclonefilter"
+    )
+
+    tree = cache.Cache.default().checkout("mp", upstream.url, sha, "x")
+
+    assert (tree / "x" / "a.md").read_text() == "a\n"
+
+
+def test_files_unreachable_for_a_moment(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    protocol_v0(monkeypatch)
+    upstream = Upstream(tmp_path / "up")
+    sha = upstream.commit({"x/a.md": "a\n"})
+    repo = blobless(upstream)
+    upstream.path.rename(tmp_path / "gone")
+    calls = recorded(monkeypatch)
+
+    with pytest.raises(SkillGraftError) as error:
+        cache.Cache.default().checkout("mp", upstream.url, sha, "x")
+
+    assert "'mp'" in str(error.value) and upstream.url in str(error.value)
+    assert not [call for call in calls if "--refetch" in call]
+    assert recorded_filter(repo) == "blob:none"
+
+
+def test_refusal_the_refetch_does_not_cure(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    protocol_v0(monkeypatch)
+    upstream = Upstream(tmp_path / "up")
+    sha = upstream.commit({"x/a.md": "a\n"})
+    repo = blobless(upstream)
+    # A, and its files, gone upstream: the branch reset to a commit of its own.
+    upstream.git("checkout", "-q", "--orphan", "other")
+    upstream.commit({"x/a.md": "other\n"})
+    upstream.git("branch", "-D", "main")
+    upstream.git("branch", "-m", "main")
+    upstream.git("reflog", "expire", "--expire=now", "--all")
+    upstream.git("gc", "-q", "--prune=now")
+
+    with pytest.raises(SkillGraftError) as error:
+        cache.Cache.default().checkout("mp", upstream.url, sha, "x")
+
+    assert "'mp'" in str(error.value)
+    assert recorded_filter(repo) == "blob:none"
+
+
 def test_checkout_keeps_modes_and_skips_submodules(tmp_path: Path) -> None:
     upstream = Upstream(tmp_path / "up")
     script = upstream.path / "a" / "run.sh"

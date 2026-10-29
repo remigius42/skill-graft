@@ -33,12 +33,14 @@ def run(
 
     In `repo`, no lookup fetches a missing object by itself (git 2.44+): every
     object comes from an explicit fetch, under the cache's lock and its fsck.
+    git speaks English, in any locale, as the cache matches some of its errors.
     """
     result = _call(
         *(["--git-dir", str(repo)] if repo else []),
         *args,
         input=input,
-        env={"GIT_NO_LAZY_FETCH": "1"} if repo else None,
+        env={"LC_ALL": "C", "LANGUAGE": ""}
+        | ({"GIT_NO_LAZY_FETCH": "1"} if repo else {}),
     )
     if result.returncode != 0:
         stderr = result.stderr.decode(errors="replace").strip()
