@@ -249,9 +249,11 @@ def test_another_run_exporting_the_same_ref(
     tree = paths.cache() / "trees" / cache.key(upstream.url) / sha
     export = cache._export
 
-    def racing(repo: Path, ref: str, folder: Path, context: str) -> None:
-        export(repo, ref, folder, context)
-        export(repo, ref, tree, context)  # the other run renames first
+    def racing(
+        repo: Path, ref: str, folder: Path, context: str, subdirectory: None
+    ) -> None:
+        export(repo, ref, folder, context, subdirectory)
+        export(repo, ref, tree, context, subdirectory)  # the other run renames first
 
     monkeypatch.setattr(cache, "_export", racing)
 
@@ -401,6 +403,68 @@ def test_missing_object_is_reported(tmp_path: Path) -> None:
         git_cache.checkout("mp", upstream.url, sha)
 
     assert "'mp'" in str(error.value) and blob in str(error.value)
+
+
+def files_in(tree: Path) -> set[str]:
+    """Every file and symlink in `tree`, as paths relative to it."""
+    return {
+        str(p.relative_to(tree))
+        for p in tree.rglob("*")
+        if p.is_symlink() or not p.is_dir()
+    }
+
+
+def test_subdirectory_export_holds_only_it(tmp_path: Path) -> None:
+    upstream = Upstream(tmp_path / "up")
+    sha = upstream.commit(
+        {"x/a/SKILL.md": "a\n", "x/b.md": "b\n", "y/c.md": "c\n", "top.md": "t\n"}
+    )
+
+    tree = cache.Cache.default().checkout("mp", upstream.url, sha, "x")
+
+    assert files_in(tree) == {"x/a/SKILL.md", "x/b.md"}
+    assert tree.name != sha and tree.name.startswith(f"{sha}-")
+
+
+def test_subdirectory_through_a_symlink_or_a_file(tmp_path: Path) -> None:
+    upstream = Upstream(tmp_path / "up")
+    (upstream.path / "a").mkdir()
+    (upstream.path / "a" / "b").symlink_to("elsewhere")
+    sha = upstream.commit({"a/sib.md": "s\n", "elsewhere/c/x.md": "x\n"})
+    git_cache = cache.Cache.default()
+
+    linked = git_cache.checkout("mp", upstream.url, sha, "a/b/c")
+
+    assert files_in(linked) == {"a/b"}
+    assert os.readlink(linked / "a" / "b") == "elsewhere"
+
+    (upstream.path / "a" / "b").unlink()
+    sha = upstream.commit({"a/b": "a file\n"})
+    filed = cache.Cache.default().checkout("mp", upstream.url, sha, "a/b/c")
+
+    assert files_in(filed) == {"a/b"}
+    assert (filed / "a" / "b").read_text() == "a file\n"
+
+
+def test_subdirectory_is_a_literal_name(tmp_path: Path) -> None:
+    upstream = Upstream(tmp_path / "up")
+    sha = upstream.commit({"s*/a.md": "a\n", "sx/b.md": "b\n", "PStack/c.md": "c\n"})
+    git_cache = cache.Cache.default()
+    git_cache.fetch("mp", upstream.url)
+    # As a clone on a case-insensitive file system records it.
+    upstream.git(
+        "--git-dir",
+        str(git_cache.repository(upstream.url)),
+        "config",
+        "core.ignorecase",
+        "true",
+    )
+
+    tree = git_cache.checkout("mp", upstream.url, sha, "s*")
+    other_case = git_cache.checkout("mp", upstream.url, sha, "pstack")
+
+    assert files_in(tree) == {"s*/a.md"}
+    assert files_in(other_case) == set()
 
 
 def test_checkout_keeps_modes_and_skips_submodules(tmp_path: Path) -> None:

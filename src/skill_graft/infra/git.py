@@ -107,8 +107,9 @@ def apply(folder: Path, patch: bytes, home: Path) -> tuple[bool, str]:
 
 
 def _subcommand(args: tuple[str, ...]) -> str:
-    """The subcommand in `args`, past any leading `-c name=value` pairs."""
+    """The subcommand in `args`, past any leading `-c name=value` pairs and
+    options such as `--literal-pathspecs`; empty if there is none."""
     at = 0
-    while args[at : at + 1] == ("-c",):
-        at += 2
-    return args[at]
+    while at < len(args) and args[at].startswith("-"):
+        at += 2 if args[at] == "-c" else 1
+    return args[at] if at < len(args) else ""

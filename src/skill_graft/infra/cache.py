@@ -67,12 +67,20 @@ class Cache:
                 self._clone(url, repo, context)
         self._fetched.add(url)
 
-    def checkout(self, alias: str, url: str, ref: str) -> Path:
-        """The tree of commit `ref`, as committed; fetches only if `ref` is missing."""
-        tree = self._tree(url, ref)
+    def checkout(
+        self, alias: str, url: str, ref: str, subdirectory: str | None = None
+    ) -> Path:
+        """The tree of commit `ref`, as committed; fetches only if `ref` is missing.
+
+        With a `subdirectory`, the tree holds only it, and the entries on its path.
+        """
+        tree = self._tree(url, ref, subdirectory)
         if tree.exists():  # renamed into place only once complete
             return tree
-        if self.reference and (shared := self.reference._tree(url, ref)).exists():
+        if (
+            self.reference
+            and (shared := self.reference._tree(url, ref, subdirectory)).exists()
+        ):
             return shared
         repo = self._repository_with(url, ref)
         if repo is None:
@@ -83,14 +91,18 @@ class Cache:
                     f"source {alias!r}: ref {ref} is on no branch of {url}"
                 )
         context = f"source {alias!r} ({url})"
-        _build(tree, lambda tmp: _export(repo, ref, tmp, context))
+        _build(tree, lambda tmp: _export(repo, ref, tmp, context, subdirectory))
         return tree
 
     def has_commit(self, url: str, sha: str) -> bool:
         return self._repository_with(url, sha) is not None
 
-    def _tree(self, url: str, ref: str) -> Path:
-        return self.root / "trees" / key(url) / ref
+    def _tree(self, url: str, ref: str, subdirectory: str | None) -> Path:
+        """`<sha>`, or `<sha>-<hash>` per subdirectory: each complete for its own."""
+        name = ref
+        if subdirectory is not None:
+            name += f"-{hashlib.sha256(subdirectory.encode()).hexdigest()[:12]}"
+        return self.root / "trees" / key(url) / name
 
     def _repository_with(self, url: str, sha: str) -> Path | None:
         """This cache's repository for `url` if it has commit `sha`, else the
@@ -187,20 +199,18 @@ def _has_commit(repo: Path, sha: str) -> bool:
     return True
 
 
-def _export(repo: Path, ref: str, folder: Path, context: str) -> None:
-    """Writes the tree of `ref` into `folder`, byte for byte as committed.
+def _export(
+    repo: Path, ref: str, folder: Path, context: str, subdirectory: str | None
+) -> None:
+    """Writes the tree of `ref`, or its `subdirectory`, into `folder`, byte for
+    byte as committed.
 
     Unlike a checkout, no `.gitattributes` conversion or filter driver applies,
     and unlike `git archive`, `export-ignore` files are kept. Submodules are
     skipped.
     """
-    listing = git.run(
-        "ls-tree", "-r", "-z", "--full-tree", ref, repo=repo, context=context
-    )
     entries = []
-    for record in listing.split(b"\0"):
-        if not record:
-            continue
+    for record in _listing(repo, ref, subdirectory, context):
         meta, name = record.split(b"\t", 1)
         mode, kind, oid = meta.split(b" ")
         if kind == b"blob":
@@ -223,6 +233,47 @@ def _export(repo: Path, ref: str, folder: Path, context: str) -> None:
             target.write_bytes(content)
             if mode == b"100755":
                 target.chmod(target.stat().st_mode | 0o111)
+
+
+def _listing(
+    repo: Path, ref: str, subdirectory: str | None, context: str
+) -> list[bytes]:
+    """The `ls-tree` records of `ref`'s tree, or of `subdirectory` and of the
+    entries at its proper prefixes, so a prefix that is a file or symlink is
+    exported as such.
+
+    For a prefix that is a folder git lists its children too: only exact
+    prefixes are kept. A name is matched literally and by case, whatever
+    `core.ignorecase` the clone recorded.
+    """
+    if subdirectory is None:
+        return _ls_tree(repo, context, "-r", ref)
+    parts = subdirectory.split("/")
+    prefixes = ["/".join(parts[:i]) for i in range(1, len(parts))]
+    records = _ls_tree(repo, context, "-r", ref, "--", subdirectory)
+    if prefixes:
+        exact = {os.fsencode(prefix) for prefix in prefixes}
+        records += [
+            record
+            for record in _ls_tree(repo, context, ref, "--", *prefixes)
+            if record.split(b"\t", 1)[1] in exact
+        ]
+    return records
+
+
+def _ls_tree(repo: Path, context: str, *args: str) -> list[bytes]:
+    listing = git.run(
+        "-c",
+        "core.ignorecase=false",
+        "--literal-pathspecs",
+        "ls-tree",
+        "-z",
+        "--full-tree",
+        *args,
+        repo=repo,
+        context=context,
+    )
+    return [record for record in listing.split(b"\0") if record]
 
 
 def _safe(path: str, context: str) -> str:
