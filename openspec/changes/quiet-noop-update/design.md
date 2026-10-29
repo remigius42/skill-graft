@@ -29,13 +29,15 @@ it gets a Changed entry.
 
 - **Nothing to apply = no `ref` moves and the rendered lock parses to what the lock file parses to.** `resolving`
   renders the lock before its `if not write: return` and stores the text on `Resolution` (`lock_text`). The check runs
-  only in the `not edited` branch: there `lock.read` already read and parsed the lock, so an unreadable lock never gets
-  this far (it marks every skill edited). `_update` compares `tomllib.loads(lock_text)` with the lock file's parsed
-  TOML; an `OSError` or decode error, reachable only with an empty old **Hull**, counts as something to apply. Parsed,
-  not bytes: a lock checked out with CRLF or reformatted by an editor would otherwise get the `apply:` line this change
-  removes. The one render is the one a real update writes, so the comparison can't drift from it. Rejected: "hull
-  unchanged and no ref moved", which misses a change only in edges, suggestions or a path **Source**'s recorded folder.
-  Rejected: a second `lock.render` call in `_update`, which duplicates its arguments.
+  only in the `not edited` branch: there the lock was already read and parsed, so an unreadable lock never gets this far
+  (it marks every skill edited). `_update` loads the lock once, `lock.load` (`lock.read` split into `load` and
+  `recorded`, the hashes), for both the edited check and this one, and compares `tomllib.loads(lock_text)` with it; a
+  lock `load` cannot read (`None`), reachable only with an empty old **Hull**, counts as something to apply. Parsed, not
+  text: a lock reformatted by an editor would otherwise get the `apply:` line this change removes. Line endings alone
+  would not (text mode reads CRLF as LF); the lock is read as bytes and `tomllib` takes CRLF too. The one render is the
+  one a real update writes, so the comparison can't drift from it. Rejected: "hull unchanged and no ref moved", which
+  misses a change only in edges, suggestions or a path **Source**'s recorded folder. Rejected: a second `lock.render`
+  call in `_update`, which duplicates its arguments.
 - **`nothing to apply` replaces the `apply:` line only.** No ref moving means the previous **Hull** is resolved at the
   same refs, so nothing shows as changed and the `review:` hint can't appear. It goes to stdout, where `apply:` goes,
   before `dry run:`. A `--diff` file is still written as today (it holds `# hull unchanged`).

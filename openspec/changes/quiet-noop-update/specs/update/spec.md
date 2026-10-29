@@ -89,8 +89,8 @@ before its `dry run:` line.
 
 #### Scenario: Lock with other line endings
 
-- **WHEN** nothing changed since `build`, the lock's line endings were turned into CRLF, and the user runs
-  `update --dry-run`
+- **WHEN** nothing changed since `build`, an editor added a comment to the lock and turned its line endings into CRLF,
+  and the user runs `update --dry-run`
 - **THEN** it prints `nothing to apply`
 
 #### Scenario: Unrelated push still applies
