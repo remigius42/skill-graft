@@ -5,6 +5,7 @@ import json
 import os
 import shutil
 import subprocess
+import sys
 import tomllib
 from pathlib import Path
 
@@ -223,6 +224,9 @@ def test_guard_counts_a_name_holding_a_line_break(tmp_path: Path) -> None:
     assert names_with_control_characters(tmp_path, ["x\ndiff -ruN y", "ok.md"]) > 0
 
 
+@pytest.mark.skipif(
+    sys.platform == "darwin", reason="APFS refuses a name that is not UTF-8"
+)
 def test_guard_counts_a_name_holding_an_invalid_byte_in_a_utf8_locale(
     tmp_path: Path,
 ) -> None:

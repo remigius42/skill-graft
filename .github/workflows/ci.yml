@@ -26,6 +26,20 @@ jobs:
           SKIP: no-commit-to-branch
         run: uv run pre-commit run --all-files --show-diff-on-failure
 
+  # The suite once more, on macOS: the README states it as supported. Python 3.11 only, as the
+  # pytest-py311 hook runs it; the pre-commit job already covers the newest Python on Linux.
+  test-macos:
+    runs-on: macos-latest
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+
+      - uses: astral-sh/setup-uv@c18668ad3cf93ea998bef934396af7bb5c839dc7 # v10.2.0
+
+      - name: Run the tests
+        run: uv run --isolated --python 3.11 --group dev pytest -q -p no:cacheprovider
+
   # The commitlint pre-commit hook lints only .git/COMMIT_EDITMSG, so this job calls commitlint on the
   # pushed or proposed commits instead, at the versions that hook installs.
   commitlint:
