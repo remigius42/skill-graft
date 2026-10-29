@@ -337,8 +337,10 @@ for the user to accept. It takes no part in resolution.
 - `src/skill_graft/` is layered, each layer importing only those below it: `cli.py` (the console entry point:
   it parses and dispatches, reaching `pipeline/` and `infra/` only through `commands/`, `infra.errors` aside);
   `commands/` (`scope`, `resolve`, `build`, `edit`, `update`, `explain`, `init_package`; `scope` builds the
-  `Scope`); `pipeline/` (config to **Hull** to vendored skills and lock, `compute.compute_hull` computing the
-  **Hull**); `infra/` (file system, `git`, `apm`, errors).
+  `Scope`, and each command builds the one git `Cache` it reads through); `pipeline/` (config to **Hull** to
+  vendored skills and lock, `compute.compute_hull` computing the **Hull**); `infra/` (file system, `git`, `apm`,
+  errors). `pipeline/` and `infra/` take the `Scope` and the `Cache` as parameters; nothing holds either
+  globally (ADR 0008).
 
 ## Measured APM behavior
 

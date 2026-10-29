@@ -70,5 +70,5 @@ Apply with the `mp-tdd` skill: each task red-green-refactor, one commit. Red is 
   `deploy_folders`, `packages`, `manifest` and `test_in_use_follows_home_while_unset`; the module docstring says
   the `Scope` derives every path; verify `grep -rn 'in_use\|paths\.use' src tests` is empty, `mypy --strict` and
   `pre-commit run --all-files` green
-- [ ] 6.3 `docs/design.md`'s "Stack" entry says `pipeline` and `infra` take the `Scope` and `commands` build the
+- [x] 6.3 `docs/design.md`'s "Stack" entry says `pipeline` and `infra` take the `Scope` and `commands` build the
   `Cache`, if it names where the scope comes from; verify by reading it
