@@ -21,6 +21,10 @@ hand misses the other skills that call it by name.
 
 ## Installation
 
+skill-graft runs on Linux and macOS, and on Windows through [WSL](https://learn.microsoft.com/windows/wsl/). Native
+Windows is unsupported: there every command prints `skill-graft: native Windows is unsupported: run skill-graft in WSL`
+and exits 1.
+
 skill-graft needs Python 3.11 or later. It is not on PyPI; install it from the repository with any of:
 
 ```sh
