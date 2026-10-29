@@ -19,8 +19,6 @@ computes that hull, the skills you ask for plus every skill they call, and deplo
 it: a skill named like a harness built-in (`code-review`) shadows it or is shadowed by it, and renaming one skill by
 hand misses the other skills that call it by name.
 
-Status: beta.
-
 ## Installation
 
 skill-graft needs Python 3.11 or later. It is not on PyPI; install it from the repository with any of:
