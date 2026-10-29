@@ -251,7 +251,7 @@ def test_resolve_and_build_agree_with_renames(home: Path) -> None:
     skill(home / "mp" / "grilling")
     skill(home / "mp" / "diagnosing-bugs")
     renaming('"mp/tdd" = "mp-tdd"\n"mp/grilling" = "mp-grilling"')
-    lock = paths.package() / "skill-graft.lock"
+    lock = paths.Scope(Path.home()).package / "skill-graft.lock"
 
     assert main(["resolve"]) == 0
     resolved = lock.read_bytes()

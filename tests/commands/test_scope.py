@@ -84,14 +84,6 @@ def test_working_folder_outside_home(
     assert (package / "skill-graft.lock").exists()
 
 
-def test_root_unset_after_main(home: Path, monkeypatch: pytest.MonkeyPatch) -> None:
-    project(home / "repo")
-    monkeypatch.chdir(home / "repo")
-    main(["build", "--no-install"])
-
-    assert paths.package() == home / ".apm" / "skill-graft"
-
-
 def test_deleted_working_folder(
     home: Path, monkeypatch: pytest.MonkeyPatch, capsys: pytest.CaptureFixture[str]
 ) -> None:

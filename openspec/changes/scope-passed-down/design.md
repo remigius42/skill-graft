@@ -87,7 +87,8 @@ See proposal.md for why. Today, after `commands-own-orchestration`:
   needing project scope build `paths.Scope(tmp_path / "project")`. Tests that need the cache, a **Hull**'s
   included, take `Cache.default()`. Monkeypatched replacements (`lock.write`, `lock.render`, `vendor.vendor`,
   `config.load`, `apm.require`) take the new signatures. `HOME` and `XDG_*` stay redirected by the `home`
-  fixture. `test_in_use_follows_home_while_unset` goes with `in_use`. One test under `tests/cli/`,
+  fixture. `test_in_use_follows_home_while_unset` goes with `in_use`, and `test_root_unset_after_main`, which
+  checks the global's reset after `main`, with the global. One test under `tests/cli/`,
   `test_remove_the_skill_holding_one`, reads the config with `config.load` after `main`, so it takes the `scope`
   fixture too; its assertion stays.
 

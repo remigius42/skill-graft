@@ -1,6 +1,8 @@
-"""Where skill-graft and APM keep their files, derived from the scope's root.
+"""Where skill-graft and APM keep their files.
 
-The root is the home folder (user scope) or a project folder (project scope).
+A `Scope` derives every path from its root, the home folder (user scope) or a
+project folder (project scope), and is passed to whatever reads one; nothing
+holds it globally. The cache belongs to no scope.
 """
 
 import os
@@ -59,29 +61,6 @@ class Scope:
         return [self.package, _package_in(Path.home())]
 
 
-_in_use: Scope | None = None
-
-
-def use(root: Path | None) -> None:
-    """Sets the scope for this invocation; `None` falls back to the home folder."""
-    global _in_use
-    _in_use = None if root is None else Scope(root)
-
-
-def in_use() -> Scope:
-    """The scope `use` set, else a new one at the home folder, read from `HOME` now."""
-    return Scope(Path.home()) if _in_use is None else _in_use
-
-
-def root() -> Path:
-    return in_use().root
-
-
-def scope() -> str:
-    """`user` or `project`, as the scope in use is."""
-    return "user" if in_use().user else "project"
-
-
 def discover(start: Path) -> Path:
     """The first of `start` and its ancestors holding `.apm/skill-graft/`, stopping
     after the home folder; the home folder if none does."""
@@ -109,14 +88,6 @@ def folded(path: Path) -> Path:
     """`path` in lower case: on a case-insensitive filesystem `.APM/Skill-Graft` is
     a package, and `~/Own` a source `~/own`. Refusing a lookalike elsewhere is harmless."""
     return Path(str(path).lower())
-
-
-def package() -> Path:
-    return in_use().package
-
-
-def config_file() -> Path:
-    return in_use().config_file
 
 
 def cache() -> Path:
@@ -148,22 +119,6 @@ PROJECT_DEPLOY_FOLDERS = (
 )
 
 
-def deploy_folders() -> list[Path]:
-    return in_use().deploy_folders
-
-
-def packages() -> list[Path]:
-    return in_use().packages
-
-
 def overlap(a: Path, b: Path) -> bool:
     """Whether one folder is, or is inside, the other."""
     return a.is_relative_to(b) or b.is_relative_to(a)
-
-
-def skills() -> Path:
-    return in_use().skills
-
-
-def manifest() -> Path:
-    return in_use().manifest

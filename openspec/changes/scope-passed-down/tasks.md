@@ -66,7 +66,7 @@ Apply with the `mp-tdd` skill: each task red-green-refactor, one commit. Red is 
 - [x] 6.1 `scope.of(command, project) -> Scope` becomes a plain function, without `paths.use`; `cli.main` assigns
   `current = scope.of(...)` inside `warnings_last()`; delete `test_reset_after_the_block` and
   `test_reset_when_the_block_raises`, the others dropping the `with`; verify `pytest` green
-- [ ] 6.2 Delete `paths.use`, `_in_use`, `in_use`, `root`, `scope`, `package`, `config_file`, `skills`,
+- [x] 6.2 Delete `paths.use`, `_in_use`, `in_use`, `root`, `scope`, `package`, `config_file`, `skills`,
   `deploy_folders`, `packages`, `manifest` and `test_in_use_follows_home_while_unset`; the module docstring says
   the `Scope` derives every path; verify `grep -rn 'in_use\|paths\.use' src tests` is empty, `mypy --strict` and
   `pre-commit run --all-files` green

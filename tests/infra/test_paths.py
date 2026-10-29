@@ -1,18 +1,6 @@
 from pathlib import Path
 
-import pytest
-
 from skill_graft.infra import paths
-
-
-def test_in_use_follows_home_while_unset(
-    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
-) -> None:
-    first, second = tmp_path / "first", tmp_path / "second"
-    monkeypatch.setenv("HOME", str(first))
-    assert paths.in_use().root == first
-    monkeypatch.setenv("HOME", str(second))
-    assert paths.in_use().root == second
 
 
 def test_home_root_is_user_scope(home: Path) -> None:

@@ -509,7 +509,7 @@ def test_dry_run_with_an_unreachable_unselected_source(
 
 
 def lock_file() -> Path:
-    return paths.package() / "skill-graft.lock"
+    return paths.Scope(Path.home()).package / "skill-graft.lock"
 
 
 def test_lock_follows_the_toml(upstream: Upstream, capsys: Capsys) -> None:
@@ -1712,7 +1712,7 @@ def test_path_source_edited_after_vetting(
     assert update(capsys)[0] == 0
     upstream.commit({"tdd/SKILL.md": "2\n"})
     code, out, _ = update(capsys, "mp", "--dry-run", "--diff", "review.diff")
-    file = paths.package() / "skill-graft.toml"
+    file = paths.Scope(Path.home()).package / "skill-graft.toml"
     toml, lock = file.read_bytes(), lock_file().read_bytes()
     (home / "own" / "notes" / "SKILL.md").write_text("changed\n")
 
