@@ -490,8 +490,8 @@ def _read_blobs(repo: Path, oids: list[bytes], context: str) -> list[bytes]:
         header = output[at:header_end].split(b" ")
         if len(header) != 3:  # `<oid> missing`, or worse
             raise SkillGraftError(
-                f"{context}: object {oid.decode()} is missing from {repo}; "
-                "delete that folder and run again"
+                f"{context}: object {oid.decode()} is missing from {repo}, "
+                'and fetching it did not bring it; see "Cache" in the README'
             )
         size = int(header[2])
         start = header_end + 1
