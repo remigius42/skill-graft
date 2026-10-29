@@ -28,10 +28,10 @@ like a bug. The placeholder `<digest>` doesn't help: `CONTEXT.md` calls the valu
 
 ## Impact
 
-- `src/skill_graft/commands/resolve.py`: `resolving` renders the lock on a dry run too and keeps the text.
+- `src/skill_graft/commands/transaction.py`: `resolving` renders the lock on a dry run too and keeps the text.
 - `src/skill_graft/commands/update.py`: the nothing-to-apply check, the message, the error wording, and the
   `announce_suggestions` call, which passes `dry_run` only when a `ref` moves.
 - `src/skill_graft/cli.py`: the `--expect` metavar, its help, and `update`'s description.
 - `README.md` (the `update` example and its usage line), `docs/design.md`; `CHANGELOG.md` at archive.
-- Tests in `tests/commands/test_update.py`, `tests/commands/test_resolve.py` (a dry run now renders) and
+- Tests in `tests/commands/test_update.py`, `tests/commands/test_transaction.py` (a dry run now renders) and
   `tests/cli/test_cli.py` (the help).

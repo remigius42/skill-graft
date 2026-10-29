@@ -4,11 +4,11 @@ Apply with the `mp-tdd` skill: each task red-green-refactor, one commit. `pre-co
 
 ## 1. Nothing to apply
 
-- [x] 1.1 `commands/resolve.py`: `resolving` renders the lock before `if not write: return` and stores it on
-  `Resolution` as `lock_text`; the lock it writes is that text. Test in `tests/commands/test_resolve.py`,
+- [x] 1.1 `commands/transaction.py`: `resolving` renders the lock before `if not write: return` and stores it on
+  `Resolution` as `lock_text`; the lock it writes is that text. Test in `tests/commands/test_transaction.py`,
   `test_no_write_keeps_the_lock_it_would_write`: after a dry `resolving` body sets `hashes`, `resolution.lock_text`
   equals what `resolving` then writes to the lock; `test_no_write_renders_and_writes_nothing` becomes
-  `test_no_write_writes_nothing`, a dry run now rendering; verify red, then green, and every `resolve`/`update` test
+  `test_no_write_writes_nothing`, a dry run now rendering; verify red, then green, and every `transaction`/`update` test
   stays green
 - [x] 1.2 `commands/update.py`: a dry run that moves no `ref` and whose `lock_text` parses (`tomllib`) to what the lock
   file parses to prints `nothing to apply` in place of the `apply:` line; checked only when no skill is edited.
@@ -39,6 +39,6 @@ Apply with the `mp-tdd` skill: each task red-green-refactor, one commit. `pre-co
 
 ## 3. Archive prep
 
-- [ ] 3.1 At archive, `CHANGELOG.md` `[Unreleased]`: under Changed, that `update --dry-run` with nothing to apply says
+- [x] 3.1 At archive, `CHANGELOG.md` `[Unreleased]`: under Changed, that `update --dry-run` with nothing to apply says
   `nothing to apply` in place of an `apply:` line, and its suggestion line says to run `resolve` when no `ref` moves;
   and that `--expect` names its value `<hull-digest>` (0.2.2's entry stays as released); verify by reading

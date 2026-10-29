@@ -87,7 +87,7 @@ config order, keeping `--dry-run` and `--diff`, and replacing `--expect` with `-
 #### Scenario: Hint keeps the review
 
 - **WHEN** git source `b` has no `ref` and the user runs `update a --dry-run --diff review.diff`, or
-  `update a --expect <digest> --diff review.diff`
+  `update a --expect <hull-digest> --diff review.diff`
 - **THEN** `update` exits non-zero suggesting `skill-graft update a b --dry-run --diff review.diff` either way, and
   `skill-graft.toml` is unchanged
 
@@ -638,20 +638,43 @@ every machine: no git configuration of the user's changes it.
 
 ### Requirement: Update to the hull vetted
 
-`update --expect <digest>` SHALL exit non-zero, writing neither `skill-graft.toml`, the lock nor `--diff`'s file, and
-saying the **Hull** is not the one reviewed and how to review it again, unless the **Hull digest** of the **Hull** it
-resolves is `<digest>`: one SHA-256 over each of its **Skills**' **Skill ID**, **Deployed name** and hash as the lock
-records it. A `<digest>` that is not 64 lowercase hex digits SHALL be refused before any fetch.
+`update --expect <hull-digest>` SHALL exit non-zero, writing neither `skill-graft.toml`, the lock nor `--diff`'s file,
+and saying the **Hull** is not the one reviewed and how to review it again, unless the **Hull digest** of the **Hull**
+it resolves is `<hull-digest>`: one SHA-256 over each of its **Skills**' **Skill ID**, **Deployed name** and hash as the
+lock records it. A `<hull-digest>` that is not 64 lowercase hex digits SHALL be refused before any fetch.
 
 A dry run that succeeds SHALL print, once its diff file is written and before its `dry run:` line,
-`apply: skill-graft update --expect <digest>` with the **Sources** it was given and its **Hull**'s digest, exactly when
-it printed no `review:` hint and named no **Skill** as edited since the lock was written. With no previous **Hull**, the
-lock check SHALL be skipped: the **Deployed diff** shows every **Skill** in full.
+`apply: skill-graft update --expect <hull-digest>` with the **Sources** it was given and its **Hull**'s digest, exactly
+when it printed no `review:` hint, named no **Skill** as edited since the lock was written, and has something to apply.
+With no previous **Hull**, the lock check SHALL be skipped: the **Deployed diff** shows every **Skill** in full.
+
+A dry run has nothing to apply when no `ref` moves and the lock it would write records, as TOML, what the current lock
+records, whatever its line endings or formatting. It SHALL then print `nothing to apply` in place of its `apply:` line,
+before its `dry run:` line.
+
+#### Scenario: Nothing to apply
+
+- **WHEN** `mp`'s tip is its `ref`, nothing else changed since the lock was written, and the user runs
+  `update mp --dry-run`
+- **THEN** it prints `mp <sha> (unchanged)`, `hull unchanged`, `nothing to apply`, then its `dry run:` line, and no
+  `apply:` line
+
+#### Scenario: Lock with other line endings
+
+- **WHEN** nothing changed since `build`, an editor added a comment to the lock and turned its line endings into CRLF,
+  and the user runs `update --dry-run`
+- **THEN** it prints `nothing to apply`
+
+#### Scenario: Unrelated push still applies
+
+- **WHEN** `mp`'s tip moved to a commit that changes no **Skill** of the **Hull**, and the user runs
+  `update mp --dry-run`
+- **THEN** it prints `hull unchanged` and an `apply:` line, not `nothing to apply`
 
 #### Scenario: Apply line
 
 - **WHEN** `mp/tdd` changes at the new tip and the user runs `update mp --dry-run --diff review.diff`
-- **THEN** it prints `apply: skill-graft update mp --expect <digest>`, then its `dry run:` line
+- **THEN** it prints `apply: skill-graft update mp --expect <hull-digest>`, then its `dry run:` line
 
 #### Scenario: No apply line before a review
 
@@ -672,7 +695,8 @@ lock check SHALL be skipped: the **Deployed diff** shows every **Skill** in full
 
 - **WHEN** a path **Source**'s `own/notes` changed since the lock was written, and the user runs
   `update --dry-run --diff review.diff`
-- **THEN** it names `own/notes` as edited since the lock was written and prints no `apply:` line
+- **THEN** it names `own/notes` as edited since the lock was written and prints neither an `apply:` line nor
+  `nothing to apply`
 
 #### Scenario: Changed by resolution only
 
@@ -712,10 +736,15 @@ lock check SHALL be skipped: the **Deployed diff** shows every **Skill** in full
 
 #### Scenario: Diff file on a mismatch
 
-- **WHEN** the user runs `update --expect <digest> --diff review.diff` and the digest does not match
+- **WHEN** the user runs `update --expect <hull-digest> --diff review.diff` and the digest does not match
 - **THEN** `review.diff` does not exist
 
 #### Scenario: Malformed digest
 
 - **WHEN** the user runs `update --expect abc123`
 - **THEN** it exits non-zero naming the digest and asking for 64 hex digits, before any fetch
+
+#### Scenario: Placeholder named for the hull digest
+
+- **WHEN** the user runs `update --help`, or an `--expect` value does not match
+- **THEN** the usage shows `--expect hull-digest`, and the mismatch error reads `its hull digest is <hull-digest>`

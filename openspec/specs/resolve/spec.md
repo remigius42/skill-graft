@@ -206,9 +206,9 @@ and `build` write the same lock for the same input.
 them, but when there are any SHALL print one line on standard error,
 `skill-graft: <n> prose suggestion(s): run skill-graft resolve`; `update` counts those of the new tips, and after
 `--dry-run`, whose tips `resolve` cannot see yet, prints
-`skill-graft: <n> prose suggestion(s) at the new tips: update, then run skill-graft resolve` instead. `build --into`
-SHALL print no such line: `resolve` would rewrite the **Package**'s lock, and the lock in the `--into` folder lists the
-suggestions.
+`skill-graft: <n> prose suggestion(s) at the new tips: update, then run skill-graft resolve` instead, unless it moves no
+`ref`: `resolve` then sees the same tips, and the line is `update`'s. `build --into` SHALL print no such line: `resolve`
+would rewrite the **Package**'s lock, and the lock in the `--into` folder lists the suggestions.
 
 #### Scenario: Suggestion printed
 
@@ -241,6 +241,12 @@ suggestions.
 
 - **WHEN** the same, with `update --dry-run`
 - **THEN** stderr holds `skill-graft: 1 prose suggestion(s) at the new tips: update, then run skill-graft resolve`
+
+#### Scenario: Dry run moving no ref announces suggestions
+
+- **WHEN** `mp/tdd` mentions `diagnosing-bugs`, not in the **Hull**, `mp`'s tip is its `ref`, and the user runs
+  `update --dry-run`
+- **THEN** stderr holds `skill-graft: 1 prose suggestion(s): run skill-graft resolve`
 
 ### Requirement: Lock records upstream folders and patches
 

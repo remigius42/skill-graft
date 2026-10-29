@@ -19,6 +19,11 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 - Every command prints its warnings last: after its output, its notices and APM's, with only its error line after them,
   and also when it fails. `build`'s no longer scroll away above APM's output, nor `update`'s above its **Hull diff**,
   and warnings about `skill-graft.toml` no longer come first
+- `update --dry-run` with nothing to apply, no **Ref** moving and the lock it would write recording what
+  `skill-graft.lock` records, says `nothing to apply` in place of its `apply:` line. Moving no **Ref**, its prose
+  suggestion line says to run `resolve`, not to update first
+- `--expect` names its value `<hull-digest>`, after the **Hull digest** it takes: `update --help` shows
+  `--expect hull-digest`, and a mismatch says `its hull digest is …`
 
 ### Fixed
 

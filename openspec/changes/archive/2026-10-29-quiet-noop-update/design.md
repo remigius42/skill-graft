@@ -5,9 +5,9 @@
 `commands/update.py`'s `_update` prints the `apply:` line whenever a dry run showed no `review:` hint and named no
 edited **Skill** (`elif not edited`). "Hull unchanged" there means only that the skill hashes match the previous
 **Hull** (`previous[1] == hashes`). The lock also records `ref`s, edges and suggestions, so the hashes alone can't tell
-whether `apply` would write anything. `resolve.resolving` renders the lock after the caller's body, because the caller
-sets `resolution.hashes` in it, and on a dry run it returns before rendering. `_update` decides on `apply:` after the
-`with resolving` block, so a text `resolving` stores is there in time.
+whether `apply` would write anything. `transaction.resolving` renders the lock after the caller's body, because the
+caller sets `resolution.hashes` in it, and on a dry run it returns before rendering. `_update` decides on `apply:` after
+the `with resolving` block, so a text `resolving` stores is there in time.
 
 `--expect` shipped in 0.2.2. Renaming its placeholder changes only help and error text, not the flag, so nothing breaks;
 it gets a Changed entry.
