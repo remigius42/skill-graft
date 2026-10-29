@@ -218,11 +218,7 @@ def test_set_hashes_are_recorded_and_none_computed(
     assert "f" * 64 in scope.lock_file.read_text()
 
 
-def test_no_write_renders_and_writes_nothing(
-    scope: paths.Scope, tmp_path: Path, monkeypatch: pytest.MonkeyPatch
-) -> None:
-    rendered: list[object] = []
-    monkeypatch.setattr(lock, "render", recording(rendered))
+def test_no_write_writes_nothing(scope: paths.Scope, tmp_path: Path) -> None:
     file = tmp_path / "file"
 
     with transaction.resolving(
@@ -230,7 +226,20 @@ def test_no_write_renders_and_writes_nothing(
     ) as resolution:
         resolution.writes.append(writing(file, b"new"))
 
-    assert rendered == [] and not file.exists() and not scope.lock_file.exists()
+    assert not file.exists() and not scope.lock_file.exists()
+
+
+def test_no_write_keeps_the_lock_it_would_write(scope: paths.Scope) -> None:
+    hashes = {SkillId("own", "tdd"): "f" * 64}
+    with transaction.resolving(
+        scope, config.load(scope), [], Cache.default(), write=False
+    ) as dry:
+        dry.hashes = hashes
+
+    with transaction.resolving(scope, config.load(scope), [], Cache.default()) as real:
+        real.hashes = hashes
+
+    assert dry.lock_text == scope.lock_file.read_text()
 
 
 def test_hull_warnings_kept_though_the_lock_write_fails(

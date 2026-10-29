@@ -4,7 +4,7 @@ Apply with the `mp-tdd` skill: each task red-green-refactor, one commit. `pre-co
 
 ## 1. Nothing to apply
 
-- [ ] 1.1 `commands/resolve.py`: `resolving` renders the lock before `if not write: return` and stores it on
+- [x] 1.1 `commands/resolve.py`: `resolving` renders the lock before `if not write: return` and stores it on
   `Resolution` as `lock_text`; the lock it writes is that text. Test in `tests/commands/test_resolve.py`: after a dry
   `resolving` body sets `hashes`, `resolution.lock_text` equals what `resolve` then writes to the lock; verify red, then
   green, and every `resolve`/`update` test stays green

@@ -16,13 +16,14 @@ from skill_graft.pipeline.hull import Hull
 
 @dataclass
 class Resolution:
-    """The hull; the hashes the lock records, `None` for the patched copies'; and
-    the caller's writes, each a file and the call that replaces it, run before the
-    lock."""
+    """The hull; the hashes the lock records, `None` for the patched copies'; the
+    caller's writes, each a file and the call that replaces it, run before the
+    lock; and, after the block, the lock's text, written or not."""
 
     hull: Hull
     hashes: dict[SkillId, str] | None = None
     writes: list[tuple[Path, Callable[[], None]]] = field(default_factory=list)
+    lock_text: str = ""
 
 
 def load(scope: paths.Scope, warnings: list[str]) -> config.Config:
@@ -43,9 +44,9 @@ def resolving(
     write: bool = True,
 ) -> Generator[Resolution]:
     """The hull, every source at its ref but those `refs` names; after the block,
-    unless `write` is false, the lock rendered while the patched copies exist, the
-    caller's writes run in order, then the lock written. On any failure, each file
-    written is restored, in reverse, to its bytes right before its write.
+    the lock rendered while the patched copies exist, then, unless `write` is
+    false, the caller's writes run in order and the lock written. On any failure,
+    each file written is restored, in reverse, to its bytes right before its write.
 
     Adds the hull's warnings to `warnings` at once, so a later failure keeps them.
     """
@@ -53,16 +54,18 @@ def resolving(
         warnings.extend(hull.warnings)
         resolution = Resolution(hull)
         yield resolution
-        if not write:
-            return
-        text = lock.render(scope, loaded, refs or {}, hull, resolution.hashes)
+        resolution.lock_text = lock.render(
+            scope, loaded, refs or {}, hull, resolution.hashes
+        )
+    if not write:
+        return
     found: list[tuple[Path, bytes | None]] = []
     try:
         for file, replace in resolution.writes:
             # Read right before: a restore puts back what this write replaced.
             found.append((file, file.read_bytes() if file.exists() else None))
             replace()
-        lock.write(text, lock_file or scope.lock_file)
+        lock.write(resolution.lock_text, lock_file or scope.lock_file)
     except BaseException:
         for file, data in reversed(found):
             _restore(file, data)
