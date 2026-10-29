@@ -129,7 +129,7 @@ last touched those lines.
 
 ## 7. Integration
 
-- [ ] 7.1 Full suite, `uv run mypy .`, `lint-imports` green, and the CI `test-macos` job green on the draft pull request
+- [x] 7.1 Full suite, `uv run mypy .`, `lint-imports` green, and the CI `test-macos` job green on the draft pull request
   (APFS, BSD tools, the runner's git); by hand, against a real GitHub monorepo with `subdirectory`, in a temporary
   `HOME`: `build`, then `du -sh` of the cache is a fraction of a full clone, a second `build` with the network off
   succeeds, and `update --dry-run` leaves the cache folder byte-identical
