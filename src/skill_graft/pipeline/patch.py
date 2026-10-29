@@ -12,6 +12,8 @@ from skill_graft.pipeline.config import Config, PatchFile, SkillId
 
 # A hunk's header in a `.rej` file, without the section heading after it.
 HUNK = re.compile(rb"^(@@ -\d+(?:,\d+)? \+\d+(?:,\d+)? @@)", re.MULTILINE)
+# The header of a file in a git-format patch, as `git diff` writes it.
+GIT_FORMAT = re.compile(rb"^diff --git ", re.MULTILINE)
 
 
 class PatchFailed(SkillGraftError):
@@ -55,7 +57,11 @@ def apply(skill: SkillId, upstream: Path, patches: list[PatchFile], work: Path) 
     name = discovery.read_name(upstream)
     for i, patch in enumerate(patches):
         before = _rejects(copy)
+        # A git-format patch says itself what it deletes; a plain one cannot.
+        filled = [] if GIT_FORMAT.search(patch.data) else _filled(copy)
         ok, stderr = git.apply(copy, patch.data, home)
+        if ok:
+            _delete_emptied(copy, filled)
         failures = [] if ok else _failures(patch.path, copy, before, stderr)
         if not failures:
             failures = _check_name(patch.path, copy, name)
@@ -69,6 +75,35 @@ def apply(skill: SkillId, upstream: Path, patches: list[PatchFile], work: Path) 
         paths = ", ".join(patch.path for patch in patches)
         raise PatchFailed([f"{paths}: {_relative(error, copy)}"]) from None
     return copy
+
+
+def _size(path: Path) -> int | None:
+    """The size of `path` if it is a regular file, links not followed; else None."""
+    try:
+        mode = path.lstat()
+    except (FileNotFoundError, NotADirectoryError):  # gone, or its folder is a file
+        return None
+    return mode.st_size if stat.S_ISREG(mode.st_mode) else None
+
+
+def _filled(folder: Path) -> list[Path]:
+    """Each regular file in `folder` that is not empty."""
+    return [entry for entry in files.skill_entries(folder) if _size(entry)]
+
+
+def _delete_emptied(copy: Path, filled: list[Path]) -> None:
+    """Deletes each of `filled` a patch left empty, and each folder above it that
+    leaves empty, up to `copy`, as git's own deletion does: `diff -N` writes a
+    deleted file as one emptied, and git deletes it only for GNU diff's epoch
+    timestamp, which the BSD diff of macOS does not write."""
+    for file in filled:
+        if _size(file) != 0:
+            continue
+        file.unlink()
+        folder = file.parent
+        while folder != copy and not any(folder.iterdir()):
+            folder.rmdir()
+            folder = folder.parent
 
 
 def _check_name(path: str, copy: Path, name: str) -> list[str]:
