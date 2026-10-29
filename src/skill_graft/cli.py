@@ -379,6 +379,7 @@ def _main(argv: list[str] | None) -> int:
         build,
         edit,
         explain,
+        housekeeping,
         init_package,
         resolve,
         scope,
@@ -433,10 +434,15 @@ def _main(argv: list[str] | None) -> int:
                 resolve.resolve(current, warnings)
             elif args.command == "build":
                 build.build(current, warnings, args.into, args.no_install)
+        status = 0
     except (SkillGraftError, OSError) as error:
         print(f"skill-graft: {error}", file=sys.stderr)
-        return 1
-    return 0
+        status = 1
+    # The one place that sees every command end: `init` reads no source, and a
+    # dry run writes no cache.
+    if args.command != "init" and not (args.command == "update" and args.dry_run):
+        housekeeping.prune()
+    return status
 
 
 def _into(value: str) -> Path:

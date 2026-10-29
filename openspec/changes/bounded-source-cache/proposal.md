@@ -64,8 +64,9 @@ None.
   message.
 - `src/skill_graft/infra/git.py`: `run` sets `GIT_NO_LAZY_FETCH=1` whenever it names a repository.
 - `src/skill_graft/pipeline/compute.py`: `checkout` takes the subdirectory.
-- `src/skill_graft/cli.py`: prunes after every command but `init` and `help`, and not after `update --dry-run`; imports
-  the cache inside `_main`, as it does the commands, so native Windows is still refused before `fcntl` loads.
+- `src/skill_graft/cli.py`: prunes, through a new `commands/housekeeping.py`, after every command but `init` and `help`,
+  and not after `update --dry-run`; imports it inside `_main`, as it does the other commands, so native Windows is still
+  refused before `fcntl` loads.
 - Tests: synthetic upstreams allow filters; `tests/infra/test_cache.py` gains pruning, pinning, subdirectory, blobless
   and fallback tests; `test_shared_export` and `test_missing_object_is_reported` change.
 - `README.md` (a cache section), `docs/design.md`, `CHANGELOG.md`. `CONTEXT.md` unchanged.
