@@ -81,3 +81,7 @@ every commit, but those task 3.1 moves to the new warning position; `pre-commit 
   does `from skill_graft.infra import paths`, then revert; verify `lint-imports` passes. Update
   `docs/design.md`'s "Stack" entry: `cli.py` parses and dispatches, `commands/` lists `scope`, `resolve`,
   `build`, `edit`, `update`, `explain`, `init_package` and builds the `Scope`
+- [x] 7.2 Move the end-to-end tests named after a module now in `commands/` into `tests/commands/`, as AGENTS.md
+  places them: `tests/cli/test_build.py` as is, `tests/cli/test_resolve.py` and `tests/cli/test_scope.py` merged
+  into their namesakes there, task 2.1's `test_build_names_the_package` renamed `test_of_build_names_the_package`;
+  verify the test count is unchanged
