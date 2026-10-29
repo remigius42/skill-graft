@@ -17,6 +17,8 @@ skill-graft = "skill_graft.cli:main"
 dev = [
   "apm-cli==0.33.0",
   "import-linter",
+  # The mypy hook's version, so `uv run mypy` works in any checkout, worktrees included.
+  "mypy==2.4.0",
   "pre-commit",
   "pytest",
 ]

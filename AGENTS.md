@@ -27,7 +27,7 @@ before changing behavior. Until OpenSpec specs cover it, `docs/design.md` holds 
 
 - Python 3.11 or later, for `tomllib`. Runtime dependencies: the standard library and `tomlkit`, nothing else.
   Call `git` and `apm` as subprocesses; never import `apm_cli`, whose internals are not an API.
-- `mypy --strict` and `ruff` run as pre-commit hooks, configured in `pyproject.toml`.
+- `mypy --strict` and `ruff` run as pre-commit hooks, configured in `pyproject.toml`; by hand: `uv run mypy .`
 - `src/skill_graft/` has four layers, top to bottom: `cli.py`, `commands/`, `pipeline/`, `infra/`. A module imports
   only its own layer and those below; `lint-imports` (pre-commit, contract in `pyproject.toml`) refuses the rest,
   and a module outside the four packages. Call a function tests replace with `monkeypatch.setattr` through its
