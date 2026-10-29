@@ -120,6 +120,12 @@ def home(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> Path:
 
 
 @pytest.fixture
+def scope(home: Path) -> paths.Scope:
+    """The user scope, at the temporary home folder."""
+    return paths.Scope(home)
+
+
+@pytest.fixture
 def fake_apm(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> FakeApm:
     folder = tmp_path / "fake-apm"
     folder.mkdir()
