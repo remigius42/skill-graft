@@ -85,24 +85,25 @@ exactly the hull you read; a push, a path source's edit, a patch or a rename sin
 
 ## Commands
 
-- `init [--project]`: create the package, `~/.apm/skill-graft/` (or `./.apm/skill-graft/`), and register it with APM.
-- `resolve`: compute the hull, write the lock, print the tree and the skills prose mentions outside the hull.
-- `build [--no-install | --into <dir>]`: resolve, vendor the hull patched and renamed into `.apm/skills/`, deploy
-  through APM. `--into <dir>` writes the skills and the lock into an empty `<dir>` instead, never touching the package
-  or APM.
-- `update [source…] [--dry-run] [--diff <file>] [--expect <hull-digest>]`: move each git source's `ref` to its branch
-  tip, if the hull still resolves and every patch still applies there. It names each changed file of each changed or
-  added skill, never its text; `--diff <file>` writes that text as deployed, the Deployed diff, to a new `*.diff` file;
-  `--expect <hull-digest>` updates only to the hull a dry run showed.
-- `tree [--format text|mermaid] [--link]`: print the hull, writing nothing; `--link` gives a mermaid.live URL.
-  mermaid.live, a third-party site whose page code can read the diagram, then sees which upstream repositories and refs
-  you use, a target list for a supply-chain attack on them.
-- `why <skill>`: print the paths from the entries that reach a skill, and its upstream folder.
-- `add <skill-id>…`, `remove <skill-id>…`: change `entries`, keeping the file's comments, once the result resolves.
-- `rename <skill-id> <name>`: set a skill's deployed name; the name it would deploy as without a key undoes it.
-- `bind <alias>/<name> <skill-id>|false`: resolve `<name>` from that source to the skill, or to no reference.
-- `unbind <alias>/<name>`: remove that bind, so `<name>` resolves by default again.
-- `help [command]`, or `--help` on any command: explain it.
+| Command                                                                 | What it does                                                                                                                                                                                          |
+| ----------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `init [--project]`                                                      | Create the package, `~/.apm/skill-graft/` (or `./.apm/skill-graft/`), and register it with APM.                                                                                                       |
+| `resolve`                                                               | Compute the hull, write the lock, print the tree and the skills prose mentions outside the hull.                                                                                                      |
+| `build [--no-install \| --into <dir>]`                                  | Resolve, vendor the hull patched and renamed into `.apm/skills/`, deploy through APM. `--into <dir>` writes the skills and the lock into an empty `<dir>` instead, never touching the package or APM. |
+| `update [source…] [--dry-run] [--diff <file>] [--expect <hull-digest>]` | Move each git source's `ref` to its branch tip, if the hull still resolves and every patch still applies there; `--diff` and `--expect` below.                                                        |
+| `tree [--format text\|mermaid [--link]]`                                | Print the hull, writing nothing; with `--format mermaid`, `--link` gives a mermaid.live URL: see the warning below.                                                                                   |
+| `why <skill>`                                                           | Print the paths from the entries that reach a skill, and its upstream folder.                                                                                                                         |
+| `add <skill-id>…`, `remove <skill-id>…`                                 | Change `entries`, keeping the file's comments, once the result resolves.                                                                                                                              |
+| `rename <skill-id> <name>`                                              | Set a skill's deployed name; the name it would deploy as without a key undoes it.                                                                                                                     |
+| `bind <alias>/<name> <skill-id>\|false`                                 | Resolve `<name>` from that source to the skill, or to no reference.                                                                                                                                   |
+| `unbind <alias>/<name>`                                                 | Remove that bind, so `<name>` resolves by default again.                                                                                                                                              |
+| `help [command]`, or `--help` on any command                            | Explain it.                                                                                                                                                                                           |
+
+Warning: `tree --format mermaid --link` hands the diagram to mermaid.live, a third-party site whose page code can read
+it: it then sees which upstream repositories and refs you use, a target list for a supply-chain attack on them.
+
+`update` names each changed file of each changed or added skill, never its text; `--diff <file>` writes that text as
+deployed, the Deployed diff, to a new `*.diff` file; `--expect <hull-digest>` updates only to the hull a dry run showed.
 
 ## Config
 
