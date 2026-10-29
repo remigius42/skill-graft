@@ -1,6 +1,7 @@
 """`patch.apply`: a skill's patches applied, in order, to a copy of its folder."""
 
 import os
+import re
 import subprocess
 from pathlib import Path
 
@@ -73,6 +74,90 @@ def test_patch_to_a_sibling_file(tmp_path: Path) -> None:
     assert (copy / "refs" / "loop.md").read_text() == "loop, changed\n"
     assert (copy / "refs" / "new.md").read_text() == "new\n"
     assert not (copy / "refs" / "old.md").exists()
+
+
+# GNU diff's epoch timestamp for the missing side of `diff -N`, in any time zone.
+EPOCH = re.compile(
+    rb"^(\+\+\+ [^\t\n]*\t)(?:1970-01-01|1969-12-31) [^\n]*", re.MULTILINE
+)
+
+
+def without_epoch(data: bytes) -> bytes:
+    """`data` with each `+++` timestamp at the epoch dated otherwise, as the BSD `diff`
+    of macOS writes the missing side."""
+    return EPOCH.sub(rb"\g<1>2026-10-29 12:00:00.000000000 +0000", data)
+
+
+def test_deletion_without_the_epoch(tmp_path: Path) -> None:
+    files = {"refs/loop.md": "loop\n", "refs/old.md": "old\n"}
+    upstream = upstream_with(tmp_path, dict(files))
+    data = without_epoch(make_patch(tmp_path, files, {"refs/loop.md": "loop\n"}))
+
+    copy = patch.apply(TDD, upstream, [PatchFile("p.patch", data)], work_in(tmp_path))
+
+    assert not (copy / "refs" / "old.md").exists()
+
+
+def test_deletion_without_the_epoch_prunes_its_folder(tmp_path: Path) -> None:
+    files = {"refs/old.md": "old\n"}
+    upstream = upstream_with(tmp_path, dict(files))
+    data = without_epoch(make_patch(tmp_path, files, {}))
+
+    copy = patch.apply(TDD, upstream, [PatchFile("p.patch", data)], work_in(tmp_path))
+
+    assert not (copy / "refs").exists()
+
+
+def test_folder_replaced_by_a_file(tmp_path: Path) -> None:
+    upstream = upstream_with(tmp_path, {"refs/old.md": "old\n"})
+    epoch = "1970-01-01 00:00:00.000000000 +0000"
+    data = (
+        f"--- base/refs/old.md\t2026-10-29 12:00:00.000000000 +0000\n"
+        f"+++ edited/refs/old.md\t{epoch}\n@@ -1 +0,0 @@\n-old\n"
+        f"--- base/refs\t{epoch}\n"
+        f"+++ edited/refs\t2026-10-29 12:00:00.000000000 +0000\n@@ -0,0 +1 @@\n+file\n"
+    ).encode()
+
+    copy = patch.apply(TDD, upstream, [PatchFile("p.patch", data)], work_in(tmp_path))
+
+    assert (copy / "refs").read_text() == "file\n"
+
+
+def test_git_format_patch_empties_a_file(tmp_path: Path) -> None:
+    upstream = upstream_with(tmp_path, {"notes.md": "notes\n"})
+    data = (
+        b"diff --git a/notes.md b/notes.md\n--- a/notes.md\n+++ b/notes.md\n"
+        b"@@ -1 +0,0 @@\n-notes\n"
+    )
+
+    copy = patch.apply(TDD, upstream, [PatchFile("p.patch", data)], work_in(tmp_path))
+
+    assert (copy / "notes.md").read_text() == ""
+
+
+def test_skill_md_emptied_says_so(tmp_path: Path) -> None:
+    files = {"SKILL.md": LINES, "notes.md": "notes\n"}
+    data = without_epoch(make_patch(tmp_path, files, {"notes.md": "notes\n"}))
+    upstream = upstream_with(tmp_path, dict(files))
+
+    with pytest.raises(patch.PatchFailed) as failed:
+        patch.apply(TDD, upstream, [PatchFile("p.patch", data)], work_in(tmp_path))
+
+    assert failed.value.lines == [
+        "p.patch: deletes SKILL.md: a skill needs one; give it a new name with "
+        "[rename], never by deleting it"
+    ]
+
+
+def test_empty_upstream_file_kept(tmp_path: Path) -> None:
+    upstream = upstream_with(tmp_path, {"refs/.keep": ""})
+    data = without_epoch(
+        make_patch(tmp_path, {"SKILL.md": LINES}, {"SKILL.md": LINES + "more\n"})
+    )
+
+    copy = patch.apply(TDD, upstream, [PatchFile("p.patch", data)], work_in(tmp_path))
+
+    assert (copy / "refs" / ".keep").read_text() == ""
 
 
 def test_every_failing_hunk_named(tmp_path: Path) -> None:

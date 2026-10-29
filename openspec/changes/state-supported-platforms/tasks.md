@@ -14,7 +14,7 @@ Apply with the `mp-tdd` skill: each task red-green-refactor, one commit. `pre-co
 
 ## 2. Deletions from any diff
 
-- [ ] 2.1 Tests in `tests/pipeline/test_patch.py`, one per scenario of the patches spec's "A file a patch empties is
+- [x] 2.1 Tests in `tests/pipeline/test_patch.py`, one per scenario of the patches spec's "A file a patch empties is
   deleted": the patch is `make_patch`'s with the `+++` timestamp of the deleted or emptied file rewritten to a date
   other than the epoch, so they fail on Linux as on macOS. Verify the first two fail first (the file kept, empty; no
   `PatchFailed`), then make them pass as design.md says, in `patch.apply`. README's "Writing a patch" says a file a

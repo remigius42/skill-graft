@@ -251,9 +251,11 @@ Then list it, after the skill's earlier patches:
 ```
 
 `diff` needs `-N`, or added and deleted files are lost; skill-graft refuses such a patch, and binary changes, by the
-lines `diff` writes for them in English: hence `LC_ALL=C`. A patch must not change the skill's `name:`: use `[rename]`.
-When `update` finds that a patch no longer applies at a new commit, it keeps the old `ref` and names the upstream folder
-at the new commit: redo the patch against it, then run `update` again.
+lines `diff` writes for them in English: hence `LC_ALL=C`. A file such a patch leaves empty is deleted, with any folder
+that leaves empty, as `-N` writes a deleted file as one emptied; so any `diff`, GNU or the BSD one of macOS, deletes
+alike. A `git diff` patch applies as git applies it. A patch must not change the skill's `name:`: use `[rename]`. When
+`update` finds that a patch no longer applies at a new commit, it keeps the old `ref` and names the upstream folder at
+the new commit: redo the patch against it, then run `update` again.
 
 ## Contributing
 
