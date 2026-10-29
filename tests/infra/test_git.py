@@ -1,11 +1,12 @@
 """`git.apply`: a patch applied to a folder, strictly, whatever git config is around."""
 
+import os
 import shutil
 import subprocess
 from pathlib import Path
 
 import pytest
-from conftest import make_patch
+from conftest import Upstream, make_patch, no_lazy_fetch
 
 from skill_graft.infra import git
 from skill_graft.infra.errors import SkillGraftError
@@ -114,6 +115,24 @@ def test_no_git(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
 
     with pytest.raises(SkillGraftError, match=r"\[patches\] needs git"):
         git.apply(folder, b"", home_in(tmp_path))
+
+
+@no_lazy_fetch
+def test_lookup_never_fetches(tmp_path: Path) -> None:
+    upstream = Upstream(tmp_path / "up")
+    upstream.commit({"a.md": "a\n"})
+    repo = tmp_path / "clone.git"
+    upstream.git("clone", "-q", "--bare", "--filter=blob:none", upstream.url, str(repo))
+    later = upstream.commit({"b.md": "b\n"})
+
+    with pytest.raises(SkillGraftError):
+        git.run("cat-file", "-e", f"{later}^{{commit}}", repo=repo, context="mp")
+
+    lookup = subprocess.run(
+        ["git", "--git-dir", str(repo), "cat-file", "-e", later],
+        env=os.environ | {"GIT_NO_LAZY_FETCH": "1"},
+    )
+    assert lookup.returncode != 0
 
 
 def assert_whitespace_strict(tmp_path: Path) -> None:

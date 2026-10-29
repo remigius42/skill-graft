@@ -174,6 +174,19 @@ class Upstream:
         return self.git("rev-parse", "HEAD")
 
 
+def git_version() -> tuple[int, ...]:
+    """The installed git's version, as `(2, 44)` for `git version 2.44.0`."""
+    out = subprocess.run(["git", "--version"], capture_output=True, text=True).stdout
+    return tuple(int(part) for part in out.split()[2].split(".")[:2])
+
+
+# For tests of lookups never fetching: git honors GIT_NO_LAZY_FETCH from 2.44,
+# and the git macOS ships is older.
+no_lazy_fetch = pytest.mark.skipif(
+    git_version() < (2, 44), reason="GIT_NO_LAZY_FETCH needs git 2.44"
+)
+
+
 def seed(upstream: Upstream, url: str) -> None:
     """Clones `upstream` into the cache as `url`'s repository, so `url` needs no
     fetch."""

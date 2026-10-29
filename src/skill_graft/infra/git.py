@@ -29,8 +29,17 @@ def run(
     context: str,
     input: bytes | None = None,
 ) -> bytes:
-    """Runs `git [--git-dir repo] args`; a failure names `context` and git's error."""
-    result = _call(*(["--git-dir", str(repo)] if repo else []), *args, input=input)
+    """Runs `git [--git-dir repo] args`; a failure names `context` and git's error.
+
+    In `repo`, no lookup fetches a missing object by itself (git 2.44+): every
+    object comes from an explicit fetch, under the cache's lock and its fsck.
+    """
+    result = _call(
+        *(["--git-dir", str(repo)] if repo else []),
+        *args,
+        input=input,
+        env={"GIT_NO_LAZY_FETCH": "1"} if repo else None,
+    )
     if result.returncode != 0:
         stderr = result.stderr.decode(errors="replace").strip()
         raise SkillGraftError(f"{context}: `git {_subcommand(args)}` failed: {stderr}")
