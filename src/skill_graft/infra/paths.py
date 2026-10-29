@@ -32,6 +32,32 @@ class Scope:
     def skills(self) -> Path:
         return self.package / ".apm" / "skills"
 
+    @property
+    def config_file(self) -> Path:
+        return self.package / "skill-graft.toml"
+
+    @property
+    def manifest(self) -> Path:
+        """APM's manifest for the scope, which lists the package once registered."""
+        if self.user:
+            return Path.home() / ".apm" / "apm.yml"
+        return self.root / "apm.yml"
+
+    @property
+    def deploy_folders(self) -> list[Path]:
+        """The user scope's deploy folders, and in project scope the project's too."""
+        folders = [Path.home() / folder for folder in DEPLOY_FOLDERS]
+        if not self.user:
+            folders += [self.root / folder for folder in PROJECT_DEPLOY_FOLDERS]
+        return folders
+
+    @property
+    def packages(self) -> list[Path]:
+        """The scope's package, and in project scope the user scope's too."""
+        if self.user:
+            return [self.package]
+        return [self.package, _package_in(Path.home())]
+
 
 _in_use: Scope | None = None
 
@@ -90,7 +116,7 @@ def package() -> Path:
 
 
 def config_file() -> Path:
-    return package() / "skill-graft.toml"
+    return in_use().config_file
 
 
 def cache() -> Path:
@@ -123,18 +149,11 @@ PROJECT_DEPLOY_FOLDERS = (
 
 
 def deploy_folders() -> list[Path]:
-    """The user scope's deploy folders, and in project scope the project's too."""
-    folders = [Path.home() / folder for folder in DEPLOY_FOLDERS]
-    if scope() == "project":
-        folders += [root() / folder for folder in PROJECT_DEPLOY_FOLDERS]
-    return folders
+    return in_use().deploy_folders
 
 
 def packages() -> list[Path]:
-    """The package in effect, and in project scope the user scope's too."""
-    if scope() == "user":
-        return [package()]
-    return [package(), _package_in(Path.home())]
+    return in_use().packages
 
 
 def overlap(a: Path, b: Path) -> bool:
@@ -147,7 +166,4 @@ def skills() -> Path:
 
 
 def manifest() -> Path:
-    """APM's manifest for the scope, which lists the package once registered."""
-    if scope() == "project":
-        return root() / "apm.yml"
-    return Path.home() / ".apm" / "apm.yml"
+    return in_use().manifest

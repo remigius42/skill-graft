@@ -6,7 +6,7 @@ Apply with the `mp-tdd` skill: each task red-green-refactor, one commit. Red is 
 
 ## 1. Groundwork
 
-- [ ] 1.1 Add `config_file`, `manifest`, `deploy_folders` and `packages` to `paths.Scope`; the module functions of
+- [x] 1.1 Add `config_file`, `manifest`, `deploy_folders` and `packages` to `paths.Scope`; the module functions of
   those names delegate to `in_use()`'s; tests in `tests/infra/test_paths.py` for each in user and project scope
   (project's `deploy_folders` and `packages` include the user scope's); verify they fail first, then pass
 - [ ] 1.2 Add the `scope` fixture (`paths.Scope(home)`) to `tests/conftest.py`; verify `pytest` stays green
