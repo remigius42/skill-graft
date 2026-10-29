@@ -75,7 +75,7 @@ def _folder(config: Config, cache: Cache, alias: str, ref: str | None) -> Path:
     if not ref:
         check_refs(config, ())
     assert ref  # check_refs raised
-    folder = cache.checkout(alias, source.url, ref)
+    folder = cache.checkout(alias, source.url, ref, source.subdirectory)
     if source.subdirectory:
         folder = _subdirectory(alias, folder, source.subdirectory, ref)
     return folder

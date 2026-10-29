@@ -230,11 +230,31 @@ def test_shared_export(home: Path, tmp_path: Path, capsys: Capsys) -> None:
     write_config('entries = ["a/one", "b/two"]\n' + both)
     assert build(capsys) == (0, "")
     assert vendored() == {"one", "two"}
-    assert len(list((home / ".cache" / "skill-graft" / "trees").glob("*/*"))) == 1
+    exports = (home / ".cache" / "skill-graft" / "trees").glob("*/*")
+    assert sorted(top_folders(export) for export in exports) == [["x"], ["y"]]
 
     write_config('entries = ["a/two"]\n' + both)
     code, err = build(capsys)
     assert code == 1 and "a/two" in err
+
+
+def top_folders(export: Path) -> list[str]:
+    return sorted(p.name for p in export.iterdir())
+
+
+def test_same_subdirectory(home: Path, tmp_path: Path, capsys: Capsys) -> None:
+    upstream = Upstream(tmp_path / "up")
+    sha = upstream.commit(
+        {"x/skills/one/SKILL.md": "# one\n", "x/skills/two/SKILL.md": "# two\n"}
+    )
+    both = source(upstream, sha, "x/skills", alias="a") + source(
+        upstream, sha, "x/skills", alias="b"
+    )
+
+    write_config('entries = ["a/one", "b/two"]\n' + both)
+    assert build(capsys) == (0, "")
+    assert vendored() == {"one", "two"}
+    assert len(list((home / ".cache" / "skill-graft" / "trees").glob("*/*"))) == 1
 
 
 def test_why_names_the_upstream_folder(tmp_path: Path, capsys: Capsys) -> None:
