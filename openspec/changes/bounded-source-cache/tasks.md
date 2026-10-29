@@ -44,8 +44,9 @@ last touched those lines.
   new commit; with `Upstream(filters=False)` the clone is whole and `checkout` works (scenario **Remote without partial
   clones**); a repository cloned whole by hand (`seed`) stays whole across a `fetch` (scenario **Repository cloned whole
   before**). Verify red, then green
-- [ ] 3.2 Before exporting, `checkout` lists the missing blobs with one `rev-list --objects --missing=print --no-walk`
-  over the subdirectory and the prefixes that are blobs, and fetches them in one
+- [x] 3.2 Before exporting, `checkout` lists the missing blobs with one `rev-list --objects --missing=print --no-walk`
+  from trees (the subdirectory's, and the folder holding each blob on its path; no pathspec), kept to the export's own
+  blobs, at a commit that does not touch the subdirectory too, and fetches them in one
   `-c fetch.negotiationAlgorithm=noop fetch --stdin origin` with `git.FSCK`, inside one `lock(repo)` block that never
   calls `fetch()`, as design.md's lock scope says. Tests: exporting 20 files of a subdirectory runs one blob fetch,
   carrying `negotiationAlgorithm=noop`, and no `cat-file --batch-check` (record `git.run` calls by patching it through

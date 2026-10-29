@@ -5,11 +5,12 @@ import shutil
 import subprocess
 import threading
 from pathlib import Path
+from typing import Any
 
 import pytest
 from conftest import Upstream
 
-from skill_graft.infra import cache, paths
+from skill_graft.infra import cache, git, paths
 from skill_graft.infra.errors import SkillGraftError
 
 
@@ -249,11 +250,9 @@ def test_another_run_exporting_the_same_ref(
     tree = paths.cache() / "trees" / cache.key(upstream.url) / sha
     export = cache._export
 
-    def racing(
-        repo: Path, ref: str, folder: Path, context: str, subdirectory: None
-    ) -> None:
-        export(repo, ref, folder, context, subdirectory)
-        export(repo, ref, tree, context, subdirectory)  # the other run renames first
+    def racing(repo: Path, records: list[bytes], folder: Path, context: str) -> None:
+        export(repo, records, folder, context)
+        export(repo, records, tree, context)  # the other run renames first
 
     monkeypatch.setattr(cache, "_export", racing)
 
@@ -398,11 +397,13 @@ def test_missing_object_is_reported(tmp_path: Path) -> None:
             )
     blob = upstream.git("rev-parse", f"{sha}:a/SKILL.md")
     (repo / "objects" / blob[:2] / blob[2:]).unlink()
+    upstream.path.rename(tmp_path / "gone")
 
     with pytest.raises(SkillGraftError) as error:
         git_cache.checkout("mp", upstream.url, sha)
 
-    assert "'mp'" in str(error.value) and blob in str(error.value)
+    assert "'mp'" in str(error.value) and upstream.url in str(error.value)
+    assert "delete" not in str(error.value)
 
 
 def files_in(tree: Path) -> set[str]:
@@ -465,6 +466,147 @@ def test_subdirectory_is_a_literal_name(tmp_path: Path) -> None:
 
     assert files_in(tree) == {"s*/a.md"}
     assert files_in(other_case) == set()
+
+
+def blobless(upstream: Upstream) -> Path:
+    """Clones `upstream` into the cache as a partial clone: commits and trees only."""
+    repo = cache.Cache.default().repository(upstream.url)
+    repo.parent.mkdir(parents=True, exist_ok=True)
+    upstream.git(
+        "clone",
+        "-q",
+        "--bare",
+        "--no-local",
+        "--filter=blob:none",
+        upstream.url,
+        str(repo),
+    )
+    return repo
+
+
+def missing_blobs(repo: Path) -> set[str]:
+    """The objects `repo` lacks, of every commit any ref reaches."""
+    out = subprocess.run(
+        ["git", "--git-dir", str(repo), "rev-list", "--objects", "--all"]
+        + ["--missing=print"],
+        capture_output=True,
+        text=True,
+        check=True,
+        env=os.environ | {"GIT_NO_LAZY_FETCH": "1"},
+    ).stdout
+    return {line[1:] for line in out.splitlines() if line.startswith("?")}
+
+
+def recorded(monkeypatch: pytest.MonkeyPatch) -> list[tuple[str, ...]]:
+    """Every `git.run` call's arguments, from now on."""
+    calls: list[tuple[str, ...]] = []
+    run = git.run
+
+    def recording(*args: str, **kwargs: Any) -> bytes:
+        calls.append(args)
+        return run(*args, **kwargs)
+
+    monkeypatch.setattr(git, "run", recording)
+    return calls
+
+
+def blob_fetches(calls: list[tuple[str, ...]]) -> list[tuple[str, ...]]:
+    return [call for call in calls if "fetch" in call and "--stdin" in call]
+
+
+def test_subdirectory_blobs_fetched_in_one_request(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    upstream = Upstream(tmp_path / "up")
+    sha = upstream.commit({f"x/{i}.md": f"{i}\n" for i in range(20)} | {"y.md": "y\n"})
+    blobless(upstream)
+    calls = recorded(monkeypatch)
+
+    tree = cache.Cache.default().checkout("mp", upstream.url, sha, "x")
+
+    assert len(files_in(tree)) == 20
+    (fetch,) = blob_fetches(calls)
+    assert "fetch.negotiationAlgorithm=noop" in fetch
+    assert not [call for call in calls if "--batch-check" in call]
+
+
+@pytest.mark.parametrize(
+    ("subdirectory", "exported"),
+    [
+        ("x", {"x/a.md"}),  # a folder
+        ("f/g", {"f"}),  # through a file
+        ("l/g", {"l"}),  # through a symlink
+        ("f", {"f"}),  # a file itself
+    ],
+)
+def test_export_at_a_commit_not_touching_it(
+    tmp_path: Path, subdirectory: str, exported: set[str]
+) -> None:
+    upstream = Upstream(tmp_path / "up")
+    upstream.path.mkdir(exist_ok=True)
+    (upstream.path / "l").symlink_to("x")
+    upstream.commit({"x/a.md": "a\n", "f": "f\n", "y.md": "1\n"})
+    sha = upstream.commit({"y.md": "2\n"})  # git lists no object of `x` by pathspec
+    blobless(upstream)
+
+    tree = cache.Cache.default().checkout("mp", upstream.url, sha, subdirectory)
+
+    assert files_in(tree) == exported
+
+
+def test_symlinked_prefix_fetched_in_the_same_request(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    upstream = Upstream(tmp_path / "up")
+    (upstream.path / "a").mkdir()
+    (upstream.path / "a" / "b").symlink_to("elsewhere")
+    sha = upstream.commit({"elsewhere/c/x.md": "x\n"})
+    blobless(upstream)
+    calls = recorded(monkeypatch)
+
+    tree = cache.Cache.default().checkout("mp", upstream.url, sha, "a/b/c")
+
+    assert os.readlink(tree / "a" / "b") == "elsewhere"
+    assert len(blob_fetches(calls)) == 1
+
+
+def test_one_subdirectory_of_a_monorepo(tmp_path: Path) -> None:
+    upstream = Upstream(tmp_path / "up")
+    upstream.commit({"x/f.md": "old\n", "big.bin": "big\n"})
+    sha = upstream.commit({"x/f.md": "new\n"})
+    repo = blobless(upstream)
+
+    cache.Cache.default().checkout("mp", upstream.url, sha, "x")
+
+    assert missing_blobs(repo) == {
+        upstream.git("rev-parse", f"{sha}:big.bin"),
+        upstream.git("rev-parse", f"{sha}~:x/f.md"),
+    }
+
+
+def test_commit_cached_files_not(tmp_path: Path) -> None:
+    upstream = Upstream(tmp_path / "up")
+    sha = upstream.commit({"x/f.md": "x\n"})
+    blobless(upstream)
+    upstream.path.rename(tmp_path / "gone")
+
+    with pytest.raises(SkillGraftError) as error:
+        cache.Cache.default().checkout("mp", upstream.url, sha, "x")
+
+    assert "'mp'" in str(error.value) and upstream.url in str(error.value)
+
+
+def test_pruned_export_read_offline(tmp_path: Path) -> None:
+    upstream = Upstream(tmp_path / "up")
+    sha = upstream.commit({"x/f.md": "x\n"})
+    blobless(upstream)
+    tree = cache.Cache.default().checkout("mp", upstream.url, sha, "x")
+    shutil.rmtree(tree)
+    upstream.path.rename(tmp_path / "gone")
+
+    again = cache.Cache.default().checkout("mp", upstream.url, sha, "x")
+
+    assert (again / "x" / "f.md").read_text() == "x\n"
 
 
 def test_checkout_keeps_modes_and_skips_submodules(tmp_path: Path) -> None:
