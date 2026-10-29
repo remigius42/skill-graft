@@ -44,6 +44,7 @@ words:
   - gitdir
   - Gitea
   - gitlink
+  - grimp
   - heapdump
   - ignorewhitespace
   - importlinter
