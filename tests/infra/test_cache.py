@@ -4,6 +4,7 @@ import os
 import shutil
 import subprocess
 import threading
+import time
 from pathlib import Path
 from typing import Any
 
@@ -740,6 +741,21 @@ def test_reference_layered_checkout_writes_no_real_cache(
     assert real.is_dir() and not [call for call in calls if "clone" in call]
 
 
+def test_reference_layered_checkout_lists_missing_files_once(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    upstream = Upstream(tmp_path / "up")
+    sha = upstream.commit({"x/a.md": "a\n"})
+    blobless(upstream)
+    calls = recorded(monkeypatch)
+
+    cache.Cache(tmp_path / "dry", cache.Cache.default()).checkout(
+        "mp", upstream.url, sha, "x"
+    )
+
+    assert len([call for call in calls if "rev-list" in call]) == 1
+
+
 def test_reference_layered_checkout_refused_by_name(
     tmp_path: Path, monkeypatch: pytest.MonkeyPatch
 ) -> None:
@@ -902,6 +918,21 @@ def test_pin_written_once(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> No
     assert not [call for call in calls if "update-ref" in call]
 
 
+def test_pin_checked_once_per_command(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    upstream = Upstream(tmp_path / "up")
+    sha = upstream.commit({"x/a.md": "a\n", "y/b.md": "b\n"})
+    git_cache = cache.Cache.default()
+    calls = recorded(monkeypatch)
+
+    for subdirectory in ["x", "y", "x"]:
+        git_cache.checkout("mp", upstream.url, sha, subdirectory)
+
+    pin = f"refs/skill-graft/{sha}"
+    assert len([call for call in calls if pin in call]) == 2  # rev-parse, update-ref
+
+
 def test_pin_skipped_without_the_commit(
     tmp_path: Path, monkeypatch: pytest.MonkeyPatch
 ) -> None:
@@ -920,6 +951,21 @@ def test_pin_skipped_without_the_commit(
     assert not [call for call in calls if {"clone", "fetch"} & set(call)]
 
 
+def test_export_with_its_files_waits_for_no_lock(tmp_path: Path) -> None:
+    upstream = Upstream(tmp_path / "up")
+    sha = upstream.commit({"x/a.md": "a\n"})
+    git_cache = cache.Cache.default()
+    git_cache.checkout("mp", upstream.url, sha)  # brings every file of the commit
+    exporting = threading.Thread(
+        target=cache.Cache.default().checkout, args=("mp", upstream.url, sha, "x")
+    )
+
+    with cache.lock(git_cache.repository(upstream.url)):  # another run's fetch
+        exporting.start()
+        exporting.join(10)
+        assert not exporting.is_alive()
+
+
 def test_pin_waits_for_no_lock(tmp_path: Path) -> None:
     upstream = Upstream(tmp_path / "up")
     sha = upstream.commit({"tdd/SKILL.md": "# tdd\n"})
@@ -933,6 +979,114 @@ def test_pin_waits_for_no_lock(tmp_path: Path) -> None:
         again.start()
         again.join(10)
         assert not again.is_alive()
+
+
+NOW = time.time()
+DAY = 86_400
+
+
+def aged(path: Path, days: int) -> Path:
+    """`path`, last modified `days` before NOW."""
+    then = NOW - days * DAY
+    os.utime(path, (then, then), follow_symlinks=False)
+    return path
+
+
+def folder(path: Path) -> Path:
+    path.mkdir(parents=True)
+    (path / "f").write_text("f\n")
+    return path
+
+
+def test_prune_by_age() -> None:
+    trees = paths.cache() / "trees" / "up-0123456789ab"
+    old = aged(folder(trees / ("a" * 40)), 31)
+    recent = aged(folder(trees / ("b" * 40)), 29)
+
+    cache.prune(paths.cache(), NOW)
+
+    assert not old.exists() and recent.exists()
+    assert unlocked(trees) == [recent.name]
+
+
+def test_prune_leftovers_but_no_repository() -> None:
+    trees = paths.cache() / "trees" / "up-0123456789ab"
+    repos = paths.cache() / "repos"
+    export_leftover = aged(folder(trees / f"{'a' * 40}.x1y2.tmp"), 31)
+    clone_leftover = aged(folder(repos / "up-0123456789ab.git.x1y2.tmp"), 31)
+    repository = aged(folder(repos / "up-0123456789ab.git"), 31)
+
+    cache.prune(paths.cache(), NOW)
+
+    assert not export_leftover.exists() and not clone_leftover.exists()
+    assert repository.exists() and trees.is_dir()
+
+
+def test_prune_never_follows_a_symlink(tmp_path: Path) -> None:
+    target = folder(tmp_path / "target")
+    export = folder(paths.cache() / "trees" / "up-0123456789ab" / ("a" * 40))
+    (export / "link").symlink_to(target)
+    aged(export, 31)
+
+    cache.prune(paths.cache(), NOW)
+
+    assert not export.exists() and (target / "f").exists()
+
+
+def test_prune_racing_a_vanished_entry(monkeypatch: pytest.MonkeyPatch) -> None:
+    entry = aged(folder(paths.cache() / "trees" / "up-0123456789ab" / ("a" * 40)), 31)
+
+    def vanished(self: Path, target: Path) -> Path:
+        raise FileNotFoundError(self)
+
+    monkeypatch.setattr(Path, "rename", vanished)
+
+    cache.prune(paths.cache(), NOW)
+
+    assert unlocked(entry.parent) == [entry.name]  # no folder of its own left
+
+
+def test_prune_of_an_empty_cache() -> None:
+    cache.prune(paths.cache(), NOW)
+    paths.cache().mkdir(parents=True)
+    cache.prune(paths.cache(), NOW)
+    (paths.cache() / "trees").mkdir()
+    cache.prune(paths.cache(), NOW)
+
+
+def test_checkout_stamps_the_export(tmp_path: Path) -> None:
+    upstream = Upstream(tmp_path / "up")
+    sha = upstream.commit({"tdd/SKILL.md": "# tdd\n"})
+    tree = aged(cache.Cache.default().checkout("mp", upstream.url, sha), 31)
+
+    cache.Cache.default().checkout("mp", upstream.url, sha)
+
+    assert tree.stat().st_mtime > NOW - DAY
+
+
+def test_checkout_from_a_read_only_cache(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    upstream = Upstream(tmp_path / "up")
+    sha = upstream.commit({"tdd/SKILL.md": "# tdd\n"})
+    tree = cache.Cache.default().checkout("mp", upstream.url, sha)
+
+    def read_only(*args: Any, **kwargs: Any) -> None:
+        raise PermissionError(30, "Read-only file system")
+
+    monkeypatch.setattr(os, "utime", read_only)
+
+    assert cache.Cache.default().checkout("mp", upstream.url, sha) == tree
+
+
+def test_reference_layered_checkout_stamps_nothing(tmp_path: Path) -> None:
+    upstream = Upstream(tmp_path / "up")
+    sha = upstream.commit({"tdd/SKILL.md": "# tdd\n"})
+    tree = aged(cache.Cache.default().checkout("mp", upstream.url, sha), 31)
+    layered = cache.Cache(tmp_path / "dry", cache.Cache.default())
+
+    assert layered.checkout("mp", upstream.url, sha) == tree
+    assert tree.stat().st_mtime == NOW - 31 * DAY
 
 
 def test_checkout_keeps_modes_and_skips_submodules(tmp_path: Path) -> None:

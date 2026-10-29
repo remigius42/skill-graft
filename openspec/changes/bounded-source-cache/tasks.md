@@ -103,7 +103,7 @@ last touched those lines.
 
 ## 6. Stamp and prune
 
-- [ ] 6.1 `checkout` stamps the export folder's mtime when `reference is None`; `cache.prune(root, now)` removes, older
+- [x] 6.1 `checkout` stamps the export folder's mtime when `reference is None`; `cache.prune(root, now)` removes, older
   than 30 days, each `trees/<key>/<entry>` (exports and `.tmp` leftovers) and each `repos/*.tmp`, by rename then
   `rmtree`, ignoring every `OSError`; never a `trees/<key>` folder, never a repository. Tests in
   `tests/infra/test_cache.py`, ages set with `os.utime`: 31 days removed, 29 kept, a `.tmp` leftover in `trees/` and one
