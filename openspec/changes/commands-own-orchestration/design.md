@@ -30,7 +30,8 @@ See proposal.md for why. Today:
 
 - Every test drives `cli.main`. Those that patch a module function do it through its module, so moving the
   callers keeps them working only if the moved code still calls that function: `tests/cli/test_build.py`
-  (`lock.write`, `vendor.vendor`, `config.load`), `tests/cli/test_resolve.py` (`vendor.vendor`),
+  (`lock.write`, `vendor.vendor`, `config.load`), `tests/cli/test_resolve.py` (`vendor.vendor`; both now in
+  `tests/commands/`, task 7.2),
   `tests/commands/test_update.py` (`edit.write` for the refs write, `files.atomic_write` for the diff,
   `deployed.summary`, and `lock.skill_hashes`, counting calls: its second is the old **Hull**'s, so `resolving`
   must not call `skill_hashes` when `hashes` is set).
@@ -121,19 +122,22 @@ See proposal.md for why. Today:
     today. Alternative, `update` calling `compute_hull` itself in a dry run: a second path through the same
     steps.
 
-- **`build` in `commands/build.py`: `build(scope, warnings, into, no_install)`.** It prints `into: <dir>` and runs
+- **`build` in `commands/build.py`: `build(scope, warnings, given, no_install)`,** `given` being `--into` as
+  typed, `into` the resolved folder, as in `cli` before. It prints `into: <dir>` and runs
   `_check_into` first, before loading the config, as `cli` does now; with `scope.of` printing `package:` on
   entry, stderr keeps `package:`, `into:`, then any error. `_check_into_sources` and `_undo_into` move with it.
   Its lock goes through `resolving` with `lock_file` set for `--into`, so through `lock.write`.
 
-- **`tree` and `why` in `commands/explain.py`: `show_tree(scope, warnings, mermaid, link)` and
-  `show_why(scope, warnings, text)`,** with `_explain` moved as is, its `finally: warn(...)` becoming an append.
+- **`tree` and `why` in `commands/explain.py`: `show_tree(scope, warnings, as_mermaid, as_link)` and
+  `show_why(scope, warnings, text)`,** not `mermaid` and `link`, which would shadow the module's functions of
+  those names. `_explain` moves with them, its `finally: warn(...)` becoming an append; it loads the config with
+  `config.load()` and appends its warnings itself, as `resolve.load` does, since `resolve` imports `explain`.
   They take the `Scope` per the ADR, unused until change 2, and no `Resolution`: they write nothing.
   `--link needs --format mermaid` stays a usage error in `cli`, as does `_into`.
 
 - **`resolve` in `commands/resolve.py`: `resolve(scope, warnings)`;** `update.update(scope, warnings, aliases, …)`
   and the edits (`edit.add(scope, warnings, skills)`, …) take the `Scope` and load the config themselves,
-  `cli._load` moving to `commands` (`resolve.load()`).
+  `cli._load` moving to `commands` as `resolve.load(warnings)`, which appends the config's warnings to the list.
 
 - **The forbidden contract:**
 

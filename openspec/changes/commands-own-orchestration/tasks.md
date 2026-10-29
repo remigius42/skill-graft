@@ -37,7 +37,7 @@ every commit, but those task 3.1 moves to the new warning position; `pre-commit 
 
 ## 4. The shared resolve-and-lock
 
-- [x] 4.1 Add `commands/resolve.py` with `resolving(...)`, `Resolution`, `show(hull)` and `load()` as design.md
+- [x] 4.1 Add `commands/resolve.py` with `resolving(...)`, `Resolution`, `show(hull)` and `load(warnings)` as design.md
   says, and move `resolve` there as `resolve(scope, warnings)`, `cli` dispatching to it; tests in
   `tests/commands/test_resolve.py` against `resolving` directly: nothing rendered or written when the block
   raises; `render` failing runs no write; a failing lock write restores the written files in reverse, a missing
@@ -60,7 +60,7 @@ every commit, but those task 3.1 moves to the new warning position; `pre-commit 
 
 ## 5. Build
 
-- [x] 5.1 Move `build` to `commands/build.py` as `build(scope, warnings, into, no_install)` with `_check_into`,
+- [x] 5.1 Move `build` to `commands/build.py` as `build(scope, warnings, given, no_install)` with `_check_into`,
   `_check_into_sources` and `_undo_into`, printing `into:` and checking first; vendoring and the vendored hashes
   inside a `resolving` block with `lock_file` for `--into`; `cli` keeps `_into` and dispatches; verify
   `tests/cli/test_build.py` (its `lock.write` patches included), `test_git_build.py` and
@@ -69,10 +69,10 @@ every commit, but those task 3.1 moves to the new warning position; `pre-commit 
 
 ## 6. Tree and why
 
-- [x] 6.1 Move `tree` and `why` into `commands/explain.py` as `show_tree(scope, warnings, mermaid, link)` and
-  `show_why(scope, warnings, text)`, `_explain` moved as is, appending to the list instead of `warn`; `cli` keeps
-  the `--link` usage error and dispatches; verify `tests/commands/test_explain.py` and
-  `tests/cli/test_hidden_characters.py` pass unchanged
+- [x] 6.1 Move `tree` and `why` into `commands/explain.py` as `show_tree(scope, warnings, as_mermaid, as_link)` and
+  `show_why(scope, warnings, text)`, `_explain` moved, loading the config itself and appending to the list
+  instead of `warn`; `cli` keeps the `--link` usage error and dispatches; verify `tests/commands/test_explain.py`
+  and `tests/cli/test_hidden_characters.py` pass unchanged
 
 ## 7. cli only parses and dispatches
 
