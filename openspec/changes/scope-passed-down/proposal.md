@@ -28,6 +28,8 @@ the second and last: the `Scope` goes down into every function that reads it, an
   **Sources** builds one `Cache` and passes it down: `tree`, `why`, `resolve`, `build`, the edits, `update`
   (already does). `tree --format mermaid` uses the one it resolved with, not a second. No `Cache(paths.cache())`
   below `commands`.
+- `_explain` loads the config through `resolve.load` instead of its own copy; `show` moves from `resolve` to
+  `explain`, removing the import that forced the copy.
 - Tests below `cli` build a `Scope` on a temporary folder: a `scope` fixture, `Scope(home)`, in `tests/conftest.py`.
   `HOME` and `XDG_*` stay redirected.
 

@@ -4,12 +4,17 @@ Apply with the `mp-tdd` skill: each task red-green-refactor, one commit. Red is 
 (or the new `Scope` property) failing. Every test under `tests/cli/` passes unchanged at every commit; tests below
 `cli` change only to pass a `Scope` or `Cache`. `pre-commit run --all-files` stays green. No CHANGELOG entry.
 
-## 1. The Scope holds every path
+## 1. Groundwork
 
 - [ ] 1.1 Add `config_file`, `manifest`, `deploy_folders` and `packages` to `paths.Scope`; the module functions of
   those names delegate to `in_use()`'s; tests in `tests/infra/test_paths.py` for each in user and project scope
   (project's `deploy_folders` and `packages` include the user scope's); verify they fail first, then pass
 - [ ] 1.2 Add the `scope` fixture (`paths.Scope(home)`) to `tests/conftest.py`; verify `pytest` stays green
+- [ ] 1.3 One way to load the config: move `show(hull)` from `commands/resolve.py` into `commands/explain.py`
+  (`resolve.resolve` and `edit._finish` call `explain.show`), so `resolve` no longer imports `explain`;
+  `explain._explain` calls `resolve.load(warnings)` instead of its own `config.load()` and `warnings.extend`;
+  verify `lint-imports` and `pytest` green and `grep -n 'config.load' src/skill_graft/commands/` finds only
+  `resolve.py`
 
 ## 2. infra takes the Scope
 

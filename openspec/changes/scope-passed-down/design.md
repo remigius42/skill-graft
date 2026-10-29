@@ -75,6 +75,11 @@ See proposal.md for why. Today, after `commands-own-orchestration`:
   `tree --format mermaid`, which drops its second one); `update` keeps its own, layered over a temporary one in a
   dry run. `Cache.__init__` touches no files, so building one for a config without git **Sources** costs nothing.
 
+- **One `resolve.load`, before it takes the `Scope`.** `_explain` copies it (`config.load()` and its warnings)
+  because `resolve` imports `explain`, only for `show`, which prints `explain.tree` and `explain.suggestions`.
+  `show` moves into `explain`, its natural home, and `_explain` calls `resolve.load`: the cycle goes, and task
+  3.1 changes one copy, not two. Alternative, a new module holding `load`: a module for one function.
+
 - **Tests below `cli` take a `scope` fixture**: `paths.Scope(home)` in `tests/conftest.py`, `home` being the
   autouse fixture's temporary folder that `HOME` points at; user scope, as the global's fallback gave them. Tests
   needing project scope build `paths.Scope(tmp_path / "project")`. Pipeline tests that compute a **Hull** pass
