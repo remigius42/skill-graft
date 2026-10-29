@@ -1,5 +1,7 @@
 """The `git-sources` spec, through `skill-graft build --no-install`."""
 
+import shutil
+import subprocess
 from pathlib import Path
 from typing import TypeAlias
 
@@ -9,12 +11,15 @@ from conftest import (
     build,
     configure,
     deadline,
+    seed,
     skill,
     vendored,
     write_config,
 )
 
 from skill_graft.cli import main
+from skill_graft.infra import paths
+from skill_graft.infra.cache import Cache
 
 Capsys: TypeAlias = pytest.CaptureFixture[str]
 
@@ -195,3 +200,41 @@ def test_build_into_fetches_an_uncached_ref(home: Path, tmp_path: Path) -> None:
 
     assert (home / ".cache" / "skill-graft" / "repos").is_dir()
     assert (into / ".apm" / "skills" / "tdd" / "SKILL.md").read_text() == "# tdd\n"
+
+
+def vanish(upstream: Upstream) -> None:
+    """Resets `main` to a commit of its own, so no branch holds what it held, and
+    has git delete what is left unreachable."""
+    upstream.git("checkout", "-q", "--orphan", "rewritten")
+    upstream.commit({"other/SKILL.md": "# other\n"})
+    upstream.git("branch", "-D", "main")
+    upstream.git("branch", "-m", "main")
+    upstream.git("reflog", "expire", "--expire=now", "--all")
+    upstream.git("gc", "-q", "--prune=now")
+
+
+# A partial clone's gc keeps what its promisor packs hold; one cloned whole, as
+# before blobless clones, keeps nothing unreachable.
+@pytest.mark.parametrize("whole", [False, True])
+def test_ref_vanished_upstream(tmp_path: Path, capsys: Capsys, whole: bool) -> None:
+    upstream = Upstream(tmp_path / "up")
+    sha = upstream.commit({"skills/tdd/SKILL.md": "# tdd\n"})
+    write_config(
+        f'entries = ["mp/tdd"]\n[sources.mp]\ngit = "{upstream.url}"\nref = "{sha}"\n'
+    )
+    if whole:
+        seed(upstream, upstream.url)
+    assert build(capsys) == (0, "")
+    vanish(upstream)
+    Cache.default().fetch("mp", upstream.url)
+    repo = Cache.default().repository(upstream.url)
+    subprocess.run(
+        ["git", "--git-dir", str(repo), "gc", "-q", "--prune=now"], check=True
+    )
+    shutil.rmtree(paths.cache() / "trees")
+    upstream.path.rename(tmp_path / "gone")
+
+    assert build(capsys) == (0, "")
+
+    skills = Path.home() / ".apm" / "skill-graft" / ".apm" / "skills"
+    assert (skills / "tdd" / "SKILL.md").read_text() == "# tdd\n"

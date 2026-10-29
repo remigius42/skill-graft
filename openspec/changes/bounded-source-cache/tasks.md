@@ -79,7 +79,7 @@ last touched those lines.
 
 ## 4. Pins
 
-- [ ] 4.1 `checkout` on a `Cache` without a `reference` pins on every call, without `lock(repo)`:
+- [x] 4.1 `checkout` on a `Cache` without a `reference` pins on every call, without `lock(repo)`:
   `rev-parse --verify -q refs/skill-graft/<sha>`, then `update-ref` only when absent; best effort, as design.md says.
   Tests: after `checkout`, the ref exists; after `checkout` of an export that already existed, too; a second `checkout`
   runs no `update-ref`; `checkout` returns a surviving export when its repository was deleted, and when the repository

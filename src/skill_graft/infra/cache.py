@@ -77,6 +77,7 @@ class Cache:
         """
         tree = self._tree(url, ref, subdirectory)
         if tree.exists():  # renamed into place only once complete
+            self._pin(url, ref)
             return tree
         if (
             self.reference
@@ -99,7 +100,28 @@ class Cache:
             with lock(repo):
                 self._fill(repo, records, tips, context)
         _build(tree, lambda tmp: _export(repo, records, tmp, context))
+        self._pin(url, ref)
         return tree
+
+    def _pin(self, url: str, sha: str) -> None:
+        """Keeps commit `sha`, its trees and the files fetched for it, in its
+        repository through `fetch --prune` and gc, even once gone upstream.
+
+        Best effort, and under git's own lock on the one ref, not the
+        repository's: a missing repository, or one lacking the commit, is
+        skipped. A dry run pins nothing.
+        """
+        repo = self.repository(url)
+        if self.reference is not None or not repo.exists():
+            return
+        pin = f"refs/skill-graft/{sha}"
+        try:
+            git.run("rev-parse", "--verify", "-q", pin, repo=repo, context=str(repo))
+        except SkillGraftError:  # absent
+            try:
+                git.run("update-ref", pin, sha, repo=repo, context=str(repo))
+            except SkillGraftError:
+                pass
 
     def _fill(
         self, repo: Path, records: list[bytes], tips: list[str], context: str

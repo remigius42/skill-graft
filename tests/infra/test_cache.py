@@ -864,6 +864,77 @@ def test_refusal_the_refetch_does_not_cure(
     assert recorded_filter(repo) == "blob:none"
 
 
+def pinned(repo: Path, sha: str) -> bool:
+    return (
+        subprocess.run(
+            ["git", "--git-dir", str(repo), "rev-parse", "--verify", "-q"]
+            + [f"refs/skill-graft/{sha}"],
+            capture_output=True,
+        ).returncode
+        == 0
+    )
+
+
+def test_checkout_pins_the_commit(tmp_path: Path) -> None:
+    upstream = Upstream(tmp_path / "up")
+    sha = upstream.commit({"tdd/SKILL.md": "# tdd\n"})
+    git_cache = cache.Cache.default()
+
+    git_cache.checkout("mp", upstream.url, sha)
+
+    repo = git_cache.repository(upstream.url)
+    assert pinned(repo, sha)
+
+    upstream.git("--git-dir", str(repo), "update-ref", "-d", f"refs/skill-graft/{sha}")
+    cache.Cache.default().checkout("mp", upstream.url, sha)  # the export exists
+
+    assert pinned(repo, sha)
+
+
+def test_pin_written_once(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
+    upstream = Upstream(tmp_path / "up")
+    sha = upstream.commit({"tdd/SKILL.md": "# tdd\n"})
+    cache.Cache.default().checkout("mp", upstream.url, sha)
+    calls = recorded(monkeypatch)
+
+    cache.Cache.default().checkout("mp", upstream.url, sha)
+
+    assert not [call for call in calls if "update-ref" in call]
+
+
+def test_pin_skipped_without_the_commit(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    upstream = Upstream(tmp_path / "up")
+    sha = upstream.commit({"tdd/SKILL.md": "# tdd\n"})
+    tree = cache.Cache.default().checkout("mp", upstream.url, sha)
+    repo = cache.Cache.default().repository(upstream.url)
+    calls = recorded(monkeypatch)
+
+    shutil.rmtree(repo)
+    assert cache.Cache.default().checkout("mp", upstream.url, sha) == tree
+
+    upstream.git("init", "-q", "--bare", str(repo))  # a re-clone without the commit
+    assert cache.Cache.default().checkout("mp", upstream.url, sha) == tree
+
+    assert not [call for call in calls if {"clone", "fetch"} & set(call)]
+
+
+def test_pin_waits_for_no_lock(tmp_path: Path) -> None:
+    upstream = Upstream(tmp_path / "up")
+    sha = upstream.commit({"tdd/SKILL.md": "# tdd\n"})
+    git_cache = cache.Cache.default()
+    git_cache.checkout("mp", upstream.url, sha)
+    again = threading.Thread(
+        target=cache.Cache.default().checkout, args=("mp", upstream.url, sha)
+    )
+
+    with cache.lock(git_cache.repository(upstream.url)):  # another run's fetch
+        again.start()
+        again.join(10)
+        assert not again.is_alive()
+
+
 def test_checkout_keeps_modes_and_skips_submodules(tmp_path: Path) -> None:
     upstream = Upstream(tmp_path / "up")
     script = upstream.path / "a" / "run.sh"
