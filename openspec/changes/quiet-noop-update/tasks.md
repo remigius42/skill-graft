@@ -24,7 +24,7 @@ Apply with the `mp-tdd` skill: each task red-green-refactor, one commit. `pre-co
 
 ## 2. Hull digest placeholder
 
-- [ ] 2.1 `cli.py`: `--expect`'s metavar `hull-digest`, its help `update only if the new hull has this hull digest, …`,
+- [x] 2.1 `cli.py`: `--expect`'s metavar `hull-digest`, its help `update only if the new hull has this hull digest, …`,
   `update`'s description `--expect <hull-digest>`; `update.py`'s mismatch error `its hull digest is …`; `docs/design.md`
   and `README.md` (the example at line 82, the usage at 95 and 98) `--expect <hull-digest>`. Verified by
   `grep -rn '<digest>\|DIGEST'` over `README.md`, `docs/` and `src/` finding nothing. Test: `update --help` output holds

@@ -200,7 +200,7 @@ def _update(
             digest = lock.digest(hull, hashes)
             if expect is not None and digest != expect:
                 raise SkillGraftError(
-                    f"the hull is not the one reviewed: its digest is {digest}, "
+                    f"the hull is not the one reviewed: its hull digest is {digest}, "
                     f"not {expect}; review it again: {review}"
                 )
             diff = ""  # built before any write

@@ -200,7 +200,7 @@ def _parser() -> tuple[_Parser, dict[str, argparse.ArgumentParser]]:
             "Prints the hull diff, each changed file of each changed or added skill, "
             "and any patch hunk that no longer applies. To review an update, run "
             "`update --dry-run --diff review.diff`, read the file in an editor, then "
-            "run the `apply:` line it prints, `update --expect <digest>`."
+            "run the `apply:` line it prints, `update --expect <hull-digest>`."
         ),
     )
     update_parser.add_argument(
@@ -225,10 +225,11 @@ def _parser() -> tuple[_Parser, dict[str, argparse.ArgumentParser]]:
     )
     update_parser.add_argument(
         "--expect",
-        metavar="DIGEST",
+        metavar="hull-digest",
         help=(
-            "update only if the new hull's digest is DIGEST, as the `apply:` line of "
-            "a dry run with --diff gives it: so exactly the hull reviewed is written"
+            "update only if the new hull has this hull digest, as the `apply:` line "
+            "of a dry run with --diff gives it: so exactly the hull reviewed is "
+            "written"
         ),
     )
     tree = commands.add_parser(

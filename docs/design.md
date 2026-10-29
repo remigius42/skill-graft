@@ -123,8 +123,9 @@ path = "~/Documents/sync/2_areas/software/chisel_skill"
   reads as one), when its two sides were read in different encodings, or when it is shown byte for byte (its bytes
   differ but its text does not); a removed skill gets a `# - <skill id>` line. Only to a new file or one it wrote
   before, named `*.diff`, never inside an `.apm` folder or a skill's; removed first, so a failed run leaves none, and
-  written before the TOML and the lock. With no previous hull, every skill shows as added. `--expect <digest>`: refuses,
-  writing nothing, unless the new hull's digest (SHA-256 over each skill's ID, deployed name and hash) is `<digest>`.
+  written before the TOML and the lock. With no previous hull, every skill shows as added. `--expect <hull-digest>`:
+  refuses, writing nothing, unless the new hull's digest (SHA-256 over each skill's ID, deployed name and hash) is
+  `<hull-digest>`.
 - `why <skill>`: the reverse paths from the entries, as an inverted tree (`cargo tree -i`): the skill at the root, each
   child a skill whose slash or Skill tool reference reaches it, joined by `├─←` and `└─←`, labels and `(*)` as in
   `resolve`'s tree, an entry below the root marked `(entry)` and not expanded (the root always expands, marked `(entry)`

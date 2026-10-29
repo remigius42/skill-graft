@@ -67,6 +67,7 @@ def test_command_help(capsys: pytest.CaptureFixture[str]) -> None:
     assert code == 0
     assert "branch tip" in out
     assert "--dry-run" in out
+    assert "--expect hull-digest" in out and "DIGEST" not in out
 
 
 def test_help_command_same_text(capsys: pytest.CaptureFixture[str]) -> None:

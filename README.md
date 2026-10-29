@@ -79,7 +79,7 @@ Later, to move `mp` to its new tip, review what would change first:
 
 ```sh
 skill-graft update mp --dry-run --diff review.diff   # write each changed skill's text as deployed
-skill-graft update mp --expect <digest>              # the `apply:` line the dry run printed
+skill-graft update mp --expect <hull-digest>         # the `apply:` line the dry run printed
 ```
 
 Read `review.diff` in an editor, never by printing it to a terminal: it is untrusted text. The `apply:` line updates to
@@ -92,10 +92,10 @@ exactly the hull you read; a push, a path source's edit, a patch or a rename sin
 - `build [--no-install | --into <dir>]`: resolve, vendor the hull patched and renamed into `.apm/skills/`, deploy
   through APM. `--into <dir>` writes the skills and the lock into an empty `<dir>` instead, never touching the package
   or APM.
-- `update [source…] [--dry-run] [--diff <file>] [--expect <digest>]`: move each git source's `ref` to its branch tip, if
-  the hull still resolves and every patch still applies there. It names each changed file of each changed or added
-  skill, never its text; `--diff <file>` writes that text as deployed, the Deployed diff, to a new `*.diff` file;
-  `--expect <digest>` updates only to the hull a dry run showed.
+- `update [source…] [--dry-run] [--diff <file>] [--expect <hull-digest>]`: move each git source's `ref` to its branch
+  tip, if the hull still resolves and every patch still applies there. It names each changed file of each changed or
+  added skill, never its text; `--diff <file>` writes that text as deployed, the Deployed diff, to a new `*.diff` file;
+  `--expect <hull-digest>` updates only to the hull a dry run showed.
 - `tree [--format text|mermaid] [--link]`: print the hull, writing nothing; `--link` gives a mermaid.live URL.
   mermaid.live, a third-party site whose page code can read the diagram, then sees which upstream repositories and refs
   you use, a target list for a supply-chain attack on them.

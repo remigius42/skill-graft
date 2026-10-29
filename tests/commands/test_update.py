@@ -1767,7 +1767,7 @@ def test_tip_moved_after_vetting(upstream: Upstream, capsys: Capsys) -> None:
 
     err = refused(capsys, args, file, toml, lock)
 
-    assert args[2] in err and "not the one reviewed" in err
+    assert args[2] in err and "not the one reviewed" in err and "hull digest is" in err
     assert "skill-graft update mp --dry-run --diff <file>" in err
     assert len([word for word in err.split() if len(word.strip(",;:.")) == 64]) == 2
 
