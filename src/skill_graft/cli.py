@@ -88,8 +88,9 @@ def _printable(text: object) -> TypeGuard[str]:
 
 
 def _origin(distribution: metadata.Distribution) -> str:
-    """` (<revision> @ <commit>)` for a git install, from the installer's direct_url.json
-    (PEP 610); anything else, malformed or unreadable included, adds nothing."""
+    """` (<revision> @ <commit>)` for a git install, from the installer's
+    direct_url.json (PEP 610); anything else, malformed or unreadable included, adds
+    nothing."""
     try:
         direct_url = json.loads(distribution.read_text("direct_url.json") or "{}")
     except (OSError, ValueError, RecursionError):  # unreadable, not JSON, too deep

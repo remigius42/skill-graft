@@ -1,4 +1,5 @@
-"""Finds hidden characters, which a reader of the rendered text never sees, in a skill."""
+"""Finds hidden characters, which a reader of the rendered text never sees, in a
+skill."""
 
 import re
 from pathlib import Path
@@ -82,7 +83,8 @@ def scan_names(folder: Path, entries: list[Path]) -> list[str]:
 
 
 def not_utf8(folder: Path, entries: list[Path]) -> list[str]:
-    """As `scan`, for these entries of `folder`: each Markdown file that is not UTF-8."""
+    """As `scan`, for these entries of `folder`: each Markdown file that is not
+    UTF-8."""
     return [
         f"{show(entry.relative_to(folder).as_posix())}: not UTF-8, so its references "
         "cannot be read"

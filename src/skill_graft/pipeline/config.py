@@ -1,4 +1,5 @@
-"""Reads `skill-graft.toml`: sources, entries, binds, renames, reserved names, check limits."""
+"""Reads `skill-graft.toml`: sources, entries, binds, renames, reserved names, check
+limits."""
 
 import re
 from decimal import Decimal

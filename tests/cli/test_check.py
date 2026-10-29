@@ -17,7 +17,8 @@ SKILLS = Path(__file__).parents[2] / "skills"
 
 
 def front_matter() -> dict[str, str]:
-    """The `key: value` lines between the `---` fences opening the skill's `SKILL.md`."""
+    """The `key: value` lines between the `---` fences opening the skill's
+    `SKILL.md`."""
     text = (SKILLS / "graft-check" / "SKILL.md").read_text()
     opening, block, _ = text.split("---\n", 2)
     assert opening == ""

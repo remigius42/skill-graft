@@ -1,4 +1,5 @@
-"""Finding hidden characters in a skill's files and names (the `hidden-characters` spec)."""
+"""Finding hidden characters in a skill's files and names (the `hidden-characters`
+spec)."""
 
 from pathlib import Path
 

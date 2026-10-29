@@ -169,7 +169,8 @@ class Upstream:
 
 
 def seed(upstream: Upstream, url: str) -> None:
-    """Clones `upstream` into the cache as `url`'s repository, so `url` needs no fetch."""
+    """Clones `upstream` into the cache as `url`'s repository, so `url` needs no
+    fetch."""
     repo = Cache.default().repository(url)
     repo.parent.mkdir(parents=True, exist_ok=True)
     upstream.git("clone", "-q", "--bare", upstream.url, str(repo))
@@ -231,7 +232,8 @@ def build(capsys: pytest.CaptureFixture[str]) -> tuple[int, str]:
 
 
 def after_package_line(err: str) -> str:
-    """`err` without the `skill-graft: package: …` line a writing command starts with."""
+    """`err` without the `skill-graft: package: …` line a writing command starts
+    with."""
     first, _, rest = err.partition("\n")
     return rest if first.startswith("skill-graft: package: ") else err
 

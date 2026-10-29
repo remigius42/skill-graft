@@ -32,7 +32,11 @@ target-version = "py311"
 
 [tool.ruff.lint]
 # A global hides a dependency the import contracts cannot see (ADR 0008).
-extend-select = ["PLW0603"]
+# W505: `ruff format` wraps code at 88 but never a docstring or comment.
+extend-select = ["PLW0603", "W505"]
+
+[tool.ruff.lint.pycodestyle]
+max-doc-length = 88
 
 [tool.mypy]
 python_version = "3.11"

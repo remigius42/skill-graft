@@ -15,7 +15,8 @@ from skill_graft.infra import paths
 
 
 def project(root: Path, entries: str = '["own/chisel"]') -> Path:
-    """A project package at `root` whose source `own` is `root/src`, holding `chisel`."""
+    """A project package at `root` whose source `own` is `root/src`, holding
+    `chisel`."""
     skill(root / "src" / "chisel")
     package = root / ".apm" / "skill-graft"
     package.mkdir(parents=True)

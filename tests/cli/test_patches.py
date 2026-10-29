@@ -1,4 +1,5 @@
-"""The `patches` spec end to end: a skill's patches apply before its references are read."""
+"""The `patches` spec end to end: a skill's patches apply before its references are
+read."""
 
 import os
 from pathlib import Path

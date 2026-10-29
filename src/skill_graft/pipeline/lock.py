@@ -22,7 +22,8 @@ def render(
     hull: Hull,
     hashes: dict[SkillId, str] | None = None,
 ) -> str:
-    """The lock's text: git sources at `refs`, else their ref; all sorted but a skill's patches.
+    """The lock's text: git sources at `refs`, else their ref; all sorted but a skill's
+    patches.
 
     Hashes each skill as `hashes` gives, else as it would be vendored.
     """

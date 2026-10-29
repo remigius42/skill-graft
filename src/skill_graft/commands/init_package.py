@@ -1,4 +1,5 @@
-"""Creates a package, `~/.apm/skill-graft/` or a project's, and registers it with APM."""
+"""Creates a package, `~/.apm/skill-graft/` or a project's, and registers it with
+APM."""
 
 import shutil
 

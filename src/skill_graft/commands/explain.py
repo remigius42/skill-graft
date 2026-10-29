@@ -1,4 +1,5 @@
-"""Views of the hull: its tree and prose suggestions, why, Mermaid and its mermaid.live link."""
+"""Views of the hull: its tree and prose suggestions, why, Mermaid and its mermaid.live
+link."""
 
 import base64
 import json

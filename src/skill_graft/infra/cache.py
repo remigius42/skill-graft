@@ -93,7 +93,8 @@ class Cache:
         return self.root / "trees" / key(url) / ref
 
     def _repository_with(self, url: str, sha: str) -> Path | None:
-        """This cache's repository for `url` if it has commit `sha`, else the reference's."""
+        """This cache's repository for `url` if it has commit `sha`, else the
+        reference's."""
         repo = self.repository(url)
         if repo.exists() and _has_commit(repo, sha):
             return repo

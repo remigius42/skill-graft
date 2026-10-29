@@ -86,7 +86,8 @@ def in_package(path: Path) -> bool:
 
 def folded(path: Path) -> Path:
     """`path` in lower case: on a case-insensitive filesystem `.APM/Skill-Graft` is
-    a package, and `~/Own` a source `~/own`. Refusing a lookalike elsewhere is harmless."""
+    a package, and `~/Own` a source `~/own`. Refusing a lookalike elsewhere is
+    harmless."""
     return Path(str(path).lower())
 
 

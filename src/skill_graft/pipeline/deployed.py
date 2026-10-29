@@ -191,7 +191,8 @@ def _file_diff(
     if before and after and before[0] != after[0] and a == b:  # re-encoded
         a, b = _split(_raw(before[0])), _split(_raw(after[0]))
         notes.append("shown byte for byte, as its two sides read alike as text")
-    # A typed `\x80` beside a stray byte: only doubling every backslash tells them apart.
+    # A typed `\x80` beside a stray byte: only doubling every backslash tells them
+    # apart.
     doubled = _typed_escapes(a, b)
     too_big = any(f is not None and len(f[0]) > _MAX_BYTES for f in (before, after))
     blocks = _blocks(a, b, too_big, budget)

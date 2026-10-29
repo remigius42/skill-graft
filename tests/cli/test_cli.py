@@ -27,7 +27,8 @@ COMMANDS = [
 
 
 def run(argv: list[str], capsys: pytest.CaptureFixture[str]) -> tuple[int, str, str]:
-    """Runs the CLI; returns its exit code, stdout and stderr, argparse exits included."""
+    """Runs the CLI; returns its exit code, stdout and stderr, argparse exits
+    included."""
     try:
         code = main(argv)
     except SystemExit as exit:

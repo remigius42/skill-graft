@@ -87,6 +87,7 @@ words:
   - powerup
   - pstack
   - pycache
+  - pycodestyle
   - pyproject
   - pytest
   - pytestmark

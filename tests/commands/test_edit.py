@@ -1,4 +1,5 @@
-"""The `edit` spec: `add`, `remove`, `rename`, `bind` and `unbind` change skill-graft.toml in place."""
+"""The `edit` spec: `add`, `remove`, `rename`, `bind` and `unbind` change
+skill-graft.toml in place."""
 
 import tomllib
 from pathlib import Path
