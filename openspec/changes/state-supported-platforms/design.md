@@ -91,7 +91,9 @@ Alternatives, rejected:
 
 Trade-off: a plain `diff` patch that empties a file on purpose deletes it, and a later patch in the series then creates
 it. Under `diff -N` emptying and deleting are one, and an empty file in a **Skill** reaches no agent. `git diff` keeps
-the two apart, and its patches apply as written.
+the two apart, and its patches apply as written. The check is per patch file: one that joins `git diff` and plain `diff`
+output reads as git-format, and a BSD-written deletion in its plain part leaves the file empty. Neither recipe writes
+such a file.
 
 ### The statement last
 
