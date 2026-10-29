@@ -10,16 +10,16 @@ missing from its **Source** SHALL be reported before another **Source**'s missin
 read no other **Source**. A git **Source** of that **Skill** without a `ref` SHALL fail as `build` does, naming every
 git **Source** without one.
 
-#### Scenario: Unknown skill before another source's missing ref
+#### Scenario: Unknown skill before another source
 
-- **WHEN** git **Source** `other` has no `ref`, **Source** `mp` has no **Skill** `nope`, and the user runs
-  `skill-graft rename mp/nope x`
+- **WHEN** git **Source** `other` has no `ref`, or one whose remote is unreachable, **Source** `mp` has no **Skill**
+  `nope`, and the user runs `skill-graft rename mp/nope x`
 - **THEN** it exits non-zero naming `mp/nope` and not `other`, and `skill-graft.toml` is unchanged
 
-#### Scenario: Unknown target before another source's missing ref
+#### Scenario: Unknown target before another source
 
-- **WHEN** git **Source** `other` has no `ref`, **Source** `own` has no **Skill** `nope`, and the user runs
-  `skill-graft bind mp/grilling own/nope`
+- **WHEN** git **Source** `other` has no `ref`, or one whose remote is unreachable, **Source** `own` has no **Skill**
+  `nope`, and the user runs `skill-graft bind mp/grilling own/nope`
 - **THEN** it exits non-zero naming `own/nope` and not `other`, and `skill-graft.toml` is unchanged
 
 #### Scenario: Known skill, another source without a ref

@@ -7,11 +7,14 @@ folder.
 
 ## 1. One source per check
 
-- [ ] 1.1 Split `compute._folders`'s per-**Source** body into `_folder` (checkout, then `_subdirectory`) and make
-  `known` check its own **Source**'s `ref` (`check_refs(config, ())` when it is git and has none) and read only
-  `_folder` of it; tests in `tests/commands/test_edit.py` for the `edit` scenarios "Unknown skill before another
-  source's missing ref", "Unknown target before another source's missing ref", "Known skill, another source without a
-  ref" and "The skill's own source without a ref"; verify they fail first (the first two today say `no ref`), then pass
+- [x] 1.1 Split `compute._folders`'s per-**Source** body into `_folder` (checkout, then `_subdirectory`;
+  `check_refs(config, ())` when a git **Source** has no `ref`) and make `known` read only `_folder` of its own
+  **Source** and index it with `_index`, which `_indexes` shares; `edit.bind` calls `known` on every target but `false`,
+  before its no-op check; tests in `tests/commands/test_edit.py` for the `edit` scenarios "Unknown skill before another
+  source", "Unknown target before another source" (each with `other` lacking a `ref`, and with an unreachable one),
+  "Known skill, another source without a ref" and "The skill's own source without a ref"; verify they fail first (the
+  first two today say `no ref`), then pass; and that `rename` reads a git **Source** with `subdirectory` only in that
+  folder
 - [ ] 1.2 Tests for the no-op scenarios "No-op bind ignores other sources" and "No-op rename fetches no other source",
   and for `renames`' "Entries clash after rename reads only its source" (no fetch for `other`: its folder in the cache
   stays absent); verify they pass on 1.1 alone, else fix `known` until they do

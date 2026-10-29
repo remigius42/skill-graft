@@ -6,7 +6,7 @@ from pathlib import Path
 from typing import TypeAlias
 
 import pytest
-from conftest import after_package_line, skill, write_config
+from conftest import Upstream, after_package_line, skill, write_config
 
 from skill_graft.cli import main
 from skill_graft.pipeline import lock
@@ -674,3 +674,92 @@ def test_unbind_breaks_resolution(home: Path, capsys: Capsys) -> None:
 
     assert "several sources" in capsys.readouterr().err
     assert (config.read_bytes(), lock.read_bytes()) == before
+
+
+def other(tmp_path: Path, ref: bool = False) -> str:
+    """A git source `other` whose remote does not exist: any fetch of it fails."""
+    pinned = f'ref = "{"0" * 40}"\n' if ref else ""
+    return f'[sources.other]\ngit = "{tmp_path / "nowhere"}"\n{pinned}'
+
+
+@pytest.mark.parametrize("ref", [False, True], ids=["no ref", "unreachable"])
+def test_rename_unknown_before_another_source(
+    home: Path, tmp_path: Path, capsys: Capsys, ref: bool
+) -> None:
+    mp_skills(home, "tdd")
+    config = write_config('entries = ["mp/tdd"]\n' + SOURCES + other(tmp_path, ref))
+    before = config.read_bytes()
+
+    assert main(["rename", "mp/nope", "x"]) == 1
+
+    err = capsys.readouterr().err
+    assert "mp/nope" in err and "'other'" not in err
+    assert config.read_bytes() == before
+
+
+@pytest.mark.parametrize("ref", [False, True], ids=["no ref", "unreachable"])
+def test_bind_unknown_before_another_source(
+    home: Path, tmp_path: Path, capsys: Capsys, ref: bool
+) -> None:
+    mp_skills(home, "tdd")
+    skill(home / "own" / "grill")
+    config = write_config('entries = ["mp/tdd"]\n' + TWO_SOURCES + other(tmp_path, ref))
+    before = config.read_bytes()
+
+    assert main(["bind", "mp/grilling", "own/nope"]) == 1
+
+    err = capsys.readouterr().err
+    assert "own/nope" in err and "'other'" not in err
+    assert config.read_bytes() == before
+
+
+def test_rename_known_but_another_without_ref(
+    home: Path, tmp_path: Path, capsys: Capsys
+) -> None:
+    mp_skills(home, "tdd", "notes")
+    config = write_config('entries = ["mp/tdd"]\n' + SOURCES + other(tmp_path))
+    before = config.read_bytes()
+
+    assert main(["rename", "mp/notes", "n"]) == 1
+
+    err = capsys.readouterr().err
+    assert "source 'other' has no ref: run `skill-graft update other`" in err
+    assert config.read_bytes() == before
+
+
+def test_rename_in_a_source_without_ref(
+    home: Path, tmp_path: Path, capsys: Capsys
+) -> None:
+    config = write_config(
+        'entries = ["mp/tdd"]\n'
+        f'[sources.mp]\ngit = "{tmp_path / "mp-nowhere"}"\n' + other(tmp_path)
+    )
+    before = config.read_bytes()
+
+    assert main(["rename", "mp/tdd", "t"]) == 1
+
+    err = capsys.readouterr().err
+    assert "sources 'mp', 'other' have no ref: run `skill-graft update mp other`" in err
+    assert config.read_bytes() == before
+
+
+def test_rename_reads_a_git_source_in_its_subdirectory(
+    tmp_path: Path, capsys: Capsys
+) -> None:
+    upstream = Upstream(tmp_path / "cp")
+    sha = upstream.commit(
+        {"skills/tdd/SKILL.md": "# tdd\n", "outside/notes/SKILL.md": "# notes\n"}
+    )
+    config = write_config(
+        'entries = ["cp/tdd"]\n'
+        f'[sources.cp]\ngit = "{upstream.url}"\nref = "{sha}"\n'
+        'subdirectory = "skills"\n'
+    )
+    before = config.read_bytes()
+
+    assert main(["rename", "cp/notes", "n"]) == 1
+    assert "cp/notes" in capsys.readouterr().err
+    assert config.read_bytes() == before
+
+    assert main(["rename", "cp/tdd", "t"]) == 0
+    assert tomllib.loads(config.read_text())["rename"] == {"cp/tdd": "t"}

@@ -57,19 +57,28 @@ def _folders(config: Config, cache: Cache, refs: dict[str, str]) -> dict[str, Pa
     A reference may resolve in any source, so all are read, used by an entry or not.
     """
     check_refs(config, refs.keys())
-    result = {}
-    for alias, source in config.sources.items():
-        if isinstance(source, GitSource):
-            ref = refs.get(alias) or source.ref
-            assert ref is not None  # check_refs
-            result[alias] = cache.checkout(alias, source.url, ref)
-            if source.subdirectory:
-                result[alias] = _subdirectory(
-                    alias, result[alias], source.subdirectory, ref
-                )
-        else:
-            result[alias] = source.folder
-    return result
+    return {
+        alias: _folder(config, cache, alias, refs.get(alias))
+        for alias in config.sources
+    }
+
+
+def _folder(config: Config, cache: Cache, alias: str, ref: str | None) -> Path:
+    """One source's folder: a git one at `ref`, else its ref.
+
+    Without either, the error names every source without a ref, as `build`'s does.
+    """
+    source = config.sources[alias]
+    if not isinstance(source, GitSource):
+        return source.folder
+    ref = ref or source.ref
+    if not ref:
+        check_refs(config, ())
+    assert ref  # check_refs raised
+    folder = cache.checkout(alias, source.url, ref)
+    if source.subdirectory:
+        folder = _subdirectory(alias, folder, source.subdirectory, ref)
+    return folder
 
 
 def _subdirectory(alias: str, tree: Path, subdirectory: str, ref: str) -> Path:
@@ -100,10 +109,14 @@ def _subdirectory(alias: str, tree: Path, subdirectory: str, ref: str) -> Path:
 def known(
     scope: paths.Scope, config: Config, cache: Cache, where: str, text: str
 ) -> SkillId:
-    """The skill ID `text`, its source declared and holding that skill."""
+    """The skill ID `text`, its source declared and holding that skill.
+
+    Reads that source alone. Without its ref, the error names every source
+    without one: resolving then needs them all.
+    """
     skill = parse_skill_id(where, text, config.sources)
-    folder = _folders(config, cache, {})[skill.alias]
-    index = _indexes(scope, config, {skill.alias: folder})[skill.alias]
+    folder = _folder(config, cache, skill.alias, None)
+    index = _index(scope, config, skill.alias, folder)
     discovery.find(index, skill, f"{where}: `{skill}`")
     return skill
 
@@ -111,13 +124,17 @@ def known(
 def _indexes(
     scope: paths.Scope, config: Config, folders: dict[str, Path]
 ) -> dict[str, discovery.Index]:
-    """Every source's skills by name, a git source's confined to its checkout."""
+    """Every source's skills by name."""
     return {
-        alias: discovery.index(
-            scope, folder, isinstance(config.sources[alias], GitSource)
-        )
-        for alias, folder in folders.items()
+        alias: _index(scope, config, alias, folder) for alias, folder in folders.items()
     }
+
+
+def _index(
+    scope: paths.Scope, config: Config, alias: str, folder: Path
+) -> discovery.Index:
+    """One source's skills by name, a git source's confined to its checkout."""
+    return discovery.index(scope, folder, isinstance(config.sources[alias], GitSource))
 
 
 def _roots(config: Config, folders: dict[str, Path]) -> dict[str, Path]:

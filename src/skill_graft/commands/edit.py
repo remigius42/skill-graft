@@ -119,18 +119,19 @@ def bind(scope: paths.Scope, warnings: list[str], key: str, target: str) -> None
     cache = Cache.default()
     with _reading(scope, warnings) as (document, loaded):
         skill = config.parse_skill_id("bind", key, loaded.sources)
-        # Resolving checks the target; a no-op skips that, so it is checked here
-        # first: one gone upstream is no longer bound. Present too: a missing key
-        # reads as None.
-        if skill in loaded.binds:
-            bound = (
-                None
-                if target == "false"
-                else compute.known(scope, loaded, cache, "bind", target)
-            )
-            if loaded.binds[skill] == bound:
-                notice(f"`{key}` is already bound to `{target}`")
-                return
+        # Checked here, reading only its source, though resolving checks it too: a
+        # typo is reported before another source's missing ref, and a no-op skips
+        # resolving, yet one gone upstream is no longer bound.
+        bound = (
+            None
+            if target == "false"
+            else compute.known(scope, loaded, cache, "bind", target)
+        )
+        # `binds.get` would read a missing key as None, `false`'s value: check it is
+        # present.
+        if skill in loaded.binds and loaded.binds[skill] == bound:
+            notice(f"`{key}` is already bound to `{target}`")
+            return
         if "bind" not in document:
             document.add("bind", tomlkit.table())
         cast(Table, document["bind"])[key] = False if target == "false" else target
