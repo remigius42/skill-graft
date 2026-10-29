@@ -9,7 +9,7 @@ from contextlib import contextmanager
 from pathlib import Path
 
 import pytest
-from conftest import FakeApm, Upstream, skill, write_config
+from conftest import FakeApm, Upstream, closed_stdout, skill, write_config
 
 from skill_graft.cli import main
 from skill_graft.pipeline import lock
@@ -92,6 +92,54 @@ def test_resolve_through_a_pipe(home: Path) -> None:
 
     assert result.returncode == 0
     in_order(result.stdout, "\nown/tdd\n", "  own/notes, by own/tdd", FOO)
+
+
+BROKEN_PIPE = "skill-graft: [Errno 32] Broken pipe\n"
+
+
+def into_closed_pipe(*args: str) -> tuple[int, str]:
+    """`skill-graft args`'s exit code and stderr, its stdout a pipe whose reader has
+    already closed it: the write fails every time, no race with a reader."""
+    reader, writer = os.pipe()
+    os.close(reader)
+    try:
+        result = subprocess.run(
+            [sys.executable, "-m", "skill_graft.cli", *args],
+            stdout=writer,
+            stderr=subprocess.PIPE,
+            text=True,
+            check=False,
+        )
+    finally:
+        os.close(writer)
+    return result.returncode, result.stderr
+
+
+@pytest.mark.parametrize(
+    "args", [["help"], ["--version"], ["--help"], ["tree", "--help"]]
+)
+def test_help_into_a_closed_pipe(home: Path, args: list[str]) -> None:
+    code, stderr = into_closed_pipe(*args)
+
+    assert (code, stderr) == (1, BROKEN_PIPE)
+
+
+@pytest.mark.parametrize("args", [["help"], ["--version"]])
+def test_output_larger_than_the_buffer_into_a_closed_pipe(
+    home: Path,
+    discards: list[object],
+    monkeypatch: pytest.MonkeyPatch,
+    capsys: pytest.CaptureFixture[str],
+    args: list[str],
+) -> None:
+    """`help` prints through argparse, which ignores a failed write; `--version`
+    prints itself."""
+    stdout = closed_stdout(monkeypatch)
+
+    code = main(args)
+
+    assert (code, capsys.readouterr().err) == (1, BROKEN_PIPE)
+    assert discards == [stdout]
 
 
 def test_build(home: Path, tmp_path: Path, fake_apm: FakeApm) -> None:

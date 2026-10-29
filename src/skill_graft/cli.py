@@ -18,7 +18,7 @@ from skill_graft.commands import (
     scope,
     update,
 )
-from skill_graft.infra.errors import SkillGraftError, warnings_last
+from skill_graft.infra.errors import SkillGraftError, flush_stdout, warnings_last
 
 
 class _Formatter(argparse.HelpFormatter):
@@ -346,6 +346,34 @@ def _parser() -> tuple[_Parser, dict[str, argparse.ArgumentParser]]:
 
 
 def main(argv: list[str] | None = None) -> int:
+    """Runs the command line, then flushes stdout, also after argparse's exits: so
+    `help`, `--version` and `--help` find a closed stdout as a command does."""
+    try:
+        status = _main(argv)
+    except SystemExit as exit:
+        if _fails_on_flush(exit.code not in (0, None)):
+            raise SystemExit(1) from None
+        raise
+    except OSError as error:  # a print outside any command, `--version`'s
+        print(f"skill-graft: {error}", file=sys.stderr)
+        _fails_on_flush(True)  # discards the rest, silently
+        return 1
+    return 1 if _fails_on_flush(status != 0) else status
+
+
+def _fails_on_flush(failed: bool) -> bool:
+    """Flushes stdout; whether that fails a command that had not failed, printing the
+    error line as for the command's own."""
+    try:
+        flush_stdout()
+    except OSError as error:
+        if not failed:
+            print(f"skill-graft: {error}", file=sys.stderr)
+            return True
+    return False
+
+
+def _main(argv: list[str] | None) -> int:
     parser, commands = _parser()
     args = parser.parse_args(argv)
     if args.command is None:

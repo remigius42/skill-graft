@@ -9,7 +9,7 @@ Apply with the `mp-tdd` skill: each task red-green-refactor, one commit. `pre-co
   flush's error; a block raising `SkillGraftError` prints its warnings and raises that error, not the flush's; the
   redirect runs once in both. With `sys.stdout` `None`, a block prints its warnings and raises nothing. Verify they fail
   first, then make `warnings_last` pass them as design.md says, through a new `errors.flush_stdout()`
-- [ ] 1.2 `cli.main` guards `_main` with `errors.flush_stdout()` as design.md says; covered end to end by 1.3's "Help,
+- [x] 1.2 `cli.main` guards `_main` with `errors.flush_stdout()` as design.md says; covered end to end by 1.3's "Help,
   version and argparse's help" tests, written first and failing. `tests/cli/test_cli.py`'s `SystemExit` tests pass
   unchanged
 - [ ] 1.3 End to end in `tests/cli/test_warnings.py`, one test per scenario of the cli spec's "Closed standard output":
