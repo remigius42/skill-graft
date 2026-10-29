@@ -154,10 +154,10 @@ A `[rename]` key naming no **Hull** **Skill** SHALL be a warning naming the key,
 Two **Hull** **Skills** with the same **Deployed name**, compared ignoring case, SHALL be an error naming both and a
 change that would separate them, and the command SHALL then write nothing. Every command that computes the **Hull**
 SHALL report a clash between **Entries** before any **Source** is read or a remote contacted, except `rename` and
-`bind`, which first read the **Sources** to check the **Skill ID** they are given. The hint SHALL name a `[rename]` line
-for a clashing **Skill** with neither a `[rename]` key nor a **Prefix**; else the `[rename]` value of a renamed one to
-change; else, for a prefixed one, that a `[rename]` key for it would, or its **Source**'s `prefix` unless another
-clashing **Skill** is of that **Source**.
+`bind`, which first read the **Source** of the **Skill ID** they are given, and no other, to check it. The hint SHALL
+name a `[rename]` line for a clashing **Skill** with neither a `[rename]` key nor a **Prefix**; else the `[rename]`
+value of a renamed one to change; else, for a prefixed one, that a `[rename]` key for it would, or its **Source**'s
+`prefix` unless another clashing **Skill** is of that **Source**.
 
 #### Scenario: Clash across sources
 
@@ -175,6 +175,13 @@ clashing **Skill** is of that **Source**.
 - **WHEN** **Entries** `mp/tdd` and `own/tdd` have no `[rename]` key, `mp` is a git **Source**, and the user runs
   `update mp`
 - **THEN** `update` exits non-zero naming both, contacts no remote, and writes nothing
+
+#### Scenario: Entries clash after rename reads only its source
+
+- **WHEN** **Entries** `mp/tdd` and `own/tdd` have no `[rename]` key, `other` is a git **Source** whose `ref` is not
+  cached, and the user runs `skill-graft rename mp/notes n`
+- **THEN** it exits non-zero naming `mp/tdd` and `own/tdd`, fetches nothing for `other`, and `skill-graft.toml` is
+  unchanged
 
 #### Scenario: Clash through a reference
 

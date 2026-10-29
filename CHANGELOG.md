@@ -24,6 +24,10 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
   suggestion line says to run `resolve`, not to update first
 - `--expect` names its value `<hull-digest>`, after the **Hull digest** it takes: `update --help` shows
   `--expect hull-digest`, and a mismatch says `its hull digest is …`
+- `rename` and `bind` look up the **Skill** they are given in its own **Source** only: a missing **Skill** is reported
+  before another **Source**'s missing **Ref** or failed fetch, and a `rename` or `bind` that changes nothing no longer
+  needs any other **Source**. A `bind` target that is no **Skill ID** is refused as `bind: '<target>' is not …`, without
+  naming the key
 
 ### Fixed
 
