@@ -10,7 +10,7 @@ last touched those lines.
 
 ## 1. Seams
 
-- [ ] 1.1 `tests/conftest.py`'s `Upstream` sets `uploadpack.allowFilter` to `true` (nothing else: protocol v2 serves
+- [x] 1.1 `tests/conftest.py`'s `Upstream` sets `uploadpack.allowFilter` to `true` (nothing else: protocol v2 serves
   blobs by oid without `allowAnySHA1InWant`), with a `filters=False` switch to leave it unset. The whole suite passes
   unchanged (no behavior uses it yet)
 - [ ] 1.2 `git.run` sets `GIT_NO_LAZY_FETCH=1` whenever it names a repository. Test in `tests/infra/test_git.py`: in a
