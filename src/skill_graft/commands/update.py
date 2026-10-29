@@ -64,31 +64,34 @@ def update(
     flags = " --dry-run" if dry_run or expect is not None else ""
     if diff_file is not None:
         flags += f" --diff {shlex.quote(str(diff_file))}"
-    if not dry_run:
-        git_cache = Cache(paths.cache())
-        _update(
-            scope, warnings, loaded, aliases, git_cache, True, target, expect, flags
-        )
-        return
-    try:
-        with tempfile.TemporaryDirectory(prefix="skill-graft-") as tmp:
-            git_cache = Cache(Path(tmp), Cache(paths.cache()))
-            try:
-                _update(
-                    scope,
-                    warnings,
-                    loaded,
-                    aliases,
-                    git_cache,
-                    False,
-                    target,
-                    expect,
-                    flags,
-                )
-            except patch.PatchError as error:
-                raise _fetch_hint(error, Path(tmp)) from None
-    finally:
-        print("dry run: skill-graft.toml and skill-graft.lock not written")
+    git_cache = Cache.default()
+    tmp: Path | None = None  # a dry run's cache, layered over the real one
+    with ExitStack() as stack:
+        if dry_run:
+            # Registered first, so it runs last, even on a failure.
+            stack.callback(
+                print, "dry run: skill-graft.toml and skill-graft.lock not written"
+            )
+            tmp = Path(
+                stack.enter_context(tempfile.TemporaryDirectory(prefix="skill-graft-"))
+            )
+            git_cache = Cache(tmp, git_cache)
+        try:
+            _update(
+                scope,
+                warnings,
+                loaded,
+                aliases,
+                git_cache,
+                not dry_run,
+                target,
+                expect,
+                flags,
+            )
+        except patch.PatchError as error:
+            if tmp is None:
+                raise
+            raise _fetch_hint(error, tmp) from None
 
 
 def _diff_target(file: Path) -> Path:
