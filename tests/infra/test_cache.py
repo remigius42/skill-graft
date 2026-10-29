@@ -8,7 +8,7 @@ from pathlib import Path
 from typing import Any
 
 import pytest
-from conftest import Upstream
+from conftest import Upstream, protocol_v0, seed
 
 from skill_graft.infra import cache, git, paths
 from skill_graft.infra.errors import SkillGraftError
@@ -470,18 +470,7 @@ def test_subdirectory_is_a_literal_name(tmp_path: Path) -> None:
 
 def blobless(upstream: Upstream) -> Path:
     """Clones `upstream` into the cache as a partial clone: commits and trees only."""
-    repo = cache.Cache.default().repository(upstream.url)
-    repo.parent.mkdir(parents=True, exist_ok=True)
-    upstream.git(
-        "clone",
-        "-q",
-        "--bare",
-        "--no-local",
-        "--filter=blob:none",
-        upstream.url,
-        str(repo),
-    )
-    return repo
+    return seed(upstream, upstream.url, blobless=True)
 
 
 def missing_blobs(repo: Path) -> set[str]:
@@ -607,6 +596,56 @@ def test_pruned_export_read_offline(tmp_path: Path) -> None:
     again = cache.Cache.default().checkout("mp", upstream.url, sha, "x")
 
     assert (again / "x" / "f.md").read_text() == "x\n"
+
+
+def contents(folder: Path) -> dict[str, bytes]:
+    """Every file and symlink under `folder`, by path: its bytes, or its target."""
+    return {
+        str(p.relative_to(folder)): (
+            os.readlink(p).encode() if p.is_symlink() else p.read_bytes()
+        )
+        for p in sorted(folder.rglob("*"))
+        if p.is_symlink() or p.is_file()
+    }
+
+
+@pytest.mark.parametrize("sha256", [False, True])
+def test_reference_layered_checkout_writes_no_real_cache(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch, sha256: bool
+) -> None:
+    upstream = Upstream(tmp_path / "up", sha256=sha256)
+    sha = upstream.commit({"x/a.md": "a\n", "x/b/c.md": "c\n", "y.md": "y\n"})
+    real = blobless(upstream)
+    before = contents(paths.cache())
+    calls = recorded(monkeypatch)
+    layered = cache.Cache(tmp_path / "dry", cache.Cache.default())
+
+    tree = layered.checkout("mp", upstream.url, sha, "x")
+
+    assert files_in(tree) == {"x/a.md", "x/b/c.md"}
+    assert (tree / "x" / "b" / "c.md").read_text() == "c\n"
+    assert contents(paths.cache()) == before
+    assert real.is_dir() and not [call for call in calls if "clone" in call]
+
+
+def test_reference_layered_checkout_refused_by_name(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    protocol_v0(monkeypatch)
+    upstream = Upstream(tmp_path / "up")
+    sha = upstream.commit({"x/a.md": "a\n"})
+    blobless(upstream)
+    before = contents(paths.cache())
+    calls = recorded(monkeypatch)
+    layered = cache.Cache(tmp_path / "dry", cache.Cache.default())
+
+    with pytest.raises(SkillGraftError) as error:
+        layered.checkout("mp", upstream.url, sha, "x")
+
+    assert "'mp'" in str(error.value)
+    assert "`update` without `--dry-run`" in str(error.value)
+    assert not [call for call in calls if "--refetch" in call]
+    assert contents(paths.cache()) == before
 
 
 def test_checkout_keeps_modes_and_skips_submodules(tmp_path: Path) -> None:
