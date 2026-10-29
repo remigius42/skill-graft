@@ -46,7 +46,8 @@ See proposal.md for why. Today, after `commands-own-orchestration`:
   `discovery.index(scope, source, confined=False)`, `compute.compute_hull(scope, config, cache, refs=None)`,
   `compute.known(scope, config, cache, where, text)`, `apm.install(scope)`, `apm.registered(scope)`,
   `apm.command_line(scope)`, `init_package.init(scope, project=False)`. One rule, so a reader never looks it up.
-  `config.parse` drops its `file` argument: both callers pass the config file, which is `scope.config_file`.
+  `config.parse` drops its `file` argument: its three callers (`config.load`, `edit.read`, `edit._finish`) pass
+  the config file, which is `scope.config_file`.
 
 - **Where a function only needs one path, it takes that path, not the `Scope`.** `lock.write(text, file)` and
   `lock.read(file)` lose their default (`build --into` writes another file; the callers hold the `Scope`);

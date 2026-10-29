@@ -20,9 +20,9 @@ Apply with the `mp-tdd` skill: each task red-green-refactor, one commit. Red is 
 ## 3. pipeline takes the Scope
 
 - [ ] 3.1 `config.load(scope)`, `config.text(scope)`, `config.parse(scope, text)` (no `file`), the source checks
-  reading `scope.packages` and `scope.deploy_folders`; callers in `commands` pass theirs; `tests/pipeline/test_config.py`
-  passes the `scope` fixture, plus a test that a project `Scope` refuses a source overlapping the user scope's
-  package; patches of `config.load` take the new signature; verify red, then green
+  reading `scope.packages` and `scope.deploy_folders`; `edit.read` and `edit._finish` pass theirs;
+  `tests/pipeline/test_config.py` passes the `scope` fixture, plus a test that a project `Scope` refuses a
+  source overlapping the user scope's package; patches of `config.load` take the new signature; verify red, then green
 - [ ] 3.2 `discovery.index(scope, source, confined=False)` skips `scope.package`; `compute` passes its `Scope`
   (`compute_hull(scope, config, …)`, `known(scope, config, …)`), `commands` theirs; `tests/pipeline/test_discovery.py`
   and `test_hull.py` pass a `Scope`, plus a test that a project `Scope`'s package is skipped while the home
@@ -45,7 +45,7 @@ Apply with the `mp-tdd` skill: each task red-green-refactor, one commit. Red is 
 
 ## 5. commands read the Scope they hold
 
-- [ ] 5.1 `init_package.init(scope, project)` reads `scope.user`, `scope.root`, `scope.package`,
+- [ ] 5.1 `init_package.init(scope, project=False)` reads `scope.user`, `scope.root`, `scope.package`,
   `scope.config_file` (`_exists`, `_listed` take it too); `cli` passes `current`; `edit.read(scope)`,
   `edit.write(scope, document)` and the config file in `_finish` read `scope.config_file`; `update` likewise;
   `tests/commands/test_init_package.py` drives `init` with a `Scope` below `cli`; verify red, then green, and
