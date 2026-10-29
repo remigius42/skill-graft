@@ -111,8 +111,10 @@ path = "~/Documents/sync/2_areas/software/chisel_skill"
   per file whose bytes or executable bit differ, its sizes, quoted as git's `core.quotePath` quotes it, a space too,
   never its text; then each skill whose old side differs from the lock's hash, as edited since the lock was written.
   `--dry-run` does all of it without writing the TOML, the lock or the cache, and ends with a `review:` hint, or, its
-  diff file written and nothing edited since the lock, an `apply:` line. A tip without a source's `subdirectory` fails
-  resolution, so `ref` stays.
+  diff file written and nothing edited since the lock, an `apply:` line; `nothing to apply` instead when no `ref` moves
+  and the lock it would write parses to what the lock file parses to. Its prose-suggestion line says to update, then run
+  `resolve`, only when a `ref` moves; else it is `update`'s, `resolve` already seeing those tips. A tip without a
+  source's `subdirectory` fails resolution, so `ref` stays.
 - `update --diff <file>`: writes the Deployed diff, a unified diff in git's format of each `+` and `~` skill as
   deployed, built by `pipeline/deployed.py`, no git: a Myers diff on one step budget for the run, a file past it or over
   1 MB shown whole; every file as text, each control, format or separator character (by Unicode category) and each
