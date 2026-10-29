@@ -406,6 +406,27 @@ def test_missing_object_is_reported(tmp_path: Path) -> None:
     assert "delete" not in str(error.value)
 
 
+def test_blob_the_fetch_did_not_bring(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    upstream = Upstream(tmp_path / "up")
+    sha = upstream.commit({"a/SKILL.md": "# a\n"})
+    seed(upstream, upstream.url, blobless=True)
+    run = git.run
+
+    def bringing_nothing(*args: str, **kwargs: Any) -> bytes:
+        return b"" if "--stdin" in args else run(*args, **kwargs)
+
+    monkeypatch.setattr(git, "run", bringing_nothing)
+
+    with pytest.raises(SkillGraftError) as error:
+        cache.Cache.default().checkout("mp", upstream.url, sha)
+
+    blob = upstream.git("rev-parse", f"{sha}:a/SKILL.md")
+    assert "'mp'" in str(error.value) and blob in str(error.value)
+    assert "delete" not in str(error.value)
+
+
 def files_in(tree: Path) -> set[str]:
     """Every file and symlink in `tree`, as paths relative to it."""
     return {

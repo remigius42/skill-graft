@@ -64,9 +64,11 @@ last touched those lines.
   refusing files by name**); with the upstream removed, the command fails naming the alias and URL, no refetch runs and
   the filter is still recorded (scenario **Files unreachable for a moment**); a refusal for blobs the refetch does not
   bring either fails and leaves the filter recorded. Verify red, then green
-- [ ] 3.4 The missing-object message no longer says to delete the folder, as design.md says. Adapt
-  `test_missing_object_is_reported`: the blob deleted and the upstream removed, the error names the alias and the blob,
-  and holds no `delete`. Verify red, then green
+- [x] 3.4 The missing-object message no longer says to delete the folder, as design.md says. The batched fetch makes it
+  a backstop: `test_missing_object_is_reported` (3.2's commit) has the blob deleted and the upstream removed, and the
+  error is the fetch's, naming the alias and URL, with no `delete`. The message itself: a blob fetch that brings nothing
+  (the `fetch --stdin` call dropped by recording `git.run`), the error names the alias and the blob, and holds no
+  `delete`. Verify red, then green
 - [ ] 3.5 `tests/commands/test_update.py`: scenario **Old ref cached, its files not** (a fresh cache and a lock already
   pointing at A, then `update`: the diff shows A → tip), **Old ref's files unreachable** (A's commit cached, its files
   not, the tip exported, the upstream removed: `no previous hull to compare` naming the fetch, exit 0), and **Old ref
