@@ -2,6 +2,7 @@ import errno
 import json
 import os
 import subprocess
+import sys
 import sysconfig
 from importlib import metadata
 from pathlib import Path
@@ -432,3 +433,44 @@ def test_version_of_this_installation() -> None:
     result = run_installed("--version")
     assert result.returncode == 0
     assert result.stdout.split()[:2] == ["skill-graft", metadata.version("skill-graft")]
+
+
+WINDOWS = "skill-graft: native Windows is unsupported: run skill-graft in WSL\n"
+
+# Stands in for native Windows: no command module may load, as one may import a
+# POSIX-only module, and `fcntl` is missing. `win32` comes after the import: set
+# before, the standard library's own modules take their Windows branches and fail.
+ON_WINDOWS = """
+import sys
+sys.modules["skill_graft.commands"] = None
+sys.modules["fcntl"] = None
+from skill_graft.cli import main
+sys.platform = "win32"
+sys.exit(main(sys.argv[1:]))
+"""
+
+
+def on_windows(*args: str) -> subprocess.CompletedProcess[str]:
+    return subprocess.run(
+        [sys.executable, "-c", ON_WINDOWS, *args],
+        capture_output=True,
+        text=True,
+        check=False,
+    )
+
+
+def test_native_windows_refused() -> None:
+    result = on_windows("resolve")
+    assert (result.returncode, result.stdout, result.stderr) == (1, "", WINDOWS)
+
+
+@pytest.mark.parametrize("args", [["help"], ["--help"], ["--version"]])
+def test_native_windows_refuses_help_and_version(args: list[str]) -> None:
+    result = on_windows(*args)
+    assert (result.returncode, result.stdout, result.stderr) == (1, "", WINDOWS)
+
+
+@pytest.mark.parametrize("args", [[], ["explain"], ["--bogus"]])
+def test_native_windows_refuses_usage_errors(args: list[str]) -> None:
+    result = on_windows(*args)
+    assert (result.returncode, result.stdout, result.stderr) == (1, "", WINDOWS)

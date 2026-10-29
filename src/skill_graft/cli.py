@@ -9,16 +9,9 @@ from importlib import metadata
 from pathlib import Path
 from typing import Any, NoReturn, TypeGuard
 
-from skill_graft.commands import (
-    build,
-    edit,
-    explain,
-    init_package,
-    resolve,
-    scope,
-    update,
-)
 from skill_graft.infra.errors import SkillGraftError, flush_stdout, warnings_last
+
+WINDOWS = "native Windows is unsupported: run skill-graft in WSL"
 
 
 class _Formatter(argparse.HelpFormatter):
@@ -347,7 +340,13 @@ def _parser() -> tuple[_Parser, dict[str, argparse.ArgumentParser]]:
 
 def main(argv: list[str] | None = None) -> int:
     """Runs the command line, then flushes stdout, also after argparse's exits: so
-    `help`, `--version` and `--help` find a closed stdout as a command does."""
+    `help`, `--version` and `--help` find a closed stdout as a command does.
+
+    Refuses native Windows first, whatever the command line."""
+    platform = sys.platform  # compared directly, mypy would skip the branch
+    if platform == "win32":
+        print(f"skill-graft: {WINDOWS}", file=sys.stderr)
+        return 1
     try:
         status = _main(argv)
     except SystemExit as exit:
@@ -374,6 +373,18 @@ def _fails_on_flush(failed: bool) -> bool:
 
 
 def _main(argv: list[str] | None) -> int:
+    # Here, not at load: on native Windows `main` refuses before any command module,
+    # which may import a POSIX-only one such as `fcntl`, loads.
+    from skill_graft.commands import (
+        build,
+        edit,
+        explain,
+        init_package,
+        resolve,
+        scope,
+        update,
+    )
+
     parser, commands = _parser()
     args = parser.parse_args(argv)
     if args.command is None:
