@@ -79,6 +79,8 @@ words:
   - nosystem
   - nowarn
   - numstat
+  - objectname
+  - objecttype
   - oids
   - openclaw
   - opencode

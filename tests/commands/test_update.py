@@ -3,7 +3,7 @@
 import os
 import tempfile
 from pathlib import Path
-from typing import TypeAlias
+from typing import Any, TypeAlias
 
 import pytest
 from conftest import (
@@ -11,6 +11,8 @@ from conftest import (
     Upstream,
     deadline,
     make_patch,
+    protocol_v0,
+    seed,
     skill,
     vendored,
     write_config,
@@ -18,7 +20,7 @@ from conftest import (
 
 from skill_graft.cli import main
 from skill_graft.commands import edit
-from skill_graft.infra import cache, files, paths
+from skill_graft.infra import cache, files, git, paths
 from skill_graft.pipeline import config, deployed, lock
 
 Capsys: TypeAlias = pytest.CaptureFixture[str]
@@ -464,6 +466,33 @@ def test_dry_run(upstream: Upstream, capsys: Capsys) -> None:
     assert code == 0
     assert out.splitlines()[0] == f"mp {new}" and "not written" in out
     assert file.read_bytes() == before and snapshot(paths.cache()) == cached
+
+
+def test_dry_run_remote_refusing_files_by_name(
+    upstream: Upstream, capsys: Capsys, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    protocol_v0(monkeypatch)
+    old = upstream.commit({"tdd/SKILL.md": "1\n"})
+    write_config(
+        'entries = ["mp/tdd"]\n' + git_source("mp", upstream, f'ref = "{old}"\n')
+    )
+    seed(upstream, upstream.url, blobless=True)
+    upstream.commit({"tdd/SKILL.md": "2\n"})
+    cached = snapshot(paths.cache())
+    run = git.run
+    calls: list[tuple[str, ...]] = []
+
+    def recording(*args: str, **kwargs: Any) -> bytes:
+        calls.append(args)
+        return run(*args, **kwargs)
+
+    monkeypatch.setattr(git, "run", recording)
+
+    code, _, err = update(capsys, "--dry-run")
+
+    assert code == 1 and "'mp'" in err and "`update` without `--dry-run`" in err
+    assert not [call for call in calls if "--refetch" in call]
+    assert snapshot(paths.cache()) == cached
 
 
 def test_dry_run_with_an_empty_cache(upstream: Upstream, capsys: Capsys) -> None:

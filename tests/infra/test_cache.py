@@ -197,7 +197,7 @@ def test_checkout_on_a_fresh_machine(tmp_path: Path) -> None:
 def test_checkout_reads_the_ref_without_the_remote(tmp_path: Path) -> None:
     upstream = Upstream(tmp_path / "up")
     old = upstream.commit({"tdd/SKILL.md": "old\n"})
-    cache.Cache.default().fetch("mp", upstream.url)
+    shutil.rmtree(cache.Cache.default().checkout("mp", upstream.url, old))
     upstream.commit({"tdd/SKILL.md": "new\n"})
     upstream.path.rename(tmp_path / "gone")
 
@@ -383,7 +383,7 @@ def test_missing_object_is_reported(tmp_path: Path) -> None:
     upstream = Upstream(tmp_path / "up")
     sha = upstream.commit({"a/SKILL.md": "# a\n"})
     git_cache = cache.Cache.default()
-    git_cache.fetch("mp", upstream.url)
+    seed(upstream, upstream.url)  # whole, so it has a blob to delete
     repo = git_cache.repository(upstream.url)
     # Unpack the clone's pack into loose objects, so one can be deleted.
     for pack in (repo / "objects" / "pack").glob("*.pack"):
@@ -501,6 +501,76 @@ def recorded(monkeypatch: pytest.MonkeyPatch) -> list[tuple[str, ...]]:
 
 def blob_fetches(calls: list[tuple[str, ...]]) -> list[tuple[str, ...]]:
     return [call for call in calls if "fetch" in call and "--stdin" in call]
+
+
+def all_blobs(upstream: Upstream) -> set[str]:
+    out = upstream.git(
+        "cat-file", "--batch-all-objects", "--batch-check=%(objecttype) %(objectname)"
+    )
+    return {line.split()[1] for line in out.splitlines() if line.startswith("blob ")}
+
+
+def test_clone_and_fetch_bring_no_blob(tmp_path: Path) -> None:
+    upstream = Upstream(tmp_path / "up")
+    upstream.commit({"a.md": "a\n"})
+    cache.Cache.default().fetch("mp", upstream.url)
+    repo = cache.Cache.default().repository(upstream.url)
+
+    assert missing_blobs(repo) == all_blobs(upstream)
+
+    upstream.commit({"b.md": "b\n"})
+    cache.Cache.default().fetch("mp", upstream.url)
+
+    assert missing_blobs(repo) == all_blobs(upstream)
+
+
+def test_fetch_ignores_submodule_recursion(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    upstream = Upstream(tmp_path / "up")
+    (upstream.path / ".gitmodules").write_text(
+        '[submodule "s"]\n\tpath = s\n\turl = /nowhere\n'
+    )
+    upstream.git("add", "-A")
+    # Committed by hand: `commit` adds all, which drops a gitlink with no folder.
+    upstream.git("update-index", "--add", "--cacheinfo", f"160000,{'d' * 40},s")
+    upstream.git("commit", "-qm", "with a submodule")
+    Path(os.environ["GIT_CONFIG_GLOBAL"]).write_text(
+        "[fetch]\n\trecurseSubmodules = yes\n"
+    )
+    calls = recorded(monkeypatch)
+    cache.Cache.default().fetch("mp", upstream.url)
+    upstream.git("update-index", "--cacheinfo", f"160000,{'e' * 40},s")
+    upstream.git("commit", "-qm", "submodule moved")
+    sha = upstream.git("rev-parse", "HEAD")
+
+    cache.Cache.default().fetch("mp", upstream.url)
+
+    assert cache.Cache.default().has_commit(upstream.url, sha)
+    transfers = [call for call in calls if {"clone", "fetch"} & set(call)]
+    assert len(transfers) == 2
+    assert all("--recurse-submodules=no" in call for call in transfers)
+
+
+def test_remote_without_partial_clones(tmp_path: Path) -> None:
+    upstream = Upstream(tmp_path / "up", filters=False)
+    sha = upstream.commit({"x/a.md": "a\n", "y.md": "y\n"})
+
+    tree = cache.Cache.default().checkout("mp", upstream.url, sha, "x")
+
+    assert (tree / "x" / "a.md").read_text() == "a\n"
+    assert missing_blobs(cache.Cache.default().repository(upstream.url)) == set()
+
+
+def test_repository_cloned_whole_before(tmp_path: Path) -> None:
+    upstream = Upstream(tmp_path / "up")
+    upstream.commit({"a.md": "a\n"})
+    seed(upstream, upstream.url)
+    upstream.commit({"b.md": "b\n"})
+
+    cache.Cache.default().fetch("mp", upstream.url)
+
+    assert missing_blobs(cache.Cache.default().repository(upstream.url)) == set()
 
 
 def test_subdirectory_blobs_fetched_in_one_request(
