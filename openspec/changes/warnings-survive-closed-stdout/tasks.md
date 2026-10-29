@@ -4,7 +4,7 @@ Apply with the `mp-tdd` skill: each task red-green-refactor, one commit. `pre-co
 
 ## 1. Flush on its own terms
 
-- [ ] 1.1 Tests in a new `tests/infra/test_errors.py`, with the redirect to `os.devnull` patched: with `sys.stdout`
+- [x] 1.1 Tests in a new `tests/infra/test_errors.py`, with the redirect to `os.devnull` patched: with `sys.stdout`
   replaced by one whose `flush` raises `BrokenPipeError`, a block that succeeds prints its warnings, then raises the
   flush's error; a block raising `SkillGraftError` prints its warnings and raises that error, not the flush's; the
   redirect runs once in both. With `sys.stdout` `None`, a block prints its warnings and raises nothing. Verify they fail

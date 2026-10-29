@@ -1,3 +1,4 @@
+import io
 import json
 import os
 import shutil
@@ -12,7 +13,7 @@ from types import FrameType
 import pytest
 
 from skill_graft.cli import main
-from skill_graft.infra import paths
+from skill_graft.infra import errors, paths
 from skill_graft.infra.cache import Cache
 
 # Stands in for `apm`: logs its argv and working folder, and for `install -g <path>`
@@ -262,3 +263,29 @@ def deadline(seconds: int = 5) -> Iterator[None]:
     finally:
         signal.alarm(0)
         signal.signal(signal.SIGALRM, previous)
+
+
+class ClosedStdout(io.StringIO):
+    """A stdout whose reader has closed it, its buffer too small for what is printed:
+    every write and flush fails."""
+
+    def write(self, text: str) -> int:
+        raise BrokenPipeError(32, "Broken pipe")
+
+    def flush(self) -> None:
+        raise BrokenPipeError(32, "Broken pipe")
+
+
+def closed_stdout(monkeypatch: pytest.MonkeyPatch) -> ClosedStdout:
+    """Replaces stdout, in the test itself: `capsys` resets it once the test starts."""
+    stdout = ClosedStdout()
+    monkeypatch.setattr(sys, "stdout", stdout)
+    return stdout
+
+
+@pytest.fixture
+def discards(monkeypatch: pytest.MonkeyPatch) -> list[object]:
+    """Each stream a failed flush pointed at `os.devnull`; none really is."""
+    streams: list[object] = []
+    monkeypatch.setattr(errors, "_discard", streams.append)
+    return streams

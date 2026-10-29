@@ -137,6 +137,7 @@ words:
   - venv
   - worktree
   - worktrees
+  - WRONLY
 ignorePaths:
   - .git
   - .claude
