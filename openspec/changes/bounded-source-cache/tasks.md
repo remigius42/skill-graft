@@ -31,9 +31,9 @@ last touched those lines.
   subdirectory, per the changed **Shared export** scenario; a new **Same subdirectory** test asserts one. The existing
   **Missing at ref**, **A file, not a folder**, **Symlinked subdirectory** and **Case differs** tests pass unchanged,
   with today's messages. Verify the changed test fails first
-- [ ] 2.3 `docs/design.md:25`: one export per commit and subdirectory. Verify `why` on a subdirectory **Source** in
-  `tests/commands/test_explain.py` still prints an upstream folder that exists, and the lock's `upstream` is unchanged
-  (an existing lock test, unchanged, passes)
+- [x] 2.3 `docs/design.md:25`: one export per commit and subdirectory. Verify `why` on a subdirectory **Source** in
+  `tests/cli/test_subdirectory.py` (`test_why_names_the_upstream_folder`) still prints an upstream folder that exists,
+  and the lock's `upstream` is unchanged (an existing lock test, unchanged, passes)
 
 ## 3. Blobless clones and the batched blob fetch
 

@@ -23,7 +23,8 @@ home folder, else the user scope's (ADR 0004).
 survive. The lock is output only: never an input that overrides the TOML.
 
 Git sources are cached outside the package, under `$XDG_CACHE_HOME/skill-graft/` (else `~/.cache/skill-graft/`): one
-bare repository per URL and one export per commit, the committed bytes exactly. Deleting it loses nothing.
+bare repository per URL and one export per commit and `subdirectory`, the committed bytes exactly: a **Source** with a
+`subdirectory` exports only that folder, and the entries on its path. Deleting it loses nothing.
 
 ## Config
 
