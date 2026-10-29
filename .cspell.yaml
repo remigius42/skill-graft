@@ -32,6 +32,7 @@ words:
   - diffutils
   - docstrings
   - EACCES
+  - elif
   - ELOOP
   - evals
   - fcntl
@@ -57,6 +58,7 @@ words:
   - keepends
   - kiro
   - mattpocock
+  - metavar
   - mkfifo
   - mktemp
   - mktree
