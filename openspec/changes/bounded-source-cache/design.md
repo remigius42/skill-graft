@@ -208,10 +208,11 @@ no longer advises deleting anything:
 - **Where**: `cli._main` calls it after the command, on success and on `SkillGraftError`/`OSError`, for every command
   but `init` and `help`, and not for `update --dry-run`. Not on `KeyboardInterrupt`: Ctrl-C should exit at once.
   Alternative: each command prunes its own `Cache`: ten call sites, and `update` would need to know its own dry-run
-  state twice. `cli` is the one place that knows a command ended; it calls `cache.prune(paths.cache(), time.time())`, a
-  function, holding no `Cache` (ADR 0008 holds). `_main` imports `infra.cache` in its body, beside the command modules,
-  never `cli.py` at load: `cache.py` imports `fcntl`, and `main` must refuse native Windows before any POSIX-only module
-  loads (`state-supported-platforms`); its stand-in test, which blocks `fcntl`, keeps passing.
+  state twice. `cli` is the one place that knows a command ended; it calls `housekeeping.prune()`, a command module's
+  function calling `cache.prune(paths.cache(), time.time())`, holding no `Cache` (ADR 0008 holds), since `cli` reaches
+  `infra` only through `commands`. `_main` imports it in its body, beside the other command modules, never `cli.py` at
+  load: `cache.py` imports `fcntl`, and `main` must refuse native Windows before any POSIX-only module loads
+  (`state-supported-platforms`); its stand-in test, which blocks `fcntl`, keeps passing.
 - 30 days is a module constant, no setting.
 
 ### Docs

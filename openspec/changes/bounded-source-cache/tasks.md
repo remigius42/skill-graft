@@ -111,12 +111,13 @@ last touched those lines.
   repository**), the emptied `trees/<key>` kept, a symlink inside an export is removed and its target is not, a
   reference-layered `checkout` leaves the real export's mtime alone, a prune racing a vanished entry raises nothing, a
   prune of a cache root that does not exist, or has no `trees/` or `repos/`, raises nothing. Verify red, then green
-- [ ] 6.2 `cli._main` calls `cache.prune(paths.cache(), time.time())` after every command but `init` and `help`, on
-  success and on `SkillGraftError`/`OSError`, not after `update --dry-run`. End to end in a new
+- [x] 6.2 `cli._main` calls `housekeeping.prune()` (`commands/housekeeping.py`, calling
+  `cache.prune(paths.cache(), time.time())`: `cli` reaches `infra` only through `commands`) after every command but
+  `init` and `help`, on success and on `SkillGraftError`/`OSError`, not after `update --dry-run`. End to end in a new
   `tests/cli/test_cache.py`, one test per scenario of **Exports prune themselves**: **Stale export removed**
   (`resolve`), **Export in use kept** (`build`), **Recent export kept**, **Failed command prunes too** (a failing
   patch), **Leftover removed**, **Dry run prunes nothing** (mtime unchanged too); and `resolve` with only path
-  **Sources** on an empty `XDG_CACHE_HOME` exits 0. `infra.cache` is imported inside `_main`, beside the command
+  **Sources** on an empty `XDG_CACHE_HOME` exits 0. `housekeeping` is imported inside `_main`, beside the other command
   modules; `tests/cli/test_cli.py`'s native-Windows tests pass unchanged. Verify red, then green
 - [ ] 6.3 `README.md`: a "Cache" section (where it is; exports unused for 30 days removed by any command; repositories
   never removed, every **Ref** read kept in its repository; deleting one by hand, or the folder, is safe unless a
