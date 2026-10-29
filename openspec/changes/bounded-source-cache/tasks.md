@@ -89,7 +89,7 @@ last touched those lines.
 
 ## 5. The dry run's overlay
 
-- [ ] 5.1 A `Cache` with a `reference` whose repository has the commit but lacks an export's blobs makes an overlay
+- [x] 5.1 A `Cache` with a `reference` whose repository has the commit but lacks an export's blobs makes an overlay
   repository under its own root (`init --bare` with the reference's object format, alternates, the promisor config
   copied) and fetches the blobs into it, as design.md says; it pins nothing. Test in `tests/infra/test_cache.py`: the
   real repository's objects, refs and config and the real `trees/` are byte-identical before and after a

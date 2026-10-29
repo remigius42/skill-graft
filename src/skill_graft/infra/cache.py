@@ -92,11 +92,65 @@ class Cache:
                 )
         context = f"source {alias!r} ({url})"
         records, tips = _listing(repo, ref, subdirectory, context)
-        if repo == self.repository(url):  # never write into the reference's
+        if repo != self.repository(url) and _missing(repo, records, tips, context):
+            repo = self._overlay(url, repo, context)  # the reference's is never written
+        if repo == self.repository(url):
             with lock(repo):
-                _fetch_blobs(repo, records, tips, context)
+                if missing := _missing(repo, records, tips, context):
+                    self._fetch_blobs(repo, missing, context)
         _build(tree, lambda tmp: _export(repo, records, tmp, context))
         return tree
+
+    def _fetch_blobs(self, repo: Path, missing: list[bytes], context: str) -> None:
+        try:
+            _fetch_blobs(repo, missing, context)
+        except SkillGraftError as error:
+            if self.reference is None or not _refused(error):
+                raise
+            # Refetching every branch into a temporary folder would cost a full
+            # download on every dry run; `update` converts the real one once.
+            raise SkillGraftError(
+                f"{context}: the remote refuses files asked by name: "
+                "run `update` without `--dry-run` to fetch them"
+            ) from None
+
+    def _overlay(self, url: str, real: Path, context: str) -> Path:
+        """A repository of this cache's own over `real`'s objects, to fetch the
+        blobs `real` lacks into, leaving `real` untouched.
+
+        Cheaper than a borrowing clone: no ref advertisement or negotiation.
+        """
+
+        def make(tmp: Path) -> None:
+            object_format = git.run(
+                "rev-parse", "--show-object-format", repo=real, context=context
+            )
+            git.run(
+                "init",
+                "-q",
+                "--bare",
+                f"--object-format={object_format.decode().strip()}",
+                str(tmp),
+                context=context,
+            )
+            alternates = tmp / "objects" / "info" / "alternates"
+            alternates.write_text(f"{(real / 'objects').resolve()}\n")
+            promisor = git.run(
+                "config",
+                "--local",
+                "--get-regexp",
+                r"^(remote\.origin\.(url|promisor|partialclonefilter)"
+                r"|extensions\.partialclone)$",
+                repo=real,
+                context=context,
+            )
+            for line in promisor.decode().splitlines():
+                name, value = line.split(" ", 1)
+                git.run("config", name, value, repo=tmp, context=context)
+
+        overlay = self.repository(url)
+        _build(overlay, make)
+        return overlay
 
     def has_commit(self, url: str, sha: str) -> bool:
         return self._repository_with(url, sha) is not None
@@ -203,19 +257,17 @@ def _has_commit(repo: Path, sha: str) -> bool:
     return True
 
 
-def _fetch_blobs(
+def _missing(
     repo: Path, records: list[bytes], tips: list[str], context: str
-) -> None:
-    """Fetches the blobs of `records` that `repo` lacks, listed from `tips`, in
-    one request.
+) -> list[bytes]:
+    """The blobs of `records` that `repo` lacks, listed from `tips`.
 
     `rev-list --missing=print` finds them without fetching, on any git. A tip
     may reach other blobs, such as a prefix's siblings: only those of
-    `records` count. The want list is blobs: negotiating over every branch, as
-    `noop` skips, would only cost round trips.
+    `records` count.
     """
     if not tips:
-        return
+        return []
     listing = git.run(
         "rev-list",
         "--objects",
@@ -226,28 +278,44 @@ def _fetch_blobs(
         context=context,
     )
     wanted = {record.split(b"\t", 1)[0].split(b" ")[2] for record in records}
-    missing = [
+    return [
         line[1:]
         for line in listing.splitlines()
         if line.startswith(b"?") and line[1:] in wanted
     ]
-    if missing:
-        git.run(
-            *git.FSCK,
-            "-c",
-            "fetch.negotiationAlgorithm=noop",
-            "fetch",
-            "-q",
-            "--no-tags",
-            "--no-write-fetch-head",
-            "--recurse-submodules=no",
-            "--filter=blob:none",
-            "--stdin",
-            "origin",
-            repo=repo,
-            context=context,
-            input=b"\n".join(missing) + b"\n",
-        )
+
+
+def _fetch_blobs(repo: Path, missing: list[bytes], context: str) -> None:
+    """Fetches the blobs `missing` into `repo`, in one request.
+
+    The want list is blobs: negotiating over every branch, as `noop` skips,
+    would only cost round trips.
+    """
+    git.run(
+        *git.FSCK,
+        "-c",
+        "fetch.negotiationAlgorithm=noop",
+        "fetch",
+        "-q",
+        "--no-tags",
+        "--no-write-fetch-head",
+        "--recurse-submodules=no",
+        "--filter=blob:none",
+        "--stdin",
+        "origin",
+        repo=repo,
+        context=context,
+        input=b"\n".join(missing) + b"\n",
+    )
+
+
+# How git refuses an object asked by name: protocol v0 without
+# `uploadpack.allowAnySHA1InWant`, and v2. No exit code tells them apart.
+REFUSALS = ("unadvertised object", "not our ref")
+
+
+def _refused(error: SkillGraftError) -> bool:
+    return any(refusal in str(error) for refusal in REFUSALS)
 
 
 def _export(repo: Path, records: list[bytes], folder: Path, context: str) -> None:

@@ -187,12 +187,22 @@ no_lazy_fetch = pytest.mark.skipif(
 )
 
 
-def seed(upstream: Upstream, url: str) -> None:
+def protocol_v0(monkeypatch: pytest.MonkeyPatch) -> None:
+    """Every git command speaks protocol v0, whose server refuses objects asked
+    by name unless `uploadpack.allowAnySHA1InWant`."""
+    monkeypatch.setenv("GIT_CONFIG_COUNT", "1")
+    monkeypatch.setenv("GIT_CONFIG_KEY_0", "protocol.version")
+    monkeypatch.setenv("GIT_CONFIG_VALUE_0", "0")
+
+
+def seed(upstream: Upstream, url: str, blobless: bool = False) -> Path:
     """Clones `upstream` into the cache as `url`'s repository, so `url` needs no
-    fetch."""
+    fetch; whole, or `blobless`, with commits and trees only."""
     repo = Cache.default().repository(url)
     repo.parent.mkdir(parents=True, exist_ok=True)
-    upstream.git("clone", "-q", "--bare", upstream.url, str(repo))
+    partial = ["--no-local", "--filter=blob:none"] if blobless else []
+    upstream.git("clone", "-q", "--bare", *partial, upstream.url, str(repo))
+    return repo
 
 
 def write_config(text: str) -> Path:
