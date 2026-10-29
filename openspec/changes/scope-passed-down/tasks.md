@@ -63,7 +63,7 @@ Apply with the `mp-tdd` skill: each task red-green-refactor, one commit. Red is 
 
 ## 6. Delete the global
 
-- [ ] 6.1 `scope.of(command, project) -> Scope` becomes a plain function, without `paths.use`; `cli.main` assigns
+- [x] 6.1 `scope.of(command, project) -> Scope` becomes a plain function, without `paths.use`; `cli.main` assigns
   `current = scope.of(...)` inside `warnings_last()`; delete `test_reset_after_the_block` and
   `test_reset_when_the_block_raises`, the others dropping the `with`; verify `pytest` green
 - [ ] 6.2 Delete `paths.use`, `_in_use`, `in_use`, `root`, `scope`, `package`, `config_file`, `skills`,

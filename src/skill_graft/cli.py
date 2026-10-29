@@ -360,7 +360,8 @@ def main(argv: list[str] | None = None) -> int:
         commands["tree"].error("--link needs --format mermaid")
     try:
         project = args.command == "init" and args.project
-        with warnings_last() as warnings, scope.of(args.command, project) as current:
+        with warnings_last() as warnings:
+            current = scope.of(args.command, project)
             if args.command == "init":
                 init_package.init(current, project)
             elif args.command == "update":
