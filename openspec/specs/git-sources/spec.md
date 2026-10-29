@@ -10,14 +10,14 @@ and whenever it runs.
 ### Requirement: Cache outside the package
 
 Git **Sources** SHALL be cached under `$XDG_CACHE_HOME/skill-graft/`, else `~/.cache/skill-graft/`: one bare repository
-per git URL, shared by every alias naming that URL and fetched at most once per command, and one checkout per commit.
-Deleting the cache SHALL lose nothing: the next command that needs a **Ref** fetches it again. An interrupted clone or
-checkout SHALL never be mistaken for a complete one, nor block the next run.
+per git URL, shared by every alias naming that URL and fetched at most once per command, and one export per commit and
+`subdirectory`. Deleting the cache SHALL lose nothing the remote still has: the next command that needs a **Ref**
+fetches it again. An interrupted clone or export SHALL never be mistaken for a complete one, nor block the next run.
 
 #### Scenario: Default location
 
 - **WHEN** `XDG_CACHE_HOME` is unset and `build` reads a git **Source**
-- **THEN** its repository and checkout are under `~/.cache/skill-graft/`, and `build` writes nothing under
+- **THEN** its repository and export are under `~/.cache/skill-graft/`, and `build` writes nothing under
   `~/.apm/skill-graft/` outside `.apm/skills/` and `skill-graft.lock`
 
 #### Scenario: Shared URL
@@ -30,10 +30,16 @@ checkout SHALL never be mistaken for a complete one, nor block the next run.
 - **WHEN** the user deletes the cache folder and runs `build`
 - **THEN** `build` fetches again and vendors the same files
 
+#### Scenario: Ref vanished, then cache deleted
+
+- **WHEN** `ref` names commit A, A has been read before, the remote's branch was then reset so that A is on no branch,
+  and the user deletes the cache folder and runs `build`
+- **THEN** `build` exits non-zero naming the alias and the `ref`
+
 #### Scenario: Interrupted checkout
 
-- **WHEN** a previous run left a partial checkout of the `ref` behind
-- **THEN** the next `build` ignores it, checks the `ref` out again, and vendors every file
+- **WHEN** a previous run left a partial export of the `ref` behind
+- **THEN** the next `build` ignores it, exports the `ref` again, and vendors every file
 
 #### Scenario: Concurrent runs
 
@@ -57,13 +63,15 @@ The cache repository SHALL use the remote's object format, SHA-1 or SHA-256, so 
 ### Requirement: Read at the ref
 
 A command that reads a git **Source**'s skills SHALL read them at its `ref`, exactly, and SHALL never change `ref` or
-read any other commit. A commit in the cache SHALL be used without contacting the remote. Only when the commit is
-missing SHALL the command fetch every branch; if the commit is still missing, that SHALL be an error naming the alias
-and the `ref`.
+read any other commit. A commit in the cache whose files at the `subdirectory` read are in the cache too SHALL be used
+without contacting the remote. When the commit is missing, the command SHALL fetch every branch; if the commit is still
+missing, that SHALL be an error naming the alias and the `ref`. When only files are missing, it SHALL fetch just those.
+With git 2.44 or later, looking up whether the cache holds a commit or a file SHALL never contact the remote.
 
 #### Scenario: Upstream moved on
 
-- **WHEN** `ref` names commit A, A is in the cache, the remote's branch has moved to commit B, and the user runs `build`
+- **WHEN** `ref` names commit A, A has been read before, the remote's branch has moved to commit B, and the user runs
+  `build`
 - **THEN** the vendored skills are those at A, the remote is not contacted, and `skill-graft.toml` is unchanged
 
 #### Scenario: Fresh machine
@@ -73,8 +81,15 @@ and the `ref`.
 
 #### Scenario: Ref gone upstream
 
-- **WHEN** `ref` names a commit that is missing from the cache and on no branch of the remote
+- **WHEN** `ref` names a commit that is missing from the cache and on no branch of the remote, though the remote would
+  still serve it asked by name
 - **THEN** the command exits non-zero naming the alias and the `ref`
+
+#### Scenario: Commit cached, files not
+
+- **WHEN** commit A is in the cache, `[sources.a]` has read it with `subdirectory = "x"`, `[sources.b]` names the same
+  URL and A with `subdirectory = "y"` for the first time, and the remote is unreachable
+- **THEN** reading `b` exits non-zero naming `b` and the URL
 
 ### Requirement: Build needs every ref
 
@@ -209,8 +224,13 @@ when at that commit the subdirectory is missing, is not a folder, or has a symli
 
 - **WHEN** `[sources.a]` and `[sources.b]` have the same `git` URL and `ref`, `a` with `subdirectory = "x/skills"` and
   `b` with `subdirectory = "y/skills"`
-- **THEN** the cache holds one export of that commit, and each **Source** has only the **Skills** under its own
-  subdirectory
+- **THEN** the cache holds one repository and two exports of that commit, one holding only `x/skills` and the other only
+  `y/skills`, and each **Source** has only the **Skills** under its own subdirectory
+
+#### Scenario: Same subdirectory
+
+- **WHEN** `[sources.a]` and `[sources.b]` have the same `git` URL, `ref` and `subdirectory`
+- **THEN** the cache holds one export of that commit for both
 
 ### Requirement: Git failures are reported
 
@@ -227,3 +247,106 @@ with the user's git config applied.
 
 - **WHEN** `git` is not on `PATH` and a git **Source** must be read
 - **THEN** the command exits non-zero saying git is not installed
+
+### Requirement: Exports prune themselves
+
+Every command that reads through the cache SHALL, at its end, whether it succeeded or failed, remove each export, and
+each leftover of an interrupted export or clone, that no command has used for 30 days. A command SHALL mark each export
+it uses as used. `update --dry-run` SHALL neither mark nor remove anything in the cache. An export removed SHALL be
+exported again from the cached repository when next needed, without the remote.
+
+#### Scenario: Stale export removed
+
+- **WHEN** the cache holds an export last used 31 days ago, and the user runs `resolve`
+- **THEN** after `resolve` the export is gone
+
+#### Scenario: Export in use kept
+
+- **WHEN** the export of `mp`'s `ref` was last used 31 days ago, and the user runs `build`
+- **THEN** `build` vendors from it, and the export is still in the cache afterwards
+
+#### Scenario: Recent export kept
+
+- **WHEN** the cache holds an export last used 29 days ago that the command does not read
+- **THEN** after the command the export is still in the cache
+
+#### Scenario: Failed command prunes too
+
+- **WHEN** the cache holds an export last used 31 days ago, and `build` fails on a patch that does not apply
+- **THEN** after `build` the export is gone
+
+#### Scenario: Leftover removed
+
+- **WHEN** a run killed 31 days ago left a partial export behind
+- **THEN** the next command removes it
+
+#### Scenario: Clone leftover removed
+
+- **WHEN** a run killed 31 days ago while cloning a git **Source** for the first time left a partial clone behind
+- **THEN** the next command removes it, and leaves every repository in place
+
+#### Scenario: Dry run prunes nothing
+
+- **WHEN** the cache holds an export last used 31 days ago, and the user runs `update --dry-run`
+- **THEN** the export is still in the cache, its last use unchanged
+
+#### Scenario: Pruned export read offline
+
+- **WHEN** the export of `mp`'s `ref` was removed as unused, and `mp`'s remote is unreachable
+- **THEN** `build` exports the `ref` again from the cache and vendors the same files
+
+### Requirement: Repositories are kept
+
+No command SHALL delete a cached repository, however long unused. Each commit a command reads, other than in
+`update --dry-run`, SHALL stay in its repository with the files read at it, even after it vanished from every branch of
+its remote and later fetches and git's housekeeping ran: the repository may then hold its only copy.
+
+#### Scenario: Unused repository
+
+- **WHEN** the cache holds a repository no command has read for 31 days, and the user runs `resolve`
+- **THEN** after `resolve` the repository is still in the cache
+
+#### Scenario: Ref vanished upstream
+
+- **WHEN** `ref` names commit A, `build` has read A, the remote's branch was then reset so that A is on no branch, the
+  repository was fetched again and garbage-collected, its export of A was pruned, and the remote is unreachable
+- **THEN** `build` exports A again from the cache and vendors the same files
+
+### Requirement: Fetch only what is read
+
+A clone, and each later fetch into it, SHALL download commits and trees but no file contents; an export SHALL download
+the contents of the files it writes and no others, in one request to the remote. An export SHALL hold only the
+**Source**'s `subdirectory` of the tree, and the entries on the way to it. A repository cloned whole before, or from a
+remote refusing partial clones, SHALL stay whole; one whose remote refuses files by name SHALL be fetched whole, once,
+outside `update --dry-run`, with git 2.36 or later. Any other failure to fetch files SHALL leave the repository as it
+was.
+
+#### Scenario: One subdirectory of a monorepo
+
+- **WHEN** commit A of `cp` holds `pstack/skills/tdd/SKILL.md` and `harness/big.bin`, `subdirectory = "pstack/skills"`,
+  and the cache is empty
+- **THEN** after `build` the cache holds neither the contents of `harness/big.bin` nor an export of it
+
+#### Scenario: Remote without partial clones
+
+- **WHEN** `[sources.mp]` names a remote that refuses partial clones
+- **THEN** `build` clones it whole and vendors the skills at the `ref`
+
+#### Scenario: Remote refusing files by name
+
+- **WHEN** `[sources.mp]` names a remote that accepts a partial clone but speaks a protocol that refuses files asked by
+  name, and the cache is empty
+- **THEN** `build` vendors the skills at the `ref`, the repository then holds every file of every branch, and a later
+  `build` at another `ref` asks the remote for nothing by name
+
+#### Scenario: Files unreachable for a moment
+
+- **WHEN** the cache holds a blobless repository of `mp`, the export of a new `ref` needs files, and the remote is
+  unreachable
+- **THEN** the command exits non-zero naming `mp` and the URL, and a later fetch into the repository still downloads no
+  file contents
+
+#### Scenario: Repository cloned whole before
+
+- **WHEN** the cache holds a repository cloned whole by an earlier skill-graft, and `update` fetches a new tip
+- **THEN** the repository holds every file of the new tip, as before

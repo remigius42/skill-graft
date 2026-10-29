@@ -11,9 +11,28 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 
 - The supported platforms are stated: Linux and macOS, and Windows through WSL. The README says so, and the package
   declares them as classifiers
+- The git cache prunes itself: every command but `init` and `update --dry-run` removes, as it ends, each export no
+  command has used for 30 days, and each leftover of a killed export or clone. No command removes a repository, and
+  every **Ref** read stays in its repository, even after it vanished upstream. The README's new "Cache" section says
+  where the cache is and when deleting it by hand loses a **Ref**
+- A new clone of a git **Source** holds commits and trees only; an export fetches the files it writes, in one request,
+  and a **Source** with `subdirectory` exports only that folder. A remote without partial clones gives a whole clone, as
+  before; one refusing files asked by name has the repository fetched whole, once (git 2.36 or later). With git 2.44 or
+  later, looking up what the cache holds never contacts the remote
+
+### Changed
+
+- The first export of a commit and `subdirectory` needs the remote, even when the commit is in the cache; an export
+  removed as unused is exported again without it
+- `update`'s **Hull diff** fetches the files of a cached current `ref` it lacks, so a lock written on another machine
+  still gets its diff; when that fails, it says there is no previous **Hull** to compare, naming the fetch
+- `update --dry-run` on a remote refusing files asked by name fails, naming the **Source** and saying to run `update`
+  without `--dry-run`
 
 ### Fixed
 
+- The error for an object missing from the cache no longer says to delete the repository, the one thing that can lose a
+  **Ref** vanished upstream
 - On native Windows, every command, `help`, `--help` and `--version` too, prints
   `skill-graft: native Windows is unsupported: run skill-graft in WSL` and exits 1, in place of a traceback ending in
   `No module named 'fcntl'`
