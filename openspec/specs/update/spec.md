@@ -110,7 +110,9 @@ those added, each alias once and in config order, keeping `--dry-run` and `--dif
 at its current `ref`. Only when that succeeds SHALL it write `skill-graft.lock`, always, and `skill-graft.toml`,
 when a `ref` moved. On
 failure it SHALL exit non-zero with the resolution error and the shas it would have written, leaving the TOML
-and the lock unchanged. `update` SHALL NOT vendor or run `apm`.
+and the lock unchanged. When writing the lock fails or is interrupted after the TOML was written, it SHALL
+restore the TOML's bytes; if that fails too, a notice SHALL name the TOML and the error, and the original error
+SHALL be the one reported. `update` SHALL NOT vendor or run `apm`.
 
 #### Scenario: Entry gone upstream
 
@@ -130,6 +132,16 @@ and the lock unchanged. `update` SHALL NOT vendor or run `apm`.
   `pstack/skills`
 - **THEN** `update` exits non-zero naming `cp`, `pstack/skills` and the new sha, and leaves the TOML and lock
   unchanged
+
+#### Scenario: Lock write fails
+
+- **WHEN** `update` moves `mp`'s `ref` to B and writing `skill-graft.lock` fails
+- **THEN** `update` exits 1 naming the error, and `skill-graft.toml` and the lock are byte for byte as before
+
+#### Scenario: Lock write interrupted
+
+- **WHEN** `update` moves `mp`'s `ref` to B and the user presses Ctrl-C while `skill-graft.lock` is written
+- **THEN** `skill-graft.toml` and the lock are byte for byte as before
 
 #### Scenario: Lock follows the TOML
 

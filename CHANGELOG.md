@@ -14,8 +14,17 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   repository's host and path, so nothing else from its URL, such as a token, reaches the diagram. A shared `--link`
   names those repositories
 
+### Changed
+
+- Every command prints its warnings last: after its output, its notices and APM's, with only its error line
+  after them, and also when it fails. `build`'s no longer scroll away above APM's output, nor `update`'s above
+  its **Hull diff**, and warnings about `skill-graft.toml` no longer come first
+
 ### Fixed
 
+- When writing `skill-graft.lock` fails after `update` moved a **Ref**, or Ctrl-C interrupts it, `skill-graft.toml`
+  is restored; so is it when Ctrl-C interrupts an edit's lock write. A restore that fails too is named, and the
+  original error is the one reported
 - Without APM, `init` creates nothing and says to install APM and run `init` again, instead of leaving a **Package**
   that a second `init` refuses with no way forward
 - Refusing an existing **Package** that APM does not list, `init` gives the `apm install` command that registers it
