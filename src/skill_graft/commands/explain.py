@@ -13,9 +13,9 @@ from skill_graft.commands import transaction
 from skill_graft.infra import git, paths
 from skill_graft.infra.cache import Cache
 from skill_graft.infra.errors import SkillGraftError, notice
-from skill_graft.pipeline import compute, patch
+from skill_graft.pipeline import compute
 from skill_graft.pipeline.config import NAME, SCP, Config, GitSource, SkillId
-from skill_graft.pipeline.hull import Edge, Hull
+from skill_graft.pipeline.hull import Edge, Hull, PatchError
 
 
 def show_tree(
@@ -67,7 +67,7 @@ def _explain(
     try:
         with compute.compute_hull(scope, loaded, cache) as resolved:
             view(loaded, resolved)
-    except patch.PatchError as error:
+    except PatchError as error:
         if error.hull is None:
             raise
         try:

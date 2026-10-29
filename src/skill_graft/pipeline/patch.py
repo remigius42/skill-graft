@@ -4,15 +4,11 @@ import re
 import shutil
 import stat
 from pathlib import Path
-from typing import TYPE_CHECKING
 
 from skill_graft.infra import files, git
 from skill_graft.infra.errors import SkillGraftError
 from skill_graft.pipeline import discovery
 from skill_graft.pipeline.config import Config, PatchFile, SkillId
-
-if TYPE_CHECKING:
-    from skill_graft.pipeline.hull import Hull
 
 # A hunk's header in a `.rej` file, without the section heading after it.
 HUNK = re.compile(rb"^(@@ -\d+(?:,\d+)? \+\d+(?:,\d+)? @@)", re.MULTILINE)
@@ -33,41 +29,6 @@ def unused(config: Config, skills: dict[SkillId, Path]) -> list[str]:
         for key in config.patches
         if key not in skills
     ]
-
-
-class PatchError(SkillGraftError):
-    """What the walk found wrong in the hull's skills, then perhaps another error.
-
-    `failures` holds each skill whose patches did not apply, its upstream folder
-    and what failed; `hidden`, each hidden character or Markdown file that is not
-    UTF-8, by skill. `hull` is the hull as walked when only `hidden` failed, for
-    `why` and `tree` to show.
-    """
-
-    def __init__(
-        self,
-        failures: list[tuple[SkillId, Path, list[str]]],
-        other: str = "",
-        hints: dict[SkillId, str] | None = None,
-        hidden: list[tuple[SkillId, str]] | None = None,
-        hull: "Hull | None" = None,
-    ) -> None:
-        """`hints` replaces, per skill, the hint to redo it against its upstream."""
-        hints = hints or {}
-        hidden = hidden or []
-        lines = ["patches do not apply:"] if failures else []
-        for skill, upstream, failed in failures:
-            lines += [f"  {skill}: {line}" for line in failed]
-            lines.append(
-                f"  {skill}: {hints.get(skill, f'redo it against {upstream}')}"
-            )
-        if hidden:
-            lines += ["hidden characters:", *(f"  {s}: {line}" for s, line in hidden)]
-        super().__init__("\n".join(lines + ([other] if other else [])))
-        self.failures = failures
-        self.other = other
-        self.hidden = hidden
-        self.hull = hull
 
 
 def apply(skill: SkillId, upstream: Path, patches: list[PatchFile], work: Path) -> Path:

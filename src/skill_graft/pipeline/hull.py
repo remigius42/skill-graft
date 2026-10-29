@@ -41,6 +41,41 @@ class Hull:
     roots: dict[str, Path]
 
 
+class PatchError(SkillGraftError):
+    """What the walk found wrong in the hull's skills, then perhaps another error.
+
+    `failures` holds each skill whose patches did not apply, its upstream folder
+    and what failed; `hidden`, each hidden character or Markdown file that is not
+    UTF-8, by skill. `hull` is the hull as walked when only `hidden` failed, for
+    `why` and `tree` to show.
+    """
+
+    def __init__(
+        self,
+        failures: list[tuple[SkillId, Path, list[str]]],
+        other: str = "",
+        hints: dict[SkillId, str] | None = None,
+        hidden: list[tuple[SkillId, str]] | None = None,
+        hull: Hull | None = None,
+    ) -> None:
+        """`hints` replaces, per skill, the hint to redo it against its upstream."""
+        hints = hints or {}
+        hidden = hidden or []
+        lines = ["patches do not apply:"] if failures else []
+        for skill, upstream, failed in failures:
+            lines += [f"  {skill}: {line}" for line in failed]
+            lines.append(
+                f"  {skill}: {hints.get(skill, f'redo it against {upstream}')}"
+            )
+        if hidden:
+            lines += ["hidden characters:", *(f"  {s}: {line}" for s, line in hidden)]
+        super().__init__("\n".join(lines + ([other] if other else [])))
+        self.failures = failures
+        self.other = other
+        self.hidden = hidden
+        self.hull = hull
+
+
 def walk(
     config: Config,
     indexes: dict[str, discovery.Index],
@@ -139,9 +174,9 @@ def walk(
     except (SkillGraftError, OSError) as error:
         if not failed and not found_hidden:
             raise
-        raise patch.PatchError(failed, str(error), hidden=found_hidden) from None
+        raise PatchError(failed, str(error), hidden=found_hidden) from None
     if failed:  # the hull is incomplete: no warning about it would be right
-        raise patch.PatchError(failed, hidden=found_hidden)
+        raise PatchError(failed, hidden=found_hidden)
     suggestions: dict[SkillId, set[SkillId]] = {}
     for current, ref, target, bound, key in prose:
         if target in skills:
@@ -175,9 +210,7 @@ def walk(
         roots,
     )
     if found_hidden:  # complete, but none of its warnings matter as much
-        raise patch.PatchError(
-            [], hidden=found_hidden, hull=replace(result, warnings=[])
-        )
+        raise PatchError([], hidden=found_hidden, hull=replace(result, warnings=[]))
     return result
 
 

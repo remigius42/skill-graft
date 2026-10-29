@@ -23,7 +23,7 @@ Trial check used below: `lint-imports --config <tmp toml>` with only the contrac
 
 ## 2. Break the pipeline cycle
 
-- [ ] 2.1 Move `PatchError` from `pipeline/patch.py` to `pipeline/hull.py`, below `class Hull`, unchanged but for
+- [x] 2.1 Move `PatchError` from `pipeline/patch.py` to `pipeline/hull.py`, below `class Hull`, unchanged but for
   `hull: Hull | None` unquoted; drop `patch.py`'s `TYPE_CHECKING` block; `hull.py` raises its own `PatchError`;
   `commands/explain.py` and `commands/update.py` import it from `skill_graft.pipeline.hull` and drop their
   `pipeline.patch` import, used only for `PatchError`. A pure move, no new test: the patch and hidden-character tests

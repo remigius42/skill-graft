@@ -22,11 +22,10 @@ from skill_graft.pipeline import (
     deployed,
     hidden,
     lock,
-    patch,
     rename,
 )
 from skill_graft.pipeline.config import Config, GitSource, SkillId
-from skill_graft.pipeline.hull import Hull
+from skill_graft.pipeline.hull import Hull, PatchError
 
 
 # The Deployed diff's first lines; a file starting with the first is one it wrote.
@@ -88,7 +87,7 @@ def update(
                 expect,
                 flags,
             )
-        except patch.PatchError as error:
+        except PatchError as error:
             if tmp is None:
                 raise
             raise _fetch_hint(error, tmp) from None
@@ -136,7 +135,7 @@ def _diff_target(file: Path) -> Path:
     return target
 
 
-def _fetch_hint(error: patch.PatchError, tmp: Path) -> patch.PatchError:
+def _fetch_hint(error: PatchError, tmp: Path) -> PatchError:
     """The error, pointing at no upstream folder that goes away with `tmp`."""
     fetch = "run `update` without `--dry-run` to fetch the tip"
     hints = {
@@ -152,7 +151,7 @@ def _fetch_hint(error: patch.PatchError, tmp: Path) -> patch.PatchError:
         after = error.hidden[i + 1 : i + 2]
         if skill in gone and (not after or after[0][0] != skill):  # its last line
             hidden.append((skill, fetch))
-    return patch.PatchError(error.failures, error.other, hints, hidden)
+    return PatchError(error.failures, error.other, hints, hidden)
 
 
 def _update(
@@ -249,7 +248,7 @@ def _previous(
                 )
                 hashes = lock.skill_hashes(hull)
                 opened = stack.pop_all()  # kept open for the caller's `with`
-        except patch.PatchError as error:  # patches likely rewritten for the tips
+        except PatchError as error:  # patches likely rewritten for the tips
             failed = " and ".join(
                 what
                 for what, found in [
