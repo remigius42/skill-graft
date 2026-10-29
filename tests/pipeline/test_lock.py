@@ -11,13 +11,14 @@ from conftest import Upstream, configure, make_patch, skill, write_config
 
 from skill_graft.cli import main
 from skill_graft.infra import paths
+from skill_graft.infra.cache import Cache
 from skill_graft.pipeline import compute, config, lock
 
 
 def render() -> str:
     scope = paths.Scope(Path.home())
     loaded = config.load(scope)
-    with compute.compute_hull(scope, loaded) as hull:
+    with compute.compute_hull(scope, loaded, Cache.default()) as hull:
         return lock.render(scope, loaded, {}, hull)
 
 
@@ -277,7 +278,7 @@ def test_project_path_source_relative_to_the_package(tmp_path: Path) -> None:
     )
     loaded = config.load(scope)
 
-    with compute.compute_hull(scope, loaded) as hull:
+    with compute.compute_hull(scope, loaded, Cache.default()) as hull:
         text = lock.render(scope, loaded, {}, hull)
 
     assert tomllib.loads(text)["sources"] == {"own": {"path": "../../skills"}}
@@ -395,7 +396,7 @@ def test_version_1_keys(home: Path, tmp_path: Path) -> None:
 
 def digest() -> str:
     scope = paths.Scope(Path.home())
-    with compute.compute_hull(scope, config.load(scope)) as hull:
+    with compute.compute_hull(scope, config.load(scope), Cache.default()) as hull:
         return lock.digest(hull, lock.skill_hashes(hull))
 
 
@@ -422,7 +423,7 @@ def test_digest_follows_a_hash(home: Path) -> None:
 def test_digest_follows_a_deployed_name_alone(scope: paths.Scope, home: Path) -> None:
     skill(home / "own" / "tdd")
     configure(["own/tdd"], own="~/own")
-    with compute.compute_hull(scope, config.load(scope)) as hull:
+    with compute.compute_hull(scope, config.load(scope), Cache.default()) as hull:
         hashes = lock.skill_hashes(hull)
         renamed = replace(
             hull, deployed={skill_id: "other" for skill_id in hull.deployed}

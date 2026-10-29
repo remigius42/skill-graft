@@ -10,7 +10,7 @@ from collections.abc import Callable, Generator
 from contextlib import contextmanager
 from pathlib import Path
 
-from skill_graft.infra import git
+from skill_graft.infra import git, paths
 from skill_graft.infra.errors import SkillGraftError
 
 # Characters a cache folder name keeps; others become `_`.
@@ -35,6 +35,11 @@ class Cache:
         self.root = root
         self.reference = reference
         self._fetched: set[str] = set()
+
+    @classmethod
+    def default(cls) -> "Cache":
+        """The cache every package shares, at `paths.cache()`; one per command."""
+        return cls(paths.cache())
 
     def repository(self, url: str) -> Path:
         return self.root / "repos" / f"{key(url)}.git"

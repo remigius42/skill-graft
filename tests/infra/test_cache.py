@@ -57,7 +57,7 @@ def test_key_is_distinct_per_url() -> None:
 def test_fetch_clones_into_the_cache(tmp_path: Path) -> None:
     upstream = Upstream(tmp_path / "up")
     sha = upstream.commit({"a/SKILL.md": "# a\n"})
-    git_cache = cache.Cache(paths.cache())
+    git_cache = cache.Cache.default()
 
     git_cache.fetch("mp", upstream.url)
 
@@ -68,14 +68,14 @@ def test_fetch_clones_into_the_cache(tmp_path: Path) -> None:
 def test_fetch_once_per_url_per_command(tmp_path: Path) -> None:
     upstream = Upstream(tmp_path / "up")
     upstream.commit({"a/SKILL.md": "# a\n"})
-    git_cache = cache.Cache(paths.cache())
+    git_cache = cache.Cache.default()
     git_cache.fetch("a", upstream.url)
     newer = upstream.commit({"b/SKILL.md": "# b\n"})
 
     git_cache.fetch("b", upstream.url)
 
     assert not git_cache.has_commit(upstream.url, newer)
-    later = cache.Cache(paths.cache())
+    later = cache.Cache.default()
     later.fetch("a", upstream.url)
     assert later.has_commit(upstream.url, newer)
 
@@ -99,7 +99,7 @@ def test_interrupted_clone_does_not_block(tmp_path: Path) -> None:
     sha = upstream.commit({"a/SKILL.md": "# a\n"})
     leftover = leftover_of(paths.cache() / "repos" / f"{cache.key(upstream.url)}.git")
     (leftover / "junk").write_text("half a clone")
-    git_cache = cache.Cache(paths.cache())
+    git_cache = cache.Cache.default()
 
     git_cache.fetch("mp", upstream.url)
 
@@ -110,7 +110,7 @@ def test_interrupted_clone_does_not_block(tmp_path: Path) -> None:
 def test_fetch_waits_for_another_run(tmp_path: Path) -> None:
     upstream = Upstream(tmp_path / "up")
     sha = upstream.commit({"a/SKILL.md": "# a\n"})
-    git_cache = cache.Cache(paths.cache())
+    git_cache = cache.Cache.default()
     fetching = threading.Thread(target=git_cache.fetch, args=("mp", upstream.url))
 
     with cache.lock(git_cache.repository(upstream.url)):  # the other run
@@ -125,7 +125,7 @@ def test_fetch_waits_for_another_run(tmp_path: Path) -> None:
 def test_another_run_cloning_the_same_url(tmp_path: Path) -> None:
     upstream = Upstream(tmp_path / "up")
     sha = upstream.commit({"a/SKILL.md": "# a\n"})
-    first, second = cache.Cache(paths.cache()), cache.Cache(paths.cache())
+    first, second = cache.Cache.default(), cache.Cache.default()
     first.fetch("mp", upstream.url)
     repo = first.repository(upstream.url)
     # As if `second` started cloning before `first` finished.
@@ -138,7 +138,7 @@ def test_another_run_cloning_the_same_url(tmp_path: Path) -> None:
 def test_sha256_remote(tmp_path: Path) -> None:
     upstream = Upstream(tmp_path / "up", sha256=True)
     sha = upstream.commit({"a/SKILL.md": "# a\n"})
-    git_cache = cache.Cache(paths.cache())
+    git_cache = cache.Cache.default()
 
     git_cache.fetch("mp", upstream.url)
 
@@ -154,11 +154,11 @@ def test_git_dir_from_a_hook_is_ignored(
     monkeypatch.setenv("GIT_DIR", str(other.path / ".git"))
     monkeypatch.setenv("GIT_OBJECT_DIRECTORY", str(other.path / ".git" / "objects"))
 
-    cache.Cache(paths.cache()).fetch("mp", upstream.url)
+    cache.Cache.default().fetch("mp", upstream.url)
 
     monkeypatch.delenv("GIT_DIR")
     monkeypatch.delenv("GIT_OBJECT_DIRECTORY")
-    assert cache.Cache(paths.cache()).has_commit(upstream.url, sha)
+    assert cache.Cache.default().has_commit(upstream.url, sha)
     with pytest.raises(subprocess.CalledProcessError):
         other.git("cat-file", "-e", sha)
 
@@ -167,7 +167,7 @@ def test_unreachable_remote(tmp_path: Path) -> None:
     url = str(tmp_path / "nowhere")
 
     with pytest.raises(SkillGraftError) as error:
-        cache.Cache(paths.cache()).fetch("mp", url)
+        cache.Cache.default().fetch("mp", url)
 
     assert "'mp'" in str(error.value) and url in str(error.value)
     assert "`git clone` failed" in str(error.value)
@@ -178,14 +178,14 @@ def test_git_missing(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
     monkeypatch.setenv("PATH", str(tmp_path / "empty"))
 
     with pytest.raises(SkillGraftError, match="git is not installed"):
-        cache.Cache(paths.cache()).fetch("mp", "/srv/skills")
+        cache.Cache.default().fetch("mp", "/srv/skills")
 
 
 def test_checkout_on_a_fresh_machine(tmp_path: Path) -> None:
     upstream = Upstream(tmp_path / "up")
     sha = upstream.commit({"tdd/SKILL.md": "# tdd\n", "tdd/refs/x.md": "x\n"})
 
-    tree = cache.Cache(paths.cache()).checkout("mp", upstream.url, sha)
+    tree = cache.Cache.default().checkout("mp", upstream.url, sha)
 
     assert (tree / "tdd" / "SKILL.md").read_text() == "# tdd\n"
     assert (tree / "tdd" / "refs" / "x.md").read_text() == "x\n"
@@ -196,11 +196,11 @@ def test_checkout_on_a_fresh_machine(tmp_path: Path) -> None:
 def test_checkout_reads_the_ref_without_the_remote(tmp_path: Path) -> None:
     upstream = Upstream(tmp_path / "up")
     old = upstream.commit({"tdd/SKILL.md": "old\n"})
-    cache.Cache(paths.cache()).fetch("mp", upstream.url)
+    cache.Cache.default().fetch("mp", upstream.url)
     upstream.commit({"tdd/SKILL.md": "new\n"})
     upstream.path.rename(tmp_path / "gone")
 
-    tree = cache.Cache(paths.cache()).checkout("mp", upstream.url, old)
+    tree = cache.Cache.default().checkout("mp", upstream.url, old)
 
     assert (tree / "tdd" / "SKILL.md").read_text() == "old\n"
 
@@ -208,10 +208,10 @@ def test_checkout_reads_the_ref_without_the_remote(tmp_path: Path) -> None:
 def test_checkout_after_the_cache_was_deleted(tmp_path: Path) -> None:
     upstream = Upstream(tmp_path / "up")
     sha = upstream.commit({"tdd/SKILL.md": "# tdd\n"})
-    cache.Cache(paths.cache()).checkout("mp", upstream.url, sha)
+    cache.Cache.default().checkout("mp", upstream.url, sha)
     shutil.rmtree(paths.cache())
 
-    tree = cache.Cache(paths.cache()).checkout("mp", upstream.url, sha)
+    tree = cache.Cache.default().checkout("mp", upstream.url, sha)
 
     assert (tree / "tdd" / "SKILL.md").read_text() == "# tdd\n"
 
@@ -222,7 +222,7 @@ def test_ref_gone_upstream(tmp_path: Path) -> None:
     missing = "c" * 40
 
     with pytest.raises(SkillGraftError) as error:
-        cache.Cache(paths.cache()).checkout("mp", upstream.url, missing)
+        cache.Cache.default().checkout("mp", upstream.url, missing)
 
     assert "'mp'" in str(error.value) and missing in str(error.value)
 
@@ -234,7 +234,7 @@ def test_interrupted_checkout_is_redone(tmp_path: Path) -> None:
     (partial / "tdd").mkdir()
     (partial / "tdd" / "SKILL.md").write_text("# tdd\n")
 
-    tree = cache.Cache(paths.cache()).checkout("mp", upstream.url, sha)
+    tree = cache.Cache.default().checkout("mp", upstream.url, sha)
 
     assert (tree / "tdd" / "b.md").read_text() == "b\n"
     # It may be another run's work in progress, so it is left alone.
@@ -255,7 +255,7 @@ def test_another_run_exporting_the_same_ref(
 
     monkeypatch.setattr(cache, "_export", racing)
 
-    result = cache.Cache(paths.cache()).checkout("mp", upstream.url, sha)
+    result = cache.Cache.default().checkout("mp", upstream.url, sha)
 
     assert result == tree and (tree / "tdd" / "SKILL.md").exists()
     assert sorted(p.name for p in tree.parent.iterdir()) == [sha]
@@ -270,7 +270,7 @@ def test_checkout_ignores_attributes_and_filters(tmp_path: Path) -> None:
         '[filter "f"]\n\tsmudge = tr a X\n'
     )
 
-    tree = cache.Cache(paths.cache()).checkout("mp", upstream.url, sha)
+    tree = cache.Cache.default().checkout("mp", upstream.url, sha)
 
     assert (tree / "a" / "SKILL.md").read_bytes() == b"a\nb\n"
 
@@ -303,7 +303,7 @@ def test_hostile_tree_path_is_refused(tmp_path: Path, name: str) -> None:
 
     # git's fsck refuses it on clone; the export's own check is the fallback.
     with pytest.raises(SkillGraftError):
-        cache.Cache(paths.cache()).checkout("mp", upstream.url, sha)
+        cache.Cache.default().checkout("mp", upstream.url, sha)
     assert unlocked(paths.cache() / "trees" / cache.key(upstream.url)) == []
 
 
@@ -353,7 +353,7 @@ def test_file_under_a_symlinked_folder_is_refused(tmp_path: Path) -> None:
     upstream.git("update-ref", "refs/heads/main", sha)
 
     with pytest.raises(SkillGraftError):
-        cache.Cache(paths.cache()).checkout("mp", upstream.url, sha)
+        cache.Cache.default().checkout("mp", upstream.url, sha)
     assert not (outside / "x").exists()
 
 
@@ -374,14 +374,14 @@ def test_symlink_under_a_symlinked_folder_is_refused(tmp_path: Path) -> None:
     upstream.git("update-ref", "refs/heads/main", sha)
 
     with pytest.raises(SkillGraftError):
-        cache.Cache(paths.cache()).checkout("mp", upstream.url, sha)
+        cache.Cache.default().checkout("mp", upstream.url, sha)
     assert list(outside.iterdir()) == []
 
 
 def test_missing_object_is_reported(tmp_path: Path) -> None:
     upstream = Upstream(tmp_path / "up")
     sha = upstream.commit({"a/SKILL.md": "# a\n"})
-    git_cache = cache.Cache(paths.cache())
+    git_cache = cache.Cache.default()
     git_cache.fetch("mp", upstream.url)
     repo = git_cache.repository(upstream.url)
     # Unpack the clone's pack into loose objects, so one can be deleted.
@@ -415,7 +415,7 @@ def test_checkout_keeps_modes_and_skips_submodules(tmp_path: Path) -> None:
     upstream.git("update-index", "--add", "--cacheinfo", f"160000,{'d' * 40},a/sub")
     sha = upstream.commit({})
 
-    tree = cache.Cache(paths.cache()).checkout("mp", upstream.url, sha)
+    tree = cache.Cache.default().checkout("mp", upstream.url, sha)
 
     assert os.access(tree / "a" / "run.sh", os.X_OK)
     assert not os.access(tree / "a" / "b.md", os.X_OK)

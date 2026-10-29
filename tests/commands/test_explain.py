@@ -13,7 +13,6 @@ from conftest import Upstream, configure, make_patch, seed, skill, write_config
 
 from skill_graft.cli import main
 from skill_graft.commands import explain
-from skill_graft.infra import paths
 from skill_graft.infra.cache import Cache
 
 Capsys: TypeAlias = pytest.CaptureFixture[str]
@@ -184,7 +183,7 @@ def test_mermaid_without_a_readable_cache_repository(
     write_config(f'entries = ["mp/tdd"]\n[sources.mp]\ngit = "{url}"\nref = "{sha}"\n')
     assert main(["tree", "--format", "mermaid"]) == 0  # caches the tree
     capsys.readouterr()
-    (Cache(paths.cache()).repository(url) / "config").write_text("[broken\n")
+    (Cache.default().repository(url) / "config").write_text("[broken\n")
 
     assert main(["tree", "--format", "mermaid"]) == 0
 

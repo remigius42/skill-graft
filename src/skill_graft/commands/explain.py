@@ -23,11 +23,11 @@ def show_tree(
 ) -> None:
     """Prints the hull's tree, or its Mermaid diagram, or that diagram's
     mermaid.live link."""
+    cache = Cache.default()
 
     def view(loaded: Config, resolved: Hull) -> None:
         warnings.extend(resolved.warnings)
         if as_mermaid:  # --link needs it
-            cache = Cache(paths.cache())
             diagram = mermaid(resolved, repositories(loaded, cache, resolved))
             if as_link:
                 print(link(diagram))
@@ -36,30 +36,36 @@ def show_tree(
         else:
             print(tree(resolved), end="")
 
-    _explain(scope, warnings, view)
+    _explain(scope, warnings, cache, view)
 
 
 def show_why(scope: paths.Scope, warnings: list[str], text: str) -> None:
     """Prints why the hull holds the skill `text` names."""
+    cache = Cache.default()
 
     def view(loaded: Config, resolved: Hull) -> None:
         warnings.extend(resolved.warnings)
         target = find(
-            resolved, text, lambda text: compute.known(scope, loaded, "why", text)
+            resolved,
+            text,
+            lambda text: compute.known(scope, loaded, cache, "why", text),
         )
         print(why(resolved, target), end="")
 
-    _explain(scope, warnings, view)
+    _explain(scope, warnings, cache, view)
 
 
 def _explain(
-    scope: paths.Scope, warnings: list[str], view: Callable[[Config, Hull], None]
+    scope: paths.Scope,
+    warnings: list[str],
+    cache: Cache,
+    view: Callable[[Config, Hull], None],
 ) -> None:
     """Runs `view` on the hull; on one failing only on hidden characters, on the
     hull as walked, so the user sees what pulls them in, then fails."""
     loaded = resolve.load(scope, warnings)
     try:
-        with compute.compute_hull(scope, loaded) as resolved:
+        with compute.compute_hull(scope, loaded, cache) as resolved:
             view(loaded, resolved)
     except patch.PatchError as error:
         if error.hull is None:

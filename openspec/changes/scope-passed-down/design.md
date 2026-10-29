@@ -69,11 +69,12 @@ See proposal.md for why. Today, after `commands-own-orchestration`:
   the others drop the `with`.
 
 - **One `Cache` per command, built in `commands`, required below.** `compute_hull` and `known` take it with no
-  default. `resolving(scope, loaded, warnings, cache, …)` takes it required too. Each command builds
-  `Cache(paths.cache())` once at its start: `resolve`, `build`, the edits (passed to `known` in `rename` and `bind`
-  and to `resolving`), `_explain` (passed to `compute_hull`, `known` for `why`, and `repositories` for
-  `tree --format mermaid`, which drops its second one); `update` keeps its own, layered over a temporary one in a
-  dry run. `Cache.__init__` touches no files, so building one for a config without git **Sources** costs nothing.
+  default. `resolving(scope, loaded, warnings, cache, …)` takes it required too. Each command builds it once, as
+  its first line, with `Cache.default()` (`Cache(paths.cache())`, the one way to name the shared cache): `resolve`,
+  `build`, each edit (passed to `known` in `rename` and `bind` and to `resolving`), `tree` and `why` (passed
+  through `_explain` to `compute_hull`, to `known` for `why`, and to `repositories` for `tree --format mermaid`,
+  which drops its second one); `update` too, layered over a temporary one in a dry run. `Cache.__init__` touches
+  no files, so building one for a config without git **Sources** costs nothing.
 
 - **One `resolve.load`, before it takes the `Scope`.** `_explain` copies it (`config.load()` and its warnings)
   because `resolve` imports `explain`, only for `show`, which prints `explain.tree` and `explain.suggestions`.
@@ -83,8 +84,8 @@ See proposal.md for why. Today, after `commands-own-orchestration`:
 
 - **Tests below `cli` take a `scope` fixture**: `paths.Scope(home)` in `tests/conftest.py`, `home` being the
   autouse fixture's temporary folder that `HOME` points at; user scope, as the global's fallback gave them. Tests
-  needing project scope build `paths.Scope(tmp_path / "project")`. Pipeline tests that compute a **Hull** pass
-  `Cache(paths.cache())`. Monkeypatched replacements (`lock.write`, `lock.render`, `vendor.vendor`,
+  needing project scope build `paths.Scope(tmp_path / "project")`. Tests that need the cache, a **Hull**'s
+  included, take `Cache.default()`. Monkeypatched replacements (`lock.write`, `lock.render`, `vendor.vendor`,
   `config.load`, `apm.require`) take the new signatures. `HOME` and `XDG_*` stay redirected by the `home`
   fixture. `test_in_use_follows_home_while_unset` goes with `in_use`. One test under `tests/cli/`,
   `test_remove_the_skill_holding_one`, reads the config with `config.load` after `main`, so it takes the `scope`

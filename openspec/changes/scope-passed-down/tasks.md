@@ -41,7 +41,7 @@ Apply with the `mp-tdd` skill: each task red-green-refactor, one commit. Red is 
 
 ## 4. One Cache per command
 
-- [ ] 4.1 `compute_hull(scope, config, cache, refs=None)` and `known(scope, config, cache, where, text)` take a
+- [x] 4.1 `compute_hull(scope, config, cache, refs=None)` and `known(scope, config, cache, where, text)` take a
   required `Cache`; `resolving` takes it required; `resolve`, `build`, the edits and `_explain` each build
   `Cache(paths.cache())` once and pass it to every `compute_hull`, `known` and `repositories` call;
   `show_tree` drops its second `Cache`; pipeline tests pass `Cache(paths.cache())`; verify

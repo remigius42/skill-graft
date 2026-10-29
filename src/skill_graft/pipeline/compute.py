@@ -97,10 +97,12 @@ def _subdirectory(alias: str, tree: Path, subdirectory: str, ref: str) -> Path:
     return folder
 
 
-def known(scope: paths.Scope, config: Config, where: str, text: str) -> SkillId:
+def known(
+    scope: paths.Scope, config: Config, cache: Cache, where: str, text: str
+) -> SkillId:
     """The skill ID `text`, its source declared and holding that skill."""
     skill = parse_skill_id(where, text, config.sources)
-    folder = _folders(config, Cache(paths.cache()), {})[skill.alias]
+    folder = _folders(config, cache, {})[skill.alias]
     index = _indexes(scope, config, {skill.alias: folder})[skill.alias]
     discovery.find(index, skill, f"{where}: `{skill}`")
     return skill
@@ -134,20 +136,19 @@ def _roots(config: Config, folders: dict[str, Path]) -> dict[str, Path]:
 def compute_hull(
     scope: paths.Scope,
     config: Config,
-    cache: Cache | None = None,
+    cache: Cache,
     refs: dict[str, str] | None = None,
 ) -> Generator[Hull]:
     """The hull, its skills found and checked for stray symlinks and name clashes.
 
-    Reads every source, git ones at `refs`, else their ref, through `cache`, by
-    default the user's. Clashing entries are reported before any source is read.
+    Reads every source, git ones at `refs`, else their ref, through `cache`.
+    Clashing entries are reported before any source is read.
     Patched copies go in a temporary folder removed on exit: a patched skill's
     path in `skills` is valid only inside the `with`.
     """
     check_refs(config, (refs or {}).keys())  # first, as `update` does
     check_entries(config)
     with tempfile.TemporaryDirectory(prefix="skill-graft-") as work:
-        cache = Cache(paths.cache()) if cache is None else cache
         folders = _folders(config, cache, refs or {})
         result = hull.walk(
             config,

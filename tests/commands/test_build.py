@@ -8,6 +8,7 @@ from conftest import FakeApm, Upstream, deadline, skill, write_config
 
 from skill_graft.cli import main
 from skill_graft.infra import paths
+from skill_graft.infra.cache import Cache
 from skill_graft.pipeline import compute, config, lock, vendor
 from skill_graft.pipeline.hull import Hull
 
@@ -484,7 +485,7 @@ def test_vendor_and_lock_into_a_given_folder(
     write_config('entries = ["own/chisel"]\n[sources.own]\npath = "~/src"\n')
     into = tmp_path / "into"
 
-    with compute.compute_hull(scope, config.load(scope)) as hull:
+    with compute.compute_hull(scope, config.load(scope), Cache.default()) as hull:
         vendor.vendor(hull, into / ".apm" / "skills")
     lock.write("lock\n", into / "skill-graft.lock")
 

@@ -170,7 +170,7 @@ class Upstream:
 
 def seed(upstream: Upstream, url: str) -> None:
     """Clones `upstream` into the cache as `url`'s repository, so `url` needs no fetch."""
-    repo = Cache(paths.cache()).repository(url)
+    repo = Cache.default().repository(url)
     repo.parent.mkdir(parents=True, exist_ok=True)
     upstream.git("clone", "-q", "--bare", upstream.url, str(repo))
 

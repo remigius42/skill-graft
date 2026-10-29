@@ -28,7 +28,8 @@ class Resolution:
 
 def resolve(scope: paths.Scope, warnings: list[str]) -> None:
     """Resolves the hull, writes the lock, and prints the tree and suggestions."""
-    with resolving(scope, load(scope, warnings), warnings) as resolution:
+    cache = Cache.default()
+    with resolving(scope, load(scope, warnings), warnings, cache) as resolution:
         pass
     explain.show(resolution.hull)
 
@@ -45,7 +46,7 @@ def resolving(
     scope: paths.Scope,
     loaded: config.Config,
     warnings: list[str],
-    cache: Cache | None = None,
+    cache: Cache,
     refs: dict[str, str] | None = None,
     lock_file: Path | None = None,
     write: bool = True,

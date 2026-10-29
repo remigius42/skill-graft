@@ -13,6 +13,7 @@ from tomlkit.items import Array, Table
 
 from skill_graft.commands import explain, resolve
 from skill_graft.infra import files, paths
+from skill_graft.infra.cache import Cache
 from skill_graft.infra.errors import SkillGraftError, notice
 from skill_graft.pipeline import compute, config
 from skill_graft.pipeline.config import SkillId
@@ -52,6 +53,7 @@ def write(document: tomlkit.TOMLDocument) -> None:
 
 def add(scope: paths.Scope, warnings: list[str], skills: list[str]) -> None:
     """Appends each skill ID to `entries`."""
+    cache = Cache.default()
     with _reading(warnings) as (document, _):
         if "entries" not in document:
             document["entries"] = tomlkit.array()  # before the first table
@@ -65,7 +67,7 @@ def add(scope: paths.Scope, warnings: list[str], skills: list[str]) -> None:
                 added.append(text)
         if not added:
             return
-        hull = _finish(scope, warnings, document)
+        hull = _finish(scope, warnings, document, cache)
     # The hull before the edit: what the other entries reach.
     parents = _reach(hull, [e for e in hull.entries if str(e) not in added])
     for skill in hull.entries:
@@ -75,13 +77,14 @@ def add(scope: paths.Scope, warnings: list[str], skills: list[str]) -> None:
 
 def remove(scope: paths.Scope, warnings: list[str], skills: list[str]) -> None:
     """Deletes each skill ID from `entries`."""
+    cache = Cache.default()
     with _reading(warnings) as (document, _):
         array = cast(Array, document.get("entries", tomlkit.array()))
         for text in dict.fromkeys(skills):
             if text not in array:
                 raise SkillGraftError(f"`{text}` is no entry")
             array.remove(text)
-        hull = _finish(scope, warnings, document)
+        hull = _finish(scope, warnings, document, cache)
     parents = _reach(hull, hull.entries)  # the remaining entries
     for skill, parent in parents.items():
         if str(skill) in skills:
@@ -90,12 +93,13 @@ def remove(scope: paths.Scope, warnings: list[str], skills: list[str]) -> None:
 
 def rename(scope: paths.Scope, warnings: list[str], text: str, name: str) -> None:
     """Sets the skill's `[rename]` value to `name`."""
+    cache = Cache.default()
     with _reading(warnings) as (document, loaded):
         if not config.NAME.fullmatch(name):  # before looking anything up
             raise SkillGraftError(
                 f"rename: {name!r} is not a skill name: {config.NAME.pattern}"
             )
-        skill = compute.known(scope, loaded, "rename", text)
+        skill = compute.known(scope, loaded, cache, "rename", text)
         if config.deployed(loaded, skill) == name:
             notice(f"`{skill}` already deploys as `{name}`")
             return
@@ -108,11 +112,12 @@ def rename(scope: paths.Scope, warnings: list[str], text: str, name: str) -> Non
             del table[text]
         else:
             table[text] = name
-        _finish(scope, warnings, document)
+        _finish(scope, warnings, document, cache)
 
 
 def bind(scope: paths.Scope, warnings: list[str], key: str, target: str) -> None:
     """Sets `[bind]` key `key` to the skill ID `target`, or to `false`."""
+    cache = Cache.default()
     with _reading(warnings) as (document, loaded):
         skill = config.parse_skill_id("bind", key, loaded.sources)
         # Resolving checks the target; a no-op skips that, so it is checked here
@@ -122,7 +127,7 @@ def bind(scope: paths.Scope, warnings: list[str], key: str, target: str) -> None
             bound = (
                 None
                 if target == "false"
-                else compute.known(scope, loaded, "bind", target)
+                else compute.known(scope, loaded, cache, "bind", target)
             )
             if loaded.binds[skill] == bound:
                 notice(f"`{key}` is already bound to `{target}`")
@@ -130,17 +135,18 @@ def bind(scope: paths.Scope, warnings: list[str], key: str, target: str) -> None
         if "bind" not in document:
             document.add("bind", tomlkit.table())
         cast(Table, document["bind"])[key] = False if target == "false" else target
-        _finish(scope, warnings, document)
+        _finish(scope, warnings, document, cache)
 
 
 def unbind(scope: paths.Scope, warnings: list[str], key: str) -> None:
     """Deletes `[bind]` key `key`, leaving the table."""
+    cache = Cache.default()
     with _reading(warnings) as (document, loaded):
         # Parsed first, so a malformed key or undeclared alias is said so, as by `bind`.
         if config.parse_skill_id("unbind", key, loaded.sources) not in loaded.binds:
             raise SkillGraftError(f"`{key}` is not bound")
         del cast(Table, document["bind"])[key]
-        _finish(scope, warnings, document)
+        _finish(scope, warnings, document, cache)
 
 
 def _reach(hull: Hull, seeds: list[SkillId]) -> dict[SkillId, SkillId]:
@@ -167,7 +173,10 @@ def _reach(hull: Hull, seeds: list[SkillId]) -> dict[SkillId, SkillId]:
 
 
 def _finish(
-    scope: paths.Scope, warnings: list[str], document: tomlkit.TOMLDocument
+    scope: paths.Scope,
+    warnings: list[str],
+    document: tomlkit.TOMLDocument,
+    cache: Cache,
 ) -> Hull:
     """Resolves the edited config; only if it resolves, writes it and the lock,
     leaving neither changed if the lock fails."""
@@ -175,7 +184,7 @@ def _finish(
     # Relative paths start where `load` starts them, even for a symlinked file.
     loaded = config.parse(scope, text)
     warnings.extend(loaded.warnings)
-    with resolve.resolving(scope, loaded, warnings) as resolution:
+    with resolve.resolving(scope, loaded, warnings, cache) as resolution:
         resolution.writes.append(
             (paths.config_file().resolve(), lambda: write(document))
         )

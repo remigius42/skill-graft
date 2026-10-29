@@ -11,6 +11,7 @@ from conftest import Upstream, after_package_line, configure, skill, write_confi
 
 from skill_graft.cli import main
 from skill_graft.infra import paths
+from skill_graft.infra.cache import Cache
 from skill_graft.infra.errors import SkillGraftError
 from skill_graft.pipeline import compute, config, rename, vendor
 from skill_graft.pipeline.config import SkillId
@@ -78,7 +79,7 @@ def test_name_yaml_would_misread(name: str, written: str) -> None:
 def resolved(**renames: str) -> Generator[Hull]:
     """The hull, with these skill IDs (`alias__name`) deployed under new names."""
     scope = paths.Scope(Path.home())
-    with compute.compute_hull(scope, config.load(scope)) as hull:
+    with compute.compute_hull(scope, config.load(scope), Cache.default()) as hull:
         deployed = {SkillId(*key.split("__")): name for key, name in renames.items()}
         yield replace(hull, deployed=hull.deployed | deployed)
 

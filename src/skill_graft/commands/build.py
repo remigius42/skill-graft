@@ -7,6 +7,7 @@ from pathlib import Path
 
 from skill_graft.commands import explain, resolve
 from skill_graft.infra import apm, paths
+from skill_graft.infra.cache import Cache
 from skill_graft.infra.errors import SkillGraftError, notice
 from skill_graft.pipeline import config, lock, vendor
 
@@ -16,6 +17,7 @@ def build(
 ) -> None:
     """Vendors the hull and writes the lock, then runs APM; `given` (`--into`)
     mirrors the package's layout in another folder instead, and runs no APM."""
+    cache = Cache.default()
     if given is not None:
         notice(f"into: {given.absolute()}")
         _check_into(given)
@@ -28,7 +30,7 @@ def build(
         if given is not None:
             _check_into_sources(given, loaded)
         with resolve.resolving(
-            scope, loaded, warnings, lock_file=lock_file
+            scope, loaded, warnings, cache, lock_file=lock_file
         ) as resolution:
             resolved = resolution.hull
             started = True  # from here on `into` may hold our writes

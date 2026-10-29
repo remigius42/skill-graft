@@ -234,7 +234,7 @@ def test_tip_already_cached(upstream: Upstream, capsys: Capsys) -> None:
     sha = upstream.commit({"tdd/SKILL.md": "# tdd\n"})
     write_config(git_source("mp", upstream, f'ref = "{sha}"\n'))
     assert update(capsys, "mp")[0] == 0
-    repo = cache.Cache(paths.cache()).repository(upstream.url)
+    repo = cache.Cache.default().repository(upstream.url)
     assert not (repo / "FETCH_HEAD").exists()  # cloned, never fetched
 
     assert update(capsys, "mp")[0] == 0
