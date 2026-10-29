@@ -30,7 +30,7 @@ def resolve(scope: paths.Scope, warnings: list[str]) -> None:
     """Resolves the hull, writes the lock, and prints the tree and suggestions."""
     with resolving(scope, load(warnings), warnings) as resolution:
         pass
-    show(resolution.hull)
+    explain.show(resolution.hull)
 
 
 def load(warnings: list[str]) -> config.Config:
@@ -38,11 +38,6 @@ def load(warnings: list[str]) -> config.Config:
     loaded = config.load()
     warnings.extend(loaded.warnings)
     return loaded
-
-
-def show(hull: Hull) -> None:
-    """The tree and the prose suggestions, as `resolve` and the edits print them."""
-    print(explain.tree(hull) + explain.suggestions(hull), end="")
 
 
 @contextmanager

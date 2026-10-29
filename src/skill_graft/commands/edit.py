@@ -11,7 +11,7 @@ from typing import cast
 import tomlkit
 from tomlkit.items import Array, Table
 
-from skill_graft.commands import resolve
+from skill_graft.commands import explain, resolve
 from skill_graft.infra import files, paths
 from skill_graft.infra.errors import SkillGraftError, notice
 from skill_graft.pipeline import compute, config
@@ -174,5 +174,5 @@ def _finish(
         resolution.writes.append(
             (paths.config_file().resolve(), lambda: write(document))
         )
-    resolve.show(resolution.hull)
+    explain.show(resolution.hull)
     return resolution.hull

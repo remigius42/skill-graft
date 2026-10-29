@@ -77,7 +77,8 @@ See proposal.md for why. Today, after `commands-own-orchestration`:
 
 - **One `resolve.load`, before it takes the `Scope`.** `_explain` copies it (`config.load()` and its warnings)
   because `resolve` imports `explain`, only for `show`, which prints `explain.tree` and `explain.suggestions`.
-  `show` moves into `explain`, its natural home, and `_explain` calls `resolve.load`: the cycle goes, and task
+  `show` moves into `explain`, its natural home, and `_explain` calls `resolve.load`; `resolve.resolve` still
+  calls `explain.show`, so the two import each other, which Python and the layers contract allow, and task
   3.1 changes one copy, not two. Alternative, a new module holding `load`: a module for one function.
 
 - **Tests below `cli` take a `scope` fixture**: `paths.Scope(home)` in `tests/conftest.py`, `home` being the

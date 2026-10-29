@@ -10,8 +10,8 @@ Apply with the `mp-tdd` skill: each task red-green-refactor, one commit. Red is 
   those names delegate to `in_use()`'s; tests in `tests/infra/test_paths.py` for each in user and project scope
   (project's `deploy_folders` and `packages` include the user scope's); verify they fail first, then pass
 - [x] 1.2 Add the `scope` fixture (`paths.Scope(home)`) to `tests/conftest.py`; verify `pytest` stays green
-- [ ] 1.3 One way to load the config: move `show(hull)` from `commands/resolve.py` into `commands/explain.py`
-  (`resolve.resolve` and `edit._finish` call `explain.show`), so `resolve` no longer imports `explain`;
+- [x] 1.3 One way to load the config: move `show(hull)` from `commands/resolve.py` into `commands/explain.py`
+  (`resolve.resolve` and `edit._finish` call `explain.show`; `resolve` and `explain` then import each other);
   `explain._explain` calls `resolve.load(warnings)` instead of its own `config.load()` and `warnings.extend`;
   verify `lint-imports` and `pytest` green and `grep -n 'config.load' src/skill_graft/commands/` finds only
   `resolve.py`

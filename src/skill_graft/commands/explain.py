@@ -9,10 +9,11 @@ from pathlib import Path
 from typing import NamedTuple
 from urllib.parse import quote, urlsplit
 
+from skill_graft.commands import resolve
 from skill_graft.infra import git, paths
 from skill_graft.infra.cache import Cache
 from skill_graft.infra.errors import SkillGraftError, notice
-from skill_graft.pipeline import compute, config, patch
+from skill_graft.pipeline import compute, patch
 from skill_graft.pipeline.config import NAME, SCP, Config, GitSource, SkillId
 from skill_graft.pipeline.hull import Edge, Hull
 
@@ -23,7 +24,7 @@ def show_tree(
     """Prints the hull's tree, or its Mermaid diagram, or that diagram's
     mermaid.live link."""
 
-    def show(loaded: Config, resolved: Hull) -> None:
+    def view(loaded: Config, resolved: Hull) -> None:
         warnings.extend(resolved.warnings)
         if as_mermaid:  # --link needs it
             cache = Cache(paths.cache())
@@ -35,36 +36,40 @@ def show_tree(
         else:
             print(tree(resolved), end="")
 
-    _explain(warnings, show)
+    _explain(warnings, view)
 
 
 def show_why(scope: paths.Scope, warnings: list[str], text: str) -> None:
     """Prints why the hull holds the skill `text` names."""
 
-    def show(loaded: Config, resolved: Hull) -> None:
+    def view(loaded: Config, resolved: Hull) -> None:
         warnings.extend(resolved.warnings)
         target = find(resolved, text, lambda text: compute.known(loaded, "why", text))
         print(why(resolved, target), end="")
 
-    _explain(warnings, show)
+    _explain(warnings, view)
 
 
-def _explain(warnings: list[str], show: Callable[[Config, Hull], None]) -> None:
-    """Runs `show` on the hull; on one failing only on hidden characters, on the
+def _explain(warnings: list[str], view: Callable[[Config, Hull], None]) -> None:
+    """Runs `view` on the hull; on one failing only on hidden characters, on the
     hull as walked, so the user sees what pulls them in, then fails."""
-    loaded = config.load()  # not resolve.load: resolve imports this module
-    warnings.extend(loaded.warnings)
+    loaded = resolve.load(warnings)
     try:
         with compute.compute_hull(loaded) as resolved:
-            show(loaded, resolved)
+            view(loaded, resolved)
     except patch.PatchError as error:
         if error.hull is None:
             raise
         try:
-            show(loaded, error.hull)
+            view(loaded, error.hull)
         except SkillGraftError as shown:  # both matter: the hidden characters too
             raise SkillGraftError(f"{shown}\n{error}") from None
         raise
+
+
+def show(hull: Hull) -> None:
+    """The tree and the prose suggestions, as `resolve` and the edits print them."""
+    print(tree(hull) + suggestions(hull), end="")
 
 
 def find(hull: Hull, text: str, parse: Callable[[str], SkillId]) -> SkillId:
