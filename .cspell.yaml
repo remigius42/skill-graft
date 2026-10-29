@@ -8,6 +8,7 @@ words:
   - backslashreplace
   - backticked
   - bidi
+  - blobless
   - blocklist
   - bubblewrap
   - cacheinfo
@@ -50,6 +51,7 @@ words:
   - gitlink
   - grimp
   - heapdump
+  - ignorecase
   - ignorewhitespace
   - importlinter
   - isascii
@@ -70,6 +72,7 @@ words:
   - mpgrilling
   - mptdd
   - mypy
+  - noatime
   - NOCTTY
   - NONBLOCK
   - noopener
@@ -82,7 +85,10 @@ words:
   - openspec
   - opsx
   - pako
+  - partialclonefilter
   - pathlib
+  - pathspec
+  - pathspecs
   - pipenv
   - pipx
   - pocock
@@ -98,6 +104,7 @@ words:
   - PYTHONPATH
   - RDONLY
   - realpath
+  - relatime
   - Remigius
   - repr
   - rmtree
@@ -133,8 +140,10 @@ words:
   - unsets
   - unstatable
   - unvetted
+  - uploadpack
   - urlsplit
   - usefixtures
+  - utime
   - venv
   - worktree
   - worktrees
