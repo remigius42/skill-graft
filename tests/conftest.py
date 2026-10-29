@@ -144,14 +144,19 @@ def fake_apm(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> FakeApm:
 
 
 class Upstream:
-    """A synthetic upstream repository on branch `main`; its URL is its path."""
+    """A synthetic upstream repository on branch `main`; its URL is its path.
 
-    def __init__(self, path: Path, sha256: bool = False) -> None:
+    It serves partial clones, as GitHub does, unless `filters` is false.
+    """
+
+    def __init__(self, path: Path, sha256: bool = False, filters: bool = True) -> None:
         self.path = path
         self.url = str(path)
         path.mkdir(parents=True)
         object_format = ["--object-format=sha256"] if sha256 else []
         self.git("init", "-q", "-b", "main", *object_format)
+        if filters:
+            self.git("config", "uploadpack.allowFilter", "true")
 
     def git(self, *args: str) -> str:
         return subprocess.run(
