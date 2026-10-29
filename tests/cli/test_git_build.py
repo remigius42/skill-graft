@@ -238,3 +238,18 @@ def test_ref_vanished_upstream(tmp_path: Path, capsys: Capsys, whole: bool) -> N
 
     skills = Path.home() / ".apm" / "skill-graft" / ".apm" / "skills"
     assert (skills / "tdd" / "SKILL.md").read_text() == "# tdd\n"
+
+
+def test_ref_vanished_then_cache_deleted(tmp_path: Path, capsys: Capsys) -> None:
+    upstream = Upstream(tmp_path / "up")
+    sha = upstream.commit({"skills/tdd/SKILL.md": "# tdd\n"})
+    write_config(
+        f'entries = ["mp/tdd"]\n[sources.mp]\ngit = "{upstream.url}"\nref = "{sha}"\n'
+    )
+    assert build(capsys) == (0, "")
+    vanish(upstream)
+    shutil.rmtree(paths.cache())
+
+    code, err = build(capsys)
+
+    assert code == 1 and "'mp'" in err and sha in err

@@ -26,7 +26,10 @@ Git sources are cached outside the package, under `$XDG_CACHE_HOME/skill-graft/`
 bare repository per URL and one export per commit and `subdirectory`, the committed bytes exactly: a **Source** with a
 `subdirectory` exports only that folder, and the entries on its path. A repository is cloned blobless: commits and
 trees, and the files of each export, fetched in one request when it is first made, so the first export of a commit and
-subdirectory needs the remote even when the commit is cached. Deleting it loses nothing.
+subdirectory needs the remote even when the commit is cached. Each commit read is pinned, a ref `refs/skill-graft/<sha>`
+in its repository, so `fetch --prune` and git's gc keep it after it vanishes upstream. Each command but `init` and
+`update --dry-run` ends by removing the exports, and leftovers of killed runs, unused for 30 days; it never removes a
+repository. Deleting it loses nothing, unless a ref read has since vanished upstream: the cache held its only copy.
 
 ## Config
 
