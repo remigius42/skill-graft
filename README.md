@@ -261,3 +261,5 @@ as [SECURITY.md](SECURITY.md) says. To change the code, see [CONTRIBUTING.md](CO
 
 This is a personal exploration project with best-effort maintenance. Responses to issues or pull requests may be slow,
 and changes that don't align with the project's direction are unlikely to merge.
+
+If skill-graft saves you time, you can [buy me a coffee](https://buymeacoffee.com/remigius).
