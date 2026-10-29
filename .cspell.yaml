@@ -107,6 +107,7 @@ words:
   - PYTHONPATH
   - RDONLY
   - realpath
+  - reflog
   - relatime
   - Remigius
   - repr

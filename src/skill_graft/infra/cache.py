@@ -97,23 +97,43 @@ class Cache:
             repo = self._overlay(url, repo, context)  # the reference's is never written
         if repo == self.repository(url):
             with lock(repo):
-                if missing := _missing(repo, records, tips, context):
-                    self._fetch_blobs(repo, missing, context)
+                self._fill(repo, records, tips, context)
         _build(tree, lambda tmp: _export(repo, records, tmp, context))
         return tree
 
-    def _fetch_blobs(self, repo: Path, missing: list[bytes], context: str) -> None:
+    def _fill(
+        self, repo: Path, records: list[bytes], tips: list[str], context: str
+    ) -> None:
+        """Fetches the blobs of `records` that `repo` lacks.
+
+        A remote refusing them by name has the repository fetched whole, and
+        whole from then on, once no blob is missing; any other failure leaves
+        it as it was.
+        """
+        missing = _missing(repo, records, tips, context)
+        if not missing:
+            return
         try:
             _fetch_blobs(repo, missing, context)
         except SkillGraftError as error:
-            if self.reference is None or not _refused(error):
+            if not _refused(error):
                 raise
-            # Refetching every branch into a temporary folder would cost a full
-            # download on every dry run; `update` converts the real one once.
-            raise SkillGraftError(
-                f"{context}: the remote refuses files asked by name: "
-                "run `update` without `--dry-run` to fetch them"
-            ) from None
+            if self.reference is not None:
+                # Refetching every branch into a temporary folder would cost a
+                # full download on every dry run; `update` converts the real one.
+                raise SkillGraftError(
+                    f"{context}: the remote refuses files asked by name: "
+                    "run `update` without `--dry-run` to fetch them"
+                ) from None
+            _refetch(repo, context)
+            if not _missing(repo, records, tips, context):
+                git.run(
+                    "config",
+                    "--unset",
+                    "remote.origin.partialclonefilter",
+                    repo=repo,
+                    context=context,
+                )
 
     def _overlay(self, url: str, real: Path, context: str) -> Path:
         """A repository of this cache's own over `real`'s objects, to fetch the
@@ -312,6 +332,31 @@ def _fetch_blobs(repo: Path, missing: list[bytes], context: str) -> None:
         context=context,
         input=b"\n".join(missing) + b"\n",
     )
+
+
+def _refetch(repo: Path, context: str) -> None:
+    """Fetches every branch into `repo` whole, objects it has included."""
+    try:
+        git.run(
+            *git.FSCK,
+            "fetch",
+            "-q",
+            "--refetch",
+            "--no-filter",
+            "--no-tags",
+            "--recurse-submodules=no",
+            "origin",
+            "+refs/heads/*:refs/heads/*",
+            repo=repo,
+            context=context,
+        )
+    except SkillGraftError as error:
+        if "unknown option `refetch'" not in str(error):  # as git before 2.36 says
+            raise
+        raise SkillGraftError(
+            f"{context}: the remote refuses files asked by name; "
+            "fetching the repository whole needs git 2.36 or later"
+        ) from None
 
 
 # How git refuses an object asked by name: protocol v0 without
