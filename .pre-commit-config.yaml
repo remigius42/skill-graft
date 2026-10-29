@@ -17,6 +17,9 @@ repos:
       - id: check-merge-conflict
       - id: check-case-conflict
       - id: mixed-line-ending
+      # Work happens on a branch; main only moves by fast-forward, which commits nothing.
+      - id: no-commit-to-branch
+        args: [--branch, main]
 
   - repo: https://github.com/hukkin/mdformat
     rev: 1.0.0

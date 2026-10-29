@@ -21,6 +21,9 @@ jobs:
       - uses: astral-sh/setup-uv@c18668ad3cf93ea998bef934396af7bb5c839dc7 # v10.2.0
 
       - name: Run pre-commit
+        # A push to main checks out main, which no-commit-to-branch would refuse.
+        env:
+          SKIP: no-commit-to-branch
         run: uv run pre-commit run --all-files --show-diff-on-failure
 
   # The commitlint pre-commit hook lints only .git/COMMIT_EDITMSG, so this job calls commitlint on the
