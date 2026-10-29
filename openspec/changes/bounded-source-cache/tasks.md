@@ -119,7 +119,7 @@ last touched those lines.
   patch), **Leftover removed**, **Dry run prunes nothing** (mtime unchanged too); and `resolve` with only path
   **Sources** on an empty `XDG_CACHE_HOME` exits 0. `housekeeping` is imported inside `_main`, beside the other command
   modules; `tests/cli/test_cli.py`'s native-Windows tests pass unchanged. Verify red, then green
-- [ ] 6.3 `README.md`: a "Cache" section (where it is; exports unused for 30 days removed by any command; repositories
+- [x] 6.3 `README.md`: a "Cache" section (where it is; exports unused for 30 days removed by any command; repositories
   never removed, every **Ref** read kept in its repository; deleting one by hand, or the folder, is safe unless a
   **Ref** has vanished upstream), and in "Installation", beside the Python requirement, the git versions: 2.44 or later
   keeps lookups offline (macOS's own git is older; Homebrew's is not), 2.36 or later is needed for a remote refusing

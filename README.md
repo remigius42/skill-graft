@@ -37,6 +37,10 @@ pipenv install "skill-graft @ git+https://github.com/remigius42/skill-graft"
 uv picks a suitable Python itself; pipx and pip use theirs, so point them at 3.11 or later. pipenv installs into that
 project's environment: run it as `pipenv run skill-graft`.
 
+skill-graft also runs `git`. With git 2.44 or later, looking up what the [cache](#cache) holds never contacts the
+remote; the git macOS ships is older, Homebrew's is not. A remote that refuses files asked by name needs git 2.36 or
+later.
+
 These install the latest `main`. To install a release instead, append its tag to the URL,
 `git+https://github.com/remigius42/skill-graft@v<version>`; the tags are listed under
 [releases](https://github.com/remigius42/skill-graft/releases). `skill-graft --version` names what is installed: the
@@ -209,6 +213,18 @@ rewrites, and relative links vendoring broke. For each finding it proposes `add`
 applies it only once you accept; a patch is written by a confined patcher, and you read its diff before it goes into the
 package. It never deploys: when the package would change, it tells you to run `skill-graft build`. It reads lock
 `version` 1 only; for a newer lock, update the source you installed it from.
+
+## Cache
+
+Git **Sources** are cached under `$XDG_CACHE_HOME/skill-graft/`, else `~/.cache/skill-graft/`: one repository per URL,
+holding commits and trees and only the files read, and one export per commit and `subdirectory`.
+
+- Any command but `init` and `update --dry-run` removes, as it ends, each export no command has used for 30 days. One
+  removed is exported again from its repository when next needed, without the remote.
+- No command removes a repository. Every **Ref** read stays in its repository, with its files, even after it vanished
+  from every branch upstream.
+- Deleting a repository, or the whole folder, by hand is safe unless a **Ref** you use has since vanished upstream: that
+  one cannot be fetched again.
 
 ## Security
 
