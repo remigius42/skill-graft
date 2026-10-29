@@ -459,6 +459,23 @@ def test_why_outside_the_hull_not_mentioned(home: Path, capsys: Capsys) -> None:
     assert "`mp/notes` is not in the hull: `skill-graft add mp/notes`" in err
 
 
+def test_why_outside_the_hull_beside_a_git_source(
+    home: Path, tmp_path: Path, capsys: Capsys
+) -> None:
+    skill(home / "mp" / "tdd")
+    skill(home / "mp" / "notes")
+    other = Upstream(tmp_path / "other")
+    sha = other.commit({"x/SKILL.md": "# x\n"})
+    write_config(
+        'entries = ["mp/tdd"]\n[sources.mp]\npath = "~/mp"\n'
+        f'[sources.other]\ngit = "{other.url}"\nref = "{sha}"\n'
+    )
+
+    err = why_fails(["why", "mp/notes"], capsys)
+
+    assert "`mp/notes` is not in the hull: `skill-graft add mp/notes`" in err
+
+
 def test_why_unknown(home: Path, capsys: Capsys) -> None:
     skill(home / "mp" / "tdd")
     configure(["mp/tdd"], mp="~/mp")

@@ -19,7 +19,7 @@ folder.
   and for `renames`' "Entries clash after rename reads only its source" (no fetch for `other`: its folder in the cache
   stays absent, `other` being a reachable remote the cache lacks); verify they fail on the code before 1.1 and pass on
   it
-- [ ] 1.3 A test in `tests/commands/test_explain.py` that `why mp/notes`, outside the **Hull**, with a second git
+- [x] 1.3 A test in `tests/commands/test_explain.py` that `why mp/notes`, outside the **Hull**, with a second git
   **Source** in the config, still errors naming `skill-graft add mp/notes`; it should pass unchanged (design: `why`
   keeps calling `known`)
 
