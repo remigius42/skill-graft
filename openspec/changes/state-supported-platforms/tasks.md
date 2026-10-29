@@ -22,7 +22,7 @@ Apply with the `mp-tdd` skill: each task red-green-refactor, one commit. `pre-co
 
 ## 3. Test on macOS
 
-- [ ] 3.1 The `test-macos` job in `.github/workflows/ci.yml` as design.md says, actions pinned by the SHAs the other
+- [x] 3.1 The `test-macos` job in `.github/workflows/ci.yml` as design.md says, actions pinned by the SHAs the other
   jobs use, `persist-credentials: false` (committed as `ci: run the tests on macOS`; the draft pull request is #1). Skip
   `test_guard_counts_a_name_holding_an_invalid_byte_in_a_utf8_locale` on macOS, where APFS refuses the name. Push, and
   verify the job passes on the pull request; fix any other test failing there test-first in this task, or stop the
@@ -30,6 +30,6 @@ Apply with the `mp-tdd` skill: each task red-green-refactor, one commit. `pre-co
 
 ## 4. State the platforms
 
-- [ ] 4.1 Once 3.1's job passes: README's Installation section says Linux and macOS, on Windows through WSL, and what
+- [x] 4.1 Once 3.1's job passes: README's Installation section says Linux and macOS, on Windows through WSL, and what
   native Windows prints; `pyproject.toml` gains `classifiers` with `Operating System :: POSIX :: Linux` and
   `Operating System :: MacOS`. Verify `uv build` succeeds and the built wheel's `METADATA` lists both classifiers
