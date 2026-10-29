@@ -47,6 +47,11 @@ Apply with the `mp-tdd` skill: each task red-green-refactor, one commit. Red is 
   `show_tree` drops its second `Cache`; pipeline tests pass `Cache(paths.cache())`; verify
   `grep -rn 'Cache(' src/skill_graft/pipeline src/skill_graft/infra` finds only `cache.py`'s own reference
   layering, and `pytest` green
+- [ ] 4.2 `update.update` writes its `_update` call once: the arguments both branches share bound once (a
+  `functools.partial`, or one call with `git_cache` and `write` chosen per branch), the dry run keeping its
+  temporary cache, its `PatchError` hint and its closing line; no behavior change; verify
+  `tests/commands/test_update.py` green unchanged and `grep -c '_update(' src/skill_graft/commands/update.py`
+  counts the definition and one call
 
 ## 5. commands read the Scope they hold
 

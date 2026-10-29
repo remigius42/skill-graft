@@ -39,6 +39,7 @@ words:
   - frontmatter
   - fsencode
   - fstat
+  - functools
   - geteuid
   - gitdir
   - Gitea
