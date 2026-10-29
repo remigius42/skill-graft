@@ -5,7 +5,8 @@
 Every command SHALL print its warnings, those about `skill-graft.toml` and those about the **Hull**, on standard
 error after everything else it prints, its notices and APM's output included, and only its error line, if it
 fails, after them. A command that fails after it read the config or computed the **Hull** SHALL still print the
-warnings found so far. Each warning SHALL be printed once.
+warnings found so far. Each warning SHALL be printed once. An edit that changes no value SHALL print none, as the edit
+spec has it print only its notices.
 
 #### Scenario: Resolve
 
@@ -46,3 +47,9 @@ warnings found so far. Each warning SHALL be printed once.
 - **WHEN** an **Entry** calls `/foo`, no **Source** has `foo`, and `skill-graft.lock` cannot be written during
   `skill-graft resolve`
 - **THEN** the `/foo` warning is printed, then the error line, and the command exits 1
+
+#### Scenario: Edit that changes nothing
+
+- **WHEN** a path **Source** `own` lies inside a folder APM deploys to, `own/chisel` is an **Entry**, and the user
+  runs `skill-graft add own/chisel`
+- **THEN** only the notice that `own/chisel` is already an entry is printed, and the command exits 0
