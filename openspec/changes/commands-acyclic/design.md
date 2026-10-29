@@ -77,7 +77,8 @@ See proposal.md for why. Today:
 ## Risks / Trade-offs
 
 - \[Moving the core's tests out of `test_resolve.py` churns a large test file\] → move them verbatim (only the module
-  name changes), in the same commit as the code they test, per AGENTS.md's test layout.
+  name changes, and ruff format rewraps the one call it lengthens past the line limit), in the same commit as the code
+  they test, per AGENTS.md's test layout.
 - [A future mutual dependency that looks legitimate gets refused] → that is the point; the contract's error names the
   import to drop, and the fix is to move code, not to start an `ignore_imports` list.
 - \[`monkeypatch.setattr` targets in tests name `resolve.<fn>`\] → none today (`grep` finds only `resolve.resolving`

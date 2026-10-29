@@ -45,5 +45,5 @@ Trial check used below: `lint-imports --config <tmp toml>` with only the contrac
 
 ## 4. Before archiving
 
-- [ ] 4.1 Bring proposal, design and tasks in line with the code (module and test names, moved tests); verify
+- [x] 4.1 Bring proposal, design and tasks in line with the code (module and test names, moved tests); verify
   `openspec validate commands-acyclic` passes
