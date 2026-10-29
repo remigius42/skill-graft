@@ -58,6 +58,7 @@ class Cache:
                     "-q",
                     "--prune",
                     "--no-tags",
+                    "--recurse-submodules=no",
                     "origin",
                     "+refs/heads/*:refs/heads/*",
                     repo=repo,
@@ -176,7 +177,9 @@ class Cache:
         Clone, unlike `init`, takes the remote's hash format, SHA-1 or SHA-256.
         Objects the reference cache already has are borrowed, not downloaded.
         `--no-local` sends a local path through git's transport too, so that
-        fsck checks its objects, as it does a remote's.
+        fsck checks its objects, as it does a remote's. The clone is blobless,
+        and its fetches follow: an export fetches the files it writes. A remote
+        without filters gives a whole clone.
         """
         borrow = (
             ["--reference-if-able", str(self.reference.repository(url))]
@@ -192,6 +195,8 @@ class Cache:
                 "--bare",
                 "--no-local",
                 "--no-tags",
+                "--filter=blob:none",
+                "--recurse-submodules=no",
                 *borrow,
                 "--",
                 url,

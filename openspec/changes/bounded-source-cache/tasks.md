@@ -37,7 +37,7 @@ last touched those lines.
 
 ## 3. Blobless clones and the batched blob fetch
 
-- [ ] 3.1 `_clone` adds `--filter=blob:none`; every clone and fetch passes `--recurse-submodules=no`. Tests: a blobless
+- [x] 3.1 `_clone` adds `--filter=blob:none`; every clone and fetch passes `--recurse-submodules=no`. Tests: a blobless
   clone of an upstream with a gitlink and `.gitmodules`, with `fetch.recurseSubmodules=yes` in the test's git
   environment, fetches a new commit without error or warning; after `fetch` from a filtering upstream, the repository
   holds no blob (`rev-list --objects --missing=print --all` marks every blob missing), nor after a second `fetch` of a
