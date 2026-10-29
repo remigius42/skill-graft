@@ -241,8 +241,9 @@ def _previous(
 ) -> Generator[tuple[Hull, dict[SkillId, str]] | str]:
     """The hull at the current refs and each skill's hash, open; or why there is none.
 
-    Never fetches: the diff is not worth a remote call. A cached commit whose tree
-    was never exported is exported, as any command reading that ref would. Yields
+    Never fetches a commit; fetches the files of a cached one, as any command
+    reading that ref would: a lock written on another machine still gets its
+    diff. A failure there is a reason, as for refs that do not resolve. Yields
     outside its `try`, so an error in the caller's `with` is never taken for one.
     """
     reason = _uncached(selected, git_cache)
