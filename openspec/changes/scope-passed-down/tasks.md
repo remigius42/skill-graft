@@ -18,7 +18,7 @@ Apply with the `mp-tdd` skill: each task red-green-refactor, one commit. Red is 
 
 ## 2. infra takes the Scope
 
-- [ ] 2.1 `apm.install(scope)`, `apm.registered(scope)`, `apm.command_line(scope)` (and `_command`) read the
+- [x] 2.1 `apm.install(scope)`, `apm.registered(scope)`, `apm.command_line(scope)` (and `_command`) read the
   `Scope`; callers in `init_package` and `build` pass theirs; a test below `cli` calling `install` or `registered`
   with a project `Scope` against `fake_apm` fails first (signature), then passes
 

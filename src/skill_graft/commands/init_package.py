@@ -61,10 +61,10 @@ def init(project: bool = False) -> None:
     try:
         paths.config_file().write_text(CONFIG_TEMPLATE)
         (package / "apm.yml").write_text(APM_YML)
-        apm.install()
+        apm.install(paths.in_use())
     except (SkillGraftError, OSError) as error:
         if not project:
-            retry = apm.command_line()
+            retry = apm.command_line(paths.in_use())
             raise SkillGraftError(f"{error}\nto retry, run: {retry}") from None
         if _listed():
             raise SkillGraftError(
@@ -87,13 +87,13 @@ def _exists(package: Path) -> SkillGraftError:
     message = f"{package} already exists; init does nothing"
     if (package / "apm.yml").exists() and not _listed():
         where = f" in {paths.root()}" if paths.scope() == "project" else ""
-        message += f"\nto register it, run{where}: {apm.command_line()}"
+        message += f"\nto register it, run{where}: {apm.command_line(paths.in_use())}"
     return SkillGraftError(message)
 
 
 def _listed() -> bool:
     """Whether the scope's `apm.yml` lists the package; not when unreadable."""
     try:
-        return apm.registered()
+        return apm.registered(paths.in_use())
     except (SkillGraftError, OSError):
         return False

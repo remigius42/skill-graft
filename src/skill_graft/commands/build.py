@@ -47,7 +47,7 @@ def build(
         # Once nothing before APM can fail.
         explain.announce_suggestions(resolved)
         if not no_install:
-            apm.install()
+            apm.install(scope)
 
 
 def _check_into(into: Path) -> None:
