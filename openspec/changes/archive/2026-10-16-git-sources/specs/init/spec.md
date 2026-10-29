@@ -4,9 +4,9 @@
 
 ### Requirement: Init creates the package folder
 
-`skill-graft init` SHALL create `~/.apm/skill-graft/` holding a `skill-graft.toml` whose content is only
-comments explaining `entries` and `[sources.<alias>]`, both with `path` and with `git`, `branch` and `ref`, and
-an `apm.yml` of exactly two lines: `name: skill-graft` and `version: 0.1.0`.
+`skill-graft init` SHALL create `~/.apm/skill-graft/` holding a `skill-graft.toml` whose content is only comments
+explaining `entries` and `[sources.<alias>]`, both with `path` and with `git`, `branch` and `ref`, and an `apm.yml` of
+exactly two lines: `name: skill-graft` and `version: 0.1.0`.
 
 #### Scenario: Fresh home
 

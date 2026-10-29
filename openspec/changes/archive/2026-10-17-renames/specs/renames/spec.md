@@ -2,8 +2,8 @@
 
 ## Purpose
 
-Gives each **Hull** **Skill** its **Deployed name**, carries that name into the folder, `name:` and every
-**Reference**, and keeps **Deployed names** unique and clear of **Reserved names**.
+Gives each **Hull** **Skill** its **Deployed name**, carries that name into the folder, `name:` and every **Reference**,
+and keeps **Deployed names** unique and clear of **Reserved names**.
 
 ## ADDED Requirements
 
@@ -23,10 +23,10 @@ A **Skill**'s **Deployed name** SHALL be its `[rename]` value when one names its
 
 ### Requirement: Renamed folder and name
 
-`build` SHALL vendor each **Hull** **Skill** to `.apm/skills/<deployed name>/`. A renamed **Skill**'s `SKILL.md`
-SHALL carry `name: <deployed name>`, quoted when YAML would read the bare name as anything but that string
-(`true`, `null`, `123`): an existing `name:` line replaced, else inserted as the front matter's first
-line, else a front matter of just that line prepended. An unrenamed **Skill**'s `name:` SHALL be unchanged.
+`build` SHALL vendor each **Hull** **Skill** to `.apm/skills/<deployed name>/`. A renamed **Skill**'s `SKILL.md` SHALL
+carry `name: <deployed name>`, quoted when YAML would read the bare name as anything but that string (`true`, `null`,
+`123`): an existing `name:` line replaced, else inserted as the front matter's first line, else a front matter of just
+that line prepended. An unrenamed **Skill**'s `name:` SHALL be unchanged.
 
 #### Scenario: Name line replaced
 
@@ -51,9 +51,9 @@ line, else a front matter of just that line prepended. An unrenamed **Skill**'s 
 ### Requirement: References carry the deployed name
 
 In every UTF-8 Markdown file of every **Hull** **Skill**, `build` SHALL rewrite each **Reference** that resolves,
-**Binds** applied, to a **Hull** **Skill** whose **Deployed name** differs from the name written, keeping its
-form (`/x`, `Skill(x)` with its quotes and arguments, `` `x` ``, bare `x`); a self-**Reference** included. All
-other bytes, and files that are not UTF-8, SHALL be unchanged.
+**Binds** applied, to a **Hull** **Skill** whose **Deployed name** differs from the name written, keeping its form
+(`/x`, `Skill(x)` with its quotes and arguments, `` `x` ``, bare `x`); a self-**Reference** included. All other bytes,
+and files that are not UTF-8, SHALL be unchanged.
 
 #### Scenario: Slash reference to a renamed skill
 
@@ -67,8 +67,8 @@ other bytes, and files that are not UTF-8, SHALL be unchanged.
 
 #### Scenario: Skill tool and prose forms
 
-- **WHEN** `mp/tdd` holds `Skill(skill: "grilling", args: "x")` and `` `grilling` ``, and `mp/grilling` is
-  renamed to `mp-grilling`
+- **WHEN** `mp/tdd` holds `Skill(skill: "grilling", args: "x")` and `` `grilling` ``, and `mp/grilling` is renamed to
+  `mp-grilling`
 - **THEN** the vendored copy holds `Skill(skill: "mp-grilling", args: "x")` and `` `mp-grilling` ``
 
 #### Scenario: Bound to another name
@@ -102,9 +102,9 @@ A `[rename]` key naming no **Hull** **Skill** SHALL be a warning naming the key,
 
 ### Requirement: Deployed names are unique
 
-Two **Hull** **Skills** with the same **Deployed name**, compared ignoring case, SHALL be an error naming both
-and a `[rename]` line that would separate them, and the command SHALL then write nothing. A hint SHALL never add
-a second key for a **Skill** already renamed: it names an unrenamed one, else says which value to change.
+Two **Hull** **Skills** with the same **Deployed name**, compared ignoring case, SHALL be an error naming both and a
+`[rename]` line that would separate them, and the command SHALL then write nothing. A hint SHALL never add a second key
+for a **Skill** already renamed: it names an unrenamed one, else says which value to change.
 
 #### Scenario: Clash across sources
 
@@ -124,8 +124,7 @@ a second key for a **Skill** already renamed: it names an unrenamed one, else sa
 #### Scenario: Rename onto another skill's name
 
 - **WHEN** `[rename]` has `"mp/grilling" = "Notes"`, and `own/notes` is in the **Hull**
-- **THEN** the command exits non-zero naming `mp/grilling` and `own/notes`, and suggests
-  `"own/notes" = "own-notes"`
+- **THEN** the command exits non-zero naming `mp/grilling` and `own/notes`, and suggests `"own/notes" = "own-notes"`
 
 #### Scenario: Clash of two renames
 
@@ -149,10 +148,10 @@ A **Deployed name** equal, ignoring case, to a name in the user's `reserved` lis
 
 ### Requirement: Shipped reserved names warn
 
-skill-graft SHALL ship a list of **Reserved names**: the built-in commands and bundled skills of Claude Code and
-Codex, `code-review` among them. A **Deployed name** equal to one, ignoring case, SHALL be a warning naming the
-**Skill** and the name; an unrenamed **Skill**'s warning SHALL end with `"<alias>/<name>" = "<alias>-<name>"`
-under `[rename]`. The command SHALL proceed.
+skill-graft SHALL ship a list of **Reserved names**: the built-in commands and bundled skills of Claude Code and Codex,
+`code-review` among them. A **Deployed name** equal to one, ignoring case, SHALL be a warning naming the **Skill** and
+the name; an unrenamed **Skill**'s warning SHALL end with `"<alias>/<name>" = "<alias>-<name>"` under `[rename]`. The
+command SHALL proceed.
 
 #### Scenario: Shipped clash
 

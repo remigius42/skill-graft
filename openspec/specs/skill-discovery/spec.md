@@ -8,11 +8,11 @@ Finds the **Skills** in a **Source** and gives each its **Skill ID**, so **Entri
 
 ### Requirement: Skills at any depth
 
-Every folder under a **Source** that holds a file named `SKILL.md` SHALL be a **Skill**, at any depth,
-including inside hidden folders other than `.git` and through symlinked folders, each resolved folder visited
-once. A **Skill** is its whole folder, so discovery SHALL NOT look for further **Skills** inside one. Discovery
-SHALL NOT enter a folder that resolves into `~/.apm/skill-graft/`, nor any folder whose path, as reached or
-resolved, runs through `.apm/skill-graft`, so a build never reads its own output or another **Package**'s.
+Every folder under a **Source** that holds a file named `SKILL.md` SHALL be a **Skill**, at any depth, including inside
+hidden folders other than `.git` and through symlinked folders, each resolved folder visited once. A **Skill** is its
+whole folder, so discovery SHALL NOT look for further **Skills** inside one. Discovery SHALL NOT enter a folder that
+resolves into `~/.apm/skill-graft/`, nor any folder whose path, as reached or resolved, runs through `.apm/skill-graft`,
+so a build never reads its own output or another **Package**'s.
 
 #### Scenario: Nested layout
 
@@ -56,15 +56,14 @@ resolved, runs through `.apm/skill-graft`, so a build never reads its own output
 
 #### Scenario: Symlink to another project's package
 
-- **WHEN** a source holds `team -> ~/team-repo/.apm`, and `~/team-repo/.apm/skill-graft/.apm/skills/tdd/SKILL.md`
-  exists
+- **WHEN** a source holds `team -> ~/team-repo/.apm`, and `~/team-repo/.apm/skill-graft/.apm/skills/tdd/SKILL.md` exists
 - **THEN** `tdd` is not a **Skill** of that source
 
 ### Requirement: Skill name
 
-A **Skill**'s name SHALL be the `name:` value of the YAML front matter opening its `SKILL.md`, else its folder
-name. Its **Skill ID** is `<source alias>/<name>`. A leading BOM, trailing whitespace on the `---` fences,
-surrounding quotes, and a trailing comment (whitespace then `#`) SHALL NOT change the name.
+A **Skill**'s name SHALL be the `name:` value of the YAML front matter opening its `SKILL.md`, else its folder name. Its
+**Skill ID** is `<source alias>/<name>`. A leading BOM, trailing whitespace on the `---` fences, surrounding quotes, and
+a trailing comment (whitespace then `#`) SHALL NOT change the name.
 
 #### Scenario: Front matter name
 
@@ -84,13 +83,12 @@ surrounding quotes, and a trailing comment (whitespace then `#`) SHALL NOT chang
 #### Scenario: Unsupported YAML form
 
 - **WHEN** the front matter holds `name: >-` followed by an indented value
-- **THEN** a command that needs that skill exits non-zero naming the `SKILL.md`, rather than using the folder
-  name
+- **THEN** a command that needs that skill exits non-zero naming the `SKILL.md`, rather than using the folder name
 
 ### Requirement: Skill names are one path segment
 
-A name SHALL match `[A-Za-z0-9][A-Za-z0-9._-]*`. An **Entry** naming a **Skill** whose name does not SHALL be an
-error naming the `SKILL.md`; such a **Skill** elsewhere in the source SHALL NOT block the command.
+A name SHALL match `[A-Za-z0-9][A-Za-z0-9._-]*`. An **Entry** naming a **Skill** whose name does not SHALL be an error
+naming the `SKILL.md`; such a **Skill** elsewhere in the source SHALL NOT block the command.
 
 #### Scenario: Traversal in name
 
@@ -99,8 +97,8 @@ error naming the `SKILL.md`; such a **Skill** elsewhere in the source SHALL NOT 
 
 ### Requirement: Skill IDs are unique within a source
 
-Two **Skills** with the same name in one **Source** SHALL be an error when an **Entry** names that **Skill ID**,
-naming both folders.
+Two **Skills** with the same name in one **Source** SHALL be an error when an **Entry** names that **Skill ID**, naming
+both folders.
 
 #### Scenario: Duplicate name
 
@@ -124,8 +122,8 @@ holds in every **Source**, path **Sources** included, and when the file is repla
 
 #### Scenario: SKILL.md linked to a device
 
-- **WHEN** path source `own` holds `x/SKILL.md` as a symlink to `/dev/zero`, and `own/tdd`, another **Skill** of
-  `own`, is the only **Entry**
+- **WHEN** path source `own` holds `x/SKILL.md` as a symlink to `/dev/zero`, and `own/tdd`, another **Skill** of `own`,
+  is the only **Entry**
 - **THEN** `build` finishes and vendors `tdd`
 
 #### Scenario: Entry names it

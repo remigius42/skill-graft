@@ -8,8 +8,8 @@ holds in every **Source**, path **Sources** included, and when the file is repla
 
 #### Scenario: SKILL.md linked to a device
 
-- **WHEN** path source `own` holds `x/SKILL.md` as a symlink to `/dev/zero`, and `own/tdd`, another **Skill** of
-  `own`, is the only **Entry**
+- **WHEN** path source `own` holds `x/SKILL.md` as a symlink to `/dev/zero`, and `own/tdd`, another **Skill** of `own`,
+  is the only **Entry**
 - **THEN** `build` finishes and vendors `tdd`
 
 #### Scenario: Entry names it

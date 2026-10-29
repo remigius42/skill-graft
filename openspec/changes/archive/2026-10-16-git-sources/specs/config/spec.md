@@ -4,8 +4,8 @@
 
 ### Requirement: Source kinds
 
-Each `[sources.<alias>]` table SHALL hold exactly one of `path` and `git`. Both, or neither, SHALL be an error
-naming the source. `branch` and `ref` SHALL be allowed only beside `git`.
+Each `[sources.<alias>]` table SHALL hold exactly one of `path` and `git`. Both, or neither, SHALL be an error naming
+the source. `branch` and `ref` SHALL be allowed only beside `git`.
 
 #### Scenario: Both kinds
 
@@ -19,13 +19,12 @@ naming the source. `branch` and `ref` SHALL be allowed only beside `git`.
 
 ### Requirement: Git sources
 
-A git source's `git` SHALL be a string handed to git unchanged, and SHALL be a URL with scheme `https`,
-`http`, `ssh`, `git` or `file`, the scp-like form (`[user@]host:path`), or an absolute local path. A relative
-path (including one starting with `~`), a value starting with `-`, any other scheme, and the
-`<transport>::<address>` form SHALL be errors naming `sources.<alias>.git`. `branch`, if present, SHALL be a
-branch name such as `main`, not a full reference name such as `refs/heads/main`. `ref`, if present, SHALL be a
-full lowercase hex commit name, 40 or 64 digits; anything else SHALL be an error naming `sources.<alias>.ref`.
-Loading accepts a git source without `ref`, so `update` can fill it in.
+A git source's `git` SHALL be a string handed to git unchanged, and SHALL be a URL with scheme `https`, `http`, `ssh`,
+`git` or `file`, the scp-like form (`[user@]host:path`), or an absolute local path. A relative path (including one
+starting with `~`), a value starting with `-`, any other scheme, and the `<transport>::<address>` form SHALL be errors
+naming `sources.<alias>.git`. `branch`, if present, SHALL be a branch name such as `main`, not a full reference name
+such as `refs/heads/main`. `ref`, if present, SHALL be a full lowercase hex commit name, 40 or 64 digits; anything else
+SHALL be an error naming `sources.<alias>.ref`. Loading accepts a git source without `ref`, so `update` can fill it in.
 
 #### Scenario: Relative git path
 
@@ -34,8 +33,7 @@ Loading accepts a git source without `ref`, so `update` can fill it in.
 
 #### Scenario: Option or helper as URL
 
-- **WHEN** `[sources.mp]` has `git = "--upload-pack=touch x"`, `git = "ext::sh -c touch% x"`, or
-  `git = "foo://x"`
+- **WHEN** `[sources.mp]` has `git = "--upload-pack=touch x"`, `git = "ext::sh -c touch% x"`, or `git = "foo://x"`
 - **THEN** the command exits non-zero naming `sources.mp.git`, and git is never run
 
 #### Scenario: Accepted forms
@@ -57,9 +55,8 @@ Loading accepts a git source without `ref`, so `update` can fill it in.
 
 ### Requirement: Path sources
 
-A path source's `path` SHALL name a folder, with `~` expanded and a relative path taken relative to the folder
-holding `skill-graft.toml`. The alias names the **Source** and SHALL be one path segment:
-`[A-Za-z0-9][A-Za-z0-9._-]*`.
+A path source's `path` SHALL name a folder, with `~` expanded and a relative path taken relative to the folder holding
+`skill-graft.toml`. The alias names the **Source** and SHALL be one path segment: `[A-Za-z0-9][A-Za-z0-9._-]*`.
 
 #### Scenario: Home-relative path
 
@@ -78,9 +75,8 @@ holding `skill-graft.toml`. The alias names the **Source** and SHALL be one path
 
 ### Requirement: Value types
 
-`sources` SHALL be a table of tables, each source's `path`, `git`, `branch` and `ref` a string, and `entries` a
-list of strings. A wrong type or a source table with neither `path` nor `git` SHALL be an error naming the key,
-never a crash.
+`sources` SHALL be a table of tables, each source's `path`, `git`, `branch` and `ref` a string, and `entries` a list of
+strings. A wrong type or a source table with neither `path` nor `git` SHALL be an error naming the key, never a crash.
 
 #### Scenario: Entries as a string
 
@@ -104,8 +100,8 @@ never a crash.
 
 ### Requirement: Unsupported keys are errors
 
-Any top-level key other than `sources` and `entries`, and any source key other than `path`, `git`, `branch`
-and `ref`, SHALL be an error, so declared intent is never silently ignored.
+Any top-level key other than `sources` and `entries`, and any source key other than `path`, `git`, `branch` and `ref`,
+SHALL be an error, so declared intent is never silently ignored.
 
 #### Scenario: Git source
 

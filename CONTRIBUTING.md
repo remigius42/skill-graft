@@ -15,12 +15,13 @@ The `commit-msg` hook is a separate install. Without it, commitlint never runs.
 
 ## Changes
 
-A change goes through [OpenSpec](https://github.com/Fission-AI/OpenSpec), one branch per change, `feat/opsx-<change-name>`:
+A change goes through [OpenSpec](https://github.com/Fission-AI/OpenSpec), one branch per change,
+`feat/opsx-<change-name>`:
 
 1. Propose it under `openspec/changes/<change-name>/` (proposal, design, specs, tasks) and wait for its approval.
 1. Apply it test-first, one commit per task.
-1. Archive it, which merges its specs into `openspec/specs/`. If users see the change, add its `CHANGELOG.md` entry
-   in the archive commit.
+1. Archive it, which merges its specs into `openspec/specs/`. If users see the change, add its `CHANGELOG.md` entry in
+   the archive commit.
 
 Any other commit users would see, such as a direct `fix:`, adds its own entry; [AGENTS.md](AGENTS.md) has the rule.
 
@@ -33,8 +34,8 @@ uv run pytest
 
 The hooks are listed in [.pre-commit-config.yaml](.pre-commit-config.yaml).
 
-The tests point `HOME` at a temporary directory. The APM integration test runs the `apm` from the dev group
-and is skipped when `apm` is not on `PATH`.
+The tests point `HOME` at a temporary directory. The APM integration test runs the `apm` from the dev group and is
+skipped when `apm` is not on `PATH`.
 
 ## Evals
 
@@ -45,13 +46,13 @@ checks: [evals/graft-check/README.md](evals/graft-check/README.md).
 
 ## Releasing
 
-A release turns `CHANGELOG.md`'s `[Unreleased]` into a version, tagged `v<version>` and published as a GitHub
-release. Only a commit CI passed is tagged, and `main` never names a version before CI has passed it.
+A release turns `CHANGELOG.md`'s `[Unreleased]` into a version, tagged `v<version>` and published as a GitHub release.
+Only a commit CI passed is tagged, and `main` never names a version before CI has passed it.
 
 1. Pick the version from the sections under `[Unreleased]`, by [Semantic Versioning](https://semver.org/). An entry is
    breaking when it sits under `### Removed`, or under `### Changed` and a config, command or lock users already have
-   stops working as before. Before 1.0, a breaking entry raises the minor version, anything else the patch. From 1.0,
-   a breaking entry raises the major version, else an `### Added` or `### Deprecated` entry the minor, else the patch.
+   stops working as before. Before 1.0, a breaking entry raises the minor version, anything else the patch. From 1.0, a
+   breaking entry raises the major version, else an `### Added` or `### Deprecated` entry the minor, else the patch.
 
 1. Branch from an up-to-date `main`, with the version in `v` for the commands below:
 
@@ -65,9 +66,9 @@ release. Only a commit CI passed is tagged, and `main` never names a version bef
    - In `CHANGELOG.md`, rename `## [Unreleased]` to `## [<version>] - <today, YYYY-MM-DD>`, and add an empty
      `## [Unreleased]` above it.
    - At the end of `CHANGELOG.md`, point `[Unreleased]` at `compare/v<version>...HEAD` and add `[<version>]` comparing
-     the previous tag with `v<version>`; for the first release, `[<version>]` links `releases/tag/v<version>`. Both
-     are URLs under `https://github.com/remigius42/skill-graft/`. mdformat then writes the labels in lower case and
-     sorts them; leave them so.
+     the previous tag with `v<version>`; for the first release, `[<version>]` links `releases/tag/v<version>`. Both are
+     URLs under `https://github.com/remigius42/skill-graft/`. mdformat then writes the labels in lower case and sorts
+     them; leave them so.
    - Set `version` in `pyproject.toml`, then run `uv lock`.
 
 1. Push the branch, which runs CI, and wait for the run to pass:

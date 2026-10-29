@@ -4,8 +4,8 @@
 
 - [x] 1.1 Pin the lock's version 1 keys in `tests/test_lock.py` (a renamed, patched **Skill** from a git **Source** with
   a `subdirectory`, a plain **Entry** from a path **Source**, a bound edge, a suggestion), its failure message saying to
-  raise `version`; verify it passes against today's lock writer and goes red when a key is added to the writer
-  (reverted after)
+  raise `version`; verify it passes against today's lock writer and goes red when a key is added to the writer (reverted
+  after)
 
 ## 2. The skill
 
@@ -29,37 +29,35 @@
   - fixes one at a time after the user's yes: a **Bind** only when every use of the name in that **Source**'s
     **Upstream** text needs it, else a **Patch**; `add`/`bind`/`unbind`, or the README recipe with the **Package** path;
     rebuild `--into` a new `mktemp -d` folder after each and name **Skills** that left or joined the **Hull**; undo a
-    failed fix: `remove` after `add`, the noted value after `bind`/`unbind`, a **Patch**'s file and own list item
-    only, the key and table only if it created them
+    failed fix: `remove` after `add`, the noted value after `bind`/`unbind`, a **Patch**'s file and own list item only,
+    the key and table only if it created them
   - close with the `skill-graft build` advice when a fix was accepted or the first throwaway `.apm/skills/` differs from
     the **Package**'s (`diff -rq`, a missing one counting as different); otherwise say the **Package** matches its
     config and that deployment is not checked
-  - verify: a review of the finished `SKILL.md` against every rule of both resource files (context pointer, the
-    two loads, information hierarchy and disclosure, completion criteria, splitting, leading words, negation,
-    pruning, invocation) finds nothing left to fix, each rule named with how the text meets it; then
-    `tests/test_check.py` still passes (no **Reference** crept in) and `pre-commit run --all-files` is green
+  - verify: a review of the finished `SKILL.md` against every rule of both resource files (context pointer, the two
+    loads, information hierarchy and disclosure, completion criteria, splitting, leading words, negation, pruning,
+    invocation) finds nothing left to fix, each rule named with how the text meets it; then `tests/test_check.py` still
+    passes (no **Reference** crept in) and `pre-commit run --all-files` is green
 - [x] 2.3 Add an `argument-hint` naming the optional `<alias>/<name>` arguments to the front matter; verify
   `test_front_matter` goes red without it and `tests/test_check.py` passes with it
 
 ## 3. Installing it
 
 - [x] 3.1 Add the commented `[sources.skill-graft]` block (with `subdirectory = "skills"`) and the
-  `update`/`add`/`build` commands, with the note that every `build` fails until that `update`, to the `init`
-  template; verify a test for the "Template shows graft-check" scenario passes, uncommenting the block and loading
-  it
+  `update`/`add`/`build` commands, with the note that every `build` fails until that `update`, to the `init` template;
+  verify a test for the "Template shows graft-check" scenario passes, uncommenting the block and loading it
 - [x] 3.2 Document installing and running `graft-check` in `README.md`; verify the documented commands match the
   template and `pre-commit run --all-files` is green
 
 ## 4. Eval
 
 - [x] 4.1 Write `evals/graft-check/run.sh` and its README: a temporary project **Package** over a local git **Source**
-  and a path **Source** `art` (the wrong target), the git one committed with `GIT_AUTHOR_*` and `GIT_COMMITTER_*`
-  set, with one planted defect per kind, the working copy in the project's `.claude/skills/`, `HOME`,
-  `XDG_CACHE_HOME` and `TMPDIR` in the temporary folder, `CLAUDE_CODE_OAUTH_TOKEN` or `ANTHROPIC_API_KEY` required
-  (neither: stop, naming `claude setup-token`), `claude -p` run there with `--allowedTools` for
-  `Bash(skill-graft:*)`, `Bash(mktemp:*)`, `Bash(diff:*)`, reads, searches and subagents, and a grep per defect;
-  verify a manual run reports all five, leaves the eval **Package**'s files unchanged, and leaves the real `~/.apm`,
-  `~/.claude` and `~/.cache/skill-graft` unchanged
+  and a path **Source** `art` (the wrong target), the git one committed with `GIT_AUTHOR_*` and `GIT_COMMITTER_*` set,
+  with one planted defect per kind, the working copy in the project's `.claude/skills/`, `HOME`, `XDG_CACHE_HOME` and
+  `TMPDIR` in the temporary folder, `CLAUDE_CODE_OAUTH_TOKEN` or `ANTHROPIC_API_KEY` required (neither: stop, naming
+  `claude setup-token`), `claude -p` run there with `--allowedTools` for `Bash(skill-graft:*)`, `Bash(mktemp:*)`,
+  `Bash(diff:*)`, reads, searches and subagents, and a grep per defect; verify a manual run reports all five, leaves the
+  eval **Package**'s files unchanged, and leaves the real `~/.apm`, `~/.claude` and `~/.cache/skill-graft` unchanged
 - [x] 4.2 Split `run.sh` into named scenarios, all by default or those named: `defects` (today's run, plus a user
   **Patch** of `lead` whose line is not reported), `clean` (nothing found, nothing to build), `never-built`, `scoped`
   (`/graft-check up/code-style` reports none of `lead`'s defects), `build-fails`, `newer-lock` (the `skill-graft`

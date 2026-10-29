@@ -9,8 +9,8 @@ commit.
 
 - [x] 1.1 Only on the user's go-ahead (billed, a few cents): from an empty `mktemp -d` folder, run
   `claude -p --max-turns 1 --restricted --strict-mcp-config --tools Read,Grep,Glob` with a prompt that needs two tool
-  calls in turn (glob, then read what it found); record the exit code and the reply in `design.md`'s Decisions
-  ("Exit at the cap"), and the Claude Code version; verify `pre-commit run --all-files`
+  calls in turn (glob, then read what it found); record the exit code and the reply in `design.md`'s Decisions ("Exit at
+  the cap"), and the Claude Code version; verify `pre-commit run --all-files`
 
 ## 2. The `[check]` table
 
@@ -32,11 +32,10 @@ commit.
   it does, the budget's one-turn overshoot and list price, how to set it), drop the caps from the LLM10 row's "Open" and
   from Future work, and add the hidden-flag fail-closed note to "A later Claude Code"; verify the test fails first, then
   passes, and `pre-commit run --all-files`
-- [x] 3.2 Reader count: test that `SKILL.md` step 4 says at most `<readers-at-once>` readers run at once, 4 by
-  default, and that step 5's `uses` readers follow it; replace "Readers may run in parallel"; in `docs/security.md`,
-  the Limits section gains it, marked prompt-level, the LLM10 row says what is capped, Residual risks gains the
-  prompt-level line, and Future work loses the cap; verify the test fails first, then passes, and
-  `pre-commit run --all-files`
+- [x] 3.2 Reader count: test that `SKILL.md` step 4 says at most `<readers-at-once>` readers run at once, 4 by default,
+  and that step 5's `uses` readers follow it; replace "Readers may run in parallel"; in `docs/security.md`, the Limits
+  section gains it, marked prompt-level, the LLM10 row says what is capped, Residual risks gains the prompt-level line,
+  and Future work loses the cap; verify the test fails first, then passes, and `pre-commit run --all-files`
 - [x] 3.3 Patcher reply discarded: test that the patcher command sends stdout to `/dev/null` and stderr to `<err-file>`,
   a `mktemp` file outside `<work>`, that a non-zero exit ends the fix showing that file's first line cut to 200
   characters (run the `SKILL.md` command that does so on a 300-character line and check it prints 200), that
@@ -62,7 +61,7 @@ commit.
 ## 4. Changelog
 
 - [x] 4.1 Add an entry to `CHANGELOG.md` under `[Unreleased]`: in a hardened **Check**, readers and the patcher stop at
-  a turn and a spend limit, at most 4 readers run at once, all five settable in a new `[check]` table, and the
-  patcher's reply and file names no longer reach the main agent, the patch summary giving counts only and the
-  patcher's first error line when it fails. Per `AGENTS.md` it
-  lands in the archive commit; check the box there; verify `pre-commit run --all-files`
+  a turn and a spend limit, at most 4 readers run at once, all five settable in a new `[check]` table, and the patcher's
+  reply and file names no longer reach the main agent, the patch summary giving counts only and the patcher's first
+  error line when it fails. Per `AGENTS.md` it lands in the archive commit; check the box there; verify
+  `pre-commit run --all-files`

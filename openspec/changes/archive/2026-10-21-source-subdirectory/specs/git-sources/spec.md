@@ -4,23 +4,21 @@
 
 ### Requirement: The checkout is the upstream tree
 
-A git **Source**'s folder SHALL be the full tree of its `ref` with the bytes as committed, the same on every
-machine: files marked `export-ignore` included, no `.gitattributes` conversion or filter applied, exec bits and
-symlinks kept; with `subdirectory`, that folder of the tree. Skill discovery and vendoring then work as for a path
-**Source**, except that discovery follows only symlinked folders that stay inside the **Source**'s folder: their
-author is not the user. Submodules SHALL be skipped and LFS objects SHALL NOT be fetched (their pointer files are
-vendored as committed).
+A git **Source**'s folder SHALL be the full tree of its `ref` with the bytes as committed, the same on every machine:
+files marked `export-ignore` included, no `.gitattributes` conversion or filter applied, exec bits and symlinks kept;
+with `subdirectory`, that folder of the tree. Skill discovery and vendoring then work as for a path **Source**, except
+that discovery follows only symlinked folders that stay inside the **Source**'s folder: their author is not the user.
+Submodules SHALL be skipped and LFS objects SHALL NOT be fetched (their pointer files are vendored as committed).
 
 #### Scenario: Skill from git
 
-- **WHEN** commit A of source `mp` holds `skills/tdd/SKILL.md` and `skills/tdd/refs/x.md`, and `mp/tdd` is an
-  **Entry**
+- **WHEN** commit A of source `mp` holds `skills/tdd/SKILL.md` and `skills/tdd/refs/x.md`, and `mp/tdd` is an **Entry**
 - **THEN** `build` vendors `.apm/skills/tdd/` holding both files, without `.git`
 
 #### Scenario: Attributes ignored
 
-- **WHEN** commit A has `.gitattributes` with `* text eol=crlf` and `*.md filter=f`, the user's git config
-  defines `filter.f.smudge`, and `SKILL.md` was committed with LF line endings
+- **WHEN** commit A has `.gitattributes` with `* text eol=crlf` and `*.md filter=f`, the user's git config defines
+  `filter.f.smudge`, and `SKILL.md` was committed with LF line endings
 - **THEN** the vendored `SKILL.md` equals the committed blob byte for byte
 
 #### Scenario: Link out of the tree
@@ -43,10 +41,10 @@ vendored as committed).
 
 ### Requirement: Read only the subdirectory
 
-A git **Source** with `subdirectory` SHALL have as its folder that subdirectory of the tree at the commit read:
-its `ref`, or its branch tip during `update`. Discovery SHALL walk it as it walks a tree's root, following only
-symlinked folders that stay inside the subdirectory. Skills elsewhere in the tree SHALL NOT be **Skills** of the
-**Source**, not even as targets of a **Reference**.
+A git **Source** with `subdirectory` SHALL have as its folder that subdirectory of the tree at the commit read: its
+`ref`, or its branch tip during `update`. Discovery SHALL walk it as it walks a tree's root, following only symlinked
+folders that stay inside the subdirectory. Skills elsewhere in the tree SHALL NOT be **Skills** of the **Source**, not
+even as targets of a **Reference**.
 
 #### Scenario: One plugin of many
 
@@ -56,8 +54,8 @@ symlinked folders that stay inside the subdirectory. Skills elsewhere in the tre
 
 #### Scenario: Skill outside the subdirectory
 
-- **WHEN** `subdirectory = "skills"`, commit A holds `skills/a/SKILL.md` calling `/b` and
-  `.claude/skills/b/SKILL.md`, and `x/a` is an **Entry**
+- **WHEN** `subdirectory = "skills"`, commit A holds `skills/a/SKILL.md` calling `/b` and `.claude/skills/b/SKILL.md`,
+  and `x/a` is an **Entry**
 - **THEN** `x/b` is not in the **Hull**, and the unresolved-reference warning names `/b`
 
 #### Scenario: Link out of the subdirectory
@@ -73,8 +71,8 @@ symlinked folders that stay inside the subdirectory. Skills elsewhere in the tre
 
 ### Requirement: The subdirectory is a real folder at the commit
 
-A command reading a git **Source** with `subdirectory` SHALL fail, naming the alias, the subdirectory and the
-commit, when at that commit the subdirectory is missing, is not a folder, or has a symlink anywhere in its path.
+A command reading a git **Source** with `subdirectory` SHALL fail, naming the alias, the subdirectory and the commit,
+when at that commit the subdirectory is missing, is not a folder, or has a symlink anywhere in its path.
 
 #### Scenario: Missing at ref
 
@@ -94,13 +92,13 @@ commit, when at that commit the subdirectory is missing, is not a folder, or has
 
 #### Scenario: Case differs
 
-- **WHEN** `subdirectory = "PStack/skills"` and commit A holds `pstack/skills`, on a case-insensitive file system
-  as on any other
+- **WHEN** `subdirectory = "PStack/skills"` and commit A holds `pstack/skills`, on a case-insensitive file system as on
+  any other
 - **THEN** the command exits non-zero naming the alias, `PStack/skills` and A
 
 #### Scenario: Shared export
 
-- **WHEN** `[sources.a]` and `[sources.b]` have the same `git` URL and `ref`, `a` with
-  `subdirectory = "x/skills"` and `b` with `subdirectory = "y/skills"`
+- **WHEN** `[sources.a]` and `[sources.b]` have the same `git` URL and `ref`, `a` with `subdirectory = "x/skills"` and
+  `b` with `subdirectory = "y/skills"`
 - **THEN** the cache holds one export of that commit, and each **Source** has only the **Skills** under its own
   subdirectory

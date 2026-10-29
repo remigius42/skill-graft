@@ -25,6 +25,8 @@ repos:
     rev: 1.0.0
     hooks:
       - id: mdformat
+        # Wraps at markdownlint's MD013 limit, so a long line is fixed rather than refused.
+        args: [--wrap=120]
         additional_dependencies:
           - mdformat-gfm
           # Skill files open with YAML front matter. Without this, mdformat rewrites the

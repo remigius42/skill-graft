@@ -2,16 +2,16 @@
 
 ## Purpose
 
-Reads the user's intent from `~/.apm/skill-graft/skill-graft.toml`: path **Sources** and **Entries**, rejecting
-anything this version cannot honor.
+Reads the user's intent from `~/.apm/skill-graft/skill-graft.toml`: path **Sources** and **Entries**, rejecting anything
+this version cannot honor.
 
 ## ADDED Requirements
 
 ### Requirement: Path sources
 
-Each `[sources.<alias>]` table SHALL hold exactly one key, `path`: a folder, with `~` expanded and a relative
-path taken relative to the folder holding `skill-graft.toml`. The alias names the **Source** and SHALL be one
-path segment: `[A-Za-z0-9][A-Za-z0-9._-]*`.
+Each `[sources.<alias>]` table SHALL hold exactly one key, `path`: a folder, with `~` expanded and a relative path taken
+relative to the folder holding `skill-graft.toml`. The alias names the **Source** and SHALL be one path segment:
+`[A-Za-z0-9][A-Za-z0-9._-]*`.
 
 #### Scenario: Home-relative path
 
@@ -30,9 +30,9 @@ path segment: `[A-Za-z0-9][A-Za-z0-9._-]*`.
 
 ### Requirement: Sources stay clear of the package and deploy folders
 
-A source whose folder is inside `~/.apm/skill-graft/` or contains it SHALL be an error. A source inside or
-containing an APM deploy folder (`~/.agents/skills`, `~/.claude/skills`, and the other harness skill folders)
-SHALL be a warning naming the alias and the folder. Paths are compared resolved.
+A source whose folder is inside `~/.apm/skill-graft/` or contains it SHALL be an error. A source inside or containing an
+APM deploy folder (`~/.agents/skills`, `~/.claude/skills`, and the other harness skill folders) SHALL be a warning
+naming the alias and the folder. Paths are compared resolved.
 
 #### Scenario: Source is the package
 
@@ -46,8 +46,8 @@ SHALL be a warning naming the alias and the folder. Paths are compared resolved.
 
 ### Requirement: Entries
 
-`entries` SHALL be a list of **Skill IDs** of the form `<alias>/<name>`. An empty or absent list is valid and
-builds no skills.
+`entries` SHALL be a list of **Skill IDs** of the form `<alias>/<name>`. An empty or absent list is valid and builds no
+skills.
 
 #### Scenario: Entry with an undeclared alias
 
@@ -66,8 +66,8 @@ builds no skills.
 
 ### Requirement: Value types
 
-`sources` SHALL be a table of tables, each source's `path` a string, and `entries` a list of strings. A wrong
-type or a source table without `path` SHALL be an error naming the key, never a crash.
+`sources` SHALL be a table of tables, each source's `path` a string, and `entries` a list of strings. A wrong type or a
+source table without `path` SHALL be an error naming the key, never a crash.
 
 #### Scenario: Entries as a string
 
@@ -86,8 +86,8 @@ type or a source table without `path` SHALL be an error naming the key, never a 
 
 ### Requirement: Unsupported keys are errors
 
-Any top-level key other than `sources` and `entries`, and any source key other than `path`, SHALL be an error,
-so declared intent is never silently ignored.
+Any top-level key other than `sources` and `entries`, and any source key other than `path`, SHALL be an error, so
+declared intent is never silently ignored.
 
 #### Scenario: Git source
 

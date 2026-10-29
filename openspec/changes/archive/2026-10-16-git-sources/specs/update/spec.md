@@ -2,17 +2,15 @@
 
 ## Purpose
 
-Moves each git **Source**'s **Ref** to the tip of its branch, on purpose, keeping the user's TOML as they wrote
-it.
+Moves each git **Source**'s **Ref** to the tip of its branch, on purpose, keeping the user's TOML as they wrote it.
 
 ## ADDED Requirements
 
 ### Requirement: Move refs to branch tips
 
-`skill-graft update [alias…]` SHALL fetch each selected git **Source** and set its `ref` to the tip of its
-`branch`, or, without `branch`, of the remote's default branch as the remote reports it now. With no alias,
-every git **Source** is selected and path **Sources** are skipped. A git **Source** without `ref` is updated
-like any other.
+`skill-graft update [alias…]` SHALL fetch each selected git **Source** and set its `ref` to the tip of its `branch`, or,
+without `branch`, of the remote's default branch as the remote reports it now. With no alias, every git **Source** is
+selected and path **Sources** are skipped. A git **Source** without `ref` is updated like any other.
 
 #### Scenario: New commit upstream
 
@@ -41,11 +39,11 @@ like any other.
 
 ### Requirement: Selection errors
 
-An alias naming a path **Source** or no declared **Source**, an unselected git **Source** without `ref` (it
-cannot be resolved), a `branch` that is not a valid branch name (revision syntax such as `main~3` included), a
-`branch` the remote lacks (including one deleted since an earlier fetch), and a remote that reports no default
-branch when `branch` is absent SHALL be errors naming the alias, and `update` SHALL then write nothing. The
-first three SHALL be reported before any remote is contacted.
+An alias naming a path **Source** or no declared **Source**, an unselected git **Source** without `ref` (it cannot be
+resolved), a `branch` that is not a valid branch name (revision syntax such as `main~3` included), a `branch` the remote
+lacks (including one deleted since an earlier fetch), and a remote that reports no default branch when `branch` is
+absent SHALL be errors naming the alias, and `update` SHALL then write nothing. The first three SHALL be reported before
+any remote is contacted.
 
 #### Scenario: Path source named
 
@@ -90,16 +88,16 @@ first three SHALL be reported before any remote is contacted.
 
 ### Requirement: Resolve before writing
 
-`update` SHALL resolve every **Entry** as `build` does, with each selected **Source** at its new tip and every
-other at its current `ref`, and SHALL write `skill-graft.toml` only when that succeeds. On failure it SHALL exit
-non-zero with the resolution error and the shas it would have written, leaving the TOML unchanged. `update`
-SHALL NOT vendor or run `apm`.
+`update` SHALL resolve every **Entry** as `build` does, with each selected **Source** at its new tip and every other at
+its current `ref`, and SHALL write `skill-graft.toml` only when that succeeds. On failure it SHALL exit non-zero with
+the resolution error and the shas it would have written, leaving the TOML unchanged. `update` SHALL NOT vendor or run
+`apm`.
 
 #### Scenario: Entry gone upstream
 
 - **WHEN** `mp/tdd` is an **Entry** and the new tip of `mp` has no skill `tdd`
-- **THEN** `update` exits non-zero naming `mp/tdd`, prints the new sha, and leaves `skill-graft.toml` byte for
-  byte unchanged
+- **THEN** `update` exits non-zero naming `mp/tdd`, prints the new sha, and leaves `skill-graft.toml` byte for byte
+  unchanged
 
 #### Scenario: No deploy
 
@@ -108,15 +106,13 @@ SHALL NOT vendor or run `apm`.
 
 ### Requirement: Edit the TOML in place
 
-`update` SHALL change only the `ref` values of the updated **Sources**, adding a missing `ref` to its source
-table, and SHALL keep every comment, blank line, key order and other formatting. The file SHALL be replaced
-atomically, and not rewritten when no `ref` changed. A symlinked `skill-graft.toml` SHALL stay a symlink:
-its target is what changes.
+`update` SHALL change only the `ref` values of the updated **Sources**, adding a missing `ref` to its source table, and
+SHALL keep every comment, blank line, key order and other formatting. The file SHALL be replaced atomically, and not
+rewritten when no `ref` changed. A symlinked `skill-graft.toml` SHALL stay a symlink: its target is what changes.
 
 #### Scenario: Comments survive
 
-- **WHEN** `skill-graft.toml` has comments, including one trailing the `ref` line, and `update` moves `mp`'s
-  `ref`
+- **WHEN** `skill-graft.toml` has comments, including one trailing the `ref` line, and `update` moves `mp`'s `ref`
 - **THEN** the new file equals the old one with only that sha replaced
 
 #### Scenario: Symlinked config
@@ -141,16 +137,15 @@ its target is what changes.
 
 ### Requirement: Dry run writes nothing
 
-`update --dry-run` SHALL do everything `update` does, printing the same lines and errors and exiting with the
-same code, but SHALL write neither `skill-graft.toml` nor the cache, nor anything outside a temporary folder it
-removes before exiting. It SHALL read what the cache already holds, and contact a remote exactly when `update`
-would. It SHALL say that the TOML was not written.
+`update --dry-run` SHALL do everything `update` does, printing the same lines and errors and exiting with the same code,
+but SHALL write neither `skill-graft.toml` nor the cache, nor anything outside a temporary folder it removes before
+exiting. It SHALL read what the cache already holds, and contact a remote exactly when `update` would. It SHALL say that
+the TOML was not written.
 
 #### Scenario: Dry run
 
 - **WHEN** the default branch has moved and the user runs `update --dry-run`
-- **THEN** it prints the new sha and that it wrote nothing, and `skill-graft.toml` and the cache folder are
-  unchanged
+- **THEN** it prints the new sha and that it wrote nothing, and `skill-graft.toml` and the cache folder are unchanged
 
 #### Scenario: Dry run with an unreachable unselected source
 

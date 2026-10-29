@@ -2,8 +2,8 @@
 
 ## Why
 
-`skill-graft --version`, added by `add-version-flag`, breaks its own spec: it must not fail and must print one line,
-yet it dies with a traceback on an unreadable `direct_url.json` or a missing installation, and prints the installer's
+`skill-graft --version`, added by `add-version-flag`, breaks its own spec: it must not fail and must print one line, yet
+it dies with a traceback on an unreadable `direct_url.json` or a missing installation, and prints the installer's
 `requested_revision` raw, newlines and terminal escapes included. Its end-to-end tests run whichever `skill-graft` comes
 first on `PATH`, not the one under test.
 
@@ -16,8 +16,8 @@ first on `PATH`, not the one under test.
   `add-version-flag`'s "no fallback for a missing installation".
 - A revision that is not printable ASCII without spaces (a newline, an escape, a non-ASCII name a terminal may not
   encode, `main @ abc1234` posing as a commit) is dropped: `(<commit>)`. A commit that is not a hex hash adds nothing.
-- The end-to-end tests in `tests/cli/test_cli.py` run the `skill-graft` script installed for the interpreter running
-  the suite, and the version test compares the whole version, not a prefix.
+- The end-to-end tests in `tests/cli/test_cli.py` run the `skill-graft` script installed for the interpreter running the
+  suite, and the version test compares the whole version, not a prefix.
 
 ## Capabilities
 

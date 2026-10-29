@@ -2,18 +2,18 @@
 
 ## Purpose
 
-Finds the slash, Skill tool and prose **References** in each **Skill**, resolves them to **Skills**, and spans
-the **Hull**: the **Entries** plus every **Skill** the slash and Skill tool ones reach.
+Finds the slash, Skill tool and prose **References** in each **Skill**, resolves them to **Skills**, and spans the
+**Hull**: the **Entries** plus every **Skill** the slash and Skill tool ones reach.
 
 ## Requirements
 
 ### Requirement: Slash references
 
-A slash **Reference** SHALL be `/` then a name, the longest run of `[A-Za-z0-9._-]` starting with a letter or
-digit, trailing `.` dropped, standing as its own token: not preceded by a letter, digit, `/`, `.`, `-`, `~`, `:`,
-`\`, `<`, `@`, `}`, `](`, `="` or `='`, nor by `"` or `'` right after `(` or `[`, nor by a backtick that closes a
-code span (an odd number of backtick runs before it on its line), and not followed by `/`, or `:` and a letter or
-digit. It SHALL count anywhere, code blocks included.
+A slash **Reference** SHALL be `/` then a name, the longest run of `[A-Za-z0-9._-]` starting with a letter or digit,
+trailing `.` dropped, standing as its own token: not preceded by a letter, digit, `/`, `.`, `-`, `~`, `:`, `\`, `<`,
+`@`, `}`, `](`, `="` or `='`, nor by `"` or `'` right after `(` or `[`, nor by a backtick that closes a code span (an
+odd number of backtick runs before it on its line), and not followed by `/`, or `:` and a letter or digit. It SHALL
+count anywhere, code blocks included.
 
 #### Scenario: Standalone token
 
@@ -39,18 +39,18 @@ digit. It SHALL count anywhere, code blocks included.
 
 ### Requirement: Skill tool references
 
-A Skill tool **Reference** SHALL be the call form `Skill(<name>)`: the name first, optionally quoted with `"` or
-`'`, optionally given as `skill=<name>` or `skill: <name>`, then `)` or `,` and further arguments, with optional
-whitespace inside the parentheses. It SHALL also be each name in double quotes or backticks, the whole quoted text
-a name (one trailing `.` dropped), between `Skill tool` (or `` `Skill` tool ``, as words of their own) and the
-end of its sentence, when it resolves to a **Skill**; one that resolves to none, to several, or to a **Skill**
-whose name cannot be read is no **Reference**: no edge, no warning, no error. A name inside a `Skill(...)` call
-is that call's only. The sentence form uses the rules below.
+A Skill tool **Reference** SHALL be the call form `Skill(<name>)`: the name first, optionally quoted with `"` or `'`,
+optionally given as `skill=<name>` or `skill: <name>`, then `)` or `,` and further arguments, with optional whitespace
+inside the parentheses. It SHALL also be each name in double quotes or backticks, the whole quoted text a name (one
+trailing `.` dropped), between `Skill tool` (or `` `Skill` tool ``, as words of their own) and the end of its sentence,
+when it resolves to a **Skill**; one that resolves to none, to several, or to a **Skill** whose name cannot be read is
+no **Reference**: no edge, no warning, no error. A name inside a `Skill(...)` call is that call's only. The sentence
+form uses the rules below.
 
-The sentence SHALL end at the next `Skill tool`; at a blank line; at a line opening a list item, heading, code
-fence or table row; or at `.`, `!` or `?` (not the `.` of `e.g.` or `i.e.`), closing quotes, backticks, `*`, `)`
-or `]` allowed after it, then whitespace and an uppercase letter, a quote, a backtick, `*`, `(` or `[`, or the end of the
-file. A line break alone SHALL NOT end it. The SKILL.md front matter's own `name:` line holds no such name.
+The sentence SHALL end at the next `Skill tool`; at a blank line; at a line opening a list item, heading, code fence or
+table row; or at `.`, `!` or `?` (not the `.` of `e.g.` or `i.e.`), closing quotes, backticks, `*`, `)` or `]` allowed
+after it, then whitespace and an uppercase letter, a quote, a backtick, `*`, `(` or `[`, or the end of the file. A line
+break alone SHALL NOT end it. The SKILL.md front matter's own `name:` line holds no such name.
 
 #### Scenario: Call forms
 
@@ -60,8 +60,7 @@ file. A line break alone SHALL NOT end it. The SKILL.md front matter's own `name
 
 #### Scenario: Sentence form
 
-- **WHEN** it holds `Call the Skill tool twice, for "grilling" and "domain-modeling".`, and its **Source** has
-  both
+- **WHEN** it holds `Call the Skill tool twice, for "grilling" and "domain-modeling".`, and its **Source** has both
 - **THEN** it holds one Skill tool **Reference** each to `grilling` and `domain-modeling`
 
 #### Scenario: Backticked name in a sentence
@@ -71,15 +70,15 @@ file. A line break alone SHALL NOT end it. The SKILL.md front matter's own `name
 
 #### Scenario: Sentence across lines
 
-- **WHEN** it holds `call the Skill tool with` at the end of one line and `"codebase-design" for the vocabulary.`
-  on the next
+- **WHEN** it holds `call the Skill tool with` at the end of one line and `"codebase-design" for the vocabulary.` on the
+  next
 - **THEN** it is a Skill tool **Reference** to `codebase-design`, and no prose **Reference**
 
 #### Scenario: Sentence ends
 
 - **WHEN** it holds `` Use the Skill tool. Then see "grilling" and `notes`. ``,
-  `` (Use the Skill tool.) Then `notes`. ``, or the sentence's line is followed by a list item `` - `grilling` ``
-  or a code fence
+  `` (Use the Skill tool.) Then `notes`. ``, or the sentence's line is followed by a list item `` - `grilling` `` or a
+  code fence
 - **THEN** `grilling` in quotes is no **Reference**, and the backticked names are prose **References**
 
 #### Scenario: Not a sentence end
@@ -89,8 +88,8 @@ file. A line break alone SHALL NOT end it. The SKILL.md front matter's own `name
 
 #### Scenario: Unresolved name
 
-- **WHEN** it holds `Call the Skill tool with "grilling" and set mode to "fast".`, and no **Source** has `fast`,
-  or two other **Sources** both have it
+- **WHEN** it holds `Call the Skill tool with "grilling" and set mode to "fast".`, and no **Source** has `fast`, or two
+  other **Sources** both have it
 - **THEN** it holds a Skill tool **Reference** to `grilling` only, and no warning or error names `fast`
 
 #### Scenario: One reference per name
@@ -165,8 +164,8 @@ still rewritten as the `renames` capability says.
 
 ### Requirement: Resolve in the own source first
 
-A slash or Skill tool **Reference** from a **Skill** in **Source** `a` SHALL resolve to `a/<name>` when `a` has
-a **Skill** of that name, whatever other **Sources** hold.
+A slash or Skill tool **Reference** from a **Skill** in **Source** `a` SHALL resolve to `a/<name>` when `a` has a
+**Skill** of that name, whatever other **Sources** hold.
 
 #### Scenario: Own source wins
 
@@ -175,10 +174,10 @@ a **Skill** of that name, whatever other **Sources** hold.
 
 ### Requirement: Else exactly one other source
 
-When the own **Source** lacks the name, the **Reference** SHALL resolve in the one other declared **Source**
-having it. Several SHALL be an error naming the referencing **Skill**, the **Reference**, the matching **Skill
-IDs**, and the `skill-graft bind` command that would settle it. A **Source** has a name when a **Skill** there is
-named so, or one whose name cannot be read sits in a folder so named; a name read but invalid never counts.
+When the own **Source** lacks the name, the **Reference** SHALL resolve in the one other declared **Source** having it.
+Several SHALL be an error naming the referencing **Skill**, the **Reference**, the matching **Skill IDs**, and the
+`skill-graft bind` command that would settle it. A **Source** has a name when a **Skill** there is named so, or one
+whose name cannot be read sits in a folder so named; a name read but invalid never counts.
 
 #### Scenario: One other source
 
@@ -187,8 +186,7 @@ named so, or one whose name cannot be read sits in a folder so named; a name rea
 
 #### Scenario: Invalid name does not count
 
-- **WHEN** `mp/tdd` calls `/grilling`, `mp`'s folder `grilling/` has `name: "Grilling Tool"`, and `own` has
-  `grilling`
+- **WHEN** `mp/tdd` calls `/grilling`, `mp`'s folder `grilling/` has `name: "Grilling Tool"`, and `own` has `grilling`
 - **THEN** `own/grilling` is in the **Hull**
 
 #### Scenario: Several other sources
@@ -200,9 +198,9 @@ named so, or one whose name cannot be read sits in a folder so named; a name rea
 ### Requirement: Unmatched references warn
 
 A slash or Skill tool **Reference** matching no **Skill** in any declared **Source**, and no **Bind**, SHALL be a
-warning `` `<skill id>` calls `<reference>`: no declared source has a skill `<name>` ``, the **Reference** as
-first written (`/<name>` or `Skill(<name>)`), ending with the `skill-graft bind` command that would ignore it,
-once per referencing **Skill** and name, and the command SHALL proceed.
+warning `` `<skill id>` calls `<reference>`: no declared source has a skill `<name>` ``, the **Reference** as first
+written (`/<name>` or `Skill(<name>)`), ending with the `skill-graft bind` command that would ignore it, once per
+referencing **Skill** and name, and the command SHALL proceed.
 
 #### Scenario: No such skill
 
@@ -217,8 +215,8 @@ once per referencing **Skill** and name, and the command SHALL proceed.
 
 ### Requirement: Binds to nothing
 
-A **Bind** `"<a>/<name>" = false` SHALL make `<name>` from any **Skill** in **Source** `a` no **Reference**: it
-adds no **Skill** or edge and gives no warning, whether a **Skill** of that name exists or not.
+A **Bind** `"<a>/<name>" = false` SHALL make `<name>` from any **Skill** in **Source** `a` no **Reference**: it adds no
+**Skill** or edge and gives no warning, whether a **Skill** of that name exists or not.
 
 #### Scenario: Path in a code block
 
@@ -232,11 +230,10 @@ adds no **Skill** or edge and gives no warning, whether a **Skill** of that name
 
 ### Requirement: Binds override resolution
 
-A **Bind** `"<a>/<name>" = "<b>/<target>"` SHALL make every slash, Skill tool and prose **Reference** to `<name>`
-from a **Skill** in **Source** `a` resolve to `b/<target>`, whatever the default would give, error or no match
-included. The target of every **Bind**, whether a **Reference** uses it or not, SHALL be found as an **Entry**
-is; a missing or ambiguous one is an error naming the **Bind**. A bound prose **Reference** still never extends
-the **Hull**.
+A **Bind** `"<a>/<name>" = "<b>/<target>"` SHALL make every slash, Skill tool and prose **Reference** to `<name>` from a
+**Skill** in **Source** `a` resolve to `b/<target>`, whatever the default would give, error or no match included. The
+target of every **Bind**, whether a **Reference** uses it or not, SHALL be found as an **Entry** is; a missing or
+ambiguous one is an error naming the **Bind**. A bound prose **Reference** still never extends the **Hull**.
 
 #### Scenario: Bind across sources
 
@@ -250,14 +247,13 @@ the **Hull**.
 
 #### Scenario: Bind to a missing skill
 
-- **WHEN** `[bind]` has `"mp/grilling" = "own/nope"`, a **Hull** **Skill** in `mp` calls `/grilling`, and `own`
-  has no `nope`
+- **WHEN** `[bind]` has `"mp/grilling" = "own/nope"`, a **Hull** **Skill** in `mp` calls `/grilling`, and `own` has no
+  `nope`
 - **THEN** the command exits non-zero naming `mp/grilling` and `own/nope`
 
 #### Scenario: Unused bind to a missing skill
 
-- **WHEN** `[bind]` has `"mp/grill" = "own/nope"`, no **Hull** **Skill** in `mp` calls `/grill`, and `own` has no
-  `nope`
+- **WHEN** `[bind]` has `"mp/grill" = "own/nope"`, no **Hull** **Skill** in `mp` calls `/grill`, and `own` has no `nope`
 - **THEN** the command exits non-zero naming `mp/grill` and `own/nope`, and writes nothing
 
 #### Scenario: Bound prose
@@ -282,8 +278,8 @@ A **Bind** that no **Reference** from a **Hull** **Skill** uses, prose included,
 
 #### Scenario: Typo in a bind
 
-- **WHEN** `[bind]` has `"mp/grill" = "own/grilling"`, `own` has `grilling`, and no **Hull** **Skill** in `mp`
-  calls `/grill`
+- **WHEN** `[bind]` has `"mp/grill" = "own/grilling"`, `own` has `grilling`, and no **Hull** **Skill** in `mp` calls
+  `/grill`
 - **THEN** the command warns that `mp/grill` binds no **Reference**, and succeeds
 
 #### Scenario: Used by prose only
@@ -293,10 +289,9 @@ A **Bind** that no **Reference** from a **Hull** **Skill** uses, prose included,
 
 ### Requirement: The hull is transitive
 
-The **Hull** SHALL be the **Entries** plus every **Skill** reachable from them through resolved slash and Skill
-tool **References**, followed from each **Skill** reached, cycles included. A **Skill** reached SHALL be found as
-an **Entry** is (unique within its **Source**, readable name, symlinks inside it), errors naming the referencing
-**Skill**.
+The **Hull** SHALL be the **Entries** plus every **Skill** reachable from them through resolved slash and Skill tool
+**References**, followed from each **Skill** reached, cycles included. A **Skill** reached SHALL be found as an
+**Entry** is (unique within its **Source**, readable name, symlinks inside it), errors naming the referencing **Skill**.
 
 #### Scenario: Two hops
 
@@ -315,8 +310,8 @@ an **Entry** is (unique within its **Source**, readable name, symlinks inside it
 
 ### Requirement: Every declared source is read
 
-Resolution SHALL read every declared **Source**, whether an **Entry** uses it or not: git **Sources** at their
-`ref`, fetched only when that commit is missing from the cache.
+Resolution SHALL read every declared **Source**, whether an **Entry** uses it or not: git **Sources** at their `ref`,
+fetched only when that commit is missing from the cache.
 
 #### Scenario: Source with no entry
 
@@ -325,25 +320,25 @@ Resolution SHALL read every declared **Source**, whether an **Entry** uses it or
 
 ### Requirement: Prose references
 
-A prose **Reference** SHALL be a code span whose whole content is a name (`` `grilling` ``), or a bare hyphenated
-token `[a-z0-9]+(-[a-z0-9]+)+` standing as its own token: not preceded by a letter, digit, `_`, `/`, `.`, `-`,
-`~`, `:`, `\`, `<`, `@`, `#`, `=`, `?`, `&`, `$` or `](`, and not followed by a letter, digit, `_`, `/`, `-`,
-`%`, `+`, or `.` or `:` and a letter or digit; nor a YAML key, first on its line (past indent or a list dash) and
-followed by `:`. It SHALL count anywhere, code blocks included, except the value of `SKILL.md`'s front matter
-`name:`, and never inside a slash or Skill tool **Reference**, whose arguments on that line belong to it, nor at
-a name that is a Skill tool **Reference** in the sentence form, on whatever line.
+A prose **Reference** SHALL be a code span whose whole content is a name (`` `grilling` ``), or a bare hyphenated token
+`[a-z0-9]+(-[a-z0-9]+)+` standing as its own token: not preceded by a letter, digit, `_`, `/`, `.`, `-`, `~`, `:`, `\`,
+`<`, `@`, `#`, `=`, `?`, `&`, `$` or `](`, and not followed by a letter, digit, `_`, `/`, `-`, `%`, `+`, or `.` or `:`
+and a letter or digit; nor a YAML key, first on its line (past indent or a list dash) and followed by `:`. It SHALL
+count anywhere, code blocks included, except the value of `SKILL.md`'s front matter `name:`, and never inside a slash or
+Skill tool **Reference**, whose arguments on that line belong to it, nor at a name that is a Skill tool **Reference** in
+the sentence form, on whatever line.
 
 #### Scenario: Backticked and hyphenated
 
-- **WHEN** a **Skill**'s Markdown holds `` use `grilling` ``, `then diagnosing-bugs.`, or `pre-commit run` in a
-  fenced block
+- **WHEN** a **Skill**'s Markdown holds `` use `grilling` ``, `then diagnosing-bugs.`, or `pre-commit run` in a fenced
+  block
 - **THEN** `grilling`, `diagnosing-bugs` and `pre-commit` are prose **References**
 
 #### Scenario: Not prose
 
-- **WHEN** it holds `grilling` unquoted, `` `grilling --fast` ``, `` `mp/grilling` ``, `--dry-run`,
-  `refs/red-green.md`, `x-ray.png`, `[see](my-skill)`, `[x](#my-skill)`, `id="my-skill"`, `foo_my-skill`,
-  `?q=my-skill`, `my-skill%20x`, `allowed-tools: Bash` or `https://x.org/my-skill`
+- **WHEN** it holds `grilling` unquoted, `` `grilling --fast` ``, `` `mp/grilling` ``, `--dry-run`, `refs/red-green.md`,
+  `x-ray.png`, `[see](my-skill)`, `[x](#my-skill)`, `id="my-skill"`, `foo_my-skill`, `?q=my-skill`, `my-skill%20x`,
+  `allowed-tools: Bash` or `https://x.org/my-skill`
 - **THEN** none is a prose **Reference**
 
 #### Scenario: Own name line
@@ -359,16 +354,15 @@ a name that is a Skill tool **Reference** in the sentence form, on whatever line
 
 ### Requirement: Prose resolves in its own source only
 
-A prose **Reference** from a **Skill** in **Source** `a`, unless a **Bind** decides it, SHALL resolve to `a/<name>`
-only when exactly one **Skill** in `a` is named `<name>`, and no **Skill** there with an unreadable name sits in a
-folder so named; otherwise it is no **Reference**:
-no edge, no warning, no error. It SHALL never extend the **Hull**: when its target is in the **Hull** it is an
-edge of kind `prose`, otherwise a suggestion.
+A prose **Reference** from a **Skill** in **Source** `a`, unless a **Bind** decides it, SHALL resolve to `a/<name>` only
+when exactly one **Skill** in `a` is named `<name>`, and no **Skill** there with an unreadable name sits in a folder so
+named; otherwise it is no **Reference**: no edge, no warning, no error. It SHALL never extend the **Hull**: when its
+target is in the **Hull** it is an edge of kind `prose`, otherwise a suggestion.
 
 #### Scenario: Inside the hull
 
-- **WHEN** `mp/tdd` calls `/grilling` and mentions `` `notes` ``, and `mp` has `grilling` and `notes`, with
-  `mp/notes` an **Entry**
+- **WHEN** `mp/tdd` calls `/grilling` and mentions `` `notes` ``, and `mp` has `grilling` and `notes`, with `mp/notes`
+  an **Entry**
 - **THEN** the **Hull** has a `prose` edge `mp/tdd` → `mp/notes`
 
 #### Scenario: Outside the hull

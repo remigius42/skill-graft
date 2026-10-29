@@ -24,11 +24,11 @@ Apply with the `tdd` skill: each task red-green-refactor, one commit. Tests fake
 
 ## 3. Tests of the real installation
 
-- [x] 3.1 Add a helper in `tests/cli/test_cli.py` running `Path(sysconfig.get_path("scripts")) / "skill-graft"`; use
-  it in `test_help_lists_commands` and `test_version_of_this_installation`, the latter comparing
-  `stdout.split()[:2] == ["skill-graft", metadata.version("skill-graft")]`; verify by running the venv's pytest
-  directly with a `PATH` holding no `skill-graft` (`PATH=/usr/bin .venv/bin/pytest tests/cli/test_cli.py`, not
-  through `uv run`, which puts `.venv/bin` back on `PATH`): both fail before, pass after
+- [x] 3.1 Add a helper in `tests/cli/test_cli.py` running `Path(sysconfig.get_path("scripts")) / "skill-graft"`; use it
+  in `test_help_lists_commands` and `test_version_of_this_installation`, the latter comparing
+  `stdout.split()[:2] == ["skill-graft", metadata.version("skill-graft")]`; verify by running the venv's pytest directly
+  with a `PATH` holding no `skill-graft` (`PATH=/usr/bin .venv/bin/pytest tests/cli/test_cli.py`, not through `uv run`,
+  which puts `.venv/bin` back on `PATH`): both fail before, pass after
 
 ## 4. Archive
 

@@ -4,9 +4,9 @@
 
 ### Requirement: Binds
 
-`[bind]` SHALL be a table whose keys are `<alias>/<name>` and whose values are **Skill IDs** or `false`, every
-alias declared and every part one path segment (`[A-Za-z0-9][A-Za-z0-9._-]*`). A malformed key or value
-(`true` included), or an undeclared alias, SHALL be an error naming the key.
+`[bind]` SHALL be a table whose keys are `<alias>/<name>` and whose values are **Skill IDs** or `false`, every alias
+declared and every part one path segment (`[A-Za-z0-9][A-Za-z0-9._-]*`). A malformed key or value (`true` included), or
+an undeclared alias, SHALL be an error naming the key.
 
 #### Scenario: Valid bind
 
@@ -32,8 +32,8 @@ alias declared and every part one path segment (`[A-Za-z0-9][A-Za-z0-9._-]*`). A
 
 ### Requirement: Unsupported keys are errors
 
-Any top-level key other than `sources`, `entries` and `bind`, and any source key other than `path`, `git`,
-`branch` and `ref`, SHALL be an error, so declared intent is never silently ignored.
+Any top-level key other than `sources`, `entries` and `bind`, and any source key other than `path`, `git`, `branch` and
+`ref`, SHALL be an error, so declared intent is never silently ignored.
 
 #### Scenario: Git source
 

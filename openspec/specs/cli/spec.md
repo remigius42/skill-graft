@@ -2,22 +2,22 @@
 
 ## Purpose
 
-How the user learns and invokes the `skill-graft` commands: help for each command, the `help` command, and what
-a mistyped command line does.
+How the user learns and invokes the `skill-graft` commands: help for each command, the `help` command, and what a
+mistyped command line does.
 
 ## Requirements
 
 ### Requirement: Help on every command
 
-`skill-graft -h`, `skill-graft --help` and `-h`/`--help` after any command SHALL print that level's usage, a
-description in the glossary's terms, and each argument and option with its meaning, to standard output, and
-exit 0 without reading `skill-graft.toml`. The top level SHALL list every command with a one-line summary.
+`skill-graft -h`, `skill-graft --help` and `-h`/`--help` after any command SHALL print that level's usage, a description
+in the glossary's terms, and each argument and option with its meaning, to standard output, and exit 0 without reading
+`skill-graft.toml`. The top level SHALL list every command with a one-line summary.
 
 #### Scenario: Top-level help
 
 - **WHEN** the user runs `skill-graft --help`
-- **THEN** it exits 0 and lists `init`, `resolve`, `build`, `update`, `why`, `tree`, `add`, `remove`, `rename`,
-  `bind`, `unbind` and `help`, each with a summary
+- **THEN** it exits 0 and lists `init`, `resolve`, `build`, `update`, `why`, `tree`, `add`, `remove`, `rename`, `bind`,
+  `unbind` and `help`, each with a summary
 
 #### Scenario: Command help
 
@@ -90,14 +90,14 @@ anywhere else, it SHALL print the version only.
 
 #### Scenario: Git install at a commit
 
-- **WHEN** skill-graft 0.2.0 was installed from `git+https://github.com/remigius42/skill-graft@` followed by the full
-  or a short hash of commit `e294a0e…`
+- **WHEN** skill-graft 0.2.0 was installed from `git+https://github.com/remigius42/skill-graft@` followed by the full or
+  a short hash of commit `e294a0e…`
 - **THEN** it prints `skill-graft 0.2.0 (e294a0e)`
 
 #### Scenario: Revision that is not printable ASCII without spaces
 
-- **WHEN** skill-graft 0.2.0 was installed from git at commit `e294a0e…`, and the installer recorded the revision
-  `main` followed by a newline and `foo`, one holding an escape character, `ブランチ`, or `main @ abc1234`
+- **WHEN** skill-graft 0.2.0 was installed from git at commit `e294a0e…`, and the installer recorded the revision `main`
+  followed by a newline and `foo`, one holding an escape character, `ブランチ`, or `main @ abc1234`
 - **THEN** it prints `skill-graft 0.2.0 (e294a0e)` on one line
 
 #### Scenario: Commit that is not a hash
@@ -123,10 +123,10 @@ anywhere else, it SHALL print the version only.
 
 ### Requirement: Version on a damaged installation
 
-`skill-graft --version` SHALL exit 0 whatever the installation holds. When the installer's record of where it came
-from cannot be read or parsed, it SHALL print the version only. When no installed metadata is found, or it cannot be
-read or decoded, or its version, stripped of surrounding whitespace, is missing or not printable ASCII without spaces,
-the version SHALL read `unknown`, followed by the commit as for any version.
+`skill-graft --version` SHALL exit 0 whatever the installation holds. When the installer's record of where it came from
+cannot be read or parsed, it SHALL print the version only. When no installed metadata is found, or it cannot be read or
+decoded, or its version, stripped of surrounding whitespace, is missing or not printable ASCII without spaces, the
+version SHALL read `unknown`, followed by the commit as for any version.
 
 #### Scenario: Unreadable record
 
@@ -157,11 +157,11 @@ the version SHALL read `unknown`, followed by the commit as for any version.
 
 ### Requirement: Warnings come last
 
-Every command SHALL print its warnings, those about `skill-graft.toml` and those about the **Hull**, on standard
-error after everything else it prints, its notices and APM's output included, and only its error line, if it
-fails, after them. A command that fails after it read the config or computed the **Hull** SHALL still print the
-warnings found so far. Each warning SHALL be printed once. An edit that changes no value SHALL print none, as the edit
-spec has it print only its notices.
+Every command SHALL print its warnings, those about `skill-graft.toml` and those about the **Hull**, on standard error
+after everything else it prints, its notices and APM's output included, and only its error line, if it fails, after
+them. A command that fails after it read the config or computed the **Hull** SHALL still print the warnings found so
+far. Each warning SHALL be printed once. An edit that changes no value SHALL print none, as the edit spec has it print
+only its notices.
 
 #### Scenario: Resolve
 
@@ -183,8 +183,8 @@ spec has it print only its notices.
 
 - **WHEN** `mp/tdd` reaches `mp/grilling`, `mp/tdd` calls `/foo`, no **Source** has `foo`, and the user runs
   `skill-graft add mp/grilling`
-- **THEN** the `/foo` warning is printed after the tree and after the notice that `mp/grilling` was already in
-  the **Hull**
+- **THEN** the `/foo` warning is printed after the tree and after the notice that `mp/grilling` was already in the
+  **Hull**
 
 #### Scenario: Config warning
 
@@ -193,8 +193,8 @@ spec has it print only its notices.
 
 #### Scenario: Edit fails before resolving
 
-- **WHEN** a path **Source** `own` lies inside a folder APM deploys to and the user runs
-  `skill-graft unbind own/x`, which is not bound
+- **WHEN** a path **Source** `own` lies inside a folder APM deploys to and the user runs `skill-graft unbind own/x`,
+  which is not bound
 - **THEN** the warning naming `own` is printed, then the error, and the command exits 1
 
 #### Scenario: Failing command
@@ -205,6 +205,6 @@ spec has it print only its notices.
 
 #### Scenario: Edit that changes nothing
 
-- **WHEN** a path **Source** `own` lies inside a folder APM deploys to, `own/chisel` is an **Entry**, and the user
-  runs `skill-graft add own/chisel`
+- **WHEN** a path **Source** `own` lies inside a folder APM deploys to, `own/chisel` is an **Entry**, and the user runs
+  `skill-graft add own/chisel`
 - **THEN** only the notice that `own/chisel` is already an entry is printed, and the command exits 0

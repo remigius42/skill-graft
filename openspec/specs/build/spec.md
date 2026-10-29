@@ -2,19 +2,19 @@
 
 ## Purpose
 
-Vendors the **Entries** into the skill-graft APM package and deploys it through APM, failing loudly where APM
-would fail quietly.
+Vendors the **Entries** into the skill-graft APM package and deploys it through APM, failing loudly where APM would fail
+quietly.
 
 ## Requirements
 
 ### Requirement: Vendor entries
 
-`skill-graft build` SHALL make `~/.apm/skill-graft/.apm/skills/` hold exactly one folder per **Hull** **Skill**,
-named after the **Skill**'s **Deployed name** and holding a copy of the **Skill**'s whole folder, renamed and
-rewritten as the `renames` capability says and otherwise byte for byte. Nothing outside that folder is vendored.
-Folders from earlier builds that are no longer in the **Hull** SHALL be removed. The folder SHALL be replaced only
-once every copy succeeded; a failed copy SHALL leave it as it was. `build --into` vendors into another
-folder instead, as "Build into a folder" says.
+`skill-graft build` SHALL make `~/.apm/skill-graft/.apm/skills/` hold exactly one folder per **Hull** **Skill**, named
+after the **Skill**'s **Deployed name** and holding a copy of the **Skill**'s whole folder, renamed and rewritten as the
+`renames` capability says and otherwise byte for byte. Nothing outside that folder is vendored. Folders from earlier
+builds that are no longer in the **Hull** SHALL be removed. The folder SHALL be replaced only once every copy succeeded;
+a failed copy SHALL leave it as it was. `build --into` vendors into another folder instead, as "Build into a folder"
+says.
 
 #### Scenario: Whole folder copied
 
@@ -38,16 +38,15 @@ folder instead, as "Build into a folder" says.
 
 #### Scenario: Copy fails
 
-- **WHEN** a previous build vendored `chisel`, and a **Hull** **Skill**'s folder holds a file the user cannot
-  read
+- **WHEN** a previous build vendored `chisel`, and a **Hull** **Skill**'s folder holds a file the user cannot read
 - **THEN** `build` exits non-zero naming the file, and `.apm/skills/` still holds the previous `chisel`
 
 ### Requirement: Symlinks stay within the skill
 
 A symlink in a **Hull** **Skill**'s folder SHALL lead to an existing regular file inside that folder, and SHALL be
-vendored as a copy of that file. A symlink leading outside the folder, to a missing file, to a FIFO or device, or
-to any folder (which could form a cycle), SHALL be an error naming the link, and `build` SHALL then write nothing.
-Symlinks under `.git`, which is never vendored, are not checked.
+vendored as a copy of that file. A symlink leading outside the folder, to a missing file, to a FIFO or device, or to any
+folder (which could form a cycle), SHALL be an error naming the link, and `build` SHALL then write nothing. Symlinks
+under `.git`, which is never vendored, are not checked.
 
 #### Scenario: Symlink leaving the skill
 
@@ -67,10 +66,10 @@ Symlinks under `.git`, which is never vendored, are not checked.
 ### Requirement: Deploy through APM
 
 After vendoring, `build` without `--no-install` or `--into` SHALL run
-`apm install -g <absolute path of ~/.apm/skill-graft>`, which also registers the package, and succeed only if APM
-exits 0 and `~/.apm/apm.yml` lists the package: as `- x` or `- path: x`, with `~` or an absolute path, compared
-resolved. In project scope it SHALL instead run `apm install ./.apm/skill-graft` in the project root and check the
-project root's `apm.yml`, where a relative path is relative to the project root. APM's output SHALL reach the user.
+`apm install -g <absolute path of ~/.apm/skill-graft>`, which also registers the package, and succeed only if APM exits
+0 and `~/.apm/apm.yml` lists the package: as `- x` or `- path: x`, with `~` or an absolute path, compared resolved. In
+project scope it SHALL instead run `apm install ./.apm/skill-graft` in the project root and check the project root's
+`apm.yml`, where a relative path is relative to the project root. APM's output SHALL reach the user.
 
 #### Scenario: APM succeeds
 
@@ -104,8 +103,8 @@ project root's `apm.yml`, where a relative path is relative to the project root.
 
 #### Scenario: Project build from a subfolder
 
-- **WHEN** the user runs `skill-graft build` in `~/repo/src`, `~/repo/.apm/skill-graft/` exists, and APM exits 0
-  leaving `- ./.apm/skill-graft` in `~/repo/apm.yml`
+- **WHEN** the user runs `skill-graft build` in `~/repo/src`, `~/repo/.apm/skill-graft/` exists, and APM exits 0 leaving
+  `- ./.apm/skill-graft` in `~/repo/apm.yml`
 - **THEN** APM ran in `~/repo` with `install ./.apm/skill-graft` and no `-g`, and `build` exits 0
 
 #### Scenario: Project package not registered
@@ -125,9 +124,9 @@ project root's `apm.yml`, where a relative path is relative to the project root.
 ### Requirement: Build resolves first
 
 `build` SHALL resolve the **Hull** as `resolve` does before vendoring, and write `skill-graft.lock` once vendoring
-succeeded, before running APM. A resolution or vendoring error SHALL leave the lock unchanged. Its warnings come
-last, after APM's output, as "Warnings come last" says. `build --into` writes its lock into another folder
-instead, as "Build into a folder" says.
+succeeded, before running APM. A resolution or vendoring error SHALL leave the lock unchanged. Its warnings come last,
+after APM's output, as "Warnings come last" says. `build --into` writes its lock into another folder instead, as "Build
+into a folder" says.
 
 #### Scenario: Lock written
 
@@ -147,9 +146,9 @@ instead, as "Build into a folder" says.
 ### Requirement: Build into a folder
 
 `build --into <dir>` SHALL resolve and vendor as `build` does, but into `<dir>/.apm/skills/` instead of the
-**Package**'s `.apm/skills/`, and write the lock to `<dir>/skill-graft.lock` instead of the **Package**'s. It
-SHALL NOT run `apm`, read the scope's `apm.yml`, or create, change or delete anything in the **Package**. The
-cache is written as by any `build`. A relative `<dir>` is relative to the working folder.
+**Package**'s `.apm/skills/`, and write the lock to `<dir>/skill-graft.lock` instead of the **Package**'s. It SHALL NOT
+run `apm`, read the scope's `apm.yml`, or create, change or delete anything in the **Package**. The cache is written as
+by any `build`. A relative `<dir>` is relative to the working folder.
 
 #### Scenario: Throwaway build
 
@@ -161,13 +160,12 @@ cache is written as by any `build`. A relative `<dir>` is relative to the workin
 
 - **WHEN** an earlier `build` vendored the **Package**, an **Upstream** **Skill** changed since, and the user runs
   `build --into <dir>`
-- **THEN** the **Package**'s `.apm/skills/`, `skill-graft.lock` and `skill-graft.toml` are byte for byte as
-  before, and `<dir>` holds the changed **Skill**
+- **THEN** the **Package**'s `.apm/skills/`, `skill-graft.lock` and `skill-graft.toml` are byte for byte as before, and
+  `<dir>` holds the changed **Skill**
 
 #### Scenario: Package never built
 
-- **WHEN** the **Package** holds no `.apm/skills/` and no `skill-graft.lock`, and the user runs
-  `build --into <dir>`
+- **WHEN** the **Package** holds no `.apm/skills/` and no `skill-graft.lock`, and the user runs `build --into <dir>`
 - **THEN** the **Package** still holds neither
 
 #### Scenario: Uncached ref
@@ -202,9 +200,9 @@ cache is written as by any `build`. A relative `<dir>` is relative to the workin
 
 ### Requirement: Into lock matches an in-place lock
 
-The lock `build --into <dir>` writes SHALL be byte for byte the lock `build` would write into the **Package**
-from the same input. Paths a project-scope lock records relative to the **Package** stay relative to the
-**Package**, not to `<dir>`.
+The lock `build --into <dir>` writes SHALL be byte for byte the lock `build` would write into the **Package** from the
+same input. Paths a project-scope lock records relative to the **Package** stay relative to the **Package**, not to
+`<dir>`.
 
 #### Scenario: Same lock
 
@@ -213,17 +211,17 @@ from the same input. Paths a project-scope lock records relative to the **Packag
 
 #### Scenario: Project path source
 
-- **WHEN** in project scope `[sources.own]` has `path = "../../skills"` and the user runs `build --into <dir>`
-  with `<dir>` outside the project
+- **WHEN** in project scope `[sources.own]` has `path = "../../skills"` and the user runs `build --into <dir>` with
+  `<dir>` outside the project
 - **THEN** `<dir>/skill-graft.lock` records `own`'s path as `../../skills`
 
 ### Requirement: Into folder is empty and apart
 
 `<dir>` SHALL be an existing, empty folder, compared resolved. It SHALL NOT lie in a **Package** (any path through
-`.apm/skill-graft`, resolved or as given with `..` normalized), in a path **Source**'s folder, or in or around the
-git cache, both resolved; all three compared ignoring case. Otherwise `build` SHALL exit 1 naming `<dir>` and why,
-before resolving; the **Source** check follows loading the config, the others precede it. `build` SHALL never create
-or delete `<dir>` itself.
+`.apm/skill-graft`, resolved or as given with `..` normalized), in a path **Source**'s folder, or in or around the git
+cache, both resolved; all three compared ignoring case. Otherwise `build` SHALL exit 1 naming `<dir>` and why, before
+resolving; the **Source** check follows loading the config, the others precede it. `build` SHALL never create or delete
+`<dir>` itself.
 
 #### Scenario: Missing folder
 
@@ -237,8 +235,8 @@ or delete `<dir>` itself.
 
 #### Scenario: Inside a package
 
-- **WHEN** `<dir>` is an empty folder inside the **Package**, inside another `.apm/skill-graft/`, or under a
-  path such as `.APM/Skill-Graft/` that differs from one only in case
+- **WHEN** `<dir>` is an empty folder inside the **Package**, inside another `.apm/skill-graft/`, or under a path such
+  as `.APM/Skill-Graft/` that differs from one only in case
 - **THEN** `build --into <dir>` exits 1 naming `<dir>`, and the **Package** is unchanged
 
 #### Scenario: Inside a source
@@ -248,8 +246,7 @@ or delete `<dir>` itself.
 
 #### Scenario: Inside the cache
 
-- **WHEN** `<dir>` is an empty folder inside the git cache, reached directly or through a symlinked
-  `XDG_CACHE_HOME`
+- **WHEN** `<dir>` is an empty folder inside the git cache, reached directly or through a symlinked `XDG_CACHE_HOME`
 - **THEN** `build --into <dir>` exits 1 naming `<dir>`
 
 #### Scenario: Cache inside the folder
@@ -264,8 +261,8 @@ or delete `<dir>` itself.
 
 ### Requirement: Into never installs
 
-`--into` SHALL imply not running APM, so `--into` together with `--no-install` SHALL be a usage error (exit 2),
-as SHALL `--into` without a value or with an empty one. All are reported before the **Package** is looked for.
+`--into` SHALL imply not running APM, so `--into` together with `--no-install` SHALL be a usage error (exit 2), as SHALL
+`--into` without a value or with an empty one. All are reported before the **Package** is looked for.
 
 #### Scenario: With no-install
 
@@ -285,8 +282,8 @@ as SHALL `--into` without a value or with an empty one. All are reported before 
 ### Requirement: Into names the folder
 
 `build --into <dir>` SHALL print `skill-graft: into: <absolute path of <dir>>` on stderr right after the
-`skill-graft: package:` line, which still names the **Package**, including when the command fails after its
-arguments parsed.
+`skill-graft: package:` line, which still names the **Package**, including when the command fails after its arguments
+parsed.
 
 #### Scenario: Both lines
 

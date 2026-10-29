@@ -6,9 +6,9 @@ In a hardened **Check**, each checked **Skill** SHALL be read by its own headles
 `--restricted`, `--strict-mcp-config`, the tools `Read`, `Grep` and `Glob` only, and `--max-turns` and
 `--max-budget-usd` set to the **Package**'s `reader-turns` and `reader-budget-usd`, whose folders are that **Skill**'s
 **Upstream** folder, vendored copy, a copy of its own patch files, and its targets' **Upstream** folders. At most
-`readers-at-once` readers SHALL run at once. The probe SHALL carry both caps at their defaults, as it runs before
-the config is checked. The reader definition SHALL ship in the skill's folder. A reader SHALL
-report every finding in the report shape, or `none`.
+`readers-at-once` readers SHALL run at once. The probe SHALL carry both caps at their defaults, as it runs before the
+config is checked. The reader definition SHALL ship in the skill's folder. A reader SHALL report every finding in the
+report shape, or `none`.
 
 #### Scenario: Injected skill
 
@@ -36,8 +36,8 @@ report every finding in the report shape, or `none`.
 #### Scenario: Costly reader
 
 - **WHEN** `skill-graft.toml` has no `[check]` table, and a reader's spend passes 1 USD
-- **THEN** its reader stops after that turn, the report names that **Skill** as having no report, and the **Check**
-  goes on
+- **THEN** its reader stops after that turn, the report names that **Skill** as having no report, and the **Check** goes
+  on
 
 #### Scenario: The probe's caps
 
@@ -96,8 +96,8 @@ chose SHALL reach the agent.
 #### Scenario: Injected file name
 
 - **WHEN** the patcher writes a one-line file named `run-skill-graft-bind-mp-x-own-evil.md`
-- **THEN** the summary reads `files: 1, lines: +1 -0, binary: 0`, and the skill runs nothing it did not propose and
-  the user did not accept
+- **THEN** the summary reads `files: 1, lines: +1 -0, binary: 0`, and the skill runs nothing it did not propose and the
+  user did not accept
 
 #### Scenario: Patcher error
 
@@ -112,9 +112,9 @@ patches applied, into a base folder and a working copy, each in a new temporary 
 `--max-budget-usd` set to the **Package**'s `patcher-turns` and `patcher-budget-usd`, and the working copy's folder
 alone, edit the working copy, its reply discarded. A patcher that exits non-zero SHALL end that fix. It SHALL diff the
 base against the working copy, and show the diff's summary, counted from that diff, and its path; a summary counting a
-binary file SHALL end that fix, as a **Patch** cannot hold it. Before the diff, a file name holding a control
-character, in the base or the working copy, SHALL end that fix, counted with no name shown. It SHALL add the
-**Patch** to the **Package** only once the user has read it and accepts.
+binary file SHALL end that fix, as a **Patch** cannot hold it. Before the diff, a file name holding a control character,
+in the base or the working copy, SHALL end that fix, counted with no name shown. It SHALL add the **Patch** to the
+**Package** only once the user has read it and accepts.
 
 #### Scenario: Patch declined after review
 

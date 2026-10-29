@@ -1,8 +1,8 @@
 # graft-check eval
 
 `run.sh` runs the working copy of `skills/graft-check/` headless with `claude -p` and checks its reports. An agent's
-report varies between runs and costs tokens, so this is an eval, run by hand when the skill changes, outside
-pre-commit and CI.
+report varies between runs and costs tokens, so this is an eval, run by hand when the skill changes, outside pre-commit
+and CI.
 
 ```sh
 uv sync
@@ -11,8 +11,8 @@ CLAUDE_CODE_OAUTH_TOKEN=<token> evals/graft-check/run.sh clean fix   # only thes
 ```
 
 `ANTHROPIC_API_KEY=<key>` works as well. `claude setup-token` prints a token billed to your subscription. Without a
-token or a key the script stops before building anything. Each scenario is one `claude` session (`fix`, `unhardened`
-and `older-claude` take two turns), and a hardened **Check** starts one more `claude` process per checked **Skill**, a
+token or a key the script stops before building anything. Each scenario is one `claude` session (`fix`, `unhardened` and
+`older-claude` take two turns), and a hardened **Check** starts one more `claude` process per checked **Skill**, a
 reader, plus one probe reader, at about 0.06 USD each.
 
 ## Scenarios
@@ -45,12 +45,12 @@ question"; a relative link into a renamed skill's folder), plus a user patch add
 `~/.cache/skill-graft` are never read or written, and no personal setting, hook or deployed skill changes the run.
 `--allowedTools` grants `skill-graft`, `mktemp`, `diff`, what the hardened **Check** runs (`printenv`, `command -v`,
 `claude`, `cd`, `cp`, `mv`, `rm`, `git apply`, `awk`), reads, writes, searches and subagents; headless, any other tool
-call is denied. Claude Code's Bash does not pass the token on to the readers, so `claude` on `PATH` is a wrapper
-reading it from a file only you can read in the temporary folder, deleted on exit. The `unhardened` and
-`older-claude` scenarios' `claude` wrappers pass every other call to that one, the outer session's included, and the
-scenarios run with `--output-format stream-json` to see their tool calls. `--add-dir` grants the whole temporary
-folder, where the throwaway builds, the cache and the sources lie, outside the project.
+call is denied. Claude Code's Bash does not pass the token on to the readers, so `claude` on `PATH` is a wrapper reading
+it from a file only you can read in the temporary folder, deleted on exit. The `unhardened` and `older-claude`
+scenarios' `claude` wrappers pass every other call to that one, the outer session's included, and the scenarios run with
+`--output-format stream-json` to see their tool calls. `--add-dir` grants the whole temporary folder, where the
+throwaway builds, the cache and the sources lie, outside the project.
 
 The script prints each report, then one `ok` or `FAILED` line per check, and exits non-zero when any check fails or
-`claude` does. A finding counts when one line of the report holds its text and its kind. Read the reports too: the
-grep only shows that each finding is named.
+`claude` does. A finding counts when one line of the report holds its text and its kind. Read the reports too: the grep
+only shows that each finding is named.

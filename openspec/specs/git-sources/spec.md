@@ -2,17 +2,17 @@
 
 ## Purpose
 
-Fetches git **Sources** into a cache outside the package and reads each at its **Ref**, so a build is the same
-wherever and whenever it runs.
+Fetches git **Sources** into a cache outside the package and reads each at its **Ref**, so a build is the same wherever
+and whenever it runs.
 
 ## Requirements
 
 ### Requirement: Cache outside the package
 
-Git **Sources** SHALL be cached under `$XDG_CACHE_HOME/skill-graft/`, else `~/.cache/skill-graft/`: one bare
-repository per git URL, shared by every alias naming that URL and fetched at most once per command, and one
-checkout per commit. Deleting the cache SHALL lose nothing: the next command that needs a **Ref** fetches it
-again. An interrupted clone or checkout SHALL never be mistaken for a complete one, nor block the next run.
+Git **Sources** SHALL be cached under `$XDG_CACHE_HOME/skill-graft/`, else `~/.cache/skill-graft/`: one bare repository
+per git URL, shared by every alias naming that URL and fetched at most once per command, and one checkout per commit.
+Deleting the cache SHALL lose nothing: the next command that needs a **Ref** fetches it again. An interrupted clone or
+checkout SHALL never be mistaken for a complete one, nor block the next run.
 
 #### Scenario: Default location
 
@@ -47,8 +47,7 @@ again. An interrupted clone or checkout SHALL never be mistaken for a complete o
 
 ### Requirement: Hash format of the remote
 
-The cache repository SHALL use the remote's object format, SHA-1 or SHA-256, so a `ref` of either length
-works.
+The cache repository SHALL use the remote's object format, SHA-1 or SHA-256, so a `ref` of either length works.
 
 #### Scenario: SHA-256 remote
 
@@ -57,15 +56,14 @@ works.
 
 ### Requirement: Read at the ref
 
-A command that reads a git **Source**'s skills SHALL read them at its `ref`, exactly, and SHALL never change
-`ref` or read any other commit. A commit in the cache SHALL be used without contacting the remote. Only when
-the commit is missing SHALL the command fetch every branch; if the commit is still missing, that SHALL be an
-error naming the alias and the `ref`.
+A command that reads a git **Source**'s skills SHALL read them at its `ref`, exactly, and SHALL never change `ref` or
+read any other commit. A commit in the cache SHALL be used without contacting the remote. Only when the commit is
+missing SHALL the command fetch every branch; if the commit is still missing, that SHALL be an error naming the alias
+and the `ref`.
 
 #### Scenario: Upstream moved on
 
-- **WHEN** `ref` names commit A, A is in the cache, the remote's branch has moved to commit B, and the user runs
-  `build`
+- **WHEN** `ref` names commit A, A is in the cache, the remote's branch has moved to commit B, and the user runs `build`
 - **THEN** the vendored skills are those at A, the remote is not contacted, and `skill-graft.toml` is unchanged
 
 #### Scenario: Fresh machine
@@ -80,9 +78,8 @@ error naming the alias and the `ref`.
 
 ### Requirement: Build needs every ref
 
-`build` SHALL fail when any git **Source** has no `ref`, whether or not an **Entry** uses it, naming every such
-alias and telling the user to run the one `skill-graft update` command naming them all. `build` SHALL then write
-nothing.
+`build` SHALL fail when any git **Source** has no `ref`, whether or not an **Entry** uses it, naming every such alias
+and telling the user to run the one `skill-graft update` command naming them all. `build` SHALL then write nothing.
 
 #### Scenario: New git source
 
@@ -96,25 +93,24 @@ nothing.
 
 ### Requirement: The checkout is the upstream tree
 
-A git **Source**'s folder SHALL be the full tree of its `ref` with the bytes as committed, the same on every
-machine: files marked `export-ignore` included, no `.gitattributes` conversion or filter applied, exec bits and
-symlinks kept; with `subdirectory`, that folder of the tree. Skill discovery and vendoring then work as for a path
-**Source**, except that discovery follows only symlinked folders that stay inside the **Source**'s folder, and
-opens a `SKILL.md` that is a symlink only when it resolves inside its **Skill**'s folder: their author is not the
-user. A **Skill** whose `SKILL.md` is a symlink resolving outside its folder SHALL have an unreadable name, its error
-naming the link by its full path and not what it leads to.
-Submodules SHALL be skipped and LFS objects SHALL NOT be fetched (their pointer files are vendored as committed).
+A git **Source**'s folder SHALL be the full tree of its `ref` with the bytes as committed, the same on every machine:
+files marked `export-ignore` included, no `.gitattributes` conversion or filter applied, exec bits and symlinks kept;
+with `subdirectory`, that folder of the tree. Skill discovery and vendoring then work as for a path **Source**, except
+that discovery follows only symlinked folders that stay inside the **Source**'s folder, and opens a `SKILL.md` that is a
+symlink only when it resolves inside its **Skill**'s folder: their author is not the user. A **Skill** whose `SKILL.md`
+is a symlink resolving outside its folder SHALL have an unreadable name, its error naming the link by its full path and
+not what it leads to. Submodules SHALL be skipped and LFS objects SHALL NOT be fetched (their pointer files are vendored
+as committed).
 
 #### Scenario: Skill from git
 
-- **WHEN** commit A of source `mp` holds `skills/tdd/SKILL.md` and `skills/tdd/refs/x.md`, and `mp/tdd` is an
-  **Entry**
+- **WHEN** commit A of source `mp` holds `skills/tdd/SKILL.md` and `skills/tdd/refs/x.md`, and `mp/tdd` is an **Entry**
 - **THEN** `build` vendors `.apm/skills/tdd/` holding both files, without `.git`
 
 #### Scenario: Attributes ignored
 
-- **WHEN** commit A has `.gitattributes` with `* text eol=crlf` and `*.md filter=f`, the user's git config
-  defines `filter.f.smudge`, and `SKILL.md` was committed with LF line endings
+- **WHEN** commit A has `.gitattributes` with `* text eol=crlf` and `*.md filter=f`, the user's git config defines
+  `filter.f.smudge`, and `SKILL.md` was committed with LF line endings
 - **THEN** the vendored `SKILL.md` equals the committed blob byte for byte
 
 #### Scenario: Link out of the tree
@@ -132,8 +128,8 @@ Submodules SHALL be skipped and LFS objects SHALL NOT be fetched (their pointer 
 
 #### Scenario: Unused skill linked out of the tree
 
-- **WHEN** commit A holds `evil/SKILL.md` as a symlink to `/dev/zero`, and `mp/tdd`, another **Skill** of commit A,
-  is the only **Entry**
+- **WHEN** commit A holds `evil/SKILL.md` as a symlink to `/dev/zero`, and `mp/tdd`, another **Skill** of commit A, is
+  the only **Entry**
 - **THEN** `build` finishes and vendors `tdd`
 
 #### Scenario: SKILL.md linked inside its skill
@@ -154,10 +150,10 @@ Submodules SHALL be skipped and LFS objects SHALL NOT be fetched (their pointer 
 
 ### Requirement: Read only the subdirectory
 
-A git **Source** with `subdirectory` SHALL have as its folder that subdirectory of the tree at the commit read:
-its `ref`, or its branch tip during `update`. Discovery SHALL walk it as it walks a tree's root, following only
-symlinked folders that stay inside the subdirectory. Skills elsewhere in the tree SHALL NOT be **Skills** of the
-**Source**, not even as targets of a **Reference**.
+A git **Source** with `subdirectory` SHALL have as its folder that subdirectory of the tree at the commit read: its
+`ref`, or its branch tip during `update`. Discovery SHALL walk it as it walks a tree's root, following only symlinked
+folders that stay inside the subdirectory. Skills elsewhere in the tree SHALL NOT be **Skills** of the **Source**, not
+even as targets of a **Reference**.
 
 #### Scenario: One plugin of many
 
@@ -167,8 +163,8 @@ symlinked folders that stay inside the subdirectory. Skills elsewhere in the tre
 
 #### Scenario: Skill outside the subdirectory
 
-- **WHEN** `subdirectory = "skills"`, commit A holds `skills/a/SKILL.md` calling `/b` and
-  `.claude/skills/b/SKILL.md`, and `x/a` is an **Entry**
+- **WHEN** `subdirectory = "skills"`, commit A holds `skills/a/SKILL.md` calling `/b` and `.claude/skills/b/SKILL.md`,
+  and `x/a` is an **Entry**
 - **THEN** `x/b` is not in the **Hull**, and the unresolved-reference warning names `/b`
 
 #### Scenario: Link out of the subdirectory
@@ -184,8 +180,8 @@ symlinked folders that stay inside the subdirectory. Skills elsewhere in the tre
 
 ### Requirement: The subdirectory is a real folder at the commit
 
-A command reading a git **Source** with `subdirectory` SHALL fail, naming the alias, the subdirectory and the
-commit, when at that commit the subdirectory is missing, is not a folder, or has a symlink anywhere in its path.
+A command reading a git **Source** with `subdirectory` SHALL fail, naming the alias, the subdirectory and the commit,
+when at that commit the subdirectory is missing, is not a folder, or has a symlink anywhere in its path.
 
 #### Scenario: Missing at ref
 
@@ -205,22 +201,22 @@ commit, when at that commit the subdirectory is missing, is not a folder, or has
 
 #### Scenario: Case differs
 
-- **WHEN** `subdirectory = "PStack/skills"` and commit A holds `pstack/skills`, on a case-insensitive file system
-  as on any other
+- **WHEN** `subdirectory = "PStack/skills"` and commit A holds `pstack/skills`, on a case-insensitive file system as on
+  any other
 - **THEN** the command exits non-zero naming the alias, `PStack/skills` and A
 
 #### Scenario: Shared export
 
-- **WHEN** `[sources.a]` and `[sources.b]` have the same `git` URL and `ref`, `a` with
-  `subdirectory = "x/skills"` and `b` with `subdirectory = "y/skills"`
+- **WHEN** `[sources.a]` and `[sources.b]` have the same `git` URL and `ref`, `a` with `subdirectory = "x/skills"` and
+  `b` with `subdirectory = "y/skills"`
 - **THEN** the cache holds one export of that commit, and each **Source** has only the **Skills** under its own
   subdirectory
 
 ### Requirement: Git failures are reported
 
-When `git` is not on `PATH`, or a clone or fetch fails, the command SHALL exit non-zero naming the alias and
-the URL and showing git's error output, never a traceback. Git and ssh SHALL prompt for credentials as they do
-in the user's shell, with the user's git config applied.
+When `git` is not on `PATH`, or a clone or fetch fails, the command SHALL exit non-zero naming the alias and the URL and
+showing git's error output, never a traceback. Git and ssh SHALL prompt for credentials as they do in the user's shell,
+with the user's git config applied.
 
 #### Scenario: Unreachable remote
 

@@ -15,9 +15,9 @@ A `SKILL.md` that is, or links to, a device or FIFO (`/dev/zero`, `/dev/stdin`) 
   **Entries** never see it.
 - In every **Source**, discovery never opens a `SKILL.md` that is not a regular file once links are followed; its name
   is unreadable likewise.
-- A `SKILL.md` symlink to a file inside its **Skill** keeps working, as `build` vendors it. Discovery still reads a
-  path **Source**'s `SKILL.md` linked anywhere to a regular file; `build`'s symlink check still refuses one that leaves
-  a **Hull** **Skill**.
+- A `SKILL.md` symlink to a file inside its **Skill** keeps working, as `build` vendors it. Discovery still reads a path
+  **Source**'s `SKILL.md` linked anywhere to a regular file; `build`'s symlink check still refuses one that leaves a
+  **Hull** **Skill**.
 
 ## Capabilities
 

@@ -2,17 +2,16 @@
 
 ## Purpose
 
-`skill-graft why` and `skill-graft tree` show the user why a **Skill** is in the **Hull** and what the whole
-**Hull** looks like, as text or as a Mermaid diagram, without changing anything.
+`skill-graft why` and `skill-graft tree` show the user why a **Skill** is in the **Hull** and what the whole **Hull**
+looks like, as text or as a Mermaid diagram, without changing anything.
 
 ## ADDED Requirements
 
 ### Requirement: Explaining writes nothing
 
-`why` and `tree` SHALL compute the **Hull** from `skill-graft.toml` as `resolve` does, reading each git **Source**
-at its `ref` and fetching only a commit missing from the cache, with the same warnings on standard error and the
-same errors. They SHALL NOT read or write `skill-graft.lock`, write `skill-graft.toml` or `.apm/skills/`, or run
-`apm`.
+`why` and `tree` SHALL compute the **Hull** from `skill-graft.toml` as `resolve` does, reading each git **Source** at
+its `ref` and fetching only a commit missing from the cache, with the same warnings on standard error and the same
+errors. They SHALL NOT read or write `skill-graft.lock`, write `skill-graft.toml` or `.apm/skills/`, or run `apm`.
 
 #### Scenario: No lock
 
@@ -39,8 +38,8 @@ expanded, and marked `(entry)` when the **Skill** is an **Entry**. Prose edges a
 
 #### Scenario: Two paths
 
-- **WHEN** **Entry** `mp/tdd` calls `/grilling` and `/implement`, `mp/implement` calls `Skill(grilling)`, and the
-  user runs `skill-graft why mp/grilling`
+- **WHEN** **Entry** `mp/tdd` calls `/grilling` and `/implement`, `mp/implement` calls `Skill(grilling)`, and the user
+  runs `skill-graft why mp/grilling`
 
 - **THEN** it prints
 
@@ -53,8 +52,8 @@ expanded, and marked `(entry)` when the **Skill** is an **Entry**. Prose edges a
 
 #### Scenario: Repeated skill
 
-- **WHEN** **Entries** `mp/a` and `mp/b` both call `/mid`, `mp/mid` calls `/x` and `/y`, both of which call
-  `/leaf`, and the user runs `skill-graft why mp/leaf`
+- **WHEN** **Entries** `mp/a` and `mp/b` both call `/mid`, `mp/mid` calls `/x` and `/y`, both of which call `/leaf`, and
+  the user runs `skill-graft why mp/leaf`
 
 - **THEN** `mp/mid` is expanded under the first of `mp/x` and `mp/y` and its line under the other ends in `(*)`
 
@@ -66,8 +65,7 @@ expanded, and marked `(entry)` when the **Skill** is an **Entry**. Prose edges a
 #### Scenario: Renamed, patched and bound
 
 - **WHEN** **Entry** `mp/tdd` is renamed to `mp-tdd` and patched, and calls `/notes`, bound to `own/notes`
-- **THEN** `skill-graft why own/notes` prints `└─← mp/tdd as mp-tdd (patched) (/notes, bind) (entry)` under
-  `own/notes`
+- **THEN** `skill-graft why own/notes` prints `└─← mp/tdd as mp-tdd (patched) (/notes, bind) (entry)` under `own/notes`
 
 #### Scenario: Prose not shown
 
@@ -91,9 +89,9 @@ compared exactly.
 
 ### Requirement: Why explains a skill it cannot show
 
-`why` SHALL exit non-zero, printing nothing on standard output, when `<skill>` names no **Hull** **Skill**. The
-error SHALL say why and what to do instead. A bare name that is the name of a **Skill** prose suggests SHALL get
-that **Skill**'s error, as if its **Skill ID** were given.
+`why` SHALL exit non-zero, printing nothing on standard output, when `<skill>` names no **Hull** **Skill**. The error
+SHALL say why and what to do instead. A bare name that is the name of a **Skill** prose suggests SHALL get that
+**Skill**'s error, as if its **Skill ID** were given.
 
 #### Scenario: Upstream name of a renamed skill
 
@@ -130,8 +128,8 @@ that **Skill**'s error, as if its **Skill ID** were given.
 
 ### Requirement: Tree prints resolve's tree
 
-`tree`, and `tree --format text`, SHALL print exactly the tree `resolve` prints for the same config, without
-the prose suggestions.
+`tree`, and `tree --format text`, SHALL print exactly the tree `resolve` prints for the same config, without the prose
+suggestions.
 
 #### Scenario: Same tree
 
@@ -140,13 +138,12 @@ the prose suggestions.
 
 ### Requirement: Tree as Mermaid
 
-`tree --format mermaid` SHALL print a Mermaid `flowchart TD`, without a code fence: one node per **Hull**
-**Skill** labelled as on its tree line (`as <deployed name>`, `(patched)`), the **Entries** in a class `entry`
-drawn with a thicker border, and one arrow per pair of **Skills**, kind and **Bind** that has a tree line,
-labelled with the **Reference** as written (`, bind` when a **Bind** decided it). Prose arrows SHALL be dotted.
-The output SHALL be deterministic. Every label SHALL stand in double quotes, so
-parentheses do not break the diagram, and each backtick in it SHALL be written `#96;`, so Mermaid does not read it
-as a Markdown string.
+`tree --format mermaid` SHALL print a Mermaid `flowchart TD`, without a code fence: one node per **Hull** **Skill**
+labelled as on its tree line (`as <deployed name>`, `(patched)`), the **Entries** in a class `entry` drawn with a
+thicker border, and one arrow per pair of **Skills**, kind and **Bind** that has a tree line, labelled with the
+**Reference** as written (`, bind` when a **Bind** decided it). Prose arrows SHALL be dotted. The output SHALL be
+deterministic. Every label SHALL stand in double quotes, so parentheses do not break the diagram, and each backtick in
+it SHALL be written `#96;`, so Mermaid does not read it as a Markdown string.
 
 #### Scenario: Diagram
 
@@ -175,15 +172,15 @@ as a Markdown string.
 
 ### Requirement: Tree as a mermaid.live link
 
-`tree --format mermaid --link` SHALL print one line: a `https://mermaid.live/edit#pako:` URL whose fragment
-encodes the diagram `--format mermaid` prints, in the form mermaid.live reads. skill-graft SHALL make no network
-call for it and open no browser. `--link` without `--format mermaid` SHALL be a usage error.
+`tree --format mermaid --link` SHALL print one line: a `https://mermaid.live/edit#pako:` URL whose fragment encodes the
+diagram `--format mermaid` prints, in the form mermaid.live reads. skill-graft SHALL make no network call for it and
+open no browser. `--link` without `--format mermaid` SHALL be a usage error.
 
 #### Scenario: Link decodes to the diagram
 
 - **WHEN** the user runs `skill-graft tree --format mermaid --link`
-- **THEN** it prints one URL, and decoding its fragment (url-safe base64, then zlib, then JSON) gives a state
-  whose `code` equals the output of `skill-graft tree --format mermaid`
+- **THEN** it prints one URL, and decoding its fragment (url-safe base64, then zlib, then JSON) gives a state whose
+  `code` equals the output of `skill-graft tree --format mermaid`
 
 #### Scenario: Link without Mermaid
 

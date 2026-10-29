@@ -8,9 +8,9 @@ Creates the skill-graft APM package under `~/.apm/skill-graft/` and registers it
 
 ### Requirement: Init creates the package folder
 
-`skill-graft init` SHALL create `~/.apm/skill-graft/` holding a `skill-graft.toml` whose content is only
-comments explaining `[sources.<alias>]` with `path` and `entries`, and an `apm.yml` of exactly two lines:
-`name: skill-graft` and `version: 0.1.0`.
+`skill-graft init` SHALL create `~/.apm/skill-graft/` holding a `skill-graft.toml` whose content is only comments
+explaining `[sources.<alias>]` with `path` and `entries`, and an `apm.yml` of exactly two lines: `name: skill-graft` and
+`version: 0.1.0`.
 
 #### Scenario: Fresh home
 
@@ -20,9 +20,8 @@ comments explaining `[sources.<alias>]` with `path` and `entries`, and an `apm.y
 
 ### Requirement: Init registers the package with APM
 
-After creating the folder, `init` SHALL run `apm install -g <absolute path of ~/.apm/skill-graft>` and succeed
-only if APM exits 0 and `~/.apm/apm.yml` then lists the package. skill-graft SHALL NOT write `~/.apm/apm.yml`
-itself.
+After creating the folder, `init` SHALL run `apm install -g <absolute path of ~/.apm/skill-graft>` and succeed only if
+APM exits 0 and `~/.apm/apm.yml` then lists the package. skill-graft SHALL NOT write `~/.apm/apm.yml` itself.
 
 #### Scenario: Registration succeeds
 

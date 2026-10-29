@@ -2,18 +2,18 @@
 
 ## Purpose
 
-`skill-graft add`, `remove` and `rename` change the **Entries** and **Renames** in `skill-graft.toml` for the
-user, checking that the result resolves before anything is written.
+`skill-graft add`, `remove` and `rename` change the **Entries** and **Renames** in `skill-graft.toml` for the user,
+checking that the result resolves before anything is written.
 
 ## ADDED Requirements
 
 ### Requirement: Resolve before writing
 
 `add`, `remove` and `rename` SHALL compute the **Hull** of the edited config, as `resolve` does, before writing
-anything. Only if that succeeds SHALL they write `skill-graft.toml`, then `skill-graft.lock`, and print what
-`resolve` prints. A failure SHALL exit 1 and leave both files unchanged. They SHALL NOT write `.apm/skills/` or run
-`apm`. When the command changes no value (every **Skill ID** given is a no-op), it SHALL print only its notices,
-exit 0, and neither resolve nor write anything.
+anything. Only if that succeeds SHALL they write `skill-graft.toml`, then `skill-graft.lock`, and print what `resolve`
+prints. A failure SHALL exit 1 and leave both files unchanged. They SHALL NOT write `.apm/skills/` or run `apm`. When
+the command changes no value (every **Skill ID** given is a no-op), it SHALL print only its notices, exit 0, and neither
+resolve nor write anything.
 
 #### Scenario: Edit succeeds
 
@@ -22,16 +22,16 @@ exit 0, and neither resolve nor write anything.
 
 #### Scenario: Edit fails to resolve
 
-- **WHEN** the user runs `skill-graft add mp/notes` and `mp/notes` calls `/x`, which matches several other
-  **Sources** and no **Bind**
+- **WHEN** the user runs `skill-graft add mp/notes` and `mp/notes` calls `/x`, which matches several other **Sources**
+  and no **Bind**
 - **THEN** it exits non-zero, and `skill-graft.toml` and `skill-graft.lock` keep their bytes
 
 ### Requirement: Edit the TOML in place
 
 An edit SHALL change only the values it is about, keeping every other comment, blank line, key order and other
-formatting, and SHALL replace the file atomically. A symlinked `skill-graft.toml` SHALL stay a symlink: its
-target is what changes, and relative paths in it resolve as `load` resolves them. A command that changes no value
-SHALL NOT rewrite the file. A removed value's own trailing comment goes with it.
+formatting, and SHALL replace the file atomically. A symlinked `skill-graft.toml` SHALL stay a symlink: its target is
+what changes, and relative paths in it resolve as `load` resolves them. A command that changes no value SHALL NOT
+rewrite the file. A removed value's own trailing comment goes with it.
 
 #### Scenario: Comments survive
 
@@ -55,8 +55,8 @@ Notices SHALL go to standard error with the warnings and SHALL NOT change the ex
 
 ### Requirement: Add entries
 
-`add <skill-id>…` SHALL append each **Skill ID** to `entries` in the order given, keeping the array's style, and
-SHALL create `entries` before the first table when it is absent. A **Skill ID** given twice SHALL be added once.
+`add <skill-id>…` SHALL append each **Skill ID** to `entries` in the order given, keeping the array's style, and SHALL
+create `entries` before the first table when it is absent. A **Skill ID** given twice SHALL be added once.
 
 #### Scenario: Appended
 
@@ -76,10 +76,10 @@ SHALL create `entries` before the first table when it is absent. A **Skill ID** 
 
 ### Requirement: Add checks the skill
 
-`add` SHALL refuse a **Skill ID** that is malformed, has an undeclared alias, or names no **Skill** in its
-**Source**, writing nothing. A **Skill ID** already an **Entry** SHALL be a notice and left alone. A **Skill**
-already in the **Hull** before the edit SHALL be added, with a notice naming a **Skill** whose slash or Skill tool
-**Reference** reached it then; **Skill IDs** added by the same command do not count.
+`add` SHALL refuse a **Skill ID** that is malformed, has an undeclared alias, or names no **Skill** in its **Source**,
+writing nothing. A **Skill ID** already an **Entry** SHALL be a notice and left alone. A **Skill** already in the
+**Hull** before the edit SHALL be added, with a notice naming a **Skill** whose slash or Skill tool **Reference**
+reached it then; **Skill IDs** added by the same command do not count.
 
 #### Scenario: Unknown skill
 
@@ -109,16 +109,16 @@ already in the **Hull** before the edit SHALL be added, with a notice naming a *
 
 #### Scenario: Reached only through itself
 
-- **WHEN** `mp/x` calls `/y`, `mp/y` calls `/x`, no **Entry** reaches either, an **Entry** mentions `x` in prose,
-  and the user runs `skill-graft add mp/x`
+- **WHEN** `mp/x` calls `/y`, `mp/y` calls `/x`, no **Entry** reaches either, an **Entry** mentions `x` in prose, and
+  the user runs `skill-graft add mp/x`
 - **THEN** `entries` holds `mp/x` and no notice is printed
 
 ### Requirement: Remove entries
 
-`remove <skill-id>…` SHALL delete each **Skill ID** from `entries`, keeping the array's style. A **Skill ID** that
-is no **Entry** SHALL be an error, writing nothing. A removed **Skill** still in the **Hull** SHALL be a notice
-naming a **Skill** whose slash or Skill tool **Reference** reaches it from the remaining **Entries**. Removing the last
-**Entry** SHALL leave `entries = []`, an empty **Hull**.
+`remove <skill-id>…` SHALL delete each **Skill ID** from `entries`, keeping the array's style. A **Skill ID** that is no
+**Entry** SHALL be an error, writing nothing. A removed **Skill** still in the **Hull** SHALL be a notice naming a
+**Skill** whose slash or Skill tool **Reference** reaches it from the remaining **Entries**. Removing the last **Entry**
+SHALL leave `entries = []`, an empty **Hull**.
 
 #### Scenario: Last entry
 
@@ -145,8 +145,8 @@ naming a **Skill** whose slash or Skill tool **Reference** reaches it from the r
 ### Requirement: Rename a skill
 
 `rename <skill-id> <name>` SHALL set the **Skill**'s value in `[rename]`, replacing an existing value in place or
-appending a key, and SHALL append a `[rename]` table at the end of the file when it is absent. `<name>` SHALL be
-a valid **Skill** name. A `<name>` equal to the current **Deployed name** SHALL be a notice and change nothing.
+appending a key, and SHALL append a `[rename]` table at the end of the file when it is absent. `<name>` SHALL be a valid
+**Skill** name. A `<name>` equal to the current **Deployed name** SHALL be a notice and change nothing.
 
 #### Scenario: New rename
 
@@ -166,22 +166,22 @@ a valid **Skill** name. A `<name>` equal to the current **Deployed name** SHALL 
 
 ### Requirement: Undo a rename
 
-`rename <skill-id> <name>` with `<name>` equal to the **Skill**'s upstream name SHALL remove its `[rename]` key,
-leaving the table in place even if empty.
+`rename <skill-id> <name>` with `<name>` equal to the **Skill**'s upstream name SHALL remove its `[rename]` key, leaving
+the table in place even if empty.
 
 #### Scenario: Undone
 
 - **WHEN** **Entry** `mp/code-review` is renamed to `mp-code-review` and the user runs
   `skill-graft rename mp/code-review code-review`
-- **THEN** `[rename]` no longer holds `mp/code-review`, and the shipped reserved-name warning for `code-review`
-  is printed
+- **THEN** `[rename]` no longer holds `mp/code-review`, and the shipped reserved-name warning for `code-review` is
+  printed
 
 ### Requirement: Rename checks the skill
 
-`rename` SHALL refuse a malformed **Skill ID**, an undeclared alias, or a **Skill** missing from its **Source**,
-writing nothing. A **Skill** outside the **Hull** SHALL be renamed, with the unused-rename warning. A **Deployed
-name** that clashes with another **Hull** **Skill** or the user's `reserved` SHALL be the usual error, writing
-nothing; one in the shipped reserved list SHALL be written, with the usual warning.
+`rename` SHALL refuse a malformed **Skill ID**, an undeclared alias, or a **Skill** missing from its **Source**, writing
+nothing. A **Skill** outside the **Hull** SHALL be renamed, with the unused-rename warning. A **Deployed name** that
+clashes with another **Hull** **Skill** or the user's `reserved` SHALL be the usual error, writing nothing; one in the
+shipped reserved list SHALL be written, with the usual warning.
 
 #### Scenario: Unknown skill to rename
 

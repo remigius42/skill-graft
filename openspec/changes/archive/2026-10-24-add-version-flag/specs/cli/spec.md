@@ -2,12 +2,11 @@
 
 ### Requirement: Version
 
-`skill-graft --version` SHALL print `skill-graft <version>` on one line to standard output and exit 0, without
-reading `skill-graft.toml`. Installed from a git repository, the version SHALL be followed by the revision asked for
-and the commit installed, abbreviated to seven characters: `(<revision> @ <commit>)`, or `(<commit>)` when no revision
-was asked for or the revision is that commit, in full or abbreviated to
-seven or more characters. Installed from anywhere else, it SHALL print
-the version only.
+`skill-graft --version` SHALL print `skill-graft <version>` on one line to standard output and exit 0, without reading
+`skill-graft.toml`. Installed from a git repository, the version SHALL be followed by the revision asked for and the
+commit installed, abbreviated to seven characters: `(<revision> @ <commit>)`, or `(<commit>)` when no revision was asked
+for or the revision is that commit, in full or abbreviated to seven or more characters. Installed from anywhere else, it
+SHALL print the version only.
 
 #### Scenario: Release
 
@@ -29,8 +28,8 @@ the version only.
 
 #### Scenario: Git install at a commit
 
-- **WHEN** skill-graft 0.2.0 was installed from `git+https://github.com/remigius42/skill-graft@` followed by the full
-  or a short hash of commit `e294a0e…`
+- **WHEN** skill-graft 0.2.0 was installed from `git+https://github.com/remigius42/skill-graft@` followed by the full or
+  a short hash of commit `e294a0e…`
 - **THEN** it prints `skill-graft 0.2.0 (e294a0e)`
 
 #### Scenario: Other version control

@@ -14,8 +14,8 @@ Checked against `skills/graft-check/` on main (`8c0bad8`, `probe-check-readers` 
 - Claude Code 2.1.310: `claude --help` does not list `--max-turns`, but `claude -p --max-turns 1` parses (an unknown
   option exits 1 with `unknown option`; `--max-turns 1` gets past option parsing to the `--agents` file check).
   `--max-budget-usd` is listed, for `--print` only.
-- `pipeline/config.py:109`: an unknown top-level key is an error, so a `[check]` table needs skill-graft's consent.
-  Step 2's throwaway build parses the config before the skill reads any of it.
+- `pipeline/config.py:109`: an unknown top-level key is an error, so a `[check]` table needs skill-graft's consent. Step
+  2's throwaway build parses the config before the skill reads any of it.
 - `probe-check-readers`, now on main: step 1 runs a probe, a reader run as every reader runs, in an empty folder with
   `mode: probe`, before step 2's build; the commands name `<reader.json>` and `<patcher.json>`.
 
@@ -31,8 +31,8 @@ Checked against `skills/graft-check/` on main (`8c0bad8`, `probe-check-readers` 
 
 **Non-Goals:**
 
-- Limits per **Source** or per **Skill**: one set per **Package** covers a large **Hull** by raising it; finer grain
-  can come when someone needs it.
+- Limits per **Source** or per **Skill**: one set per **Package** covers a large **Hull** by raising it; finer grain can
+  come when someone needs it.
 - Limits for an unhardened **Check**: its reading happens in the session itself, which no flag bounds.
 - Enforcing the parallelism cap outside the prompt: the main agent starts readers through its own tool calls, and
   nothing between it and Bash counts them.
@@ -42,16 +42,15 @@ Checked against `skills/graft-check/` on main (`8c0bad8`, `probe-check-readers` 
 - **Discard the patcher's reply, not bound it.** The main agent needs nothing from it: the diff, which the user reads,
   says what changed, and the exit code says whether the patcher ran. Sending stdout to `<out-file>`, a `mktemp` file the
   skill never opens on exit 0, keeps the reply from the main agent's context, which a length bound and a prompt rule
-  would only narrow.
-  `patcher.json` then asks for `done` only, so the patcher spends no tokens on a summary nobody reads.
-  Alternative: one line per file, each of at most 200 characters, as quoted data (Future work's wording); rejected as
-  weaker, and still prompt-level.
-- **The error line in printable ASCII.** Every other byte goes before the line is chosen: a carriage return, an
-  escape, a C1 control or a bidi override cannot overwrite or reorder what the user sees, a line of only control
-  characters cannot stand in for the error after it, and a 200-byte cut cannot split a character, since each is one
-  byte. `claude`'s `·` in `Not logged in · Please run /login` is dropped with them. An escape sequence's printable
-  tail, such as `[2K`, stays: a portable `sed` cannot match the escape byte. Alternative: drop only ASCII controls;
-  rejected, as C1 controls and bidi overrides passed and a cut could split a character.
+  would only narrow. `patcher.json` then asks for `done` only, so the patcher spends no tokens on a summary nobody
+  reads. Alternative: one line per file, each of at most 200 characters, as quoted data (Future work's wording);
+  rejected as weaker, and still prompt-level.
+- **The error line in printable ASCII.** Every other byte goes before the line is chosen: a carriage return, an escape,
+  a C1 control or a bidi override cannot overwrite or reorder what the user sees, a line of only control characters
+  cannot stand in for the error after it, and a 200-byte cut cannot split a character, since each is one byte.
+  `claude`'s `·` in `Not logged in · Please run /login` is dropped with them. An escape sequence's printable tail, such
+  as `[2K`, stays: a portable `sed` cannot match the escape byte. Alternative: drop only ASCII controls; rejected, as C1
+  controls and bidi overrides passed and a cut could split a character.
 - **Keep one line of the patcher's errors.** stderr goes to `<err-file>`, stdout to `<out-file>`, both `mktemp` files
   outside `<work>`, where the patcher cannot write. On a non-zero exit the skill shows the first non-empty line of
   stderr, else of stdout, in printable ASCII only, cut to 200 characters
@@ -88,19 +87,19 @@ Checked against `skills/graft-check/` on main (`8c0bad8`, `probe-check-readers` 
   files with targets. The patcher reads a file or two and edits; 10 is generous. A capped reader is a **Skill** with no
   report, which step 4 already handles: its exit code or reply fails the report shape. Alternative: one cap for both;
   rejected, as the patcher's work is smaller.
-- **And a budget: 1 USD per reader, 0.50 USD for the patcher.** Turns miss a run of few turns that each read huge
-  files; `--max-budget-usd` bounds that. One minimal reader turn cost 0.014 USD on Opus 5.5, and `evals/graft-check/`
-  puts a typical reader near 0.06 USD on an earlier model, so 1 USD stops only a runaway. Measured on 2.1.310: a
-  budget of 0.001 USD stopped after the turn that passed it, at 0.0048 USD, exit 1, `subtype`
-  `error_max_budget_usd`. So a run can pass its budget by one turn, and the cost is at list price
-  (`costBasis: list`) on a subscription too: a bound on tokens, not on a bill.
+- **And a budget: 1 USD per reader, 0.50 USD for the patcher.** Turns miss a run of few turns that each read huge files;
+  `--max-budget-usd` bounds that. One minimal reader turn cost 0.014 USD on Opus 5.5, and `evals/graft-check/` puts a
+  typical reader near 0.06 USD on an earlier model, so 1 USD stops only a runaway. Measured on 2.1.310: a budget of
+  0.001 USD stopped after the turn that passed it, at 0.0048 USD, exit 1, `subtype` `error_max_budget_usd`. So a run can
+  pass its budget by one turn, and the cost is at list price (`costBasis: list`) on a subscription too: a bound on
+  tokens, not on a bill.
 - **The limits live in `[check]` in `skill-graft.toml`.** The skill already holds that file, and skill-graft parses it
-  at step 2's build, so a value the skill reads is a plain decimal skill-graft has checked (see below), not text it
-  must judge. `config.py` checks the five keys and their values and keeps nothing: no command of skill-graft uses
-  them. The skill writes each command with `<reader-turns>` and the like, filled from `[check]` or the default it
-  names. Alternatives: environment variables (no check but the prompt's, invisible in the **Package**); arguments to
-  `/graft-check` (mixed with the **Skill IDs**, and set again at every run). Backward compatibility is not a concern:
-  an older skill-graft refusing `[check]` only affects someone who set it.
+  at step 2's build, so a value the skill reads is a plain decimal skill-graft has checked (see below), not text it must
+  judge. `config.py` checks the five keys and their values and keeps nothing: no command of skill-graft uses them. The
+  skill writes each command with `<reader-turns>` and the like, filled from `[check]` or the default it names.
+  Alternatives: environment variables (no check but the prompt's, invisible in the **Package**); arguments to
+  `/graft-check` (mixed with the **Skill IDs**, and set again at every run). Backward compatibility is not a concern: an
+  older skill-graft refusing `[check]` only affects someone who set it.
 - **Limit values are checked as written.** The skill reads `skill-graft.toml`'s text, not tomllib's numbers, and TOML
   writes 30 as `0x1E`, `3_0` or `+30` too, which `claude` may read otherwise. So `config.py` reads each `[check]`
   value's source form through `tomlkit` (already a runtime dependency; `table.item(key).as_string()`, which gives
@@ -115,29 +114,29 @@ Checked against `skills/graft-check/` on main (`8c0bad8`, `probe-check-readers` 
   batches: Claude Code returns parallel Bash calls of one message together, so "start the next when one ends" would need
   background calls and polling, where a count is easier to lose. A batch waits on its slowest reader. Four keeps a large
   **Hull** quick and its spend at any moment small. Prompt-level only, recorded as such.
-- **Exit at the cap, measured.** On Claude Code 2.1.310, the reader's flags with `--max-turns 1`, asked to glob and
-  then read, exit 1 with `Error: Reached max turns (1)` on stdout and nothing on stderr (`--output-format json`:
-  `subtype` `error_max_turns`). A capped reader fails the report shape and exits non-zero: no report. A capped
-  patcher exits non-zero: the fix ends, its partial edits never diffed. The budget's stop exits 1 the same way.
+- **Exit at the cap, measured.** On Claude Code 2.1.310, the reader's flags with `--max-turns 1`, asked to glob and then
+  read, exit 1 with `Error: Reached max turns (1)` on stdout and nothing on stderr (`--output-format json`: `subtype`
+  `error_max_turns`). A capped reader fails the report shape and exits non-zero: no report. A capped patcher exits
+  non-zero: the fix ends, its partial edits never diffed. The budget's stop exits 1 the same way.
 
 ### The probe
 
 - `reader.json` is untouched here; the caps are flags, not prompt text.
 - The probe is a reader "run as every reader runs", so it carries both caps, written as their defaults
-  (`--max-turns 30 --max-budget-usd 1.0`). It runs at step 1, before step 2's build has checked the config, so it
-  never takes a value from `skill-graft.toml`, which nothing has checked yet. It reads nothing and replies one word,
-  about 0.01 USD, so a lower `[check]` budget it ignores costs the user nothing they would notice. The test from task
-  3.1 asserts every `claude -p` command block in `SKILL.md` carries both caps.
-- The `check` delta modifies three requirements `probe-check-readers` left as they were ("Skill text is read by
-  hardened readers", "The main agent never reads skill text", "Patches are written by a confined patcher"); their main
-  text is unchanged since this change was proposed.
+  (`--max-turns 30 --max-budget-usd 1.0`). It runs at step 1, before step 2's build has checked the config, so it never
+  takes a value from `skill-graft.toml`, which nothing has checked yet. It reads nothing and replies one word, about
+  0.01 USD, so a lower `[check]` budget it ignores costs the user nothing they would notice. The test from task 3.1
+  asserts every `claude -p` command block in `SKILL.md` carries both caps.
+- The `check` delta modifies three requirements `probe-check-readers` left as they were ("Skill text is read by hardened
+  readers", "The main agent never reads skill text", "Patches are written by a confined patcher"); their main text is
+  unchanged since this change was proposed.
 
 ## Risks / Trade-offs
 
 - \[A default too low for a large **Skill**\] → that **Skill** has no report, named; the user raises `reader-turns` or
   `reader-budget-usd` in `[check]` and checks it alone.
-- [A user raises a limit far] → their choice, in their own config; injected text cannot reach `skill-graft.toml`
-  through a reader, and a **Patch** goes only into `patches/`.
+- [A user raises a limit far] → their choice, in their own config; injected text cannot reach `skill-graft.toml` through
+  a reader, and a **Patch** goes only into `patches/`.
 - [The parallelism cap is prompt-level] → a hijacked main agent could ignore it; but no **Skill** text reaches the main
   agent to hijack it, so only a reader's report or the patcher's error line could try, and both are quoted data.
   Recorded in Residual risks.

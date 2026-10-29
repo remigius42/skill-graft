@@ -1,7 +1,7 @@
 ## Purpose
 
-The `graft-check` skill: a **Check** the user runs on a built **Package**, in which an agent reads the **Skills**
-for what form-based resolution gets wrong and proposes **Binds**, **Entries** and **Patches** to fix it.
+The `graft-check` skill: a **Check** the user runs on a built **Package**, in which an agent reads the **Skills** for
+what form-based resolution gets wrong and proposes **Binds**, **Entries** and **Patches** to fix it.
 
 ## ADDED Requirements
 
@@ -15,10 +15,10 @@ resolving it gives no warning and no suggestion.
 
 #### Scenario: Alone in its hull
 
-- **WHEN** a git **Source** `sg` with `subdirectory = "skills"` holds a commit of this repository's `skills/`
-  folder, and `entries = ["sg/graft-check"]`
-- **THEN** `skill-graft resolve` succeeds, the **Hull** is `sg/graft-check` alone, and it prints no warning and
-  no suggestion
+- **WHEN** a git **Source** `sg` with `subdirectory = "skills"` holds a commit of this repository's `skills/` folder,
+  and `entries = ["sg/graft-check"]`
+- **THEN** `skill-graft resolve` succeeds, the **Hull** is `sg/graft-check` alone, and it prints no warning and no
+  suggestion
 
 ### Requirement: Invoked only by the user
 
@@ -72,21 +72,21 @@ rewritten. The **Package**'s own `.apm/skills/` and lock SHALL change only throu
 
 ### Requirement: Lock version
 
-The skill SHALL read lock `version = 1` only; any other version SHALL stop it. A higher one SHALL come with the
-advice to run `skill-graft update` on the **Source** the user installed `graft-check` from, in the **Package**
-that installed it, then `skill-graft build` there, and a new session.
+The skill SHALL read lock `version = 1` only; any other version SHALL stop it. A higher one SHALL come with the advice
+to run `skill-graft update` on the **Source** the user installed `graft-check` from, in the **Package** that installed
+it, then `skill-graft build` there, and a new session.
 
 #### Scenario: Newer lock
 
 - **WHEN** the lock has `version = 2`
-- **THEN** the skill stops and says to update the **Source** `graft-check` was installed from, in its own
-  **Package**, run `skill-graft build` there, and start a new session
+- **THEN** the skill stops and says to update the **Source** `graft-check` was installed from, in its own **Package**,
+  run `skill-graft build` there, and start a new session
 
 ### Requirement: What it reports
 
 The skill SHALL report the findings as a table, one row per finding with the **Skill**, the file, the text, its kind,
-and a proposed fix. The kinds SHALL be: a missed **Reference**, a false **Reference**, a **Reference** resolved to
-the wrong **Skill**, a rewrite of the wrong text or a missed one, and a relative link that the vendored copy breaks.
+and a proposed fix. The kinds SHALL be: a missed **Reference**, a false **Reference**, a **Reference** resolved to the
+wrong **Skill**, a rewrite of the wrong text or a missed one, and a relative link that the vendored copy breaks.
 
 #### Scenario: Planted defects
 
@@ -113,10 +113,10 @@ of them are wrong, it SHALL propose a **Patch** of the **Skill** that holds the 
 ### Requirement: Fixes only once accepted
 
 The skill SHALL apply a fix only after the user accepts it, one fix at a time, through `skill-graft add`,
-`skill-graft bind` or `skill-graft unbind`, or as a **Patch** written by the README's recipe with the **Package**
-from the `package:` line in place of its `~/.apm/skill-graft/`. After each it SHALL build again `--into` another
-new, empty folder and name every **Skill** that left or joined the **Hull** since the previous build. It SHALL NOT edit
-the vendored **Skills**.
+`skill-graft bind` or `skill-graft unbind`, or as a **Patch** written by the README's recipe with the **Package** from
+the `package:` line in place of its `~/.apm/skill-graft/`. After each it SHALL build again `--into` another new, empty
+folder and name every **Skill** that left or joined the **Hull** since the previous build. It SHALL NOT edit the
+vendored **Skills**.
 
 #### Scenario: Declined
 
@@ -135,23 +135,22 @@ the vendored **Skills**.
 
 ### Requirement: A failed fix is undone
 
-When the build after an accepted fix fails, the skill SHALL undo that fix and show the error. After `skill-graft add`
-it SHALL run `skill-graft remove` on the same **Skill IDs**; after `skill-graft bind` or `skill-graft unbind` it SHALL
-restore the key's value from before the fix, or unbind a key that had none. After a **Patch** it SHALL delete the
-patch file and remove only its own item from the **Skill**'s `[patches]` list, the key only if the skill created it,
-and the `[patches]` table only if the skill created that, leaving the user's earlier **Patches** and
-`skill-graft.toml` otherwise as it was.
+When the build after an accepted fix fails, the skill SHALL undo that fix and show the error. After `skill-graft add` it
+SHALL run `skill-graft remove` on the same **Skill IDs**; after `skill-graft bind` or `skill-graft unbind` it SHALL
+restore the key's value from before the fix, or unbind a key that had none. After a **Patch** it SHALL delete the patch
+file and remove only its own item from the **Skill**'s `[patches]` list, the key only if the skill created it, and the
+`[patches]` table only if the skill created that, leaving the user's earlier **Patches** and `skill-graft.toml`
+otherwise as it was.
 
 #### Scenario: Bind restored
 
-- **WHEN** `[bind]` has `"mp/g" = "own/notes"`, the user accepts `skill-graft bind mp/g mp/grill`, and the build
-  fails
+- **WHEN** `[bind]` has `"mp/g" = "own/notes"`, the user accepts `skill-graft bind mp/g mp/grill`, and the build fails
 - **THEN** `[bind]` again has `"mp/g" = "own/notes"`
 
 #### Scenario: Earlier patches kept
 
-- **WHEN** `[patches]` has `"mp/x" = ["patches/first.patch"]`, the skill appends `patches/second.patch`, and the
-  build fails
+- **WHEN** `[patches]` has `"mp/x" = ["patches/first.patch"]`, the skill appends `patches/second.patch`, and the build
+  fails
 - **THEN** `[patches]` again has `"mp/x" = ["patches/first.patch"]`, and `patches/second.patch` is gone
 
 ### Requirement: Never deploys

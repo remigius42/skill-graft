@@ -4,14 +4,13 @@
 
 ### Requirement: Selection errors
 
-An alias naming a path **Source** or no declared **Source**, an unselected git **Source** without `ref` (it
-cannot be resolved), a `branch` that is not a valid branch name (revision syntax such as `main~3` included), a
-`branch` the remote lacks (including one deleted since an earlier fetch), and a remote that reports no default
-branch when `branch` is absent SHALL be errors naming the alias, and `update` SHALL then write nothing. The
-first three SHALL be reported before any remote is contacted. An unselected git **Source** without `ref` SHALL be
-reported in one error naming every unselected git **Source** without `ref`, suggesting the command run again with
-those added, each alias once and in config order, keeping `--dry-run` and `--diff`, and replacing `--expect` with
-`--dry-run`.
+An alias naming a path **Source** or no declared **Source**, an unselected git **Source** without `ref` (it cannot be
+resolved), a `branch` that is not a valid branch name (revision syntax such as `main~3` included), a `branch` the remote
+lacks (including one deleted since an earlier fetch), and a remote that reports no default branch when `branch` is
+absent SHALL be errors naming the alias, and `update` SHALL then write nothing. The first three SHALL be reported before
+any remote is contacted. An unselected git **Source** without `ref` SHALL be reported in one error naming every
+unselected git **Source** without `ref`, suggesting the command run again with those added, each alias once and in
+config order, keeping `--dry-run` and `--diff`, and replacing `--expect` with `--dry-run`.
 
 #### Scenario: Path source named
 

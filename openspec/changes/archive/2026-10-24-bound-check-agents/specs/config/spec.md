@@ -5,8 +5,8 @@
 An optional `[check]` table SHALL set the limits of a hardened **Check**: `reader-turns` (default 30), `patcher-turns`
 (default 10) and `readers-at-once` (default 4), each a positive integer written in decimal digits, and
 `reader-budget-usd` (default 1.0) and `patcher-budget-usd` (default 0.5), each a positive number written in decimal
-digits with an optional fraction. A key left out SHALL take its default. Any other value, or the same value in
-another TOML form, SHALL be an error naming the key and what it must be, so the text the skill reads is the value.
+digits with an optional fraction. A key left out SHALL take its default. Any other value, or the same value in another
+TOML form, SHALL be an error naming the key and what it must be, so the text the skill reads is the value.
 
 #### Scenario: Defaults
 
@@ -40,9 +40,9 @@ another TOML form, SHALL be an error naming the key and what it must be, so the 
 ### Requirement: Unsupported keys are errors
 
 Any top-level key other than `sources`, `entries`, `bind`, `rename`, `reserved`, `patches` and `check`, any source key
-other than `path`, `git`, `branch`, `ref`, `prefix` and `subdirectory`, and any `[check]` key other than
-`reader-turns`, `reader-budget-usd`, `patcher-turns`, `patcher-budget-usd` and `readers-at-once`, SHALL be an error,
-so declared intent is never silently ignored.
+other than `path`, `git`, `branch`, `ref`, `prefix` and `subdirectory`, and any `[check]` key other than `reader-turns`,
+`reader-budget-usd`, `patcher-turns`, `patcher-budget-usd` and `readers-at-once`, SHALL be an error, so declared intent
+is never silently ignored.
 
 #### Scenario: Git source
 

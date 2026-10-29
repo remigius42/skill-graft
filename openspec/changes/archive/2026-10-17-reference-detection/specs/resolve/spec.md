@@ -5,17 +5,17 @@
 ### Requirement: Prose suggestions
 
 `resolve` SHALL print, after the tree, each suggested **Skill** with the **Skills** mentioning it and how to accept it
-(`skill-graft add <skill id>`, named in the header), sorted, on standard output. `build` and `update` SHALL NOT
-print them, but when there are any SHALL print one line on standard error,
-`skill-graft: <n> prose suggestion(s): run skill-graft resolve`; `update` counts those of the new tips, and
-after `--dry-run`, whose tips `resolve` cannot see yet, prints
+(`skill-graft add <skill id>`, named in the header), sorted, on standard output. `build` and `update` SHALL NOT print
+them, but when there are any SHALL print one line on standard error,
+`skill-graft: <n> prose suggestion(s): run skill-graft resolve`; `update` counts those of the new tips, and after
+`--dry-run`, whose tips `resolve` cannot see yet, prints
 `skill-graft: <n> prose suggestion(s) at the new tips: update, then run skill-graft resolve` instead.
 
 #### Scenario: Suggestion printed
 
 - **WHEN** `mp/tdd` mentions `diagnosing-bugs`, and `mp/diagnosing-bugs` is not in the **Hull**
-- **THEN** `resolve` prints, after the tree, a header naming `skill-graft add`, then a line naming
-  `mp/diagnosing-bugs` and `mp/tdd`
+- **THEN** `resolve` prints, after the tree, a header naming `skill-graft add`, then a line naming `mp/diagnosing-bugs`
+  and `mp/tdd`
 
 #### Scenario: No suggestions
 
@@ -24,10 +24,9 @@ after `--dry-run`, whose tips `resolve` cannot see yet, prints
 
 #### Scenario: Build announces suggestions
 
-- **WHEN** `mp` has `diagnosing-bugs` and `notes`, **Entry** `mp/tdd` mentions `diagnosing-bugs` and
-  `` `notes` `` but calls neither, and the user runs `build`
-- **THEN** stderr holds `skill-graft: 2 prose suggestion(s): run skill-graft resolve`, and stdout no suggestion
-  block
+- **WHEN** `mp` has `diagnosing-bugs` and `notes`, **Entry** `mp/tdd` mentions `diagnosing-bugs` and `` `notes` `` but
+  calls neither, and the user runs `build`
+- **THEN** stderr holds `skill-graft: 2 prose suggestion(s): run skill-graft resolve`, and stdout no suggestion block
 
 #### Scenario: Update announces suggestions
 

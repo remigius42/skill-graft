@@ -20,8 +20,8 @@ starts them.
 - A probe that fails with "Not logged in" comes with the advice to run `claude auth login`.
 - The skill finds `reader.json` and `patcher.json` in its own folder in any harness, not through Claude Code's
   `${CLAUDE_SKILL_DIR}` alone.
-- `docs/security.md`, the README's Security section and ADR 0007 say the **Check** is hardened wherever a working
-  Claude Code is installed, not only in Claude Code.
+- `docs/security.md`, the README's Security section and ADR 0007 say the **Check** is hardened wherever a working Claude
+  Code is installed, not only in Claude Code.
 
 ## Capabilities
 

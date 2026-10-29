@@ -4,24 +4,24 @@
 
 ### Requirement: Prose references
 
-A prose **Reference** SHALL be a code span whose whole content is a name (`` `grilling` ``), or a bare hyphenated
-token `[a-z0-9]+(-[a-z0-9]+)+` standing as its own token: not preceded by a letter, digit, `_`, `/`, `.`, `-`,
-`~`, `:`, `\`, `<`, `@`, `#`, `=`, `?`, `&`, `$` or `](`, and not followed by a letter, digit, `_`, `/`, `-`,
-`%`, `+`, or `.` or `:` and a letter or digit; nor a YAML key, first on its line (past indent or a list dash) and
-followed by `:`. It SHALL count anywhere, code blocks included, except the value of `SKILL.md`'s front matter
-`name:`, and never inside a slash or Skill tool **Reference**, whose arguments on that line belong to it.
+A prose **Reference** SHALL be a code span whose whole content is a name (`` `grilling` ``), or a bare hyphenated token
+`[a-z0-9]+(-[a-z0-9]+)+` standing as its own token: not preceded by a letter, digit, `_`, `/`, `.`, `-`, `~`, `:`, `\`,
+`<`, `@`, `#`, `=`, `?`, `&`, `$` or `](`, and not followed by a letter, digit, `_`, `/`, `-`, `%`, `+`, or `.` or `:`
+and a letter or digit; nor a YAML key, first on its line (past indent or a list dash) and followed by `:`. It SHALL
+count anywhere, code blocks included, except the value of `SKILL.md`'s front matter `name:`, and never inside a slash or
+Skill tool **Reference**, whose arguments on that line belong to it.
 
 #### Scenario: Backticked and hyphenated
 
-- **WHEN** a **Skill**'s Markdown holds `` use `grilling` ``, `then diagnosing-bugs.`, or `pre-commit run` in a
-  fenced block
+- **WHEN** a **Skill**'s Markdown holds `` use `grilling` ``, `then diagnosing-bugs.`, or `pre-commit run` in a fenced
+  block
 - **THEN** `grilling`, `diagnosing-bugs` and `pre-commit` are prose **References**
 
 #### Scenario: Not prose
 
-- **WHEN** it holds `grilling` unquoted, `` `grilling --fast` ``, `` `mp/grilling` ``, `--dry-run`,
-  `refs/red-green.md`, `x-ray.png`, `[see](my-skill)`, `[x](#my-skill)`, `id="my-skill"`, `foo_my-skill`,
-  `?q=my-skill`, `my-skill%20x`, `allowed-tools: Bash` or `https://x.org/my-skill`
+- **WHEN** it holds `grilling` unquoted, `` `grilling --fast` ``, `` `mp/grilling` ``, `--dry-run`, `refs/red-green.md`,
+  `x-ray.png`, `[see](my-skill)`, `[x](#my-skill)`, `id="my-skill"`, `foo_my-skill`, `?q=my-skill`, `my-skill%20x`,
+  `allowed-tools: Bash` or `https://x.org/my-skill`
 - **THEN** none is a prose **Reference**
 
 #### Scenario: Own name line
@@ -37,16 +37,15 @@ followed by `:`. It SHALL count anywhere, code blocks included, except the value
 
 ### Requirement: Prose resolves in its own source only
 
-A prose **Reference** from a **Skill** in **Source** `a`, unless a **Bind** decides it, SHALL resolve to `a/<name>`
-only when exactly one **Skill** in `a` is named `<name>`, and no **Skill** there with an unreadable name sits in a
-folder so named; otherwise it is no **Reference**:
-no edge, no warning, no error. It SHALL never extend the **Hull**: when its target is in the **Hull** it is an
-edge of kind `prose`, otherwise a suggestion.
+A prose **Reference** from a **Skill** in **Source** `a`, unless a **Bind** decides it, SHALL resolve to `a/<name>` only
+when exactly one **Skill** in `a` is named `<name>`, and no **Skill** there with an unreadable name sits in a folder so
+named; otherwise it is no **Reference**: no edge, no warning, no error. It SHALL never extend the **Hull**: when its
+target is in the **Hull** it is an edge of kind `prose`, otherwise a suggestion.
 
 #### Scenario: Inside the hull
 
-- **WHEN** `mp/tdd` calls `/grilling` and mentions `` `notes` ``, and `mp` has `grilling` and `notes`, with
-  `mp/notes` an **Entry**
+- **WHEN** `mp/tdd` calls `/grilling` and mentions `` `notes` ``, and `mp` has `grilling` and `notes`, with `mp/notes`
+  an **Entry**
 - **THEN** the **Hull** has a `prose` edge `mp/tdd` → `mp/notes`
 
 #### Scenario: Outside the hull
@@ -73,12 +72,12 @@ edge of kind `prose`, otherwise a suggestion.
 
 ### Requirement: Every Markdown file
 
-**References** SHALL be read from every file ending in `.md` (any case) in the **Skill**'s folder, at any depth,
-`.git` excepted, once the **Skill**'s symlinks are checked and any file that is not a regular file, folder or
-symlink (a FIFO, socket or device) is refused as an error naming it. A Markdown file that is not UTF-8 SHALL be skipped
-with a warning naming it; it is still vendored. One that cannot be read at all, a dangling link included, SHALL be
-an error naming it. A **Reference** that resolves, **Binds** applied, to the referencing **Skill** SHALL give no
-edge, and is still rewritten as the `renames` capability says.
+**References** SHALL be read from every file ending in `.md` (any case) in the **Skill**'s folder, at any depth, `.git`
+excepted, once the **Skill**'s symlinks are checked and any file that is not a regular file, folder or symlink (a FIFO,
+socket or device) is refused as an error naming it. A Markdown file that is not UTF-8 SHALL be skipped with a warning
+naming it; it is still vendored. One that cannot be read at all, a dangling link included, SHALL be an error naming it.
+A **Reference** that resolves, **Binds** applied, to the referencing **Skill** SHALL give no edge, and is still
+rewritten as the `renames` capability says.
 
 #### Scenario: Reference in a sibling file
 
@@ -113,15 +112,14 @@ edge, and is still rewritten as the `renames` capability says.
 #### Scenario: Bound self-reference
 
 - **WHEN** `mp/tdd` holds `/tdd`, and `[bind]` has `"mp/tdd" = "own/tdd"`
-- **THEN** `own/tdd` is pulled in, and the command exits non-zero as `mp/tdd` and `own/tdd` share a **Deployed
-  name**
+- **THEN** `own/tdd` is pulled in, and the command exits non-zero as `mp/tdd` and `own/tdd` share a **Deployed name**
 
 ### Requirement: Binds override resolution
 
-A **Bind** `"<a>/<name>" = "<b>/<target>"` SHALL make every slash, Skill tool and prose **Reference** to `<name>`
-from a **Skill** in **Source** `a` resolve to `b/<target>`, whatever the default would give, error or no match
-included. Its target SHALL be found as an **Entry** is; a missing or ambiguous one is an error naming the
-**Bind**. A bound prose **Reference** still never extends the **Hull**.
+A **Bind** `"<a>/<name>" = "<b>/<target>"` SHALL make every slash, Skill tool and prose **Reference** to `<name>` from a
+**Skill** in **Source** `a` resolve to `b/<target>`, whatever the default would give, error or no match included. Its
+target SHALL be found as an **Entry** is; a missing or ambiguous one is an error naming the **Bind**. A bound prose
+**Reference** still never extends the **Hull**.
 
 #### Scenario: Bind across sources
 
@@ -135,8 +133,8 @@ included. Its target SHALL be found as an **Entry** is; a missing or ambiguous o
 
 #### Scenario: Bind to a missing skill
 
-- **WHEN** `[bind]` has `"mp/grilling" = "own/nope"`, a **Hull** **Skill** in `mp` calls `/grilling`, and `own`
-  has no `nope`
+- **WHEN** `[bind]` has `"mp/grilling" = "own/nope"`, a **Hull** **Skill** in `mp` calls `/grilling`, and `own` has no
+  `nope`
 - **THEN** the command exits non-zero naming `mp/grilling` and `own/nope`
 
 #### Scenario: Bound prose

@@ -5,8 +5,8 @@
 ### Requirement: Value types
 
 `sources` SHALL be a table of tables, each source's `path`, `git`, `branch`, `ref`, `prefix` and `subdirectory` a
-string, and `entries` a list of strings. A wrong type or a source table with neither `path` nor `git` SHALL be an
-error naming the key, never a crash.
+string, and `entries` a list of strings. A wrong type or a source table with neither `path` nor `git` SHALL be an error
+naming the key, never a crash.
 
 #### Scenario: Entries as a string
 
@@ -35,9 +35,9 @@ error naming the key, never a crash.
 
 ### Requirement: Unsupported keys are errors
 
-Any top-level key other than `sources`, `entries`, `bind`, `rename`, `reserved` and `patches`, and any source key
-other than `path`, `git`, `branch`, `ref`, `prefix` and `subdirectory`, SHALL be an error, so declared intent is
-never silently ignored.
+Any top-level key other than `sources`, `entries`, `bind`, `rename`, `reserved` and `patches`, and any source key other
+than `path`, `git`, `branch`, `ref`, `prefix` and `subdirectory`, SHALL be an error, so declared intent is never
+silently ignored.
 
 #### Scenario: Git source
 
@@ -66,8 +66,8 @@ never silently ignored.
 
 ### Requirement: Source kinds
 
-Each `[sources.<alias>]` table SHALL hold exactly one of `path` and `git`. Both, or neither, SHALL be an error
-naming the source. `branch`, `ref` and `subdirectory` SHALL be allowed only beside `git`.
+Each `[sources.<alias>]` table SHALL hold exactly one of `path` and `git`. Both, or neither, SHALL be an error naming
+the source. `branch`, `ref` and `subdirectory` SHALL be allowed only beside `git`.
 
 #### Scenario: Both kinds
 
@@ -88,11 +88,10 @@ naming the source. `branch`, `ref` and `subdirectory` SHALL be allowed only besi
 
 ### Requirement: Git source subdirectory
 
-A git source's `subdirectory`, if present, SHALL be a relative path of segments separated by `/`, each non-empty
-and neither `.`, `..` nor `.git` in any case, with no control character and no segment `.apm` followed by
-`skill-graft`. Anything else, the empty string, a leading or trailing `/` and `//` included, SHALL be an error naming
-`sources.<alias>.subdirectory`, never a crash. Loading SHALL NOT read the repository; the commit read checks the
-folder.
+A git source's `subdirectory`, if present, SHALL be a relative path of segments separated by `/`, each non-empty and
+neither `.`, `..` nor `.git` in any case, with no control character and no segment `.apm` followed by `skill-graft`.
+Anything else, the empty string, a leading or trailing `/` and `//` included, SHALL be an error naming
+`sources.<alias>.subdirectory`, never a crash. Loading SHALL NOT read the repository; the commit read checks the folder.
 
 #### Scenario: Valid subdirectory
 
@@ -101,8 +100,8 @@ folder.
 
 #### Scenario: Subdirectory leaving the repository
 
-- **WHEN** `[sources.cp]` has `subdirectory` set to `"../x"`, `"a/../../x"`, `"/etc"`, `"."`, `"a/./b"`, `""`,
-  `"a//b"`, `"a/"`, `"a/.git/b"` or `".GIT"`
+- **WHEN** `[sources.cp]` has `subdirectory` set to `"../x"`, `"a/../../x"`, `"/etc"`, `"."`, `"a/./b"`, `""`, `"a//b"`,
+  `"a/"`, `"a/.git/b"` or `".GIT"`
 - **THEN** the command exits non-zero naming `sources.cp.subdirectory`, and git is never run
 
 #### Scenario: Control character

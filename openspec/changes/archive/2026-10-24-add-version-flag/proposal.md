@@ -2,8 +2,8 @@
 
 ## Why
 
-skill-graft has no way to say which version is installed. The README installs the latest `main`, whose version stays
-the last release's until the next one, so a bug report cannot name the code it ran; the bug template asks for a tag or
+skill-graft has no way to say which version is installed. The README installs the latest `main`, whose version stays the
+last release's until the next one, so a bug report cannot name the code it ran; the bug template asks for a tag or
 commit the user has to dig up.
 
 ## What Changes

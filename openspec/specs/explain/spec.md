@@ -2,17 +2,16 @@
 
 ## Purpose
 
-`skill-graft why` and `skill-graft tree` show the user why a **Skill** is in the **Hull** and what the whole
-**Hull** looks like, as text or as a Mermaid diagram, without changing anything.
+`skill-graft why` and `skill-graft tree` show the user why a **Skill** is in the **Hull** and what the whole **Hull**
+looks like, as text or as a Mermaid diagram, without changing anything.
 
 ## Requirements
 
 ### Requirement: Explaining writes nothing
 
-`why` and `tree` SHALL compute the **Hull** from `skill-graft.toml` as `resolve` does, reading each git **Source**
-at its `ref` and fetching only a commit missing from the cache, with the same warnings on standard error and the
-same errors. They SHALL NOT read or write `skill-graft.lock`, write `skill-graft.toml` or `.apm/skills/`, or run
-`apm`.
+`why` and `tree` SHALL compute the **Hull** from `skill-graft.toml` as `resolve` does, reading each git **Source** at
+its `ref` and fetching only a commit missing from the cache, with the same warnings on standard error and the same
+errors. They SHALL NOT read or write `skill-graft.lock`, write `skill-graft.toml` or `.apm/skills/`, or run `apm`.
 
 #### Scenario: No lock
 
@@ -39,8 +38,8 @@ expanded, and marked `(entry)` when the **Skill** is an **Entry**. Prose edges a
 
 #### Scenario: Two paths
 
-- **WHEN** **Entry** `mp/tdd` calls `/grilling` and `/implement`, `mp/implement` calls `Skill(grilling)`, and the
-  user runs `skill-graft why mp/grilling`
+- **WHEN** **Entry** `mp/tdd` calls `/grilling` and `/implement`, `mp/implement` calls `Skill(grilling)`, and the user
+  runs `skill-graft why mp/grilling`
 
 - **THEN** it prints
 
@@ -53,8 +52,8 @@ expanded, and marked `(entry)` when the **Skill** is an **Entry**. Prose edges a
 
 #### Scenario: Repeated skill
 
-- **WHEN** **Entries** `mp/a` and `mp/b` both call `/mid`, `mp/mid` calls `/x` and `/y`, both of which call
-  `/leaf`, and the user runs `skill-graft why mp/leaf`
+- **WHEN** **Entries** `mp/a` and `mp/b` both call `/mid`, `mp/mid` calls `/x` and `/y`, both of which call `/leaf`, and
+  the user runs `skill-graft why mp/leaf`
 
 - **THEN** `mp/mid` is expanded under the first of `mp/x` and `mp/y` and its line under the other ends in `(*)`
 
@@ -66,8 +65,7 @@ expanded, and marked `(entry)` when the **Skill** is an **Entry**. Prose edges a
 #### Scenario: Renamed, patched and bound
 
 - **WHEN** **Entry** `mp/tdd` is renamed to `mp-tdd` and patched, and calls `/notes`, bound to `own/notes`
-- **THEN** `skill-graft why own/notes` prints `└─← mp/tdd as mp-tdd (patched) (/notes, bind) (entry)` under
-  `own/notes`
+- **THEN** `skill-graft why own/notes` prints `└─← mp/tdd as mp-tdd (patched) (/notes, bind) (entry)` under `own/notes`
 
 #### Scenario: Prose not shown
 
@@ -91,9 +89,9 @@ compared exactly.
 
 ### Requirement: Why explains a skill it cannot show
 
-`why` SHALL exit non-zero, printing nothing on standard output, when `<skill>` names no **Hull** **Skill**. The
-error SHALL say why and what to do instead. A bare name that is the name of a **Skill** prose suggests SHALL get
-that **Skill**'s error, as if its **Skill ID** were given.
+`why` SHALL exit non-zero, printing nothing on standard output, when `<skill>` names no **Hull** **Skill**. The error
+SHALL say why and what to do instead. A bare name that is the name of a **Skill** prose suggests SHALL get that
+**Skill**'s error, as if its **Skill ID** were given.
 
 #### Scenario: Upstream name of a renamed skill
 
@@ -130,8 +128,8 @@ that **Skill**'s error, as if its **Skill ID** were given.
 
 ### Requirement: Tree prints resolve's tree
 
-`tree`, and `tree --format text`, SHALL print exactly the tree `resolve` prints for the same config, without
-the prose suggestions.
+`tree`, and `tree --format text`, SHALL print exactly the tree `resolve` prints for the same config, without the prose
+suggestions.
 
 #### Scenario: Same tree
 
@@ -140,14 +138,13 @@ the prose suggestions.
 
 ### Requirement: Tree as Mermaid
 
-`tree --format mermaid` SHALL print a Mermaid `flowchart TD`, without a code fence: one subgraph per **Source**
-that has a **Hull** **Skill**, holding one node per such **Skill** labelled as on its tree line
-(`as <deployed name>`, `(patched)`), the **Entries** in a class `entry` drawn amber with a thicker border, and one
-arrow per pair of **Skills**, kind and **Bind** that has a tree line, labelled with the **Reference** as written
-(`, bind` when a **Bind** decided it). Prose arrows SHALL be dotted.
-The output SHALL be deterministic. Every label SHALL stand in double quotes, so
-parentheses do not break the diagram, and each backtick in it SHALL be written `#96;`, so Mermaid does not read it
-as a Markdown string.
+`tree --format mermaid` SHALL print a Mermaid `flowchart TD`, without a code fence: one subgraph per **Source** that has
+a **Hull** **Skill**, holding one node per such **Skill** labelled as on its tree line (`as <deployed name>`,
+`(patched)`), the **Entries** in a class `entry` drawn amber with a thicker border, and one arrow per pair of
+**Skills**, kind and **Bind** that has a tree line, labelled with the **Reference** as written (`, bind` when a **Bind**
+decided it). Prose arrows SHALL be dotted. The output SHALL be deterministic. Every label SHALL stand in double quotes,
+so parentheses do not break the diagram, and each backtick in it SHALL be written `#96;`, so Mermaid does not read it as
+a Markdown string.
 
 #### Scenario: Diagram
 
@@ -176,26 +173,26 @@ as a Markdown string.
 
 - **WHEN** `[sources.own]` has `path = "~/own"` and `[sources.mp]` has
   `git = "https://user:secret@example.com/mp.git?private_token=t0k3n"`
-- **THEN** their subgraphs are titled `"own"` and `"mp"`, and the diagram holds no `<a`, no `click` line, no `://`,
-  and none of `user`, `secret`, `example.com` or `t0k3n`
+- **THEN** their subgraphs are titled `"own"` and `"mp"`, and the diagram holds no `<a`, no `click` line, no `://`, and
+  none of `user`, `secret`, `example.com` or `t0k3n`
 
 #### Scenario: Subgraphs in hull order
 
 - **WHEN** the **Hull** reaches `a/x`, then `b/y`, then `a/z`
-- **THEN** subgraph `s0` is **Source** `a` holding `a/x` and `a/z` in that order, subgraph `s1` is `b`, and every
-  arrow follows the last subgraph
+- **THEN** subgraph `s0` is **Source** `a` holding `a/x` and `a/z` in that order, subgraph `s1` is `b`, and every arrow
+  follows the last subgraph
 
 ### Requirement: Tree as a mermaid.live link
 
-`tree --format mermaid --link` SHALL print one line: a `https://mermaid.live/edit#pako:` URL whose fragment
-encodes the diagram `--format mermaid` prints, in the form mermaid.live reads. skill-graft SHALL make no network
-call for it and open no browser. `--link` without `--format mermaid` SHALL be a usage error.
+`tree --format mermaid --link` SHALL print one line: a `https://mermaid.live/edit#pako:` URL whose fragment encodes the
+diagram `--format mermaid` prints, in the form mermaid.live reads. skill-graft SHALL make no network call for it and
+open no browser. `--link` without `--format mermaid` SHALL be a usage error.
 
 #### Scenario: Link decodes to the diagram
 
 - **WHEN** the user runs `skill-graft tree --format mermaid --link`
-- **THEN** it prints one URL, and decoding its fragment (url-safe base64, then zlib, then JSON) gives a state
-  whose `code` equals the output of `skill-graft tree --format mermaid`
+- **THEN** it prints one URL, and decoding its fragment (url-safe base64, then zlib, then JSON) gives a state whose
+  `code` equals the output of `skill-graft tree --format mermaid`
 
 #### Scenario: Link without Mermaid
 
@@ -205,42 +202,39 @@ call for it and open no browser. `--link` without `--format mermaid` SHALL be a 
 ### Requirement: Recognized forge repositories
 
 A git **Source** URL SHALL name a GitHub or GitLab repository when, as an `https`, `http`, `ssh` or `git` URL or as
-`[user@]host:path`, it holds no `?`, `#`, whitespace or control character, its host is `github.com` or
-`gitlab.com` in any case, and its path is name segments (a letter or digit, then letters, digits, `.`, `_` or
-`-`), two on GitHub and two or more on GitLab, the last optionally ending in `.git`, then optionally one `/`. Its
-repository URL SHALL be `https://<host>/<segments>`, without `.git`, built only from those parts. No other URL names a repository.
+`[user@]host:path`, it holds no `?`, `#`, whitespace or control character, its host is `github.com` or `gitlab.com` in
+any case, and its path is name segments (a letter or digit, then letters, digits, `.`, `_` or `-`), two on GitHub and
+two or more on GitLab, the last optionally ending in `.git`, then optionally one `/`. Its repository URL SHALL be
+`https://<host>/<segments>`, without `.git`, built only from those parts. No other URL names a repository.
 
 #### Scenario: Repository URLs
 
-- **WHEN** a git **Source** URL is one of
-  `https://github.com/o/r.git`, `https://github.com/o/r/`, `http://GitHub.com/o/r`, `git://github.com/o/r.git`,
-  `ssh://git@github.com/o/r.git`, `ssh://git@github.com:22/o/r.git`, `git@github.com:o/r.git`,
-  `github.com:o/r`, `https://user:secret@github.com/o/r.git`, `git@gitlab.com:g/sub/r.git`,
-  `https://oauth2:secret@gitlab.com/g/r`
+- **WHEN** a git **Source** URL is one of `https://github.com/o/r.git`, `https://github.com/o/r/`,
+  `http://GitHub.com/o/r`, `git://github.com/o/r.git`, `ssh://git@github.com/o/r.git`,
+  `ssh://git@github.com:22/o/r.git`, `git@github.com:o/r.git`, `github.com:o/r`,
+  `https://user:secret@github.com/o/r.git`, `git@gitlab.com:g/sub/r.git`, `https://oauth2:secret@gitlab.com/g/r`
 - **THEN** its repository URL is `https://github.com/o/r`, or for the GitLab ones `https://gitlab.com/g/sub/r` and
   `https://gitlab.com/g/r`
 
 #### Scenario: Not a repository
 
-- **WHEN** a git **Source** URL is one of
-  `https://github.com@evil.example/o/r`, `https://evil.example/github.com/o/r`, `https://github.com.evil.example/o/r`,
-  `https://www.github.com/o/r`, `https://github.com/o`, `https://github.com/o/r/x`, `https://gitlab.com/g`,
-  `https://github.com/o/r?private_token=t`, `https://github.com/o/r#x`, `https://github.com/o/%72`,
-  `https://github.com/o/../r`, `https://github.com//o/r`, `https://github.com/o/r.git/x`, `git@github.com:~o/r`,
-  `file:///srv/github.com/o/r`, `/srv/github.com/o/r`, `user:tok@github.com:o/r` (host `user`),
-  `https://git<tab>hub.com/o/r` with a tab character
+- **WHEN** a git **Source** URL is one of `https://github.com@evil.example/o/r`, `https://evil.example/github.com/o/r`,
+  `https://github.com.evil.example/o/r`, `https://www.github.com/o/r`, `https://github.com/o`,
+  `https://github.com/o/r/x`, `https://gitlab.com/g`, `https://github.com/o/r?private_token=t`,
+  `https://github.com/o/r#x`, `https://github.com/o/%72`, `https://github.com/o/../r`, `https://github.com//o/r`,
+  `https://github.com/o/r.git/x`, `git@github.com:~o/r`, `file:///srv/github.com/o/r`, `/srv/github.com/o/r`,
+  `user:tok@github.com:o/r` (host `user`), `https://git<tab>hub.com/o/r` with a tab character
 - **THEN** it names no repository
 
 ### Requirement: Mermaid links to GitHub and GitLab
 
-In `tree --format mermaid`, the subgraph of a **Source** whose URL names a GitHub or GitLab repository SHALL be
-titled `alias · <repository URL without https://>`, wrapped in `<a href='<tree>' target='_blank' rel='noopener'>`,
-`<tree>` being the repository URL, then `/tree/<Ref>` on GitHub or `/-/tree/<Ref>` on GitLab, then
-`/<subdirectory>` if it has one, unless git's configuration rewrites the URL (`url.<base>.insteadOf`) or
-skill-graft's cache holds no repository git can read for it. Each of its **Skills** SHALL get its label wrapped the
-same way, linking to its folder relative to the repository root once symbolic links are resolved; a folder resolving
-outside the repository, which discovery of a git **Source** never yields, SHALL get no link. Path segments SHALL be
-percent-encoded. No `click` line SHALL be printed.
+In `tree --format mermaid`, the subgraph of a **Source** whose URL names a GitHub or GitLab repository SHALL be titled
+`alias · <repository URL without https://>`, wrapped in `<a href='<tree>' target='_blank' rel='noopener'>`, `<tree>`
+being the repository URL, then `/tree/<Ref>` on GitHub or `/-/tree/<Ref>` on GitLab, then `/<subdirectory>` if it has
+one, unless git's configuration rewrites the URL (`url.<base>.insteadOf`) or skill-graft's cache holds no repository git
+can read for it. Each of its **Skills** SHALL get its label wrapped the same way, linking to its folder relative to the
+repository root once symbolic links are resolved; a folder resolving outside the repository, which discovery of a git
+**Source** never yields, SHALL get no link. Path segments SHALL be percent-encoded. No `click` line SHALL be printed.
 
 #### Scenario: GitHub Source
 
@@ -256,10 +250,10 @@ percent-encoded. No `click` line SHALL be printed.
 
 #### Scenario: GitLab Source without subdirectory
 
-- **WHEN** `[sources.mp]` has `git = "git@gitlab.com:g/sub/mp.git"` and `ref = "<sha>"`, and **Entry** `mp/tdd` is
-  the folder `tdd`
-- **THEN** the subgraph links to `https://gitlab.com/g/sub/mp/-/tree/<sha>` and is titled
-  `mp · gitlab.com/g/sub/mp`, and `mp/tdd` links to `https://gitlab.com/g/sub/mp/-/tree/<sha>/tdd`
+- **WHEN** `[sources.mp]` has `git = "git@gitlab.com:g/sub/mp.git"` and `ref = "<sha>"`, and **Entry** `mp/tdd` is the
+  folder `tdd`
+- **THEN** the subgraph links to `https://gitlab.com/g/sub/mp/-/tree/<sha>` and is titled `mp · gitlab.com/g/sub/mp`,
+  and `mp/tdd` links to `https://gitlab.com/g/sub/mp/-/tree/<sha>/tdd`
 
 #### Scenario: Folder names encoded
 
@@ -275,8 +269,8 @@ percent-encoded. No `click` line SHALL be printed.
 
 #### Scenario: Unreadable cache repository
 
-- **WHEN** `[sources.mp]` has `git = "https://github.com/o/mp.git"` and git cannot read its repository in
-  skill-graft's cache
+- **WHEN** `[sources.mp]` has `git = "https://github.com/o/mp.git"` and git cannot read its repository in skill-graft's
+  cache
 - **THEN** `tree --format mermaid` still prints the diagram, then the **Hull**'s warnings; the subgraph is titled
   `"mp"`, and the diagram holds no `<a`
 
@@ -287,9 +281,9 @@ percent-encoded. No `click` line SHALL be printed.
 
 ### Requirement: Why names the upstream folder
 
-After the tree, `why <skill>` SHALL print `upstream: <absolute folder>`: the folder the **Skill**'s **Patches**
-apply to, in the cache export at the `ref` or in a path **Source**, as resolved for this run. It is the base a
-new **Patch** is written against.
+After the tree, `why <skill>` SHALL print `upstream: <absolute folder>`: the folder the **Skill**'s **Patches** apply
+to, in the cache export at the `ref` or in a path **Source**, as resolved for this run. It is the base a new **Patch**
+is written against.
 
 #### Scenario: Path source
 
@@ -299,5 +293,4 @@ new **Patch** is written against.
 #### Scenario: Git source
 
 - **WHEN** `mp/tdd` is at `skills/tdd` in git **Source** `mp` and the user runs `skill-graft why mp/tdd`
-- **THEN** the last line starts with `upstream:` and names an absolute folder holding `mp/tdd`'s upstream
-  `SKILL.md`
+- **THEN** the last line starts with `upstream:` and names an absolute folder holding `mp/tdd`'s upstream `SKILL.md`

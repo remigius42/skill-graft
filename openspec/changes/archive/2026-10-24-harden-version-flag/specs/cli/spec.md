@@ -31,14 +31,14 @@ anywhere else, it SHALL print the version only.
 
 #### Scenario: Git install at a commit
 
-- **WHEN** skill-graft 0.2.0 was installed from `git+https://github.com/remigius42/skill-graft@` followed by the full
-  or a short hash of commit `e294a0e…`
+- **WHEN** skill-graft 0.2.0 was installed from `git+https://github.com/remigius42/skill-graft@` followed by the full or
+  a short hash of commit `e294a0e…`
 - **THEN** it prints `skill-graft 0.2.0 (e294a0e)`
 
 #### Scenario: Revision that is not printable ASCII without spaces
 
-- **WHEN** skill-graft 0.2.0 was installed from git at commit `e294a0e…`, and the installer recorded the revision
-  `main` followed by a newline and `foo`, one holding an escape character, `ブランチ`, or `main @ abc1234`
+- **WHEN** skill-graft 0.2.0 was installed from git at commit `e294a0e…`, and the installer recorded the revision `main`
+  followed by a newline and `foo`, one holding an escape character, `ブランチ`, or `main @ abc1234`
 - **THEN** it prints `skill-graft 0.2.0 (e294a0e)` on one line
 
 #### Scenario: Commit that is not a hash
@@ -66,10 +66,10 @@ anywhere else, it SHALL print the version only.
 
 ### Requirement: Version on a damaged installation
 
-`skill-graft --version` SHALL exit 0 whatever the installation holds. When the installer's record of where it came
-from cannot be read or parsed, it SHALL print the version only. When no installed metadata is found, or it cannot be
-read or decoded, or its version, stripped of surrounding whitespace, is missing or not printable ASCII without spaces,
-the version SHALL read `unknown`, followed by the commit as for any version.
+`skill-graft --version` SHALL exit 0 whatever the installation holds. When the installer's record of where it came from
+cannot be read or parsed, it SHALL print the version only. When no installed metadata is found, or it cannot be read or
+decoded, or its version, stripped of surrounding whitespace, is missing or not printable ASCII without spaces, the
+version SHALL read `unknown`, followed by the commit as for any version.
 
 #### Scenario: Unreadable record
 

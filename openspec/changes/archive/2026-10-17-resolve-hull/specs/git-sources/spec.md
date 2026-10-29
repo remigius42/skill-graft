@@ -4,10 +4,10 @@
 
 ### Requirement: Cache outside the package
 
-Git **Sources** SHALL be cached under `$XDG_CACHE_HOME/skill-graft/`, else `~/.cache/skill-graft/`: one bare
-repository per git URL, shared by every alias naming that URL and fetched at most once per command, and one
-checkout per commit. Deleting the cache SHALL lose nothing: the next command that needs a **Ref** fetches it
-again. An interrupted clone or checkout SHALL never be mistaken for a complete one, nor block the next run.
+Git **Sources** SHALL be cached under `$XDG_CACHE_HOME/skill-graft/`, else `~/.cache/skill-graft/`: one bare repository
+per git URL, shared by every alias naming that URL and fetched at most once per command, and one checkout per commit.
+Deleting the cache SHALL lose nothing: the next command that needs a **Ref** fetches it again. An interrupted clone or
+checkout SHALL never be mistaken for a complete one, nor block the next run.
 
 #### Scenario: Default location
 

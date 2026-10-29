@@ -10,8 +10,8 @@
 #### Scenario: Suggestion printed
 
 - **WHEN** `mp/tdd` mentions `diagnosing-bugs`, and `mp/diagnosing-bugs` is not in the **Hull**
-- **THEN** `resolve` prints, after the tree, a header naming `skill-graft add`, then a line naming
-  `mp/diagnosing-bugs` and `mp/tdd`
+- **THEN** `resolve` prints, after the tree, a header naming `skill-graft add`, then a line naming `mp/diagnosing-bugs`
+  and `mp/tdd`
 
 #### Scenario: No suggestions
 

@@ -6,8 +6,8 @@
 
 `skill-graft init` SHALL create `~/.apm/skill-graft/`, and `skill-graft init --project` SHALL create
 `<working folder>/.apm/skill-graft/`, each holding a `skill-graft.toml` whose content is only comments explaining
-`entries` and `[sources.<alias>]`, both with `path` and with `git`, `branch` and `ref`, and an `apm.yml` of
-exactly two lines: `name: skill-graft` and `version: 0.1.0`.
+`entries` and `[sources.<alias>]`, both with `path` and with `git`, `branch` and `ref`, and an `apm.yml` of exactly two
+lines: `name: skill-graft` and `version: 0.1.0`.
 
 #### Scenario: Fresh home
 
@@ -27,13 +27,13 @@ exactly two lines: `name: skill-graft` and `version: 0.1.0`.
 
 ### Requirement: Init registers the package with APM
 
-After creating the folder, `init` SHALL run `apm install -g <absolute path of ~/.apm/skill-graft>` and succeed
-only if APM exits 0 and `~/.apm/apm.yml` then lists the package. `init --project` SHALL instead run
-`apm install ./.apm/skill-graft` in the working folder and succeed only if APM exits 0 and `apm.yml` there lists
-the package; if the package is then not listed there, it SHALL remove what it created (`.apm/skill-graft/`,
-and `.apm/` if it made that too), so no unregistered **Package** is left for commands to find. If APM fails but
-did list the package, the folder SHALL stay and `init` SHALL say to fix the problem and run `skill-graft build`.
-skill-graft SHALL NOT write either `apm.yml` itself.
+After creating the folder, `init` SHALL run `apm install -g <absolute path of ~/.apm/skill-graft>` and succeed only if
+APM exits 0 and `~/.apm/apm.yml` then lists the package. `init --project` SHALL instead run
+`apm install ./.apm/skill-graft` in the working folder and succeed only if APM exits 0 and `apm.yml` there lists the
+package; if the package is then not listed there, it SHALL remove what it created (`.apm/skill-graft/`, and `.apm/` if
+it made that too), so no unregistered **Package** is left for commands to find. If APM fails but did list the package,
+the folder SHALL stay and `init` SHALL say to fix the problem and run `skill-graft build`. skill-graft SHALL NOT write
+either `apm.yml` itself.
 
 #### Scenario: Registration succeeds
 
@@ -48,15 +48,14 @@ skill-graft SHALL NOT write either `apm.yml` itself.
 
 #### Scenario: APM fails
 
-- **WHEN** plain `init` runs, and `apm` exits non-zero, is not on `PATH`, or leaves `~/.apm/apm.yml` without
-  the package
+- **WHEN** plain `init` runs, and `apm` exits non-zero, is not on `PATH`, or leaves `~/.apm/apm.yml` without the package
 - **THEN** `init` exits non-zero, keeps the created folder, and prints the `apm install -g` command to retry
 
 #### Scenario: No harness in the project
 
 - **WHEN** `init --project` runs in a folder with no harness marker, and APM exits 2
-- **THEN** APM's message reaches the user, and `init` exits non-zero, removes `.apm/skill-graft/` and the `.apm/`
-  it created, and says to fix the problem and run `skill-graft init --project` again
+- **THEN** APM's message reaches the user, and `init` exits non-zero, removes `.apm/skill-graft/` and the `.apm/` it
+  created, and says to fix the problem and run `skill-graft init --project` again
 
 #### Scenario: APM fails after registering
 
@@ -81,8 +80,8 @@ skill-graft SHALL NOT write either `apm.yml` itself.
 
 ### Requirement: No project package in the home folder
 
-`init --project` in the home folder, compared resolved, SHALL exit non-zero, create nothing, run no `apm`, print
-no package line, and tell the user that `skill-graft init` creates the user scope's **Package**.
+`init --project` in the home folder, compared resolved, SHALL exit non-zero, create nothing, run no `apm`, print no
+package line, and tell the user that `skill-graft init` creates the user scope's **Package**.
 
 #### Scenario: Project init at home
 
@@ -96,8 +95,8 @@ no package line, and tell the user that `skill-graft init` creates the user scop
 
 ### Requirement: No project package inside an .apm folder
 
-`init --project` in a folder inside a folder named `.apm`, compared resolved, SHALL exit non-zero, create nothing
-and run no `apm`: that `apm.yml` belongs to APM or to a **Package**, not to a project.
+`init --project` in a folder inside a folder named `.apm`, compared resolved, SHALL exit non-zero, create nothing and
+run no `apm`: that `apm.yml` belongs to APM or to a **Package**, not to a project.
 
 #### Scenario: Project init in the user's APM folder
 

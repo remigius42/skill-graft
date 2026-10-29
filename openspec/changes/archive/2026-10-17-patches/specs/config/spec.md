@@ -4,10 +4,10 @@
 
 ### Requirement: Patches
 
-`[patches]` SHALL be a table whose keys are **Skill IDs**, every alias declared, and whose values are non-empty
-lists of file paths, `~` expanded and relative ones taken relative to the folder holding `skill-graft.toml`.
-Every listed file SHALL be readable, used or not. A malformed key or value, an undeclared alias, a missing or
-unreadable file, or one file listed twice under one key (compared resolved) SHALL be an error naming the key.
+`[patches]` SHALL be a table whose keys are **Skill IDs**, every alias declared, and whose values are non-empty lists of
+file paths, `~` expanded and relative ones taken relative to the folder holding `skill-graft.toml`. Every listed file
+SHALL be readable, used or not. A malformed key or value, an undeclared alias, a missing or unreadable file, or one file
+listed twice under one key (compared resolved) SHALL be an error naming the key.
 
 #### Scenario: Valid patches
 
@@ -26,8 +26,8 @@ unreadable file, or one file listed twice under one key (compared resolved) SHAL
 
 #### Scenario: Missing patch file
 
-- **WHEN** `[patches]` has `"mp/tdd" = ["patches/gone.patch"]`, the file does not exist, and `mp/tdd` is not in
-  the **Hull**
+- **WHEN** `[patches]` has `"mp/tdd" = ["patches/gone.patch"]`, the file does not exist, and `mp/tdd` is not in the
+  **Hull**
 - **THEN** the command exits non-zero naming `patches."mp/tdd"` and `patches/gone.patch`
 
 #### Scenario: Listed twice
@@ -47,8 +47,8 @@ A listed patch file holding a line `git apply` skips as noise, losing a change s
 
 #### Scenario: Binary change
 
-- **WHEN** a listed patch holds a `Binary files upstream/x.png and edited/x.png differ` line, or a
-  `GIT binary patch` block, and its key names no **Hull** **Skill**
+- **WHEN** a listed patch holds a `Binary files upstream/x.png and edited/x.png differ` line, or a `GIT binary patch`
+  block, and its key names no **Hull** **Skill**
 - **THEN** the command exits non-zero naming the patch file
 
 #### Scenario: Added file without -N
@@ -60,8 +60,8 @@ A listed patch file holding a line `git apply` skips as noise, losing a change s
 
 ### Requirement: Unsupported keys are errors
 
-Any top-level key other than `sources`, `entries`, `bind`, `rename`, `reserved` and `patches`, and any source key
-other than `path`, `git`, `branch` and `ref`, SHALL be an error, so declared intent is never silently ignored.
+Any top-level key other than `sources`, `entries`, `bind`, `rename`, `reserved` and `patches`, and any source key other
+than `path`, `git`, `branch` and `ref`, SHALL be an error, so declared intent is never silently ignored.
 
 #### Scenario: Git source
 

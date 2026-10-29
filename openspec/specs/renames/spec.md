@@ -2,15 +2,15 @@
 
 ## Purpose
 
-Gives each **Hull** **Skill** its **Deployed name**, carries that name into the folder, `name:` and every
-**Reference**, and keeps **Deployed names** unique and clear of **Reserved names**.
+Gives each **Hull** **Skill** its **Deployed name**, carries that name into the folder, `name:` and every **Reference**,
+and keeps **Deployed names** unique and clear of **Reserved names**.
 
 ## Requirements
 
 ### Requirement: Deployed name
 
-A **Skill**'s **Deployed name** SHALL be its `[rename]` value when one names its **Skill ID**, else its
-**Source**'s `prefix` followed by its name when the **Source** has one, else its name.
+A **Skill**'s **Deployed name** SHALL be its `[rename]` value when one names its **Skill ID**, else its **Source**'s
+`prefix` followed by its name when the **Source** has one, else its name.
 
 #### Scenario: Renamed
 
@@ -39,27 +39,25 @@ A **Skill**'s **Deployed name** SHALL be its `[rename]` value when one names its
 
 ### Requirement: A prefix covers its source's hull skills
 
-A **Source**'s **Prefix** SHALL apply to every **Hull** **Skill** of it without a `[rename]` key, whether an
-**Entry** or reached through a **Reference**, and its **Deployed name** SHALL be carried into its folder, `name:`
-and every **Reference** as a **Rename**'s is. **Skill IDs**, **Binds** and **Patches** SHALL keep upstream names.
+A **Source**'s **Prefix** SHALL apply to every **Hull** **Skill** of it without a `[rename]` key, whether an **Entry**
+or reached through a **Reference**, and its **Deployed name** SHALL be carried into its folder, `name:` and every
+**Reference** as a **Rename**'s is. **Skill IDs**, **Binds** and **Patches** SHALL keep upstream names.
 
 #### Scenario: Dependency prefixed
 
-- **WHEN** `[sources.mp]` has `prefix = "mp-"`, **Entry** `mp/tdd` calls `/grilling`, and no `[rename]` key
-  names either
-- **THEN** `build` vendors `.apm/skills/mp-tdd/` and `.apm/skills/mp-grilling/`, their `name:` lines are
-  `mp-tdd` and `mp-grilling`, and the vendored `mp-tdd/SKILL.md` holds `/mp-grilling` where it held `/grilling`
+- **WHEN** `[sources.mp]` has `prefix = "mp-"`, **Entry** `mp/tdd` calls `/grilling`, and no `[rename]` key names either
+- **THEN** `build` vendors `.apm/skills/mp-tdd/` and `.apm/skills/mp-grilling/`, their `name:` lines are `mp-tdd` and
+  `mp-grilling`, and the vendored `mp-tdd/SKILL.md` holds `/mp-grilling` where it held `/grilling`
 
 #### Scenario: Prose follows the prefix
 
-- **WHEN** `[sources.mp]` has `prefix = "mp-"`, and `mp/tdd` holds `` `grilling` `` with `mp/grilling` in the
-  **Hull**
+- **WHEN** `[sources.mp]` has `prefix = "mp-"`, and `mp/tdd` holds `` `grilling` `` with `mp/grilling` in the **Hull**
 - **THEN** the vendored copy holds `` `mp-grilling` ``
 
 #### Scenario: Bound to a prefixed skill
 
-- **WHEN** `[sources.own]` has `prefix = "own-"`, `[bind]` has `"mp/grilling" = "own/grill"`, and `mp/tdd`
-  calls `/grilling`
+- **WHEN** `[sources.own]` has `prefix = "own-"`, `[bind]` has `"mp/grilling" = "own/grill"`, and `mp/tdd` calls
+  `/grilling`
 - **THEN** the vendored `tdd/SKILL.md` holds `/own-grill`
 
 #### Scenario: Other sources untouched
@@ -69,11 +67,10 @@ and every **Reference** as a **Rename**'s is. **Skill IDs**, **Binds** and **Pat
 
 ### Requirement: Renamed folder and name
 
-`build` SHALL vendor each **Hull** **Skill** to `.apm/skills/<deployed name>/`. The `SKILL.md` of a **Skill**
-whose **Deployed name** differs from its name SHALL carry `name: <deployed name>`, quoted when YAML would read the
-bare name as anything but that string (`true`, `null`, `123`): an existing `name:` line replaced, else inserted as
-the front matter's first line, else a front matter of just that line prepended. Any other **Skill**'s `name:`
-SHALL be unchanged.
+`build` SHALL vendor each **Hull** **Skill** to `.apm/skills/<deployed name>/`. The `SKILL.md` of a **Skill** whose
+**Deployed name** differs from its name SHALL carry `name: <deployed name>`, quoted when YAML would read the bare name
+as anything but that string (`true`, `null`, `123`): an existing `name:` line replaced, else inserted as the front
+matter's first line, else a front matter of just that line prepended. Any other **Skill**'s `name:` SHALL be unchanged.
 
 #### Scenario: Name line replaced
 
@@ -103,9 +100,9 @@ SHALL be unchanged.
 ### Requirement: References carry the deployed name
 
 In every UTF-8 Markdown file of every **Hull** **Skill**, `build` SHALL rewrite each **Reference** that resolves,
-**Binds** applied, to a **Hull** **Skill** whose **Deployed name** differs from the name written, keeping its
-form (`/x`, `Skill(x)` with its quotes and arguments, `` `x` ``, bare `x`); a self-**Reference** included. All
-other bytes, and files that are not UTF-8, SHALL be unchanged.
+**Binds** applied, to a **Hull** **Skill** whose **Deployed name** differs from the name written, keeping its form
+(`/x`, `Skill(x)` with its quotes and arguments, `` `x` ``, bare `x`); a self-**Reference** included. All other bytes,
+and files that are not UTF-8, SHALL be unchanged.
 
 #### Scenario: Slash reference to a renamed skill
 
@@ -119,8 +116,8 @@ other bytes, and files that are not UTF-8, SHALL be unchanged.
 
 #### Scenario: Skill tool and prose forms
 
-- **WHEN** `mp/tdd` holds `Skill(skill: "grilling", args: "x")` and `` `grilling` ``, and `mp/grilling` is
-  renamed to `mp-grilling`
+- **WHEN** `mp/tdd` holds `Skill(skill: "grilling", args: "x")` and `` `grilling` ``, and `mp/grilling` is renamed to
+  `mp-grilling`
 - **THEN** the vendored copy holds `Skill(skill: "mp-grilling", args: "x")` and `` `mp-grilling` ``
 
 #### Scenario: Bound to another name
@@ -154,13 +151,13 @@ A `[rename]` key naming no **Hull** **Skill** SHALL be a warning naming the key,
 
 ### Requirement: Deployed names are unique
 
-Two **Hull** **Skills** with the same **Deployed name**, compared ignoring case, SHALL be an error naming both
-and a change that would separate them, and the command SHALL then write nothing. Every command that computes the
-**Hull** SHALL report a clash between **Entries** before any **Source** is read or a remote contacted, except
-`rename` and `bind`, which first read the **Sources** to check the **Skill ID** they are given. The hint SHALL name a
-`[rename]` line for a clashing **Skill** with neither a `[rename]` key nor a **Prefix**; else the `[rename]` value of a
-renamed one to change; else, for a prefixed one, that a `[rename]` key for it would, or its **Source**'s `prefix`
-unless another clashing **Skill** is of that **Source**.
+Two **Hull** **Skills** with the same **Deployed name**, compared ignoring case, SHALL be an error naming both and a
+change that would separate them, and the command SHALL then write nothing. Every command that computes the **Hull**
+SHALL report a clash between **Entries** before any **Source** is read or a remote contacted, except `rename` and
+`bind`, which first read the **Sources** to check the **Skill ID** they are given. The hint SHALL name a `[rename]` line
+for a clashing **Skill** with neither a `[rename]` key nor a **Prefix**; else the `[rename]` value of a renamed one to
+change; else, for a prefixed one, that a `[rename]` key for it would, or its **Source**'s `prefix` unless another
+clashing **Skill** is of that **Source**.
 
 #### Scenario: Clash across sources
 
@@ -169,8 +166,8 @@ unless another clashing **Skill** is of that **Source**.
 
 #### Scenario: Entries clash before any fetch
 
-- **WHEN** **Entries** `mp/tdd` and `own/tdd` have no `[rename]` key, and `mp` is a git **Source** whose `ref` is
-  not cached
+- **WHEN** **Entries** `mp/tdd` and `own/tdd` have no `[rename]` key, and `mp` is a git **Source** whose `ref` is not
+  cached
 - **THEN** `build` exits non-zero naming both, and fetches nothing
 
 #### Scenario: Entries clash before update fetches
@@ -192,8 +189,7 @@ unless another clashing **Skill** is of that **Source**.
 #### Scenario: Rename onto another skill's name
 
 - **WHEN** `[rename]` has `"mp/grilling" = "Notes"`, and `own/notes` is in the **Hull**
-- **THEN** the command exits non-zero naming `mp/grilling` and `own/notes`, and suggests
-  `"own/notes" = "own-notes"`
+- **THEN** the command exits non-zero naming `mp/grilling` and `own/notes`, and suggests `"own/notes" = "own-notes"`
 
 #### Scenario: Clash of two renames
 
@@ -210,8 +206,8 @@ unless another clashing **Skill** is of that **Source**.
 
 - **WHEN** `[sources.a]` and `[sources.b]` both have `prefix = "x-"`, and **Entries** `a/tdd` and `b/tdd` have no
   `[rename]` key
-- **THEN** the command exits non-zero naming `a/tdd` and `b/tdd`, and says to add a `[rename]` key for one of
-  them or change its **Source**'s `prefix = "x-"`
+- **THEN** the command exits non-zero naming `a/tdd` and `b/tdd`, and says to add a `[rename]` key for one of them or
+  change its **Source**'s `prefix = "x-"`
 
 #### Scenario: Clash within one prefixed source
 
@@ -236,16 +232,16 @@ A **Deployed name** equal, ignoring case, to a name in the user's `reserved` lis
 
 #### Scenario: Prefixed onto a reserved name
 
-- **WHEN** `reserved = ["mp-review"]`, `[sources.mp]` has `prefix = "mp-"`, and `mp/review` is in the **Hull**
-  with no `[rename]` key
-- **THEN** the command exits non-zero naming `mp/review` and `mp-review`, and says to add a `[rename]` key for it
-  or change `[sources.mp] prefix = "mp-"`
+- **WHEN** `reserved = ["mp-review"]`, `[sources.mp]` has `prefix = "mp-"`, and `mp/review` is in the **Hull** with no
+  `[rename]` key
+- **THEN** the command exits non-zero naming `mp/review` and `mp-review`, and says to add a `[rename]` key for it or
+  change `[sources.mp] prefix = "mp-"`
 
 ### Requirement: Shipped reserved names warn
 
-skill-graft SHALL ship a list of **Reserved names**: the built-in commands and bundled skills of Claude Code and
-Codex, `code-review` among them. A **Deployed name** equal to one, ignoring case, SHALL be a warning naming the
-**Skill** and the name; the warning of a **Skill** with neither a `[rename]` key nor a **Prefix** SHALL end with
+skill-graft SHALL ship a list of **Reserved names**: the built-in commands and bundled skills of Claude Code and Codex,
+`code-review` among them. A **Deployed name** equal to one, ignoring case, SHALL be a warning naming the **Skill** and
+the name; the warning of a **Skill** with neither a `[rename]` key nor a **Prefix** SHALL end with
 `"<alias>/<name>" = "<alias>-<name>"` under `[rename]`. The command SHALL proceed.
 
 #### Scenario: Shipped clash

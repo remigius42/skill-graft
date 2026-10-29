@@ -2,17 +2,17 @@
 
 ## Purpose
 
-Vendors the **Entries** into the skill-graft APM package and deploys it through APM, failing loudly where APM
-would fail quietly.
+Vendors the **Entries** into the skill-graft APM package and deploys it through APM, failing loudly where APM would fail
+quietly.
 
 ## ADDED Requirements
 
 ### Requirement: Vendor entries
 
-`skill-graft build` SHALL make `~/.apm/skill-graft/.apm/skills/` hold exactly one folder per **Entry**, named
-after the **Entry**'s name and holding a copy of the **Skill**'s whole folder. Nothing outside that folder is
-vendored. Folders from earlier builds that are no longer **Entries** SHALL be removed. The folder SHALL be
-replaced only once every copy succeeded; a failed copy SHALL leave it as it was.
+`skill-graft build` SHALL make `~/.apm/skill-graft/.apm/skills/` hold exactly one folder per **Entry**, named after the
+**Entry**'s name and holding a copy of the **Skill**'s whole folder. Nothing outside that folder is vendored. Folders
+from earlier builds that are no longer **Entries** SHALL be removed. The folder SHALL be replaced only once every copy
+succeeded; a failed copy SHALL leave it as it was.
 
 #### Scenario: Whole folder copied
 
@@ -26,16 +26,14 @@ replaced only once every copy succeeded; a failed copy SHALL leave it as it was.
 
 #### Scenario: Copy fails
 
-- **WHEN** a previous build vendored `chisel`, and an **Entry**'s folder holds a symlink to a missing file
-  inside it
+- **WHEN** a previous build vendored `chisel`, and an **Entry**'s folder holds a symlink to a missing file inside it
 - **THEN** `build` exits non-zero naming the file, and `.apm/skills/` still holds the previous `chisel`
 
 ### Requirement: Symlinks stay within the skill
 
-A symlink in an **Entry**'s folder SHALL lead to a file inside that folder, and SHALL be vendored as a copy of
-that file. A symlink leading outside the folder, or to any folder (which could form a cycle), SHALL be an error
-naming the link, and `build` SHALL then write nothing. Symlinks under `.git`, which is never vendored, are not
-checked.
+A symlink in an **Entry**'s folder SHALL lead to a file inside that folder, and SHALL be vendored as a copy of that
+file. A symlink leading outside the folder, or to any folder (which could form a cycle), SHALL be an error naming the
+link, and `build` SHALL then write nothing. Symlinks under `.git`, which is never vendored, are not checked.
 
 #### Scenario: Symlink leaving the skill
 
@@ -54,8 +52,8 @@ checked.
 
 ### Requirement: Deployed names are unique
 
-Since this version has no **Renames**, each **Entry**'s **Deployed name** is its name. Two **Entries** with the
-same **Deployed name** SHALL be an error, and `build` SHALL then write nothing.
+Since this version has no **Renames**, each **Entry**'s **Deployed name** is its name. Two **Entries** with the same
+**Deployed name** SHALL be an error, and `build` SHALL then write nothing.
 
 #### Scenario: Clash across sources
 
@@ -64,9 +62,9 @@ same **Deployed name** SHALL be an error, and `build` SHALL then write nothing.
 
 ### Requirement: Deploy through APM
 
-After vendoring, `build` SHALL run `apm install -g <absolute path of ~/.apm/skill-graft>`, which also
-registers the package, and succeed only if APM exits 0 and `~/.apm/apm.yml` lists the package: as `- x` or
-`- path: x`, with `~` or an absolute path, compared resolved. APM's output SHALL reach the user.
+After vendoring, `build` SHALL run `apm install -g <absolute path of ~/.apm/skill-graft>`, which also registers the
+package, and succeed only if APM exits 0 and `~/.apm/apm.yml` lists the package: as `- x` or `- path: x`, with `~` or an
+absolute path, compared resolved. APM's output SHALL reach the user.
 
 #### Scenario: APM succeeds
 

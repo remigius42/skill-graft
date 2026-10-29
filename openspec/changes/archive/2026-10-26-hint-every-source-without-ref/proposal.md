@@ -11,14 +11,14 @@ what the user asked for: `update a` with `b` lacking a `ref` suggests `update b`
 
 ## What Changes
 
-- The error names every git **Source** without `ref` that blocks the run, not just the first: for `update`, those
-  not selected; for the other commands, all of them.
+- The error names every git **Source** without `ref` that blocks the run, not just the first: for `update`, those not
+  selected; for the other commands, all of them.
 - `update`'s hint is the command the user ran, with those **Sources** added: `update a` suggests
-  `skill-graft update a b`. It keeps `--dry-run` and `--diff <file>`; `--expect` becomes `--dry-run`, since the
-  added **Sources** change the **Hull** and its **Hull digest**, which must be reviewed again.
+  `skill-graft update a b`. It keeps `--dry-run` and `--diff <file>`; `--expect` becomes `--dry-run`, since the added
+  **Sources** change the **Hull** and its **Hull digest**, which must be reviewed again.
 - `build` and the other commands suggest one `skill-graft update` naming every git **Source** without `ref`.
-- The refusal itself stays: `update a` still needs every other git **Source** to have a `ref`, since the **Hull**
-  reads them all.
+- The refusal itself stays: `update a` still needs every other git **Source** to have a `ref`, since the **Hull** reads
+  them all.
 
 ## Capabilities
 
@@ -30,8 +30,8 @@ None.
 
 - `update`: the Selection errors requirement names every unselected git **Source** without `ref` and suggests the
   command run again with them added.
-- `git-sources`: the Build needs every ref requirement names every git **Source** without `ref` and one command
-  updating them all.
+- `git-sources`: the Build needs every ref requirement names every git **Source** without `ref` and one command updating
+  them all.
 
 ## Impact
 

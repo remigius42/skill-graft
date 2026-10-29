@@ -3,9 +3,9 @@
 ### Requirement: Commands that write name the package
 
 `init`, `resolve`, `build`, `update`, `add`, `remove`, `rename`, `bind` and `unbind` SHALL print
-`skill-graft: package: <absolute path of the Package>` on stderr before the command's own output, in either
-**Scope**, including when the command fails after its arguments parsed. `tree`, `why` and `help` SHALL NOT print
-it, and neither SHALL a usage error or `init --project` refused in the home folder.
+`skill-graft: package: <absolute path of the Package>` on stderr before the command's own output, in either **Scope**,
+including when the command fails after its arguments parsed. `tree`, `why` and `help` SHALL NOT print it, and neither
+SHALL a usage error or `init --project` refused in the home folder.
 
 #### Scenario: Build names the package
 

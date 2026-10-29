@@ -2,16 +2,15 @@
 
 ## Purpose
 
-Reads the user's intent from `~/.apm/skill-graft/skill-graft.toml`: path **Sources** and **Entries**, rejecting
-anything this version cannot honor.
+Reads the user's intent from `~/.apm/skill-graft/skill-graft.toml`: path **Sources** and **Entries**, rejecting anything
+this version cannot honor.
 
 ## Requirements
 
 ### Requirement: Path sources
 
-A path source's `path` SHALL name a folder, with `~` expanded and a relative path taken relative to the folder
-holding `skill-graft.toml`. The alias names the **Source** and SHALL be one path segment:
-`[A-Za-z0-9][A-Za-z0-9._-]*`.
+A path source's `path` SHALL name a folder, with `~` expanded and a relative path taken relative to the folder holding
+`skill-graft.toml`. The alias names the **Source** and SHALL be one path segment: `[A-Za-z0-9][A-Za-z0-9._-]*`.
 
 #### Scenario: Home-relative path
 
@@ -30,11 +29,10 @@ holding `skill-graft.toml`. The alias names the **Source** and SHALL be one path
 
 ### Requirement: Sources stay clear of the package and deploy folders
 
-A source whose folder is inside, or contains, the **Package** in effect or the user scope's **Package** SHALL
-be an error. A source inside or containing an APM deploy folder
-(`~/.agents/skills`, `~/.claude/skills`, and the other harness skill folders) SHALL be a warning naming the
-alias and the folder; in project scope, also `.agents/skills`, `.claude/skills`, `.grok/skills` and
-`.kiro/skills` under the project root. Paths are compared resolved.
+A source whose folder is inside, or contains, the **Package** in effect or the user scope's **Package** SHALL be an
+error. A source inside or containing an APM deploy folder (`~/.agents/skills`, `~/.claude/skills`, and the other harness
+skill folders) SHALL be a warning naming the alias and the folder; in project scope, also `.agents/skills`,
+`.claude/skills`, `.grok/skills` and `.kiro/skills` under the project root. Paths are compared resolved.
 
 #### Scenario: Source is the package
 
@@ -68,8 +66,8 @@ alias and the folder; in project scope, also `.agents/skills`, `.claude/skills`,
 
 ### Requirement: Entries
 
-`entries` SHALL be a list of **Skill IDs** of the form `<alias>/<name>`. An empty or absent list is valid and
-builds no skills.
+`entries` SHALL be a list of **Skill IDs** of the form `<alias>/<name>`. An empty or absent list is valid and builds no
+skills.
 
 #### Scenario: Entry with an undeclared alias
 
@@ -89,8 +87,8 @@ builds no skills.
 ### Requirement: Value types
 
 `sources` SHALL be a table of tables, each source's `path`, `git`, `branch`, `ref`, `prefix` and `subdirectory` a
-string, and `entries` a list of strings. A wrong type or a source table with neither `path` nor `git` SHALL be an
-error naming the key, never a crash.
+string, and `entries` a list of strings. A wrong type or a source table with neither `path` nor `git` SHALL be an error
+naming the key, never a crash.
 
 #### Scenario: Entries as a string
 
@@ -120,9 +118,9 @@ error naming the key, never a crash.
 ### Requirement: Unsupported keys are errors
 
 Any top-level key other than `sources`, `entries`, `bind`, `rename`, `reserved`, `patches` and `check`, any source key
-other than `path`, `git`, `branch`, `ref`, `prefix` and `subdirectory`, and any `[check]` key other than
-`reader-turns`, `reader-budget-usd`, `patcher-turns`, `patcher-budget-usd` and `readers-at-once`, SHALL be an error,
-so declared intent is never silently ignored.
+other than `path`, `git`, `branch`, `ref`, `prefix` and `subdirectory`, and any `[check]` key other than `reader-turns`,
+`reader-budget-usd`, `patcher-turns`, `patcher-budget-usd` and `readers-at-once`, SHALL be an error, so declared intent
+is never silently ignored.
 
 #### Scenario: Git source
 
@@ -159,8 +157,8 @@ so declared intent is never silently ignored.
 An optional `[check]` table SHALL set the limits of a hardened **Check**: `reader-turns` (default 30), `patcher-turns`
 (default 10) and `readers-at-once` (default 4), each a positive integer written in decimal digits, and
 `reader-budget-usd` (default 1.0) and `patcher-budget-usd` (default 0.5), each a positive number written in decimal
-digits with an optional fraction. A key left out SHALL take its default. Any other value, or the same value in
-another TOML form, SHALL be an error naming the key and what it must be, so the text the skill reads is the value.
+digits with an optional fraction. A key left out SHALL take its default. Any other value, or the same value in another
+TOML form, SHALL be an error naming the key and what it must be, so the text the skill reads is the value.
 
 #### Scenario: Defaults
 
@@ -200,8 +198,8 @@ A missing `skill-graft.toml` or one that is not valid TOML SHALL be an error nam
 
 ### Requirement: Source kinds
 
-Each `[sources.<alias>]` table SHALL hold exactly one of `path` and `git`. Both, or neither, SHALL be an error
-naming the source. `branch`, `ref` and `subdirectory` SHALL be allowed only beside `git`.
+Each `[sources.<alias>]` table SHALL hold exactly one of `path` and `git`. Both, or neither, SHALL be an error naming
+the source. `branch`, `ref` and `subdirectory` SHALL be allowed only beside `git`.
 
 #### Scenario: Both kinds
 
@@ -220,13 +218,12 @@ naming the source. `branch`, `ref` and `subdirectory` SHALL be allowed only besi
 
 ### Requirement: Git sources
 
-A git source's `git` SHALL be a string handed to git unchanged, and SHALL be a URL with scheme `https`,
-`http`, `ssh`, `git` or `file`, the scp-like form (`[user@]host:path`), or an absolute local path. A relative
-path (including one starting with `~`), a value starting with `-`, any other scheme, and the
-`<transport>::<address>` form SHALL be errors naming `sources.<alias>.git`. `branch`, if present, SHALL be a
-branch name such as `main`, not a full reference name such as `refs/heads/main`. `ref`, if present, SHALL be a
-full lowercase hex commit name, 40 or 64 digits; anything else SHALL be an error naming `sources.<alias>.ref`.
-Loading accepts a git source without `ref`, so `update` can fill it in.
+A git source's `git` SHALL be a string handed to git unchanged, and SHALL be a URL with scheme `https`, `http`, `ssh`,
+`git` or `file`, the scp-like form (`[user@]host:path`), or an absolute local path. A relative path (including one
+starting with `~`), a value starting with `-`, any other scheme, and the `<transport>::<address>` form SHALL be errors
+naming `sources.<alias>.git`. `branch`, if present, SHALL be a branch name such as `main`, not a full reference name
+such as `refs/heads/main`. `ref`, if present, SHALL be a full lowercase hex commit name, 40 or 64 digits; anything else
+SHALL be an error naming `sources.<alias>.ref`. Loading accepts a git source without `ref`, so `update` can fill it in.
 
 #### Scenario: Relative git path
 
@@ -235,8 +232,7 @@ Loading accepts a git source without `ref`, so `update` can fill it in.
 
 #### Scenario: Option or helper as URL
 
-- **WHEN** `[sources.mp]` has `git = "--upload-pack=touch x"`, `git = "ext::sh -c touch% x"`, or
-  `git = "foo://x"`
+- **WHEN** `[sources.mp]` has `git = "--upload-pack=touch x"`, `git = "ext::sh -c touch% x"`, or `git = "foo://x"`
 - **THEN** the command exits non-zero naming `sources.mp.git`, and git is never run
 
 #### Scenario: Accepted forms
@@ -256,11 +252,10 @@ Loading accepts a git source without `ref`, so `update` can fill it in.
 
 ### Requirement: Git source subdirectory
 
-A git source's `subdirectory`, if present, SHALL be a relative path of segments separated by `/`, each non-empty
-and neither `.`, `..` nor `.git` in any case, with no control character and no segment `.apm` followed by
-`skill-graft`. Anything else, the empty string, a leading or trailing `/` and `//` included, SHALL be an error naming
-`sources.<alias>.subdirectory`, never a crash. Loading SHALL NOT read the repository; the commit read checks the
-folder.
+A git source's `subdirectory`, if present, SHALL be a relative path of segments separated by `/`, each non-empty and
+neither `.`, `..` nor `.git` in any case, with no control character and no segment `.apm` followed by `skill-graft`.
+Anything else, the empty string, a leading or trailing `/` and `//` included, SHALL be an error naming
+`sources.<alias>.subdirectory`, never a crash. Loading SHALL NOT read the repository; the commit read checks the folder.
 
 #### Scenario: Valid subdirectory
 
@@ -269,8 +264,8 @@ folder.
 
 #### Scenario: Subdirectory leaving the repository
 
-- **WHEN** `[sources.cp]` has `subdirectory` set to `"../x"`, `"a/../../x"`, `"/etc"`, `"."`, `"a/./b"`, `""`,
-  `"a//b"`, `"a/"`, `"a/.git/b"` or `".GIT"`
+- **WHEN** `[sources.cp]` has `subdirectory` set to `"../x"`, `"a/../../x"`, `"/etc"`, `"."`, `"a/./b"`, `""`, `"a//b"`,
+  `"a/"`, `"a/.git/b"` or `".GIT"`
 - **THEN** the command exits non-zero naming `sources.cp.subdirectory`, and git is never run
 
 #### Scenario: Control character
@@ -285,9 +280,9 @@ folder.
 
 ### Requirement: Binds
 
-`[bind]` SHALL be a table whose keys are `<alias>/<name>` and whose values are **Skill IDs** or `false`, every
-alias declared and every part one path segment (`[A-Za-z0-9][A-Za-z0-9._-]*`). A malformed key or value
-(`true` included), or an undeclared alias, SHALL be an error naming the key.
+`[bind]` SHALL be a table whose keys are `<alias>/<name>` and whose values are **Skill IDs** or `false`, every alias
+declared and every part one path segment (`[A-Za-z0-9][A-Za-z0-9._-]*`). A malformed key or value (`true` included), or
+an undeclared alias, SHALL be an error naming the key.
 
 #### Scenario: Valid bind
 
@@ -311,9 +306,9 @@ alias declared and every part one path segment (`[A-Za-z0-9][A-Za-z0-9._-]*`). A
 
 ### Requirement: Renames
 
-`[rename]` SHALL be a table whose keys are **Skill IDs**, every alias declared, and whose values are names, one
-path segment each (`[A-Za-z0-9][A-Za-z0-9._-]*`). A malformed key or value, or an undeclared alias, SHALL be an
-error naming the key.
+`[rename]` SHALL be a table whose keys are **Skill IDs**, every alias declared, and whose values are names, one path
+segment each (`[A-Za-z0-9][A-Za-z0-9._-]*`). A malformed key or value, or an undeclared alias, SHALL be an error naming
+the key.
 
 #### Scenario: Valid rename
 
@@ -332,9 +327,8 @@ error naming the key.
 
 ### Requirement: Prefixes
 
-A source's `prefix`, on a path or a git **Source**, SHALL be a name, one path segment
-(`[A-Za-z0-9][A-Za-z0-9._-]*`); anything else, the empty string included, SHALL be an error naming
-`sources.<alias>.prefix`.
+A source's `prefix`, on a path or a git **Source**, SHALL be a name, one path segment (`[A-Za-z0-9][A-Za-z0-9._-]*`);
+anything else, the empty string included, SHALL be an error naming `sources.<alias>.prefix`.
 
 #### Scenario: Valid prefix
 
@@ -368,10 +362,10 @@ A source's `prefix`, on a path or a git **Source**, SHALL be a name, one path se
 
 ### Requirement: Patches
 
-`[patches]` SHALL be a table whose keys are **Skill IDs**, every alias declared, and whose values are non-empty
-lists of file paths, `~` expanded and relative ones taken relative to the folder holding `skill-graft.toml`.
-Every listed file SHALL be readable, used or not. A malformed key or value, an undeclared alias, a missing or
-unreadable file, or one file listed twice under one key (compared resolved) SHALL be an error naming the key.
+`[patches]` SHALL be a table whose keys are **Skill IDs**, every alias declared, and whose values are non-empty lists of
+file paths, `~` expanded and relative ones taken relative to the folder holding `skill-graft.toml`. Every listed file
+SHALL be readable, used or not. A malformed key or value, an undeclared alias, a missing or unreadable file, or one file
+listed twice under one key (compared resolved) SHALL be an error naming the key.
 
 #### Scenario: Valid patches
 
@@ -390,8 +384,8 @@ unreadable file, or one file listed twice under one key (compared resolved) SHAL
 
 #### Scenario: Missing patch file
 
-- **WHEN** `[patches]` has `"mp/tdd" = ["patches/gone.patch"]`, the file does not exist, and `mp/tdd` is not in
-  the **Hull**
+- **WHEN** `[patches]` has `"mp/tdd" = ["patches/gone.patch"]`, the file does not exist, and `mp/tdd` is not in the
+  **Hull**
 - **THEN** the command exits non-zero naming `patches."mp/tdd"` and `patches/gone.patch`
 
 #### Scenario: Listed twice
@@ -411,8 +405,8 @@ A listed patch file holding a line `git apply` skips as noise, losing a change s
 
 #### Scenario: Binary change
 
-- **WHEN** a listed patch holds a `Binary files upstream/x.png and edited/x.png differ` line, or a
-  `GIT binary patch` block, and its key names no **Hull** **Skill**
+- **WHEN** a listed patch holds a `Binary files upstream/x.png and edited/x.png differ` line, or a `GIT binary patch`
+  block, and its key names no **Hull** **Skill**
 - **THEN** the command exits non-zero naming the patch file
 
 #### Scenario: Added file without -N

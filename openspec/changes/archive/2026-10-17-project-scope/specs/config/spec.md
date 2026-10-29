@@ -4,11 +4,10 @@
 
 ### Requirement: Sources stay clear of the package and deploy folders
 
-A source whose folder is inside, or contains, the **Package** in effect or the user scope's **Package** SHALL
-be an error. A source inside or containing an APM deploy folder
-(`~/.agents/skills`, `~/.claude/skills`, and the other harness skill folders) SHALL be a warning naming the
-alias and the folder; in project scope, also `.agents/skills`, `.claude/skills`, `.grok/skills` and
-`.kiro/skills` under the project root. Paths are compared resolved.
+A source whose folder is inside, or contains, the **Package** in effect or the user scope's **Package** SHALL be an
+error. A source inside or containing an APM deploy folder (`~/.agents/skills`, `~/.claude/skills`, and the other harness
+skill folders) SHALL be a warning naming the alias and the folder; in project scope, also `.agents/skills`,
+`.claude/skills`, `.grok/skills` and `.kiro/skills` under the project root. Paths are compared resolved.
 
 #### Scenario: Source is the package
 

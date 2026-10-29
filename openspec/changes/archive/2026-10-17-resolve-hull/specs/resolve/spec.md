@@ -2,16 +2,16 @@
 
 ## Purpose
 
-`skill-graft resolve` computes the **Hull**, records its provenance in `skill-graft.lock`, and shows the user
-why each **Skill** is in it.
+`skill-graft resolve` computes the **Hull**, records its provenance in `skill-graft.lock`, and shows the user why each
+**Skill** is in it.
 
 ## ADDED Requirements
 
 ### Requirement: Resolve command
 
-`skill-graft resolve` SHALL compute the **Hull** from `skill-graft.toml`, write `skill-graft.lock`, print the
-tree to standard output and the warnings to standard error, and exit 0. It SHALL NOT write `skill-graft.toml`,
-`.apm/skills/`, or run `apm`. Like `build`, it SHALL fail on any git **Source** without `ref`.
+`skill-graft resolve` SHALL compute the **Hull** from `skill-graft.toml`, write `skill-graft.lock`, print the tree to
+standard output and the warnings to standard error, and exit 0. It SHALL NOT write `skill-graft.toml`, `.apm/skills/`,
+or run `apm`. Like `build`, it SHALL fail on any git **Source** without `ref`.
 
 #### Scenario: Resolve succeeds
 
@@ -25,8 +25,8 @@ tree to standard output and the warnings to standard error, and exit 0. It SHALL
 
 ### Requirement: Never moves a ref
 
-`resolve` SHALL read each git **Source** at its `ref` exactly, contacting the remote only when that commit is
-missing from the cache.
+`resolve` SHALL read each git **Source** at its `ref` exactly, contacting the remote only when that commit is missing
+from the cache.
 
 #### Scenario: Upstream moved on
 
@@ -35,11 +35,10 @@ missing from the cache.
 
 ### Requirement: Lock content
 
-`skill-graft.lock`, a TOML file at `~/.apm/skill-graft/skill-graft.lock` even when `skill-graft.toml` is a
-symlink, SHALL record: each declared **Source**'s alias with
-its URL and `ref`, or its resolved folder; each **Hull** **Skill**'s **Skill ID**, whether it is an **Entry**,
-and a SHA-256 hash of its folder as vendored; and each edge: from, to, kind (`slash` or `skill-tool`), and
-`bind = true` when a **Bind** decided it. One edge per from, to, kind and `bind`.
+`skill-graft.lock`, a TOML file at `~/.apm/skill-graft/skill-graft.lock` even when `skill-graft.toml` is a symlink,
+SHALL record: each declared **Source**'s alias with its URL and `ref`, or its resolved folder; each **Hull** **Skill**'s
+**Skill ID**, whether it is an **Entry**, and a SHA-256 hash of its folder as vendored; and each edge: from, to, kind
+(`slash` or `skill-tool`), and `bind = true` when a **Bind** decided it. One edge per from, to, kind and `bind`.
 
 #### Scenario: Edges with kinds
 
@@ -49,10 +48,8 @@ and a SHA-256 hash of its folder as vendored; and each edge: from, to, kind (`sl
 
 #### Scenario: Bound and default edge to one skill
 
-- **WHEN** `mp/tdd` calls `/g`, bound by `"mp/g" = "own/notes"`, and `/notes`, resolved by default to
-  `own/notes`
-- **THEN** the lock holds two `slash` edges `mp/tdd` → `own/notes`, one with `bind = true`, and the tree shows
-  both
+- **WHEN** `mp/tdd` calls `/g`, bound by `"mp/g" = "own/notes"`, and `/notes`, resolved by default to `own/notes`
+- **THEN** the lock holds two `slash` edges `mp/tdd` → `own/notes`, one with `bind = true`, and the tree shows both
 
 #### Scenario: Symlinked config
 
@@ -66,9 +63,9 @@ and a SHA-256 hash of its folder as vendored; and each edge: from, to, kind (`sl
 
 ### Requirement: Lock is deterministic
 
-The same TOML, **Source** contents and **Source** folders SHALL give a byte-identical lock, whenever it is
-written: no timestamps, everything sorted. A path **Source**'s resolved folder is part of the input, so the lock
-differs across machines whose folders differ. The lock SHALL be replaced atomically.
+The same TOML, **Source** contents and **Source** folders SHALL give a byte-identical lock, whenever it is written: no
+timestamps, everything sorted. A path **Source**'s resolved folder is part of the input, so the lock differs across
+machines whose folders differ. The lock SHALL be replaced atomically.
 
 #### Scenario: Same input
 
@@ -77,8 +74,7 @@ differs across machines whose folders differ. The lock SHALL be replaced atomica
 
 ### Requirement: The lock is output only
 
-No command SHALL read `skill-graft.lock` to decide anything: deleting or editing it SHALL change no command's
-result.
+No command SHALL read `skill-graft.lock` to decide anything: deleting or editing it SHALL change no command's result.
 
 #### Scenario: Lock edited by hand
 
@@ -87,15 +83,15 @@ result.
 
 ### Requirement: Tree output
 
-`resolve` SHALL print the **Hull** in the style of `cargo tree`: each **Entry** at the top level in TOML order,
-expanded there; under each **Skill**, one line per edge naming the **Skill** and the **Reference** (`/name`,
-`Skill(name)`, plus `bind` when a **Bind** decided it). A **Skill** SHALL be expanded once, at its first
-depth-first line; its later lines, and any nested line for an **Entry**, SHALL end in `(*)` and not expand.
+`resolve` SHALL print the **Hull** in the style of `cargo tree`: each **Entry** at the top level in TOML order, expanded
+there; under each **Skill**, one line per edge naming the **Skill** and the **Reference** (`/name`, `Skill(name)`, plus
+`bind` when a **Bind** decided it). A **Skill** SHALL be expanded once, at its first depth-first line; its later lines,
+and any nested line for an **Entry**, SHALL end in `(*)` and not expand.
 
 #### Scenario: Tree
 
-- **WHEN** `mp/tdd` calls `/grilling`, `/notes` and `Skill(x)` (bound to `own/x`), and `mp/grilling` calls
-  `/notes` and `/tdd`
+- **WHEN** `mp/tdd` calls `/grilling`, `/notes` and `Skill(x)` (bound to `own/x`), and `mp/grilling` calls `/notes` and
+  `/tdd`
 
 - **THEN** `resolve` prints
 

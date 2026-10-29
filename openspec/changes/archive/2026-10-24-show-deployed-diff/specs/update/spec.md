@@ -2,11 +2,10 @@
 
 ### Requirement: Dry run writes nothing
 
-`update --dry-run` SHALL do everything `update` does, printing the same lines and errors and exiting with the
-same code, but SHALL write neither `skill-graft.toml`, `skill-graft.lock` nor the cache, nor anything outside a
-temporary folder it removes before exiting, except the **Deployed diff** file `--diff` names. It SHALL read what the
-cache already holds, and contact a remote exactly when `update` would. It SHALL say that the TOML and the lock were
-not written.
+`update --dry-run` SHALL do everything `update` does, printing the same lines and errors and exiting with the same code,
+but SHALL write neither `skill-graft.toml`, `skill-graft.lock` nor the cache, nor anything outside a temporary folder it
+removes before exiting, except the **Deployed diff** file `--diff` names. It SHALL read what the cache already holds,
+and contact a remote exactly when `update` would. It SHALL say that the TOML and the lock were not written.
 
 #### Scenario: Dry run
 
@@ -33,29 +32,27 @@ not written.
 ### Requirement: Report the hull diff
 
 After the per-**Source** lines, `update` SHALL print the **Hull diff** between the current `ref`s and the new tips: the
-legend `hull (+ added, - removed, ~ changed):`, then `+ <skill id>`, `- <skill id>` or `~ <skill id>` (hash changed)
-per **Skill**, sorted by **Skill ID**; or `hull unchanged`.
+legend `hull (+ added, - removed, ~ changed):`, then `+ <skill id>`, `- <skill id>` or `~ <skill id>` (hash changed) per
+**Skill**, sorted by **Skill ID**; or `hull unchanged`.
 
 Under each `+` and `~` line it SHALL print one line per file whose deployed bytes or executable bit differ, sorted by
-path:
-`<path> (new, <n> bytes)`, `<path> (removed)` or `<path> (changed, <old> -> <new> bytes)`, then `(now executable)` or
-`(no longer executable)` where they apply; at most 20 such lines per **Skill**, then `… <n> more`. Each path SHALL be
-printed whole and quoted as git's `core.quotePath` quotes it, a name holding a space quoted too, so it is
-printable ASCII and two names never print alike. No **Skill** text SHALL be printed, and no diff SHALL be computed
-for this summary.
+path: `<path> (new, <n> bytes)`, `<path> (removed)` or `<path> (changed, <old> -> <new> bytes)`, then `(now executable)`
+or `(no longer executable)` where they apply; at most 20 such lines per **Skill**, then `… <n> more`. Each path SHALL be
+printed whole and quoted as git's `core.quotePath` quotes it, a name holding a space quoted too, so it is printable
+ASCII and two names never print alike. No **Skill** text SHALL be printed, and no diff SHALL be computed for this
+summary.
 
 After the **Hull diff**, `update` SHALL read the lock's **Skills** and their hashes, and name each **Skill** that the
 old **Hull** and the lock do not hold alike, held by one only or with another hash, in a line
-`edited since skill-graft.lock was written, not shown: <skill id>`. A missing or
-unreadable lock SHALL name every **Skill** of the old **Hull**.
+`edited since skill-graft.lock was written, not shown: <skill id>`. A missing or unreadable lock SHALL name every
+**Skill** of the old **Hull**.
 
 The diff SHALL never fetch: when a current `ref` is missing or not cached, or the current `ref`s do not resolve, it
-SHALL say so instead. A current `ref` not in the cache SHALL be named with its likely causes: a branch fetched
-since, history rewritten upstream, or a `ref` set to a commit on no branch. A dry run without `--diff`
-whose **Hull diff** marks a **Skill** `+` or `~`, or that has no previous **Hull**, SHALL print, before its `dry run:`
-line, the hint
-`review: skill-graft update --dry-run --diff <file>` with the **Sources** it was given. Warnings SHALL come from the
-new tips only. `--dry-run` SHALL print the same.
+SHALL say so instead. A current `ref` not in the cache SHALL be named with its likely causes: a branch fetched since,
+history rewritten upstream, or a `ref` set to a commit on no branch. A dry run without `--diff` whose **Hull diff**
+marks a **Skill** `+` or `~`, or that has no previous **Hull**, SHALL print, before its `dry run:` line, the hint
+`review: skill-graft update --dry-run --diff <file>` with the **Sources** it was given. Warnings SHALL come from the new
+tips only. `--dry-run` SHALL print the same.
 
 #### Scenario: Warnings once
 
@@ -95,8 +92,8 @@ new tips only. `--dry-run` SHALL print the same.
 
 #### Scenario: File lines
 
-- **WHEN** at the new tip `mp/tdd`'s `SKILL.md` grows from 120 to 180 bytes, and it gains an executable `run.sh` of
-  40 bytes
+- **WHEN** at the new tip `mp/tdd`'s `SKILL.md` grows from 120 to 180 bytes, and it gains an executable `run.sh` of 40
+  bytes
 - **THEN** under `~ mp/tdd` it prints `SKILL.md (changed, 120 -> 180 bytes)` and
   `run.sh (new, 40 bytes) (now executable)`
 
@@ -151,21 +148,21 @@ new tips only. `--dry-run` SHALL print the same.
 
 ### Requirement: Deployed diff file
 
-`update --diff <file>` SHALL write the **Deployed diff** of the **Hull diff**'s `+` and `~` **Skills** to `<file>`,
-with a line `# - <skill id>` for each **Skill** it marks `-`, its folders resolved, its last part never followed as a
-symbolic link. Before any other step it SHALL refuse, naming it, a `<file>` whose name does not end in `.diff`; that,
-as given without `..` or once its folders are resolved, lies inside a folder named `.apm` in any case or a folder
-holding a `SKILL.md`; that lies in no existing folder; that exists and is not a regular file; or that is a regular
-file not starting with the **Deployed diff**'s header, reading no more of it than the header's first line. So it
-never replaces a file it did not write, never writes a file a harness loads as a command, rule or **Skill**, and never
-blocks on what it reads. Then it SHALL remove a file it wrote before, so a run that fails leaves none. In a dry run
-it SHALL write the file last, before any closing line. In a real `update` it
-SHALL write the file before `skill-graft.toml` and the lock, and remove it if either of those writes fails.
+`update --diff <file>` SHALL write the **Deployed diff** of the **Hull diff**'s `+` and `~` **Skills** to `<file>`, with
+a line `# - <skill id>` for each **Skill** it marks `-`, its folders resolved, its last part never followed as a
+symbolic link. Before any other step it SHALL refuse, naming it, a `<file>` whose name does not end in `.diff`; that, as
+given without `..` or once its folders are resolved, lies inside a folder named `.apm` in any case or a folder holding a
+`SKILL.md`; that lies in no existing folder; that exists and is not a regular file; or that is a regular file not
+starting with the **Deployed diff**'s header, reading no more of it than the header's first line. So it never replaces a
+file it did not write, never writes a file a harness loads as a command, rule or **Skill**, and never blocks on what it
+reads. Then it SHALL remove a file it wrote before, so a run that fails leaves none. In a dry run it SHALL write the
+file last, before any closing line. In a real `update` it SHALL write the file before `skill-graft.toml` and the lock,
+and remove it if either of those writes fails.
 
 The file SHALL start with a header saying it holds the **Skills**' text as deployed, **Patches** and **Renames**
-applied, at the current `ref`s against the new ones, not what the **Sources** changed upstream, and that it is
-untrusted text to read in an editor. When there is no previous **Hull** to compare, it SHALL hold the header, the
-reason, and every **Skill** of the new **Hull** as a `+` **Skill**, all its files added.
+applied, at the current `ref`s against the new ones, not what the **Sources** changed upstream, and that it is untrusted
+text to read in an editor. When there is no previous **Hull** to compare, it SHALL hold the header, the reason, and
+every **Skill** of the new **Hull** as a `+` **Skill**, all its files added.
 
 #### Scenario: Diff file
 
@@ -201,8 +198,8 @@ reason, and every **Skill** of the new **Hull** as a `+` **Skill**, all its file
 
 #### Scenario: Inside the package
 
-- **WHEN** the user runs `update --diff .apm/review.diff`, or `.APM/review.diff` on a filesystem that ignores case,
-  in a project-scope **Package**
+- **WHEN** the user runs `update --diff .apm/review.diff`, or `.APM/review.diff` on a filesystem that ignores case, in a
+  project-scope **Package**
 - **THEN** it exits non-zero naming the path, fetches nothing and writes nothing
 
 #### Scenario: Into the package through a link
@@ -218,8 +215,7 @@ reason, and every **Skill** of the new **Hull** as a `+` **Skill**, all its file
 
 #### Scenario: Inside a skill's folder
 
-- **WHEN** the user runs `update --dry-run --diff .claude/skills/mp-tdd/review.diff`, and that folder holds a
-  `SKILL.md`
+- **WHEN** the user runs `update --dry-run --diff .claude/skills/mp-tdd/review.diff`, and that folder holds a `SKILL.md`
 - **THEN** it exits non-zero naming the path, and writes nothing
 
 #### Scenario: A failed write after the diff
@@ -255,7 +251,8 @@ reason, and every **Skill** of the new **Hull** as a `+` **Skill**, all its file
 
 #### Scenario: Skill removed
 
-- **WHEN** at the new tip no **Skill** calls `/grilling` any more, and the user runs `update --dry-run --diff review.diff`
+- **WHEN** at the new tip no **Skill** calls `/grilling` any more, and the user runs
+  `update --dry-run --diff review.diff`
 - **THEN** `review.diff` holds the line `# - mp/grilling`, even when no **Skill** changed or joined
 
 #### Scenario: In no folder
@@ -273,8 +270,7 @@ reason, and every **Skill** of the new **Hull** as a `+` **Skill**, all its file
 For each `+` and `~` **Skill**, the **Deployed diff** SHALL open with `# <mark> <skill id>`, then a line naming its
 **Source** and, for a git **Source**, its old and new `ref` and its old and new upstream folder (each once when
 unchanged, no old one for a `+` **Skill**), and whether it was edited since the lock was written. Every name from a
-**Source** on these lines SHALL be quoted as file paths are. It
-SHALL give no command to run.
+**Source** on these lines SHALL be quoted as file paths are. It SHALL give no command to run.
 
 Then it SHALL give a unified diff of every file whose deployed bytes or executable bit differ, at the current `ref`s
 against the new ones, a `+` **Skill**'s files all added, in `git diff`'s format: `old mode` and `new mode` lines for an
@@ -300,8 +296,7 @@ every machine: no git configuration of the user's changes it.
 
 #### Scenario: Renamed skill
 
-- **WHEN** `mp/tdd` deploys as `mp-tdd` and the new tip adds a line calling `/grilling`, which deploys as
-  `mp-grilling`
+- **WHEN** `mp/tdd` deploys as `mp-tdd` and the new tip adds a line calling `/grilling`, which deploys as `mp-grilling`
 - **THEN** the added line reads `/mp-grilling`
 
 #### Scenario: Source line
@@ -356,8 +351,8 @@ every machine: no git configuration of the user's changes it.
 
 #### Scenario: A typed escape beside another change
 
-- **WHEN** at the new tip `mp/tdd`'s `run.sh` line `run \x1b now`, typed so, holds an ESC in place of the typed
-  escape and `later` in place of `now`
+- **WHEN** at the new tip `mp/tdd`'s `run.sh` line `run \x1b now`, typed so, holds an ESC in place of the typed escape
+  and `later` in place of `now`
 - **THEN** the **Deployed diff** shows `-run \\x1b now` and `+run \x1b later`, after a line saying each backslash is
   doubled
 
@@ -425,9 +420,9 @@ resolves is `<digest>`: one SHA-256 over each of its **Skills**' **Skill ID**, *
 records it. A `<digest>` that is not 64 lowercase hex digits SHALL be refused before any fetch.
 
 A dry run that succeeds SHALL print, once its diff file is written and before its `dry run:` line,
-`apply: skill-graft update --expect <digest>` with the **Sources** it was given and its **Hull**'s digest, exactly
-when it printed no `review:` hint and named no **Skill** as edited since the lock was written. With no previous
-**Hull**, the lock check SHALL be skipped: the **Deployed diff** shows every **Skill** in full.
+`apply: skill-graft update --expect <digest>` with the **Sources** it was given and its **Hull**'s digest, exactly when
+it printed no `review:` hint and named no **Skill** as edited since the lock was written. With no previous **Hull**, the
+lock check SHALL be skipped: the **Deployed diff** shows every **Skill** in full.
 
 #### Scenario: Apply line
 
@@ -463,15 +458,15 @@ when it printed no `review:` hint and named no **Skill** as edited since the loc
 
 #### Scenario: Tip moved after vetting
 
-- **WHEN** the user runs `update mp --dry-run --diff review.diff` at tip B, upstream then pushes C changing
-  `mp/tdd`, and the user runs the `apply:` line
-- **THEN** it exits non-zero naming both digests and the review command, and `skill-graft.toml` and the lock keep
-  their bytes
+- **WHEN** the user runs `update mp --dry-run --diff review.diff` at tip B, upstream then pushes C changing `mp/tdd`,
+  and the user runs the `apply:` line
+- **THEN** it exits non-zero naming both digests and the review command, and `skill-graft.toml` and the lock keep their
+  bytes
 
 #### Scenario: Path source edited after vetting
 
-- **WHEN** after `update mp --dry-run --diff review.diff`, `own/notes`' `SKILL.md`, of a path **Source**, changes,
-  and the user runs the `apply:` line
+- **WHEN** after `update mp --dry-run --diff review.diff`, `own/notes`' `SKILL.md`, of a path **Source**, changes, and
+  the user runs the `apply:` line
 - **THEN** it exits non-zero, and `skill-graft.toml` and the lock keep their bytes
 
 #### Scenario: Patch edited after vetting

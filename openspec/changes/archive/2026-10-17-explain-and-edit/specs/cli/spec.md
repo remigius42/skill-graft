@@ -2,16 +2,16 @@
 
 ## Purpose
 
-How the user learns and invokes the `skill-graft` commands: help for each command, the `help` command, and what
-a mistyped command line does.
+How the user learns and invokes the `skill-graft` commands: help for each command, the `help` command, and what a
+mistyped command line does.
 
 ## ADDED Requirements
 
 ### Requirement: Help on every command
 
-`skill-graft -h`, `skill-graft --help` and `-h`/`--help` after any command SHALL print that level's usage, a
-description in the glossary's terms, and each argument and option with its meaning, to standard output, and
-exit 0 without reading `skill-graft.toml`. The top level SHALL list every command with a one-line summary.
+`skill-graft -h`, `skill-graft --help` and `-h`/`--help` after any command SHALL print that level's usage, a description
+in the glossary's terms, and each argument and option with its meaning, to standard output, and exit 0 without reading
+`skill-graft.toml`. The top level SHALL list every command with a one-line summary.
 
 #### Scenario: Top-level help
 

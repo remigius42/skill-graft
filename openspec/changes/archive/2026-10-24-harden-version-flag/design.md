@@ -3,11 +3,11 @@
 ## Context
 
 `_Version.__call__` runs inside `parser.parse_args`, before `main`'s `try`, so no handler of `main` catches what it
-raises. `_origin` catches only `ValueError`. `importlib.metadata`'s `read_text` swallows a missing file but not
-`ELOOP` or `EIO`; `json.loads` raises `RecursionError` on deep nesting; `metadata.distribution` raises
-`PackageNotFoundError` without installed metadata; `distribution.version` raises `UnicodeDecodeError` on a METADATA
-that is not UTF-8, and on 3.12+ warns that a missing `Version` will raise `KeyError`. `requested_revision` and
-`commit_id` are only checked for being non-empty strings.
+raises. `_origin` catches only `ValueError`. `importlib.metadata`'s `read_text` swallows a missing file but not `ELOOP`
+or `EIO`; `json.loads` raises `RecursionError` on deep nesting; `metadata.distribution` raises `PackageNotFoundError`
+without installed metadata; `distribution.version` raises `UnicodeDecodeError` on a METADATA that is not UTF-8, and on
+3.12+ warns that a missing `Version` will raise `KeyError`. `requested_revision` and `commit_id` are only checked for
+being non-empty strings.
 
 ## Goals / Non-Goals
 
@@ -24,13 +24,13 @@ that is not UTF-8, and on 3.12+ warns that a missing `Version` will raise `KeyEr
 
 ## Decisions
 
-- **Catch named exceptions, not `Exception`.** `_origin` catches `OSError`, `ValueError` and `RecursionError` around
-  the read and parse; the version lookup catches `metadata.PackageNotFoundError`, `OSError` and `ValueError`
-  (`UnicodeDecodeError`). A bare `except` would hide a bug in our own code behind a shorter line.
-  `PackageNotFoundError` is an `ImportError`, so it is named.
-- **Index `Version` only when `"Version" in distribution.metadata`.** `distribution.version` indexes the metadata,
-  which CPython deprecates for a missing key and will make a `KeyError`. The typed `PackageMetadata` protocol has no
-  `.get`, but has `__contains__`.
+- **Catch named exceptions, not `Exception`.** `_origin` catches `OSError`, `ValueError` and `RecursionError` around the
+  read and parse; the version lookup catches `metadata.PackageNotFoundError`, `OSError` and `ValueError`
+  (`UnicodeDecodeError`). A bare `except` would hide a bug in our own code behind a shorter line. `PackageNotFoundError`
+  is an `ImportError`, so it is named.
+- **Index `Version` only when `"Version" in distribution.metadata`.** `distribution.version` indexes the metadata, which
+  CPython deprecates for a missing key and will make a `KeyError`. The typed `PackageMetadata` protocol has no `.get`,
+  but has `__contains__`.
 - **`unknown` for the version, origin kept.** Keeps the `skill-graft <version>` shape a script may split on. Applies
   when no distribution is found, its metadata cannot be read or decoded, or its version is missing or, stripped of the
   whitespace the METADATA parser keeps, not printable ASCII without spaces. When the distribution was found, `_origin`
@@ -48,13 +48,13 @@ that is not UTF-8, and on 3.12+ warns that a missing `Version` will raise `KeyEr
 - **Tests run the script in `sysconfig.get_path("scripts")`.** That is where the installer put `skill-graft` for the
   interpreter running the suite, in a venv or a system scheme; `PATH` may lack it or lead elsewhere (a `uv tool`
   install, another worktree's venv). One helper in `tests/cli/test_cli.py` serves the version and help tests. The
-  version test compares the first two words, `["skill-graft", metadata.version("skill-graft")]`, so `0.2.01` fails
-  for `0.2.0`.
+  version test compares the first two words, `["skill-graft", metadata.version("skill-graft")]`, so `0.2.01` fails for
+  `0.2.0`.
 
 ## Risks / Trade-offs
 
-- [A real branch or tag with a non-ASCII name] → shows as `(<commit>)`; the commit identifies the code, and the
-  user typed the name.
+- [A real branch or tag with a non-ASCII name] → shows as `(<commit>)`; the commit identifies the code, and the user
+  typed the name.
 - \[A `pip install --user` puts scripts in the user scheme, not `get_path("scripts")`\] → the suite runs from the
   project's venv, where both agree.
 - \[A Windows venv names it `skill-graft.exe`\] → CI runs the suite on Linux only; revisit with Windows CI.

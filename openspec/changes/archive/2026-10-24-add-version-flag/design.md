@@ -19,22 +19,22 @@ distribution's metadata, saying where it came from.
 
 ## Decisions
 
-- **`direct_url.json`, not `git`.** A git install keeps no repository to ask; the installer's record is the only
-  source, and it needs no subprocess. Read with `importlib.metadata.distribution("skill-graft").read_text(...)`.
-  Alternative: write the commit into the package at build time (a version plugin for the build backend), rejected as
-  a new build dependency for one line.
+- **`direct_url.json`, not `git`.** A git install keeps no repository to ask; the installer's record is the only source,
+  and it needs no subprocess. Read with `importlib.metadata.distribution("skill-graft").read_text(...)`. Alternative:
+  write the commit into the package at build time (a version plugin for the build backend), rejected as a new build
+  dependency for one line.
 - **Format `(<requested_revision> @ <commit_id[:7]>)`.** `requested_revision` is the ref the user typed (`main`,
-  `v0.2.0`), the commit what it pointed at then. PEP 610 makes `requested_revision` optional; without it, when it is
-  not a non-empty string, or when it is the commit, in full or abbreviated to seven or more characters, ignoring
-  case (an install pinned to a hash), `(<commit>)`; a shorter hex name is a branch or tag. Only
-  `vcs_info.vcs == "git"` gets a suffix, as the spec speaks of git only. The README's install commands name no ref,
-  so `(<commit>)` is what most users see.
-- **Anything unexpected prints the version only.** No `direct_url.json`, one that is not JSON, not an object, without
-  a `vcs_info` object, or without a string `commit_id`: none is an error, as `--version` must not fail.
-- **A custom `argparse.Action`, not `action="version"`.** The built-in one passes its string through the help
-  formatter, which `_Formatter` rewraps at the terminal's width, and takes it when the parser is built, so every
-  command would read the metadata. The custom action computes the line only when `--version` is given, writes it to
-  standard output as is, and exits 0, before the command check.
+  `v0.2.0`), the commit what it pointed at then. PEP 610 makes `requested_revision` optional; without it, when it is not
+  a non-empty string, or when it is the commit, in full or abbreviated to seven or more characters, ignoring case (an
+  install pinned to a hash), `(<commit>)`; a shorter hex name is a branch or tag. Only `vcs_info.vcs == "git"` gets a
+  suffix, as the spec speaks of git only. The README's install commands name no ref, so `(<commit>)` is what most users
+  see.
+- **Anything unexpected prints the version only.** No `direct_url.json`, one that is not JSON, not an object, without a
+  `vcs_info` object, or without a string `commit_id`: none is an error, as `--version` must not fail.
+- **A custom `argparse.Action`, not `action="version"`.** The built-in one passes its string through the help formatter,
+  which `_Formatter` rewraps at the terminal's width, and takes it when the parser is built, so every command would read
+  the metadata. The custom action computes the line only when `--version` is given, writes it to standard output as is,
+  and exits 0, before the command check.
 - **No fallback for a missing installation.** The `skill-graft` command exists only once installed, and each
   installation's entry point finds its own metadata, so each reports its own version.
 

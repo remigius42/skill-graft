@@ -2,16 +2,16 @@
 
 ## Purpose
 
-`skill-graft resolve` computes the **Hull**, records its provenance in `skill-graft.lock`, and shows the user
-why each **Skill** is in it.
+`skill-graft resolve` computes the **Hull**, records its provenance in `skill-graft.lock`, and shows the user why each
+**Skill** is in it.
 
 ## Requirements
 
 ### Requirement: Resolve command
 
-`skill-graft resolve` SHALL compute the **Hull** from `skill-graft.toml`, write `skill-graft.lock`, print the
-tree to standard output and the warnings to standard error, and exit 0. It SHALL NOT write `skill-graft.toml`,
-`.apm/skills/`, or run `apm`. Like `build`, it SHALL fail on any git **Source** without `ref`.
+`skill-graft resolve` SHALL compute the **Hull** from `skill-graft.toml`, write `skill-graft.lock`, print the tree to
+standard output and the warnings to standard error, and exit 0. It SHALL NOT write `skill-graft.toml`, `.apm/skills/`,
+or run `apm`. Like `build`, it SHALL fail on any git **Source** without `ref`.
 
 #### Scenario: Resolve succeeds
 
@@ -25,8 +25,8 @@ tree to standard output and the warnings to standard error, and exit 0. It SHALL
 
 ### Requirement: Never moves a ref
 
-`resolve` SHALL read each git **Source** at its `ref` exactly, contacting the remote only when that commit is
-missing from the cache.
+`resolve` SHALL read each git **Source** at its `ref` exactly, contacting the remote only when that commit is missing
+from the cache.
 
 #### Scenario: Upstream moved on
 
@@ -35,12 +35,12 @@ missing from the cache.
 
 ### Requirement: Lock content
 
-`skill-graft.lock`, a TOML file at `~/.apm/skill-graft/skill-graft.lock` even when `skill-graft.toml` is a
-symlink, SHALL record: each declared **Source**'s alias with its URL, `ref` and `subdirectory` when set, or its
-resolved folder (in project scope relative to the **Package** when inside the project root, else absolute); each
-**Hull** **Skill**'s **Skill ID**, whether it is an **Entry**, and a SHA-256 hash of its folder as vendored; and
-each edge: from, to, kind (`slash`, `skill-tool` or `prose`), and `bind = true` when a **Bind** decided it. One
-edge per from, to, kind and `bind`.
+`skill-graft.lock`, a TOML file at `~/.apm/skill-graft/skill-graft.lock` even when `skill-graft.toml` is a symlink,
+SHALL record: each declared **Source**'s alias with its URL, `ref` and `subdirectory` when set, or its resolved folder
+(in project scope relative to the **Package** when inside the project root, else absolute); each **Hull** **Skill**'s
+**Skill ID**, whether it is an **Entry**, and a SHA-256 hash of its folder as vendored; and each edge: from, to, kind
+(`slash`, `skill-tool` or `prose`), and `bind = true` when a **Bind** decided it. One edge per from, to, kind and
+`bind`.
 
 #### Scenario: Edges with kinds
 
@@ -50,10 +50,8 @@ edge per from, to, kind and `bind`.
 
 #### Scenario: Bound and default edge to one skill
 
-- **WHEN** `mp/tdd` calls `/g`, bound by `"mp/g" = "own/notes"`, and `/notes`, resolved by default to
-  `own/notes`
-- **THEN** the lock holds two `slash` edges `mp/tdd` → `own/notes`, one with `bind = true`, and the tree shows
-  both
+- **WHEN** `mp/tdd` calls `/g`, bound by `"mp/g" = "own/notes"`, and `/notes`, resolved by default to `own/notes`
+- **THEN** the lock holds two `slash` edges `mp/tdd` → `own/notes`, one with `bind = true`, and the tree shows both
 
 #### Scenario: Prose edge
 
@@ -89,10 +87,10 @@ edge per from, to, kind and `bind`.
 
 ### Requirement: Lock is deterministic
 
-The same TOML, **Source** contents and **Source** folders SHALL give a byte-identical lock, whenever it is
-written: no timestamps, everything sorted except a **Skill**'s `patches`, which keep their apply order. A path
-**Source**'s resolved folder and the cache's location are part of the input, so the lock differs across machines
-whose folders differ. The lock SHALL be replaced atomically.
+The same TOML, **Source** contents and **Source** folders SHALL give a byte-identical lock, whenever it is written: no
+timestamps, everything sorted except a **Skill**'s `patches`, which keep their apply order. A path **Source**'s resolved
+folder and the cache's location are part of the input, so the lock differs across machines whose folders differ. The
+lock SHALL be replaced atomically.
 
 #### Scenario: Same input
 
@@ -101,8 +99,7 @@ whose folders differ. The lock SHALL be replaced atomically.
 
 ### Requirement: The lock is output only
 
-No command SHALL read `skill-graft.lock` to decide anything: deleting or editing it SHALL change no command's
-result.
+No command SHALL read `skill-graft.lock` to decide anything: deleting or editing it SHALL change no command's result.
 
 #### Scenario: Lock edited by hand
 
@@ -111,19 +108,18 @@ result.
 
 ### Requirement: Tree output
 
-`resolve` SHALL print the **Hull** in the style of `cargo tree`: each **Entry** at the top level in TOML order,
-expanded there; under each **Skill**, one line per edge naming the **Skill** and the **Reference** as written
-upstream (`/name`, `Skill(name)`, `` `name` `` or `name` plus `prose`, plus `bind` when a **Bind** decided it). A
-renamed **Skill** SHALL be named `<skill id> as <deployed name>` on every line, and a patched one SHALL be
-followed by `(patched)` on every line. A `prose` edge SHALL have a line
-only when the build rewrites it: its target's **Deployed name** differs from the name written. A **Skill** SHALL
-be expanded once, at its first depth-first line; its later lines, and any nested line for an **Entry**, SHALL end
-in `(*)` and not expand.
+`resolve` SHALL print the **Hull** in the style of `cargo tree`: each **Entry** at the top level in TOML order, expanded
+there; under each **Skill**, one line per edge naming the **Skill** and the **Reference** as written upstream (`/name`,
+`Skill(name)`, `` `name` `` or `name` plus `prose`, plus `bind` when a **Bind** decided it). A renamed **Skill** SHALL
+be named `<skill id> as <deployed name>` on every line, and a patched one SHALL be followed by `(patched)` on every
+line. A `prose` edge SHALL have a line only when the build rewrites it: its target's **Deployed name** differs from the
+name written. A **Skill** SHALL be expanded once, at its first depth-first line; its later lines, and any nested line
+for an **Entry**, SHALL end in `(*)` and not expand.
 
 #### Scenario: Tree
 
-- **WHEN** `mp/tdd` calls `/grilling`, `/notes` and `Skill(x)` (bound to `own/x`), and `mp/grilling` calls
-  `/notes` and `/tdd`
+- **WHEN** `mp/tdd` calls `/grilling`, `/notes` and `Skill(x)` (bound to `own/x`), and `mp/grilling` calls `/notes` and
+  `/tdd`
 
 - **THEN** `resolve` prints
 
@@ -152,8 +148,8 @@ in `(*)` and not expand.
 
 #### Scenario: Patches marked
 
-- **WHEN** **Entry** `mp/tdd` calls `/grilling`, `[patches]` names `mp/tdd` and `mp/grilling`, and `[rename]`
-  has `"mp/grilling" = "mp-grilling"`
+- **WHEN** **Entry** `mp/tdd` calls `/grilling`, `[patches]` names `mp/tdd` and `mp/grilling`, and `[rename]` has
+  `"mp/grilling" = "mp-grilling"`
 
 - **THEN** `resolve` prints
 
@@ -164,8 +160,8 @@ in `(*)` and not expand.
 
 #### Scenario: Bound prose shown
 
-- **WHEN** **Entry** `mp/tdd` calls `/notes` and mentions `` `notes` ``, `[bind]` has `"mp/notes" = "own/grill"`,
-  and no rename names `own/grill`
+- **WHEN** **Entry** `mp/tdd` calls `/notes` and mentions `` `notes` ``, `[bind]` has `"mp/notes" = "own/grill"`, and no
+  rename names `own/grill`
 
 - **THEN** `resolve` prints
 
@@ -177,15 +173,15 @@ in `(*)` and not expand.
 
 ### Requirement: Lock records renames and suggestions
 
-The lock SHALL record each renamed **Hull** **Skill**'s `deployed` name, and each suggested **Skill** with the
-**Skill IDs** mentioning it, sorted. Each hash SHALL cover the folder as vendored, after renaming and rewriting,
-so `resolve` and `build` write the same lock for the same input.
+The lock SHALL record each renamed **Hull** **Skill**'s `deployed` name, and each suggested **Skill** with the **Skill
+IDs** mentioning it, sorted. Each hash SHALL cover the folder as vendored, after renaming and rewriting, so `resolve`
+and `build` write the same lock for the same input.
 
 #### Scenario: Renamed skill
 
 - **WHEN** `[rename]` has `"mp/grilling" = "mp-grilling"`
-- **THEN** the lock's entry for `mp/grilling` holds `deployed = "mp-grilling"`, and entries of unrenamed
-  **Skills** hold no `deployed`
+- **THEN** the lock's entry for `mp/grilling` holds `deployed = "mp-grilling"`, and entries of unrenamed **Skills** hold
+  no `deployed`
 
 #### Scenario: Suggestion recorded
 
@@ -194,8 +190,8 @@ so `resolve` and `build` write the same lock for the same input.
 
 #### Scenario: Rename changes the hash
 
-- **WHEN** `resolve` runs, then `[rename]` gets `"mp/grilling" = "mp-grilling"` and it runs again, `mp/tdd`
-  calling `/grilling`
+- **WHEN** `resolve` runs, then `[rename]` gets `"mp/grilling" = "mp-grilling"` and it runs again, `mp/tdd` calling
+  `/grilling`
 - **THEN** the hashes of `mp/grilling` and `mp/tdd` differ between the two locks
 
 #### Scenario: Resolve and build agree
@@ -206,19 +202,19 @@ so `resolve` and `build` write the same lock for the same input.
 ### Requirement: Prose suggestions
 
 `resolve` SHALL print, after the tree, each suggested **Skill** with the **Skills** mentioning it and how to accept it
-(`skill-graft add <skill id>`, named in the header), sorted, on standard output. `build` and `update` SHALL NOT
-print them, but when there are any SHALL print one line on standard error,
-`skill-graft: <n> prose suggestion(s): run skill-graft resolve`; `update` counts those of the new tips, and
-after `--dry-run`, whose tips `resolve` cannot see yet, prints
-`skill-graft: <n> prose suggestion(s) at the new tips: update, then run skill-graft resolve` instead.
-`build --into` SHALL print no such line: `resolve` would rewrite the **Package**'s lock, and the lock in the
-`--into` folder lists the suggestions.
+(`skill-graft add <skill id>`, named in the header), sorted, on standard output. `build` and `update` SHALL NOT print
+them, but when there are any SHALL print one line on standard error,
+`skill-graft: <n> prose suggestion(s): run skill-graft resolve`; `update` counts those of the new tips, and after
+`--dry-run`, whose tips `resolve` cannot see yet, prints
+`skill-graft: <n> prose suggestion(s) at the new tips: update, then run skill-graft resolve` instead. `build --into`
+SHALL print no such line: `resolve` would rewrite the **Package**'s lock, and the lock in the `--into` folder lists the
+suggestions.
 
 #### Scenario: Suggestion printed
 
 - **WHEN** `mp/tdd` mentions `diagnosing-bugs`, and `mp/diagnosing-bugs` is not in the **Hull**
-- **THEN** `resolve` prints, after the tree, a header naming `skill-graft add`, then a line naming
-  `mp/diagnosing-bugs` and `mp/tdd`
+- **THEN** `resolve` prints, after the tree, a header naming `skill-graft add`, then a line naming `mp/diagnosing-bugs`
+  and `mp/tdd`
 
 #### Scenario: No suggestions
 
@@ -227,15 +223,13 @@ after `--dry-run`, whose tips `resolve` cannot see yet, prints
 
 #### Scenario: Build announces suggestions
 
-- **WHEN** `mp` has `diagnosing-bugs` and `notes`, **Entry** `mp/tdd` mentions `diagnosing-bugs` and
-  `` `notes` `` but calls neither, and the user runs `build`
-- **THEN** stderr holds `skill-graft: 2 prose suggestion(s): run skill-graft resolve`, and stdout no suggestion
-  block
+- **WHEN** `mp` has `diagnosing-bugs` and `notes`, **Entry** `mp/tdd` mentions `diagnosing-bugs` and `` `notes` `` but
+  calls neither, and the user runs `build`
+- **THEN** stderr holds `skill-graft: 2 prose suggestion(s): run skill-graft resolve`, and stdout no suggestion block
 
 #### Scenario: Build into a folder announces none
 
-- **WHEN** **Entry** `mp/tdd` mentions `diagnosing-bugs`, not in the **Hull**, and the user runs
-  `build --into <dir>`
+- **WHEN** **Entry** `mp/tdd` mentions `diagnosing-bugs`, not in the **Hull**, and the user runs `build --into <dir>`
 - **THEN** stderr holds no `prose suggestion(s)` line, and `<dir>/skill-graft.lock` lists `mp/diagnosing-bugs`
 
 #### Scenario: Update announces suggestions
@@ -252,14 +246,14 @@ after `--dry-run`, whose tips `resolve` cannot see yet, prints
 
 The lock SHALL record each **Hull** **Skill**'s `upstream` folder relative to its **Source**'s root, in either
 **Scope**: the folder its **Patches** apply to, in the cache export at the `ref` or in a path **Source**. A git
-**Source**'s root is the repository's, so `upstream` includes any `subdirectory`. A patched **Skill** SHALL also
-record its `patches`, as written in the TOML, in apply order. Each hash SHALL cover the folder as vendored,
-**Patches** applied, so `resolve` and `build` write the same lock for the same input.
+**Source**'s root is the repository's, so `upstream` includes any `subdirectory`. A patched **Skill** SHALL also record
+its `patches`, as written in the TOML, in apply order. Each hash SHALL cover the folder as vendored, **Patches**
+applied, so `resolve` and `build` write the same lock for the same input.
 
 #### Scenario: Upstream recorded
 
-- **WHEN** `mp` is a git **Source** at `ref` A and `own` a path **Source**, `mp/tdd` is at `skills/tdd` in `mp`
-  and `own/chisel` at `chisel` in `own`, and both are in the **Hull**
+- **WHEN** `mp` is a git **Source** at `ref` A and `own` a path **Source**, `mp/tdd` is at `skills/tdd` in `mp` and
+  `own/chisel` at `chisel` in `own`, and both are in the **Hull**
 - **THEN** `mp/tdd`'s `upstream` is `skills/tdd` and `own/chisel`'s is `chisel`
 
 #### Scenario: Skill at the source root
@@ -269,14 +263,14 @@ record its `patches`, as written in the TOML, in apply order. Each hash SHALL co
 
 #### Scenario: Upstream under a subdirectory
 
-- **WHEN** `[sources.cp]` has `subdirectory = "pstack/skills"`, `cp/tdd` is at `pstack/skills/tdd` in the
-  repository, and a **Skill** of git **Source** `pl` with `subdirectory = "plugins/chisel"` is that folder itself
+- **WHEN** `[sources.cp]` has `subdirectory = "pstack/skills"`, `cp/tdd` is at `pstack/skills/tdd` in the repository,
+  and a **Skill** of git **Source** `pl` with `subdirectory = "plugins/chisel"` is that folder itself
 - **THEN** `cp/tdd`'s `upstream` is `pstack/skills/tdd`, and the other's is `plugins/chisel`
 
 #### Scenario: Same lock on another machine
 
-- **WHEN** two users with different home folders run `resolve` on the same project **Package**, whose **Sources**
-  are git **Sources** and path **Sources** inside the project
+- **WHEN** two users with different home folders run `resolve` on the same project **Package**, whose **Sources** are
+  git **Sources** and path **Sources** inside the project
 - **THEN** both locks are byte for byte equal
 
 #### Scenario: Patches recorded

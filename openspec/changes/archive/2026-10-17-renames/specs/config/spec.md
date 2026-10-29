@@ -4,9 +4,9 @@
 
 ### Requirement: Renames
 
-`[rename]` SHALL be a table whose keys are **Skill IDs**, every alias declared, and whose values are names, one
-path segment each (`[A-Za-z0-9][A-Za-z0-9._-]*`). A malformed key or value, or an undeclared alias, SHALL be an
-error naming the key.
+`[rename]` SHALL be a table whose keys are **Skill IDs**, every alias declared, and whose values are names, one path
+segment each (`[A-Za-z0-9][A-Za-z0-9._-]*`). A malformed key or value, or an undeclared alias, SHALL be an error naming
+the key.
 
 #### Scenario: Valid rename
 
@@ -41,8 +41,8 @@ error naming the key.
 
 ### Requirement: Unsupported keys are errors
 
-Any top-level key other than `sources`, `entries`, `bind`, `rename` and `reserved`, and any source key other
-than `path`, `git`, `branch` and `ref`, SHALL be an error, so declared intent is never silently ignored.
+Any top-level key other than `sources`, `entries`, `bind`, `rename` and `reserved`, and any source key other than
+`path`, `git`, `branch` and `ref`, SHALL be an error, so declared intent is never silently ignored.
 
 #### Scenario: Git source
 

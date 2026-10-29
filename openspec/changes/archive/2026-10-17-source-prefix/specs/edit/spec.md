@@ -3,8 +3,8 @@
 ### Requirement: Rename a skill
 
 `rename <skill-id> <name>` SHALL set the **Skill**'s value in `[rename]`, replacing an existing value in place or
-appending a key, and SHALL append a `[rename]` table at the end of the file when it is absent. `<name>` SHALL be
-a valid **Skill** name. A `<name>` equal to the current **Deployed name** SHALL be a notice and change nothing.
+appending a key, and SHALL append a `[rename]` table at the end of the file when it is absent. `<name>` SHALL be a valid
+**Skill** name. A `<name>` equal to the current **Deployed name** SHALL be a notice and change nothing.
 
 #### Scenario: New rename
 
@@ -31,15 +31,15 @@ a valid **Skill** name. A `<name>` equal to the current **Deployed name** SHALL 
 ### Requirement: Undo a rename
 
 `rename <skill-id> <name>` with `<name>` equal to what the **Skill** deploys as without a `[rename]` key (its
-**Source**'s `prefix` followed by its name, else its name) SHALL remove its `[rename]` key, leaving the table in
-place even if empty. Any other `<name>`, the upstream name under a **Prefix** included, SHALL be written as a key.
+**Source**'s `prefix` followed by its name, else its name) SHALL remove its `[rename]` key, leaving the table in place
+even if empty. Any other `<name>`, the upstream name under a **Prefix** included, SHALL be written as a key.
 
 #### Scenario: Undone
 
 - **WHEN** **Entry** `mp/code-review` is renamed to `mp-code-review` and the user runs
   `skill-graft rename mp/code-review code-review`
-- **THEN** `[rename]` no longer holds `mp/code-review`, and the shipped reserved-name warning for `code-review`
-  is printed
+- **THEN** `[rename]` no longer holds `mp/code-review`, and the shipped reserved-name warning for `code-review` is
+  printed
 
 #### Scenario: Opted out of the prefix
 

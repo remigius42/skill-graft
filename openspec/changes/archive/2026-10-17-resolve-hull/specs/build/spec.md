@@ -5,8 +5,8 @@
 ### Requirement: Build resolves first
 
 `build` SHALL resolve the **Hull** as `resolve` does and print its warnings before vendoring, and write
-`skill-graft.lock` once vendoring succeeded, before running APM. A resolution or vendoring error SHALL leave the
-lock unchanged.
+`skill-graft.lock` once vendoring succeeded, before running APM. A resolution or vendoring error SHALL leave the lock
+unchanged.
 
 #### Scenario: Lock written
 
@@ -27,10 +27,10 @@ lock unchanged.
 
 ### Requirement: Vendor entries
 
-`skill-graft build` SHALL make `~/.apm/skill-graft/.apm/skills/` hold exactly one folder per **Hull** **Skill**,
-named after the **Skill**'s name and holding a copy of the **Skill**'s whole folder. Nothing outside that folder
-is vendored. Folders from earlier builds that are no longer in the **Hull** SHALL be removed. The folder SHALL be
-replaced only once every copy succeeded; a failed copy SHALL leave it as it was.
+`skill-graft build` SHALL make `~/.apm/skill-graft/.apm/skills/` hold exactly one folder per **Hull** **Skill**, named
+after the **Skill**'s name and holding a copy of the **Skill**'s whole folder. Nothing outside that folder is vendored.
+Folders from earlier builds that are no longer in the **Hull** SHALL be removed. The folder SHALL be replaced only once
+every copy succeeded; a failed copy SHALL leave it as it was.
 
 #### Scenario: Whole folder copied
 
@@ -49,16 +49,15 @@ replaced only once every copy succeeded; a failed copy SHALL leave it as it was.
 
 #### Scenario: Copy fails
 
-- **WHEN** a previous build vendored `chisel`, and a **Hull** **Skill**'s folder holds a file the user cannot
-  read
+- **WHEN** a previous build vendored `chisel`, and a **Hull** **Skill**'s folder holds a file the user cannot read
 - **THEN** `build` exits non-zero naming the file, and `.apm/skills/` still holds the previous `chisel`
 
 ### Requirement: Symlinks stay within the skill
 
 A symlink in a **Hull** **Skill**'s folder SHALL lead to an existing regular file inside that folder, and SHALL be
-vendored as a copy of that file. A symlink leading outside the folder, to a missing file, to a FIFO or device, or
-to any folder (which could form a cycle), SHALL be an error naming the link, and `build` SHALL then write nothing.
-Symlinks under `.git`, which is never vendored, are not checked.
+vendored as a copy of that file. A symlink leading outside the folder, to a missing file, to a FIFO or device, or to any
+folder (which could form a cycle), SHALL be an error naming the link, and `build` SHALL then write nothing. Symlinks
+under `.git`, which is never vendored, are not checked.
 
 #### Scenario: Symlink leaving the skill
 
@@ -77,9 +76,9 @@ Symlinks under `.git`, which is never vendored, are not checked.
 
 ### Requirement: Deployed names are unique
 
-Since this version has no **Renames**, each **Hull** **Skill**'s **Deployed name** is its name. Two **Hull**
-**Skills** with the same **Deployed name**, compared ignoring case, SHALL be an error naming both, and `build`
-SHALL then write nothing.
+Since this version has no **Renames**, each **Hull** **Skill**'s **Deployed name** is its name. Two **Hull** **Skills**
+with the same **Deployed name**, compared ignoring case, SHALL be an error naming both, and `build` SHALL then write
+nothing.
 
 #### Scenario: Clash across sources
 

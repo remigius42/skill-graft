@@ -12,11 +12,10 @@
 `add`, `remove`, `rename`, `bind` and `unbind` SHALL compute the **Hull** of the edited config, as `resolve` does,
 before writing anything. Only if that succeeds SHALL they write `skill-graft.toml`, then `skill-graft.lock`, and print
 what `resolve` prints. A failure SHALL exit 1 and leave both files unchanged; so SHALL an interrupt while the lock is
-written, but exit as interrupted. If restoring `skill-graft.toml` fails too, a notice SHALL name it and the error,
-and the original error SHALL be the one reported. They SHALL NOT write `.apm/skills/` or run `apm`. When the command
-changes no value
-(every **Skill ID** given is a no-op, or `bind`'s target is the current value), it SHALL print only its notices, exit
-0, and neither resolve nor write anything.
+written, but exit as interrupted. If restoring `skill-graft.toml` fails too, a notice SHALL name it and the error, and
+the original error SHALL be the one reported. They SHALL NOT write `.apm/skills/` or run `apm`. When the command changes
+no value (every **Skill ID** given is a no-op, or `bind`'s target is the current value), it SHALL print only its
+notices, exit 0, and neither resolve nor write anything.
 
 #### Scenario: Edit succeeds
 
@@ -25,8 +24,8 @@ changes no value
 
 #### Scenario: Edit fails to resolve
 
-- **WHEN** the user runs `skill-graft add mp/notes` and `mp/notes` calls `/x`, which matches several other
-  **Sources** and no **Bind**
+- **WHEN** the user runs `skill-graft add mp/notes` and `mp/notes` calls `/x`, which matches several other **Sources**
+  and no **Bind**
 - **THEN** it exits non-zero, and `skill-graft.toml` and `skill-graft.lock` keep their bytes
 
 #### Scenario: Lock write interrupted
@@ -38,9 +37,9 @@ changes no value
 ### Requirement: Edit the TOML in place
 
 An edit SHALL change only the values it is about, keeping every other comment, blank line, key order and other
-formatting, and SHALL replace the file atomically. A symlinked `skill-graft.toml` SHALL stay a symlink: its
-target is what changes, and relative paths in it resolve as `load` resolves them. A command that changes no value
-SHALL NOT rewrite the file. A removed value's own trailing comment goes with it.
+formatting, and SHALL replace the file atomically. A symlinked `skill-graft.toml` SHALL stay a symlink: its target is
+what changes, and relative paths in it resolve as `load` resolves them. A command that changes no value SHALL NOT
+rewrite the file. A removed value's own trailing comment goes with it.
 
 #### Scenario: Comments survive
 
@@ -64,8 +63,8 @@ Notices SHALL go to standard error with the warnings and SHALL NOT change the ex
 
 ### Requirement: Add entries
 
-`add <skill-id>…` SHALL append each **Skill ID** to `entries` in the order given, keeping the array's style, and
-SHALL create `entries` before the first table when it is absent. A **Skill ID** given twice SHALL be added once.
+`add <skill-id>…` SHALL append each **Skill ID** to `entries` in the order given, keeping the array's style, and SHALL
+create `entries` before the first table when it is absent. A **Skill ID** given twice SHALL be added once.
 
 #### Scenario: Appended
 
@@ -85,10 +84,10 @@ SHALL create `entries` before the first table when it is absent. A **Skill ID** 
 
 ### Requirement: Add checks the skill
 
-`add` SHALL refuse a **Skill ID** that is malformed, has an undeclared alias, or names no **Skill** in its
-**Source**, writing nothing. A **Skill ID** already an **Entry** SHALL be a notice and left alone. A **Skill**
-already in the **Hull** before the edit SHALL be added, with a notice naming a **Skill** whose slash or Skill tool
-**Reference** reached it then; **Skill IDs** added by the same command do not count.
+`add` SHALL refuse a **Skill ID** that is malformed, has an undeclared alias, or names no **Skill** in its **Source**,
+writing nothing. A **Skill ID** already an **Entry** SHALL be a notice and left alone. A **Skill** already in the
+**Hull** before the edit SHALL be added, with a notice naming a **Skill** whose slash or Skill tool **Reference**
+reached it then; **Skill IDs** added by the same command do not count.
 
 #### Scenario: Unknown skill
 
@@ -118,16 +117,16 @@ already in the **Hull** before the edit SHALL be added, with a notice naming a *
 
 #### Scenario: Reached only through itself
 
-- **WHEN** `mp/x` calls `/y`, `mp/y` calls `/x`, no **Entry** reaches either, an **Entry** mentions `x` in prose,
-  and the user runs `skill-graft add mp/x`
+- **WHEN** `mp/x` calls `/y`, `mp/y` calls `/x`, no **Entry** reaches either, an **Entry** mentions `x` in prose, and
+  the user runs `skill-graft add mp/x`
 - **THEN** `entries` holds `mp/x` and no notice is printed
 
 ### Requirement: Remove entries
 
-`remove <skill-id>…` SHALL delete each **Skill ID** from `entries`, keeping the array's style. A **Skill ID** that
-is no **Entry** SHALL be an error, writing nothing. A removed **Skill** still in the **Hull** SHALL be a notice
-naming a **Skill** whose slash or Skill tool **Reference** reaches it from the remaining **Entries**. Removing the last
-**Entry** SHALL leave `entries = []`, an empty **Hull**.
+`remove <skill-id>…` SHALL delete each **Skill ID** from `entries`, keeping the array's style. A **Skill ID** that is no
+**Entry** SHALL be an error, writing nothing. A removed **Skill** still in the **Hull** SHALL be a notice naming a
+**Skill** whose slash or Skill tool **Reference** reaches it from the remaining **Entries**. Removing the last **Entry**
+SHALL leave `entries = []`, an empty **Hull**.
 
 #### Scenario: Last entry
 
@@ -154,8 +153,8 @@ naming a **Skill** whose slash or Skill tool **Reference** reaches it from the r
 ### Requirement: Rename a skill
 
 `rename <skill-id> <name>` SHALL set the **Skill**'s value in `[rename]`, replacing an existing value in place or
-appending a key, and SHALL append a `[rename]` table at the end of the file when it is absent. `<name>` SHALL be
-a valid **Skill** name. A `<name>` equal to the current **Deployed name** SHALL be a notice and change nothing.
+appending a key, and SHALL append a `[rename]` table at the end of the file when it is absent. `<name>` SHALL be a valid
+**Skill** name. A `<name>` equal to the current **Deployed name** SHALL be a notice and change nothing.
 
 #### Scenario: New rename
 
@@ -182,15 +181,15 @@ a valid **Skill** name. A `<name>` equal to the current **Deployed name** SHALL 
 ### Requirement: Undo a rename
 
 `rename <skill-id> <name>` with `<name>` equal to what the **Skill** deploys as without a `[rename]` key (its
-**Source**'s `prefix` followed by its name, else its name) SHALL remove its `[rename]` key, leaving the table in
-place even if empty. Any other `<name>`, the upstream name under a **Prefix** included, SHALL be written as a key.
+**Source**'s `prefix` followed by its name, else its name) SHALL remove its `[rename]` key, leaving the table in place
+even if empty. Any other `<name>`, the upstream name under a **Prefix** included, SHALL be written as a key.
 
 #### Scenario: Undone
 
 - **WHEN** **Entry** `mp/code-review` is renamed to `mp-code-review` and the user runs
   `skill-graft rename mp/code-review code-review`
-- **THEN** `[rename]` no longer holds `mp/code-review`, and the shipped reserved-name warning for `code-review`
-  is printed
+- **THEN** `[rename]` no longer holds `mp/code-review`, and the shipped reserved-name warning for `code-review` is
+  printed
 
 #### Scenario: Opted out of the prefix
 
@@ -206,10 +205,10 @@ place even if empty. Any other `<name>`, the upstream name under a **Prefix** in
 
 ### Requirement: Rename checks the skill
 
-`rename` SHALL refuse a malformed **Skill ID**, an undeclared alias, or a **Skill** missing from its **Source**,
-writing nothing. A **Skill** outside the **Hull** SHALL be renamed, with the unused-rename warning. A **Deployed
-name** that clashes with another **Hull** **Skill** or the user's `reserved` SHALL be the usual error, writing
-nothing; one in the shipped reserved list SHALL be written, with the usual warning.
+`rename` SHALL refuse a malformed **Skill ID**, an undeclared alias, or a **Skill** missing from its **Source**, writing
+nothing. A **Skill** outside the **Hull** SHALL be renamed, with the unused-rename warning. A **Deployed name** that
+clashes with another **Hull** **Skill** or the user's `reserved` SHALL be the usual error, writing nothing; one in the
+shipped reserved list SHALL be written, with the usual warning.
 
 #### Scenario: Unknown skill to rename
 
@@ -240,22 +239,22 @@ nothing; one in the shipped reserved list SHALL be written, with the usual warni
 ### Requirement: Bind a name
 
 `bind <alias>/<name> <target>` SHALL set `[bind]."<alias>/<name>"` to `<target>`, a **Skill ID**, or `false` when
-`<target>` is the word `false`, replacing an existing value in place or appending a key, and SHALL append a
-`[bind]` table at the end of the file when it is absent. A `<target>` equal to the current value, `false`
-included, SHALL be a notice and change nothing, once the target is checked.
+`<target>` is the word `false`, replacing an existing value in place or appending a key, and SHALL append a `[bind]`
+table at the end of the file when it is absent. A `<target>` equal to the current value, `false` included, SHALL be a
+notice and change nothing, once the target is checked.
 
 #### Scenario: New bind
 
 - **WHEN** there is no `[bind]` table, **Entry** `mp/tdd` calls `/grilling`, and the user runs
   `skill-graft bind mp/grilling own/grill`
-- **THEN** the file ends with a `[bind]` table holding `"mp/grilling" = "own/grill"`, and the tree shows
-  `own/grill` under `mp/tdd`
+- **THEN** the file ends with a `[bind]` table holding `"mp/grilling" = "own/grill"`, and the tree shows `own/grill`
+  under `mp/tdd`
 
 #### Scenario: Bind to nothing
 
 - **WHEN** **Entry** `mp/tdd` mentions `/tmp` and the user runs `skill-graft bind mp/tmp false`
-- **THEN** `[bind]` holds `"mp/tmp" = false`, a TOML boolean, and the unmatched-**Reference** warning about
-  `tmp`, printed before the bind, is gone
+- **THEN** `[bind]` holds `"mp/tmp" = false`, a TOML boolean, and the unmatched-**Reference** warning about `tmp`,
+  printed before the bind, is gone
 
 #### Scenario: Replaced
 
@@ -281,9 +280,9 @@ included, SHALL be a notice and change nothing, once the target is checked.
 
 ### Requirement: Bind checks its key and target
 
-`bind` SHALL refuse a malformed `<alias>/<name>` or an undeclared alias, and a `<target>` that is neither `false`
-nor a **Skill ID** whose **Source** holds that **Skill**, writing nothing. `<name>` need not be a **Skill**. A
-**Bind** no **Reference** uses SHALL be written, with the usual unused-bind warning.
+`bind` SHALL refuse a malformed `<alias>/<name>` or an undeclared alias, and a `<target>` that is neither `false` nor a
+**Skill ID** whose **Source** holds that **Skill**, writing nothing. `<name>` need not be a **Skill**. A **Bind** no
+**Reference** uses SHALL be written, with the usual unused-bind warning.
 
 #### Scenario: Unknown target
 
@@ -307,14 +306,14 @@ nor a **Skill ID** whose **Source** holds that **Skill**, writing nothing. `<nam
 
 ### Requirement: Unbind a name
 
-`unbind <alias>/<name>` SHALL delete the key from `[bind]`, leaving the table in place even if empty, so
-**References** to `<name>` from that **Source** resolve by default again. A malformed key or an undeclared alias
-SHALL be refused as `bind` refuses them, and a key not in `[bind]` SHALL be an error, both writing nothing.
+`unbind <alias>/<name>` SHALL delete the key from `[bind]`, leaving the table in place even if empty, so **References**
+to `<name>` from that **Source** resolve by default again. A malformed key or an undeclared alias SHALL be refused as
+`bind` refuses them, and a key not in `[bind]` SHALL be an error, both writing nothing.
 
 #### Scenario: Unbound
 
-- **WHEN** `[bind]` has only `"mp/grilling" = "own/grill"`, `mp` has `grilling`, **Entry** `mp/tdd` calls
-  `/grilling`, and the user runs `skill-graft unbind mp/grilling`
+- **WHEN** `[bind]` has only `"mp/grilling" = "own/grill"`, `mp` has `grilling`, **Entry** `mp/tdd` calls `/grilling`,
+  and the user runs `skill-graft unbind mp/grilling`
 - **THEN** `[bind]` is empty, and the tree shows `mp/grilling` under `mp/tdd`
 
 #### Scenario: Not bound
@@ -325,11 +324,10 @@ SHALL be refused as `bind` refuses them, and a key not in `[bind]` SHALL be an e
 #### Scenario: Unbind with an undeclared alias
 
 - **WHEN** no **Source** `zz` is declared and the user runs `skill-graft unbind zz/grilling`
-- **THEN** it exits non-zero naming the alias `zz`, not saying the key is not bound, and `skill-graft.toml` is
-  unchanged
+- **THEN** it exits non-zero naming the alias `zz`, not saying the key is not bound, and `skill-graft.toml` is unchanged
 
 #### Scenario: Unbinding breaks resolution
 
-- **WHEN** `[bind]` has `"mp/x" = "own/x"`, **Entry** `mp/tdd` calls `/x`, `mp` has no `x`, and both `own` and
-  `other` have one, and the user runs `skill-graft unbind mp/x`
+- **WHEN** `[bind]` has `"mp/x" = "own/x"`, **Entry** `mp/tdd` calls `/x`, `mp` has no `x`, and both `own` and `other`
+  have one, and the user runs `skill-graft unbind mp/x`
 - **THEN** it exits non-zero, and `skill-graft.toml` and `skill-graft.lock` keep their bytes

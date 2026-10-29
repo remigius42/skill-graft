@@ -4,15 +4,15 @@
 
 ### Requirement: Lock records renames and suggestions
 
-The lock SHALL record each renamed **Hull** **Skill**'s `deployed` name, and each suggested **Skill** with the
-**Skill IDs** mentioning it, sorted. Each hash SHALL cover the folder as vendored, after renaming and rewriting,
-so `resolve` and `build` write the same lock for the same input.
+The lock SHALL record each renamed **Hull** **Skill**'s `deployed` name, and each suggested **Skill** with the **Skill
+IDs** mentioning it, sorted. Each hash SHALL cover the folder as vendored, after renaming and rewriting, so `resolve`
+and `build` write the same lock for the same input.
 
 #### Scenario: Renamed skill
 
 - **WHEN** `[rename]` has `"mp/grilling" = "mp-grilling"`
-- **THEN** the lock's entry for `mp/grilling` holds `deployed = "mp-grilling"`, and entries of unrenamed
-  **Skills** hold no `deployed`
+- **THEN** the lock's entry for `mp/grilling` holds `deployed = "mp-grilling"`, and entries of unrenamed **Skills** hold
+  no `deployed`
 
 #### Scenario: Suggestion recorded
 
@@ -21,8 +21,8 @@ so `resolve` and `build` write the same lock for the same input.
 
 #### Scenario: Rename changes the hash
 
-- **WHEN** `resolve` runs, then `[rename]` gets `"mp/grilling" = "mp-grilling"` and it runs again, `mp/tdd`
-  calling `/grilling`
+- **WHEN** `resolve` runs, then `[rename]` gets `"mp/grilling" = "mp-grilling"` and it runs again, `mp/tdd` calling
+  `/grilling`
 - **THEN** the hashes of `mp/grilling` and `mp/tdd` differ between the two locks
 
 #### Scenario: Resolve and build agree
@@ -32,8 +32,8 @@ so `resolve` and `build` write the same lock for the same input.
 
 ### Requirement: Prose suggestions
 
-`resolve` SHALL print, after the tree, each suggested **Skill** with the **Skills** mentioning it and how to
-accept it (add its **Skill ID** to `entries`), sorted, on standard output. `build` SHALL NOT print suggestions.
+`resolve` SHALL print, after the tree, each suggested **Skill** with the **Skills** mentioning it and how to accept it
+(add its **Skill ID** to `entries`), sorted, on standard output. `build` SHALL NOT print suggestions.
 
 #### Scenario: Suggestion printed
 
@@ -49,11 +49,11 @@ accept it (add its **Skill ID** to `entries`), sorted, on standard output. `buil
 
 ### Requirement: Lock content
 
-`skill-graft.lock`, a TOML file at `~/.apm/skill-graft/skill-graft.lock` even when `skill-graft.toml` is a
-symlink, SHALL record: each declared **Source**'s alias with
-its URL and `ref`, or its resolved folder; each **Hull** **Skill**'s **Skill ID**, whether it is an **Entry**,
-and a SHA-256 hash of its folder as vendored; and each edge: from, to, kind (`slash`, `skill-tool` or `prose`),
-and `bind = true` when a **Bind** decided it. One edge per from, to, kind and `bind`.
+`skill-graft.lock`, a TOML file at `~/.apm/skill-graft/skill-graft.lock` even when `skill-graft.toml` is a symlink,
+SHALL record: each declared **Source**'s alias with its URL and `ref`, or its resolved folder; each **Hull** **Skill**'s
+**Skill ID**, whether it is an **Entry**, and a SHA-256 hash of its folder as vendored; and each edge: from, to, kind
+(`slash`, `skill-tool` or `prose`), and `bind = true` when a **Bind** decided it. One edge per from, to, kind and
+`bind`.
 
 #### Scenario: Edges with kinds
 
@@ -63,10 +63,8 @@ and `bind = true` when a **Bind** decided it. One edge per from, to, kind and `b
 
 #### Scenario: Bound and default edge to one skill
 
-- **WHEN** `mp/tdd` calls `/g`, bound by `"mp/g" = "own/notes"`, and `/notes`, resolved by default to
-  `own/notes`
-- **THEN** the lock holds two `slash` edges `mp/tdd` → `own/notes`, one with `bind = true`, and the tree shows
-  both
+- **WHEN** `mp/tdd` calls `/g`, bound by `"mp/g" = "own/notes"`, and `/notes`, resolved by default to `own/notes`
+- **THEN** the lock holds two `slash` edges `mp/tdd` → `own/notes`, one with `bind = true`, and the tree shows both
 
 #### Scenario: Prose edge
 
@@ -85,18 +83,17 @@ and `bind = true` when a **Bind** decided it. One edge per from, to, kind and `b
 
 ### Requirement: Tree output
 
-`resolve` SHALL print the **Hull** in the style of `cargo tree`: each **Entry** at the top level in TOML order,
-expanded there; under each **Skill**, one line per edge naming the **Skill** and the **Reference** as written
-upstream (`/name`, `Skill(name)`, `` `name` `` or `name` plus `prose`, plus `bind` when a **Bind** decided it). A
-renamed **Skill** SHALL be named `<skill id> as <deployed name>` on every line. A `prose` edge SHALL have a line
-only when the build rewrites it: its target's **Deployed name** differs from the name written. A **Skill** SHALL
-be expanded once, at its first depth-first line; its later lines, and any nested line for an **Entry**, SHALL end
-in `(*)` and not expand.
+`resolve` SHALL print the **Hull** in the style of `cargo tree`: each **Entry** at the top level in TOML order, expanded
+there; under each **Skill**, one line per edge naming the **Skill** and the **Reference** as written upstream (`/name`,
+`Skill(name)`, `` `name` `` or `name` plus `prose`, plus `bind` when a **Bind** decided it). A renamed **Skill** SHALL
+be named `<skill id> as <deployed name>` on every line. A `prose` edge SHALL have a line only when the build rewrites
+it: its target's **Deployed name** differs from the name written. A **Skill** SHALL be expanded once, at its first
+depth-first line; its later lines, and any nested line for an **Entry**, SHALL end in `(*)` and not expand.
 
 #### Scenario: Tree
 
-- **WHEN** `mp/tdd` calls `/grilling`, `/notes` and `Skill(x)` (bound to `own/x`), and `mp/grilling` calls
-  `/notes` and `/tdd`
+- **WHEN** `mp/tdd` calls `/grilling`, `/notes` and `Skill(x)` (bound to `own/x`), and `mp/grilling` calls `/notes` and
+  `/tdd`
 
 - **THEN** `resolve` prints
 
@@ -125,8 +122,8 @@ in `(*)` and not expand.
 
 #### Scenario: Bound prose shown
 
-- **WHEN** **Entry** `mp/tdd` calls `/notes` and mentions `` `notes` ``, `[bind]` has `"mp/notes" = "own/grill"`,
-  and no rename names `own/grill`
+- **WHEN** **Entry** `mp/tdd` calls `/notes` and mentions `` `notes` ``, `[bind]` has `"mp/notes" = "own/grill"`, and no
+  rename names `own/grill`
 
 - **THEN** `resolve` prints
 
