@@ -70,7 +70,8 @@ repos:
         language: system
         pass_filenames: false
         types: [python]
-      # Refuses an import that goes up a layer; the contract lives in pyproject.toml.
+      # Refuses an import that goes up a layer, or a cycle between siblings; the contracts
+      # live in pyproject.toml.
       - id: lint-imports
         name: lint-imports
         entry: uv run lint-imports

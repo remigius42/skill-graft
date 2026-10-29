@@ -33,7 +33,7 @@ Trial check used below: `lint-imports --config <tmp toml>` with only the contrac
 
 ## 3. Refuse the next cycle
 
-- [ ] 3.1 Add to `pyproject.toml` the contract `name = "No import cycle between sibling modules or packages"`,
+- [x] 3.1 Add to `pyproject.toml` the contract `name = "No import cycle between sibling modules or packages"`,
   `type = "acyclic_siblings"`, `ancestors = ["skill_graft"]`; raise the dev dependency to `import-linter>=2.15` and
   `uv lock`, committing `uv.lock` (the version stays 2.15, but its dev requirements record the new specifier;
   `uv lock --check` passes); extend the `lint-imports` hook comment in `.pre-commit-config.yaml` (an import up a layer,

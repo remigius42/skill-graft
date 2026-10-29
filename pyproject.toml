@@ -16,7 +16,7 @@ skill-graft = "skill_graft.cli:main"
 [dependency-groups]
 dev = [
   "apm-cli==0.33.0",
-  "import-linter",
+  "import-linter>=2.15",
   # The mypy hook's version, so `uv run mypy` works in any checkout, worktrees included.
   "mypy==2.4.0",
   "pre-commit",
@@ -69,3 +69,8 @@ source_modules = ["skill_graft.cli"]
 forbidden_modules = ["skill_graft.pipeline", "skill_graft.infra"]
 ignore_imports = ["skill_graft.cli -> skill_graft.infra.errors"]
 allow_indirect_imports = true
+
+[[tool.importlinter.contracts]]
+name = "No import cycle between sibling modules or packages"
+type = "acyclic_siblings"
+ancestors = ["skill_graft"]

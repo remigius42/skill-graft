@@ -2030,7 +2030,7 @@ requires-dist = [{ name = "tomlkit", specifier = ">=0.15.2" }]
 [package.metadata.requires-dev]
 dev = [
     { name = "apm-cli", specifier = "==0.33.0" },
-    { name = "import-linter" },
+    { name = "import-linter", specifier = ">=2.15" },
     { name = "mypy", specifier = "==2.4.0" },
     { name = "pre-commit" },
     { name = "pytest" },
