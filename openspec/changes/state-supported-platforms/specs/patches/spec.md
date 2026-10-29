@@ -21,6 +21,11 @@ SHALL stay. A git-format **Patch** (`diff --git`), whose headers say what it del
   than the epoch
 - **THEN** the vendored `tdd/` folder holds no `refs/`, as with GNU `diff`
 
+#### Scenario: Folder replaced by a file
+
+- **WHEN** a patch to `mp/tdd` deletes `refs/old.md`, the only file in `refs/`, and adds a file `refs`
+- **THEN** the vendored `tdd/` folder holds the file `refs`
+
 #### Scenario: SKILL.md emptied
 
 - **WHEN** a patch to `mp/tdd` leaves `SKILL.md` empty, with a `+++` timestamp other than the epoch

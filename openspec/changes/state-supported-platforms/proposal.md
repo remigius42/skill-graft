@@ -35,7 +35,8 @@ None.
 
 - `src/skill_graft/cli.py`: `main` refuses native Windows first; `_main` imports the commands, so nothing below `cli`
   loads on Windows.
-- `src/skill_graft/pipeline/patch.py`: `apply` deletes each file a patch emptied.
+- `src/skill_graft/pipeline/patch.py`: for a plain `diff` patch, `apply` deletes each file it emptied and each folder
+  that leaves empty; a `git diff` patch applies as git applies it.
 - `README.md` (Installation, Writing a patch), `pyproject.toml` (classifiers), `.github/workflows/ci.yml` (a macOS test
   job).
 - Tests: `tests/cli/test_cli.py` (Windows refused, in a subprocess that stands in for it),
