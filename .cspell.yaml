@@ -28,14 +28,17 @@ words:
   - dataclass
   - dataviz
   - delenv
+  - devnull
   - difflib
   - diffutils
   - docstrings
   - EACCES
   - elif
   - ELOOP
+  - Errno
   - evals
   - fcntl
+  - fileno
   - followlinks
   - frontmatter
   - fsencode
