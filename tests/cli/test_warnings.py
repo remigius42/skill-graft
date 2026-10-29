@@ -2,6 +2,7 @@
 
 import io
 import os
+import subprocess
 import sys
 from collections.abc import Iterator
 from contextlib import contextmanager
@@ -75,6 +76,22 @@ def test_resolve(home: Path, tmp_path: Path) -> None:
 
     assert code == 0
     in_order(text, "\nown/tdd\n", "mentioned in prose", "  own/notes, by own/tdd", FOO)
+
+
+def test_resolve_through_a_pipe(home: Path) -> None:
+    """Python buffers stdout into a pipe, not stderr; the order holds even so."""
+    calls_foo(home)
+
+    result = subprocess.run(
+        [sys.executable, "-m", "skill_graft.cli", "resolve"],
+        stdout=subprocess.PIPE,
+        stderr=subprocess.STDOUT,
+        text=True,
+        check=False,
+    )
+
+    assert result.returncode == 0
+    in_order(result.stdout, "\nown/tdd\n", "  own/notes, by own/tdd", FOO)
 
 
 def test_build(home: Path, tmp_path: Path, fake_apm: FakeApm) -> None:

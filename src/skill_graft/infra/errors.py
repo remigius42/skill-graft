@@ -26,4 +26,5 @@ def warnings_last() -> Generator[list[str]]:
     try:
         yield warnings
     finally:
+        sys.stdout.flush()  # into a pipe or file, stdout is buffered; stderr is not
         warn(list(dict.fromkeys(warnings)))
