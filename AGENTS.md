@@ -17,6 +17,8 @@ before changing behavior. Until OpenSpec specs cover it, `docs/design.md` holds 
 
 - Changes go through OpenSpec: propose (proposal, design, specs, tasks), wait for approval, then apply
   test-first (red-green-refactor), one commit per task.
+- A proposal is one commit, `docs(openspec): propose <change>`; amend review fixes into it. Before archiving,
+  bring proposal, design and tasks in line with the code: names, signatures, moved tests.
 - A commit that changes what a user sees adds its entry to `CHANGELOG.md` under `[Unreleased]`; for an OpenSpec
   change, the archive commit does. Say what the user sees, in `CONTEXT.md`'s terms; refactors and tooling get none.
 - Every commit passes the hooks: `git commit` runs them, so run `pre-commit run --all-files` yourself only after
