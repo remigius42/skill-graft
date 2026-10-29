@@ -9,6 +9,7 @@ from typing import TypeAlias
 import pytest
 from conftest import build, configure, deadline, skill, vendored
 
+from skill_graft.infra import paths
 from skill_graft.infra.errors import SkillGraftError
 from skill_graft.pipeline import discovery
 
@@ -407,13 +408,29 @@ def test_read_name_takes_no_terminal(
     assert flags and all(flag & os.O_NOCTTY for flag in flags)
 
 
+def test_link_into_a_project_package_is_skipped(home: Path, tmp_path: Path) -> None:
+    # The project's package links to a folder of another name, which the source
+    # reaches by a link of a third: only the scope's package names it.
+    project = tmp_path / "project"
+    skill(tmp_path / "team-sg" / ".apm" / "skills" / "tdd")
+    (project / ".apm").mkdir(parents=True)
+    (project / ".apm" / "skill-graft").symlink_to(tmp_path / "team-sg")
+    (home / "src").mkdir()
+    (home / "src" / "team").symlink_to(tmp_path / "team-sg")
+
+    assert discovery.index(paths.Scope(project), home / "src").folders == {}
+    assert discovery.index(paths.Scope(home), home / "src").folders == {
+        "tdd": [home / "src" / "team" / ".apm" / "skills" / "tdd"]
+    }
+
+
 def test_regular_file_linked_from_outside_a_path_source(home: Path) -> None:
     # Discovery reads it; build's symlink check refuses it in a hull skill.
     skill(home / "elsewhere", "---\nname: tdd\n---\n")
     (home / "src" / "x").mkdir(parents=True)
     (home / "src" / "x" / "SKILL.md").symlink_to(home / "elsewhere" / "SKILL.md")
 
-    skills = discovery.index(home / "src")
+    skills = discovery.index(paths.Scope(home), home / "src")
 
     assert skills.folders == {"tdd": [home / "src" / "x"]}
 
@@ -431,7 +448,7 @@ def test_confined_skill_md_linked_outside(home: Path, target: str) -> None:
     (home / "src" / "evil" / "SKILL.md").symlink_to(targets[target])
 
     with deadline():
-        skills = discovery.index(home / "src", confined=True)
+        skills = discovery.index(paths.Scope(home), home / "src", confined=True)
 
     [error] = skills.unreadable["evil"]
     skill_md = home / "src" / "evil" / "SKILL.md"
@@ -443,7 +460,7 @@ def test_confined_skill_md_linked_to_a_sibling_skill(home: Path) -> None:
     (home / "src" / "copy").mkdir()
     (home / "src" / "copy" / "SKILL.md").symlink_to("../tdd/SKILL.md")
 
-    skills = discovery.index(home / "src", confined=True)
+    skills = discovery.index(paths.Scope(home), home / "src", confined=True)
 
     assert "outside its skill" in str(skills.unreadable["copy"][0])
     assert skills.folders == {"tdd": [home / "src" / "tdd"]}
@@ -460,6 +477,6 @@ def test_confined_skill_md_linked_inside(home: Path, through_link: bool) -> None
         (home / "src" / "a").symlink_to("skills")
         tdd = home / "src" / "a" / "tdd"
 
-    skills = discovery.index(home / "src", confined=True)
+    skills = discovery.index(paths.Scope(home), home / "src", confined=True)
 
     assert skills.folders == {"tdd": [tdd]} and skills.unreadable == {}

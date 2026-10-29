@@ -15,7 +15,9 @@ from skill_graft.pipeline.config import NAME, SkillId
 COMMENT = re.compile(r"\s+#.*$")
 
 
-def _skill_folders(source: Path, confined: bool = False) -> list[Path]:
+def _skill_folders(
+    scope: paths.Scope, source: Path, confined: bool = False
+) -> list[Path]:
     """Every folder under `source` holding a `SKILL.md`, not looking inside one.
 
     Follows symlinked folders, visiting each resolved folder once, and skips `.git`,
@@ -25,7 +27,7 @@ def _skill_folders(source: Path, confined: bool = False) -> list[Path]:
     `source` are followed.
     """
     found = []
-    package = paths.package().resolve()
+    package = scope.package.resolve()
     root = source.resolve()
     visited = {root}
     for dirpath, dirnames, filenames in os.walk(source, followlinks=True):
@@ -127,9 +129,9 @@ def _check(folder: Path, confined: bool) -> None:
         raise SkillGraftError(f"{skill_md}: not a regular file")
 
 
-def index(source: Path, confined: bool = False) -> Index:
+def index(scope: paths.Scope, source: Path, confined: bool = False) -> Index:
     skills = Index({}, {}, {})
-    for folder in _skill_folders(source, confined):
+    for folder in _skill_folders(scope, source, confined):
         try:
             _check(folder, confined)
             name = read_name(folder)

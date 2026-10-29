@@ -364,7 +364,7 @@ def test_prose_inside_the_hull(scope: paths.Scope, home: Path) -> None:
     two_sources(home, "/grilling, then `notes`\n")
     configure(["mp/tdd", "mp/notes"], mp="~/mp", own="~/own")
 
-    with compute.compute_hull(config.load(scope)) as hull:
+    with compute.compute_hull(scope, config.load(scope)) as hull:
         assert prose_edges(hull) == {("mp/tdd", "mp/notes", False)}
         assert hull.suggestions == {}
 
@@ -374,7 +374,7 @@ def test_prose_outside_the_hull(scope: paths.Scope, home: Path) -> None:
     skill(home / "mp" / "grilling", "see diagnosing-bugs\n")
     two_sources(home, "/grilling, then diagnosing-bugs\n")
 
-    with compute.compute_hull(config.load(scope)) as hull:
+    with compute.compute_hull(scope, config.load(scope)) as hull:
         assert list(hull.skills) == [SkillId("mp", "tdd"), SkillId("mp", "grilling")]
         assert prose_edges(hull) == set()
         assert hull.suggestions == {
@@ -406,7 +406,7 @@ def test_prose_is_no_reference(
         skill(home / "mp" / "notes", "---\nname: [x]\n---\n")
     two_sources(home, "see `notes`\n")
 
-    with compute.compute_hull(config.load(scope)) as hull:
+    with compute.compute_hull(scope, config.load(scope)) as hull:
         assert prose_edges(hull) == set() and hull.suggestions == {}
     assert main(["resolve"]) == 0
     assert after_package_line(capsys.readouterr().err) == ""
@@ -418,7 +418,7 @@ def test_bound_prose(scope: paths.Scope, home: Path) -> None:
     configure(["mp/tdd", "own/notes"], mp="~/mp", own="~/own")
     with_binds('"mp/notes" = "own/notes"\n"mp/x" = false')
 
-    with compute.compute_hull(config.load(scope)) as hull:
+    with compute.compute_hull(scope, config.load(scope)) as hull:
         assert prose_edges(hull) == {("mp/tdd", "own/notes", True)}
 
 
@@ -427,7 +427,7 @@ def test_bound_prose_outside_the_hull(scope: paths.Scope, home: Path) -> None:
     two_sources(home, "see `notes`\n")
     with_binds('"mp/notes" = "own/notes"')
 
-    with compute.compute_hull(config.load(scope)) as hull:
+    with compute.compute_hull(scope, config.load(scope)) as hull:
         assert list(hull.skills) == [SkillId("mp", "tdd")]
         assert hull.suggestions == {SkillId("own", "notes"): {SkillId("mp", "tdd")}}
         assert "binds no reference" not in " ".join(hull.warnings)
@@ -449,7 +449,7 @@ def test_prose_bound_to_nothing(scope: paths.Scope, home: Path) -> None:
     configure(["mp/tdd", "mp/pre-commit"], mp="~/mp", own="~/own")
     with_binds('"mp/pre-commit" = false')
 
-    with compute.compute_hull(config.load(scope)) as hull:
+    with compute.compute_hull(scope, config.load(scope)) as hull:
         assert prose_edges(hull) == set() and hull.suggestions == {}
         assert hull.warnings == []
 

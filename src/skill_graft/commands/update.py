@@ -186,7 +186,7 @@ def _update(
     ) as resolution:
         hull = resolution.hull
         hashes = resolution.hashes = lock.skill_hashes(hull)
-        with _previous(loaded, selected, git_cache) as previous:
+        with _previous(scope, loaded, selected, git_cache) as previous:
             shown = _print_diff(previous, hull, hashes)
             edited = []
             if not isinstance(previous, str):  # else every skill is shown in full
@@ -228,7 +228,7 @@ def _update(
 
 @contextmanager
 def _previous(
-    loaded: Config, selected: dict[str, GitSource], git_cache: Cache
+    scope: paths.Scope, loaded: Config, selected: dict[str, GitSource], git_cache: Cache
 ) -> Generator[tuple[Hull, dict[SkillId, str]] | str]:
     """The hull at the current refs and each skill's hash, open; or why there is none.
 
@@ -241,7 +241,9 @@ def _previous(
     if reason is None:
         try:
             with ExitStack() as stack:  # closed on any error, Ctrl-C too
-                hull = stack.enter_context(compute.compute_hull(loaded, git_cache))
+                hull = stack.enter_context(
+                    compute.compute_hull(scope, loaded, git_cache)
+                )
                 hashes = lock.skill_hashes(hull)
                 opened = stack.pop_all()  # kept open for the caller's `with`
         except patch.PatchError as error:  # patches likely rewritten for the tips

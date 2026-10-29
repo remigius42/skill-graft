@@ -77,7 +77,8 @@ def test_name_yaml_would_misread(name: str, written: str) -> None:
 @contextmanager
 def resolved(**renames: str) -> Generator[Hull]:
     """The hull, with these skill IDs (`alias__name`) deployed under new names."""
-    with compute.compute_hull(config.load(paths.Scope(Path.home()))) as hull:
+    scope = paths.Scope(Path.home())
+    with compute.compute_hull(scope, config.load(scope)) as hull:
         deployed = {SkillId(*key.split("__")): name for key, name in renames.items()}
         yield replace(hull, deployed=hull.deployed | deployed)
 

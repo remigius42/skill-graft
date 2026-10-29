@@ -44,7 +44,9 @@ def show_why(scope: paths.Scope, warnings: list[str], text: str) -> None:
 
     def view(loaded: Config, resolved: Hull) -> None:
         warnings.extend(resolved.warnings)
-        target = find(resolved, text, lambda text: compute.known(loaded, "why", text))
+        target = find(
+            resolved, text, lambda text: compute.known(scope, loaded, "why", text)
+        )
         print(why(resolved, target), end="")
 
     _explain(scope, warnings, view)
@@ -57,7 +59,7 @@ def _explain(
     hull as walked, so the user sees what pulls them in, then fails."""
     loaded = resolve.load(scope, warnings)
     try:
-        with compute.compute_hull(loaded) as resolved:
+        with compute.compute_hull(scope, loaded) as resolved:
             view(loaded, resolved)
     except patch.PatchError as error:
         if error.hull is None:

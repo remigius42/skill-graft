@@ -57,7 +57,7 @@ def resolving(
 
     Adds the hull's warnings to `warnings` at once, so a later failure keeps them.
     """
-    with compute.compute_hull(loaded, cache, refs) as hull:
+    with compute.compute_hull(scope, loaded, cache, refs) as hull:
         warnings.extend(hull.warnings)
         resolution = Resolution(hull)
         yield resolution

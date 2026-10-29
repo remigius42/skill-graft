@@ -97,19 +97,23 @@ def _subdirectory(alias: str, tree: Path, subdirectory: str, ref: str) -> Path:
     return folder
 
 
-def known(config: Config, where: str, text: str) -> SkillId:
+def known(scope: paths.Scope, config: Config, where: str, text: str) -> SkillId:
     """The skill ID `text`, its source declared and holding that skill."""
     skill = parse_skill_id(where, text, config.sources)
     folder = _folders(config, Cache(paths.cache()), {})[skill.alias]
-    index = _indexes(config, {skill.alias: folder})[skill.alias]
+    index = _indexes(scope, config, {skill.alias: folder})[skill.alias]
     discovery.find(index, skill, f"{where}: `{skill}`")
     return skill
 
 
-def _indexes(config: Config, folders: dict[str, Path]) -> dict[str, discovery.Index]:
+def _indexes(
+    scope: paths.Scope, config: Config, folders: dict[str, Path]
+) -> dict[str, discovery.Index]:
     """Every source's skills by name, a git source's confined to its checkout."""
     return {
-        alias: discovery.index(folder, isinstance(config.sources[alias], GitSource))
+        alias: discovery.index(
+            scope, folder, isinstance(config.sources[alias], GitSource)
+        )
         for alias, folder in folders.items()
     }
 
@@ -128,7 +132,10 @@ def _roots(config: Config, folders: dict[str, Path]) -> dict[str, Path]:
 
 @contextmanager
 def compute_hull(
-    config: Config, cache: Cache | None = None, refs: dict[str, str] | None = None
+    scope: paths.Scope,
+    config: Config,
+    cache: Cache | None = None,
+    refs: dict[str, str] | None = None,
 ) -> Generator[Hull]:
     """The hull, its skills found and checked for stray symlinks and name clashes.
 
@@ -143,7 +150,10 @@ def compute_hull(
         cache = Cache(paths.cache()) if cache is None else cache
         folders = _folders(config, cache, refs or {})
         result = hull.walk(
-            config, _indexes(config, folders), _roots(config, folders), Path(work)
+            config,
+            _indexes(scope, config, folders),
+            _roots(config, folders),
+            Path(work),
         )
         rename.check_unique(config, result.deployed)
         warnings = rename.unused(config, result.skills)

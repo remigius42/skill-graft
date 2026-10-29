@@ -95,7 +95,7 @@ def rename(scope: paths.Scope, warnings: list[str], text: str, name: str) -> Non
             raise SkillGraftError(
                 f"rename: {name!r} is not a skill name: {config.NAME.pattern}"
             )
-        skill = compute.known(loaded, "rename", text)
+        skill = compute.known(scope, loaded, "rename", text)
         if config.deployed(loaded, skill) == name:
             notice(f"`{skill}` already deploys as `{name}`")
             return
@@ -119,7 +119,11 @@ def bind(scope: paths.Scope, warnings: list[str], key: str, target: str) -> None
         # first: one gone upstream is no longer bound. Present too: a missing key
         # reads as None.
         if skill in loaded.binds:
-            bound = None if target == "false" else compute.known(loaded, "bind", target)
+            bound = (
+                None
+                if target == "false"
+                else compute.known(scope, loaded, "bind", target)
+            )
             if loaded.binds[skill] == bound:
                 notice(f"`{key}` is already bound to `{target}`")
                 return

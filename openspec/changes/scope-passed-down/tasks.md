@@ -28,7 +28,7 @@ Apply with the `mp-tdd` skill: each task red-green-refactor, one commit. Red is 
   reading `scope.packages` and `scope.deploy_folders`; `edit.read` and `edit._finish` pass theirs;
   `tests/pipeline/test_config.py` passes the `scope` fixture, plus a test that a project `Scope` refuses a
   source overlapping the user scope's package; patches of `config.load` take the new signature; verify red, then green
-- [ ] 3.2 `discovery.index(scope, source, confined=False)` skips `scope.package`; `compute` passes its `Scope`
+- [x] 3.2 `discovery.index(scope, source, confined=False)` skips `scope.package`; `compute` passes its `Scope`
   (`compute_hull(scope, config, …)`, `known(scope, config, …)`), `commands` theirs; `tests/pipeline/test_discovery.py`
   and `test_hull.py` pass a `Scope`, plus a test that a project `Scope`'s package is skipped while the home
   folder's global fallback would not; verify red, then green
