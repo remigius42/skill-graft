@@ -15,9 +15,10 @@ folder.
   "Known skill, another source without a ref" and "The skill's own source without a ref"; verify they fail first (the
   first two today say `no ref`), then pass; and that `rename` reads a git **Source** with `subdirectory` only in that
   folder
-- [ ] 1.2 Tests for the no-op scenarios "No-op bind ignores other sources" and "No-op rename fetches no other source",
+- [x] 1.2 Tests for the no-op scenarios "No-op bind ignores other sources" and "No-op rename fetches no other source",
   and for `renames`' "Entries clash after rename reads only its source" (no fetch for `other`: its folder in the cache
-  stays absent); verify they pass on 1.1 alone, else fix `known` until they do
+  stays absent, `other` being a reachable remote the cache lacks); verify they fail on the code before 1.1 and pass on
+  it
 - [ ] 1.3 A test in `tests/commands/test_explain.py` that `why mp/notes`, outside the **Hull**, with a second git
   **Source** in the config, still errors naming `skill-graft add mp/notes`; it should pass unchanged (design: `why`
   keeps calling `known`)

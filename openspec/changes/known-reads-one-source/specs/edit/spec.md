@@ -35,9 +35,10 @@ git **Source** without one.
 
 #### Scenario: No-op rename fetches no other source
 
-- **WHEN** `mp/tdd` deploys as `tdd`, git **Source** `other`'s `ref` is not cached and its remote is unreachable, and
-  the user runs `skill-graft rename mp/tdd tdd`
-- **THEN** it exits 0 with the already-deploys notice, contacts no remote, and `skill-graft.toml` keeps its bytes
+- **WHEN** `mp/tdd` deploys as `tdd`, git **Source** `other`'s `ref` is not cached, and the user runs
+  `skill-graft rename mp/tdd tdd`
+- **THEN** it exits 0 with the already-deploys notice, fetches nothing for `other`, and `skill-graft.toml` keeps its
+  bytes
 
 #### Scenario: The skill's own source without a ref
 

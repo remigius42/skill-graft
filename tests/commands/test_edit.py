@@ -9,6 +9,7 @@ import pytest
 from conftest import Upstream, after_package_line, skill, write_config
 
 from skill_graft.cli import main
+from skill_graft.infra.cache import Cache
 from skill_graft.pipeline import lock
 
 Capsys: TypeAlias = pytest.CaptureFixture[str]
@@ -741,6 +742,66 @@ def test_rename_in_a_source_without_ref(
     err = capsys.readouterr().err
     assert "sources 'mp', 'other' have no ref: run `skill-graft update mp other`" in err
     assert config.read_bytes() == before
+
+
+def test_bind_already_so_ignores_another_missing_ref(
+    home: Path, tmp_path: Path, capsys: Capsys
+) -> None:
+    mp_skills(home, "tdd")
+    skill(home / "own" / "grill")
+    config = write_config(
+        'entries = ["mp/tdd"]\n'
+        + TWO_SOURCES
+        + other(tmp_path)
+        + '[bind]\n"mp/grilling" = "own/grill"\n'
+    )
+    before = config.read_bytes()
+
+    assert main(["bind", "mp/grilling", "own/grill"]) == 0
+
+    assert "`mp/grilling` is already bound to `own/grill`" in capsys.readouterr().err
+    assert config.read_bytes() == before
+
+
+def fetchable(tmp_path: Path) -> tuple[str, Path]:
+    """A git source `other` at a commit its reachable remote has but the cache
+    lacks, and the cache repository a fetch of it would create."""
+    upstream = Upstream(tmp_path / "other")
+    sha = upstream.commit({"x/SKILL.md": "# x\n"})
+    source = f'[sources.other]\ngit = "{upstream.url}"\nref = "{sha}"\n'
+    return source, Cache.default().repository(upstream.url)
+
+
+def test_rename_to_the_current_name_fetches_no_other_source(
+    home: Path, tmp_path: Path, capsys: Capsys
+) -> None:
+    mp_skills(home, "tdd")
+    source, repository = fetchable(tmp_path)
+    config = write_config('entries = ["mp/tdd"]\n' + SOURCES + source)
+    before = config.read_bytes()
+
+    assert main(["rename", "mp/tdd", "tdd"]) == 0
+
+    assert "`mp/tdd` already deploys as `tdd`" in capsys.readouterr().err
+    assert config.read_bytes() == before
+    assert not repository.exists()
+
+
+def test_rename_reads_its_source_then_entries_clash(
+    home: Path, tmp_path: Path, capsys: Capsys
+) -> None:
+    mp_skills(home, "tdd", "notes")
+    skill(home / "own" / "tdd")
+    source, repository = fetchable(tmp_path)
+    config = write_config('entries = ["mp/tdd", "own/tdd"]\n' + TWO_SOURCES + source)
+    before = config.read_bytes()
+
+    assert main(["rename", "mp/notes", "n"]) == 1
+
+    err = capsys.readouterr().err
+    assert "mp/tdd" in err and "own/tdd" in err and "'other'" not in err
+    assert config.read_bytes() == before
+    assert not repository.exists()
 
 
 def test_rename_reads_a_git_source_in_its_subdirectory(
