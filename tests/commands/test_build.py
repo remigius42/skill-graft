@@ -594,8 +594,7 @@ def test_lock_write_fails(
     write_config('entries = ["own/chisel"]\n[sources.own]\npath = "~/src"\n')
     into = empty_folder(tmp_path)
 
-    def fail(text: str, file: Path | None = None) -> None:
-        assert file is not None
+    def fail(text: str, file: Path) -> None:
         file.write_text(text[:10])
         raise OSError("disk full")
 
@@ -879,8 +878,7 @@ def test_cleanup_keeps_the_real_error(
     chisel_config(home)
     into = empty_folder(tmp_path)
 
-    def fail(text: str, file: Path | None = None) -> None:
-        assert file is not None
+    def fail(text: str, file: Path) -> None:
         file.mkdir()  # a lock the cleanup cannot unlink
         raise OSError("disk full")
 

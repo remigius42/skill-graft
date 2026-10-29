@@ -15,6 +15,7 @@ from skill_graft.pipeline.hull import Hull
 
 
 def render(
+    scope: paths.Scope,
     config: Config,
     refs: dict[str, str],
     hull: Hull,
@@ -37,7 +38,7 @@ def render(
             if source.subdirectory:
                 table["subdirectory"] = source.subdirectory
         else:
-            table["path"] = _source_path(source.folder)
+            table["path"] = _source_path(scope, source.folder)
         sources[alias] = table
     document["sources"] = sources
     skills = tomlkit.aot()
@@ -71,12 +72,12 @@ def render(
     return header + tomlkit.dumps(document)
 
 
-def _source_path(folder: Path) -> str:
+def _source_path(scope: paths.Scope, folder: Path) -> str:
     """A path source's folder; in project scope, relative to the package when it
     is inside the project, so a committed lock reads the same on every machine."""
     # In project scope the root is already resolved: `discover` or the working folder.
-    if paths.scope() == "project" and folder.is_relative_to(paths.root()):
-        return Path(os.path.relpath(folder, paths.package())).as_posix()
+    if not scope.user and folder.is_relative_to(scope.root):
+        return Path(os.path.relpath(folder, scope.package)).as_posix()
     return str(folder)
 
 
@@ -107,16 +108,14 @@ def digest(hull: Hull, hashes: dict[SkillId, str]) -> str:
     return hashlib.sha256(json.dumps(triples, ensure_ascii=True).encode()).hexdigest()
 
 
-def write(text: str, file: Path | None = None) -> None:
-    """Replaces the lock (default: the package's) atomically."""
-    file = paths.in_use().lock_file if file is None else file
+def write(text: str, file: Path) -> None:
+    """Replaces the lock `file` atomically."""
     files.atomic_write(file, text.encode())
 
 
-def read(file: Path | None = None) -> dict[SkillId, str] | None:
-    """Each skill's hash as the lock (default: the package's) records it; None if
-    it is missing, unreadable or of another version."""
-    file = paths.in_use().lock_file if file is None else file
+def read(file: Path) -> dict[SkillId, str] | None:
+    """Each skill's hash as the lock `file` records it; None if it is missing,
+    unreadable or of another version."""
     try:
         data = tomllib.loads(file.read_bytes().decode())
     except (OSError, UnicodeDecodeError, tomllib.TOMLDecodeError):

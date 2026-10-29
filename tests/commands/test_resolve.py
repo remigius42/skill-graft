@@ -475,7 +475,7 @@ def test_lock_goes_through_lock_write(
     scope: paths.Scope, tmp_path: Path, monkeypatch: pytest.MonkeyPatch
 ) -> None:
     written: list[Path | None] = []
-    monkeypatch.setattr(lock, "write", lambda text, file=None: written.append(file))
+    monkeypatch.setattr(lock, "write", lambda text, file: written.append(file))
     other = tmp_path / "other.lock"
 
     with resolve.resolving(scope, config.load(scope), []):

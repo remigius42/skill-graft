@@ -190,7 +190,7 @@ def _update(
             shown = _print_diff(previous, hull, hashes)
             edited = []
             if not isinstance(previous, str):  # else every skill is shown in full
-                edited = _print_edited(previous[1], lock.read())
+                edited = _print_edited(previous[1], lock.read(scope.lock_file))
             given = "".join(f"{shlex.quote(alias)} " for alias in aliases)
             review = f"skill-graft update {given}--dry-run --diff <file>"
             digest = lock.digest(hull, hashes)

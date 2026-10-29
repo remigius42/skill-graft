@@ -63,7 +63,7 @@ def resolving(
         yield resolution
         if not write:
             return
-        text = lock.render(loaded, refs or {}, hull, resolution.hashes)
+        text = lock.render(scope, loaded, refs or {}, hull, resolution.hashes)
     found: list[tuple[Path, bytes | None]] = []
     try:
         for file, replace in resolution.writes:

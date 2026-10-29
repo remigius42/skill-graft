@@ -32,7 +32,7 @@ Apply with the `mp-tdd` skill: each task red-green-refactor, one commit. Red is 
   (`compute_hull(scope, config, …)`, `known(scope, config, …)`), `commands` theirs; `tests/pipeline/test_discovery.py`
   and `test_hull.py` pass a `Scope`, plus a test that a project `Scope`'s package is skipped while the home
   folder's global fallback would not; verify red, then green
-- [ ] 3.3 `lock.render(scope, …)` passes it to `_source_path`; `lock.write(text, file)` and `lock.read(file)` lose
+- [x] 3.3 `lock.render(scope, …)` passes it to `_source_path`; `lock.write(text, file)` and `lock.read(file)` lose
   their default; `resolving` and `update` pass `scope.lock_file`; `tests/pipeline/test_lock.py` passes a `Scope`,
   plus a project-scope `render` giving a source path relative to the package; patches of `lock.write` and
   `lock.render` take the new signatures; verify red, then green

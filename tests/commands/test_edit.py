@@ -460,7 +460,7 @@ def test_lock_write_interrupted(
     lock_file = package(home) / "skill-graft.lock"
     before = (config.read_bytes(), lock_file.read_bytes())
 
-    def interrupt(text: str, file: Path | None = None) -> None:
+    def interrupt(text: str, file: Path) -> None:
         raise KeyboardInterrupt
 
     monkeypatch.setattr(lock, "write", interrupt)

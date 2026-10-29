@@ -18,7 +18,7 @@ def render() -> str:
     scope = paths.Scope(Path.home())
     loaded = config.load(scope)
     with compute.compute_hull(scope, loaded) as hull:
-        return lock.render(loaded, {}, hull)
+        return lock.render(scope, loaded, {}, hull)
 
 
 def parsed() -> dict[str, Any]:
@@ -267,11 +267,27 @@ def test_same_input(home: Path) -> None:
     assert render() == render()
 
 
-def test_new_lock_follows_the_umask(home: Path) -> None:
+def test_project_path_source_relative_to_the_package(tmp_path: Path) -> None:
+    project = (tmp_path / "project").resolve()  # as `discover` gives it
+    scope = paths.Scope(project)
+    skill(project / "skills" / "tdd")
+    scope.config_file.parent.mkdir(parents=True)
+    scope.config_file.write_text(
+        'entries = ["own/tdd"]\n[sources.own]\npath = "../../skills"\n'
+    )
+    loaded = config.load(scope)
+
+    with compute.compute_hull(scope, loaded) as hull:
+        text = lock.render(scope, loaded, {}, hull)
+
+    assert tomllib.loads(text)["sources"] == {"own": {"path": "../../skills"}}
+
+
+def test_new_lock_follows_the_umask(scope: paths.Scope, home: Path) -> None:
     configure([])
     old = os.umask(0o022)
     try:
-        lock.write("one\n")
+        lock.write("one\n", scope.lock_file)
     finally:
         os.umask(old)
 
@@ -279,21 +295,21 @@ def test_new_lock_follows_the_umask(home: Path) -> None:
     assert stat.S_IMODE(file.stat().st_mode) == 0o644
 
 
-def test_lock_keeps_its_mode(home: Path) -> None:
+def test_lock_keeps_its_mode(scope: paths.Scope, home: Path) -> None:
     configure([])
-    lock.write("one\n")
+    lock.write("one\n", scope.lock_file)
     file = home / ".apm" / "skill-graft" / "skill-graft.lock"
     file.chmod(0o640)
 
-    lock.write("two\n")
+    lock.write("two\n", scope.lock_file)
 
     assert stat.S_IMODE(file.stat().st_mode) == 0o640
 
 
-def test_write_replaces_the_lock(home: Path) -> None:
+def test_write_replaces_the_lock(scope: paths.Scope, home: Path) -> None:
     configure([])
-    lock.write("one\n")
-    lock.write("two\n")
+    lock.write("one\n", scope.lock_file)
+    lock.write("two\n", scope.lock_file)
 
     file = home / ".apm" / "skill-graft" / "skill-graft.lock"
     assert file.read_text() == "two\n"

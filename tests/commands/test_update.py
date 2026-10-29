@@ -1318,7 +1318,7 @@ def failing_lock_write(
 ) -> None:
     """`lock.write` raises `error`, once the new refs are in `file`."""
 
-    def fail(text: str, lock_file: Path | None = None) -> None:
+    def fail(text: str, lock_file: Path) -> None:
         assert file.read_bytes() != before, "the refs are written before the lock"
         raise error
 
