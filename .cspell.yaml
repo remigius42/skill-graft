@@ -88,6 +88,7 @@ words:
   - pocock
   - popleft
   - powerup
+  - preexec
   - pstack
   - pycache
   - pycodestyle

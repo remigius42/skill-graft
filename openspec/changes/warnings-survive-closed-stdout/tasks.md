@@ -12,7 +12,7 @@ Apply with the `mp-tdd` skill: each task red-green-refactor, one commit. `pre-co
 - [x] 1.2 `cli.main` guards `_main` with `errors.flush_stdout()` as design.md says; covered end to end by 1.3's "Help,
   version and argparse's help" tests, written first and failing. `tests/cli/test_cli.py`'s `SystemExit` tests pass
   unchanged
-- [ ] 1.3 End to end in `tests/cli/test_warnings.py`, one test per scenario of the cli spec's "Closed standard output":
+- [x] 1.3 End to end in `tests/cli/test_warnings.py`, one test per scenario of the cli spec's "Closed standard output":
   `python -m skill_graft.cli` with the scenario's arguments and stdout the write end of an `os.pipe()` whose read end is
   closed first, or fd 1 closed for "Closed from the start"; assert stderr's order (warning, then error line), which
   error it names, no `Exception ignored`, and the exit code. Verify "No Python output" fails before 1.1's fix (revert it

@@ -115,6 +115,53 @@ def into_closed_pipe(*args: str) -> tuple[int, str]:
     return result.returncode, result.stderr
 
 
+def test_warnings_survive_a_closed_pipe(home: Path) -> None:
+    calls_foo(home)
+
+    code, stderr = into_closed_pipe("tree")
+
+    assert code == 1
+    in_order(stderr, FOO, BROKEN_PIPE)
+    assert stderr.endswith(BROKEN_PIPE)
+
+
+def test_own_error_wins_over_a_closed_pipe(home: Path) -> None:
+    """`tree` prints the hull as walked before it fails on the hidden characters."""
+    skill(home / "src" / "tdd", "x\N{LEFT-TO-RIGHT ISOLATE}\n")
+    write_config('entries = ["own/tdd"]\n[sources.own]\npath = "~/src"\n')
+
+    code, stderr = into_closed_pipe("tree")
+
+    assert code == 1
+    assert stderr.startswith("skill-graft: hidden characters:\n")
+    assert "Broken pipe" not in stderr
+
+
+def test_no_python_output_on_a_closed_pipe(home: Path) -> None:
+    calls_foo(home)
+
+    code, stderr = into_closed_pipe("tree")
+
+    assert code == 1
+    assert "Exception ignored" not in stderr
+
+
+def test_stdout_closed_from_the_start(home: Path) -> None:
+    calls_foo(home)
+
+    result = subprocess.run(
+        [sys.executable, "-m", "skill_graft.cli", "tree"],
+        stderr=subprocess.PIPE,
+        text=True,
+        check=False,
+        preexec_fn=lambda: os.close(1),
+    )
+
+    assert result.returncode == 0
+    assert result.stderr.startswith(FOO)
+    assert "Traceback" not in result.stderr
+
+
 @pytest.mark.parametrize(
     "args", [["help"], ["--version"], ["--help"], ["tree", "--help"]]
 )
