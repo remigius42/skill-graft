@@ -5,6 +5,7 @@ import json
 import os
 import tomllib
 from pathlib import Path
+from typing import Any
 
 import tomlkit
 
@@ -113,12 +114,18 @@ def write(text: str, file: Path) -> None:
     files.atomic_write(file, text.encode())
 
 
-def read(file: Path) -> dict[SkillId, str] | None:
-    """Each skill's hash as the lock `file` records it; None if it is missing,
-    unreadable or of another version."""
+def load(file: Path) -> dict[str, Any] | None:
+    """The lock `file` as TOML; None if it is missing or unreadable."""
     try:
-        data = tomllib.loads(file.read_bytes().decode())
+        return tomllib.loads(file.read_bytes().decode())
     except (OSError, UnicodeDecodeError, tomllib.TOMLDecodeError):
+        return None
+
+
+def recorded(data: dict[str, Any] | None) -> dict[SkillId, str] | None:
+    """Each skill's hash as the loaded lock `data` records it; None if there is no
+    lock or it is of another version."""
+    if data is None:
         return None
     skills = data.get("skills")
     if data.get("version") != 1 or not isinstance(skills, list):

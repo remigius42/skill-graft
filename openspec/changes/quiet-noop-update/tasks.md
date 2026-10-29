@@ -8,7 +8,7 @@ Apply with the `mp-tdd` skill: each task red-green-refactor, one commit. `pre-co
   `Resolution` as `lock_text`; the lock it writes is that text. Test in `tests/commands/test_resolve.py`: after a dry
   `resolving` body sets `hashes`, `resolution.lock_text` equals what `resolve` then writes to the lock; verify red, then
   green, and every `resolve`/`update` test stays green
-- [ ] 1.2 `commands/update.py`: a dry run that moves no `ref` and whose `lock_text` parses (`tomllib`) to what the lock
+- [x] 1.2 `commands/update.py`: a dry run that moves no `ref` and whose `lock_text` parses (`tomllib`) to what the lock
   file parses to prints `nothing to apply` in place of the `apply:` line; checked only when no skill is edited. Tests in
   `tests/commands/test_update.py`: `test_nothing_to_apply` (`build`, then `update mp --dry-run` at the same tip: last
   lines `nothing to apply`, `dry run: …`, `apply_line(out) == []`), `test_unrelated_push_still_applies` (tip moved, no

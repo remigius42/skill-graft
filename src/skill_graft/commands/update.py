@@ -5,6 +5,7 @@ import re
 import shlex
 import stat
 import tempfile
+import tomllib
 from collections.abc import Generator, MutableMapping
 from contextlib import ExitStack, contextmanager
 from pathlib import Path
@@ -188,11 +189,12 @@ def _update(
     ) as resolution:
         hull = resolution.hull
         hashes = resolution.hashes = lock.skill_hashes(hull)
+        locked = lock.load(scope.lock_file)  # once: both checks read the same lock
         with _previous(scope, loaded, selected, git_cache) as previous:
             shown = _print_diff(previous, hull, hashes)
             edited = []
             if not isinstance(previous, str):  # else every skill is shown in full
-                edited = _print_edited(previous[1], lock.read(scope.lock_file))
+                edited = _print_edited(previous[1], lock.recorded(locked))
             given = "".join(f"{shlex.quote(alias)} " for alias in aliases)
             review = f"skill-graft update {given}--dry-run --diff <file>"
             digest = lock.digest(hull, hashes)
@@ -225,7 +227,11 @@ def _update(
     if target is None and (shown or isinstance(previous, str)):
         print(f"review: {review}")
     elif not edited:  # all the text of what it would deploy was shown
-        print(f"apply: skill-graft update {given}--expect {digest}")
+        # Parsed, not text: an editor may have reformatted the lock.
+        if not moved and tomllib.loads(resolution.lock_text) == locked:
+            print("nothing to apply")
+        else:
+            print(f"apply: skill-graft update {given}--expect {digest}")
 
 
 @contextmanager

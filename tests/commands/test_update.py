@@ -1594,6 +1594,60 @@ def test_apply_line(upstream: Upstream, capsys: Capsys) -> None:
     assert update(capsys, *args)[0] == 0 and ref("mp") == new
 
 
+def built_at_tip(upstream: Upstream) -> str:
+    """`mp/tdd` built with `mp`'s ref at the tip of its branch: that tip."""
+    tip = upstream.commit({"tdd/SKILL.md": "1\n"})
+    write_config(
+        'entries = ["mp/tdd"]\n' + git_source("mp", upstream, f'ref = "{tip}"\n')
+    )
+    assert main(["build", "--no-install"]) == 0
+    return tip
+
+
+def test_nothing_to_apply(upstream: Upstream, capsys: Capsys) -> None:
+    tip = built_at_tip(upstream)
+
+    code, out, _ = update(capsys, "mp", "--dry-run")
+
+    assert code == 0 and f"mp {tip} (unchanged)" in out and "hull unchanged" in out
+    assert out.splitlines()[-2:] == [
+        "nothing to apply",
+        "dry run: skill-graft.toml and skill-graft.lock not written",
+    ]
+    assert apply_line(out) == []
+
+
+def test_unrelated_push_still_applies(upstream: Upstream, capsys: Capsys) -> None:
+    built_at_tip(upstream)
+    upstream.commit({"README.md": "news\n"})
+
+    code, out, _ = update(capsys, "mp", "--dry-run")
+
+    assert code == 0 and "hull unchanged" in out and apply_line(out)
+    assert "nothing to apply" not in out
+
+
+def test_lock_out_of_date_still_applies(upstream: Upstream, capsys: Capsys) -> None:
+    built_at_tip(upstream)
+    stale = 'suggestions = [{ id = "mp/gone", from = ["mp/tdd"] }]'
+    lock_file().write_text(lock_file().read_text().replace("suggestions = []", stale))
+
+    code, out, _ = update(capsys, "mp", "--dry-run")
+
+    assert code == 0 and "hull unchanged" in out and apply_line(out)
+    assert "nothing to apply" not in out
+
+
+def test_lock_with_other_line_endings(upstream: Upstream, capsys: Capsys) -> None:
+    built_at_tip(upstream)
+    edited = b"# saved by an editor\n" + lock_file().read_bytes()
+    lock_file().write_bytes(edited.replace(b"\n", b"\r\n"))
+
+    code, out, _ = update(capsys, "--dry-run")
+
+    assert code == 0 and "nothing to apply" in out.splitlines()
+
+
 def test_no_apply_line_before_a_review(upstream: Upstream, capsys: Capsys) -> None:
     moved_tdd(upstream)
 
@@ -1645,7 +1699,7 @@ def test_no_apply_line_after_an_edit(
     code, out, _ = update(capsys, "--dry-run", "--diff", "review.diff")
 
     assert code == 0 and edited(out) == [EDITED + "own/notes"]
-    assert apply_line(out) == []
+    assert apply_line(out) == [] and "nothing to apply" not in out
 
 
 def test_changed_by_resolution_only(
