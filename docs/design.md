@@ -83,11 +83,12 @@ path = "~/Documents/sync/2_areas/software/chisel_skill"
   a key (its source's `prefix`, if any, before its upstream name) removes the key, which is how a rename is undone, so
   under a prefix the upstream name is written as a key; the current deployed name is a notice. An unknown alias or skill
   is an error; a skill outside the hull gets the unused-rename warning; clashes are the usual errors and warnings, an
-  error writing nothing.
+  error writing nothing. The skill is checked first, reading only its source, so a missing skill is reported before
+  another source's missing `ref` or failed fetch, and a no-op reads no other source.
 - `bind` sets `[bind]` key `<alias>/<name>` to a skill ID, or to `false` for the word `false` (appending the table if
-  absent). The key's alias must be declared, its name need not be a skill; resolving checks the target, as it checks
-  every bind's. A key already set has its target checked first, as `rename` checks its skill, so the current value is a
-  notice only while its target exists. An unused bind gets the usual warning.
+  absent). The key's alias must be declared, its name need not be a skill. The target is checked after the key and
+  before anything else, as `rename` checks its skill, reading only its source, so the current value is a notice only
+  while its target exists; resolving checks it again, as it checks every bind's. An unused bind gets the usual warning.
 - `unbind` deletes the key, leaving the table; its key is parsed as `bind`'s, and one not in `[bind]` is an error.
 - `resolve`: computes the hull from the TOML, writes the lock, prints the tree, warnings and suggestions. Reads every
   declared source, each git one at its `ref`, fetching only when that commit is not cached. A git source with

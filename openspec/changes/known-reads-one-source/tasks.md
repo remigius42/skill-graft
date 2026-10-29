@@ -25,6 +25,6 @@ folder.
 
 ## 2. Docs
 
-- [ ] 2.1 `docs/design.md`: the `rename` and `bind` bullets say the given **Skill ID** is checked by reading only its
+- [x] 2.1 `docs/design.md`: the `rename` and `bind` bullets say the given **Skill ID** is checked by reading only its
   **Source**, so a missing **Skill** is reported before another **Source**'s missing `ref`, and a no-op reads no other
   **Source**; verify `pre-commit run --all-files` passes
