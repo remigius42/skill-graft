@@ -7,6 +7,20 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 
 ## [Unreleased]
 
+### Added
+
+- The supported platforms are stated: Linux and macOS, and Windows through WSL. The README says so, and the package
+  declares them as classifiers
+
+### Fixed
+
+- On native Windows, every command, `help`, `--help` and `--version` too, prints
+  `skill-graft: native Windows is unsupported: run skill-graft in WSL` and exits 1, in place of a traceback ending in
+  `No module named 'fcntl'`
+- A **Patch** written with `diff -ruN` on macOS that deletes a file deletes it, as on Linux, with any folder that leaves
+  empty; it left the file behind, empty, and one deleting `SKILL.md` was not refused. Any file a plain `diff` **Patch**
+  leaves empty is deleted; a `git diff` **Patch** applies as git applies it
+
 ## [0.2.3] - 2026-10-29
 
 ### Added
