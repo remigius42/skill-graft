@@ -4,7 +4,7 @@ Apply with the `mp-tdd` skill: each task red-green-refactor, one commit. `pre-co
 
 ## 1. Refuse native Windows
 
-- [ ] 1.1 Tests in `tests/cli/test_cli.py`, one per scenario of the cli spec's "Supported platforms": a subprocess runs
+- [x] 1.1 Tests in `tests/cli/test_cli.py`, one per scenario of the cli spec's "Supported platforms": a subprocess runs
   `python -c` that sets `sys.modules["skill_graft.commands"] = None`, imports `skill_graft.cli`, then sets
   `sys.platform = "win32"` and exits with `main([...])`, for `resolve`; `help`, `--help` and `--version`; no argument,
   `explain` and `--bogus`. Assert exit 1, empty stdout, stderr exactly the WSL error line, no `Traceback`. The Linux
