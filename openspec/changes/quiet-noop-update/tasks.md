@@ -16,7 +16,7 @@ Apply with the `mp-tdd` skill: each task red-green-refactor, one commit. `pre-co
   CRLF: still `nothing to apply`), and `test_no_apply_line_after_an_edit` also asserting no `nothing to apply`. Verify
   `test_nothing_to_apply` fails first, then all pass, and `test_apply_line` and the other `apply`/`review` tests stay
   green
-- [ ] 1.3 A dry run that moves no `ref` prints `<n> prose suggestion(s): run skill-graft resolve`: a sibling of
+- [x] 1.3 A dry run that moves no `ref` prints `<n> prose suggestion(s): run skill-graft resolve`: a sibling of
   `test_update_announces_suggestions` that runs `build` first and then `update --dry-run` at the same tip (the existing
   test moves the tip, so it can't cover this); verify red, then green
 - [ ] 1.4 `docs/design.md`'s `update` entry names the `nothing to apply` case and the suggestions line; verify by

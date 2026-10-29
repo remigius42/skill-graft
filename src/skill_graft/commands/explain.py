@@ -201,7 +201,8 @@ def suggestions(hull: Hull) -> str:
 def announce_suggestions(hull: Hull, dry_run: bool = False) -> None:
     """For `build` and `update`: one line pointing to `resolve`, which lists them.
 
-    After a dry run `resolve` still reads the old refs, so the hint says to update.
+    With `dry_run`, refs moved but not yet written: `resolve` still reads the old
+    ones, so the hint says to update.
     """
     if not hull.suggestions:
         return

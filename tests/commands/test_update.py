@@ -694,6 +694,25 @@ def test_update_announces_suggestions(
     assert line in err
 
 
+def test_dry_run_moving_no_ref_announces_suggestions(
+    upstream: Upstream, capsys: Capsys
+) -> None:
+    tip = upstream.commit(
+        {"tdd/SKILL.md": "then diagnosing-bugs\n", "diagnosing-bugs/SKILL.md": "d\n"}
+    )
+    write_config(
+        'entries = ["mp/tdd"]\n' + git_source("mp", upstream, f'ref = "{tip}"\n')
+    )
+    assert main(["build", "--no-install"]) == 0
+    capsys.readouterr()  # build's own suggestion line
+
+    code, _, err = update(capsys, "--dry-run")
+
+    assert code == 0
+    assert "skill-graft: 1 prose suggestion(s): run skill-graft resolve\n" in err
+    assert "at the new tips" not in err
+
+
 def test_dry_run_prints_the_diff(upstream: Upstream, capsys: Capsys) -> None:
     old = upstream.commit({"tdd/SKILL.md": "1\n", "grilling/SKILL.md": "g\n"})
     upstream.commit({"tdd/SKILL.md": "/grilling\n"})

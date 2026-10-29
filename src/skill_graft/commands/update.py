@@ -219,7 +219,8 @@ def _update(
             resolution.writes.append(
                 (scope.config_file.resolve(), lambda: _write_refs(scope, moved))
             )
-    explain.announce_suggestions(hull, dry_run=not write)  # once the writes succeeded
+    # Once the writes succeeded; with no ref moved, `resolve` sees these tips.
+    explain.announce_suggestions(hull, dry_run=not write and bool(moved))
     if write:
         return
     if target is not None:
