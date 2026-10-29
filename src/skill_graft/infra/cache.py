@@ -91,7 +91,11 @@ class Cache:
                     f"source {alias!r}: ref {ref} is on no branch of {url}"
                 )
         context = f"source {alias!r} ({url})"
-        _build(tree, lambda tmp: _export(repo, ref, tmp, context, subdirectory))
+        records, tips = _listing(repo, ref, subdirectory, context)
+        if repo == self.repository(url):  # never write into the reference's
+            with lock(repo):
+                _fetch_blobs(repo, records, tips, context)
+        _build(tree, lambda tmp: _export(repo, records, tmp, context))
         return tree
 
     def has_commit(self, url: str, sha: str) -> bool:
@@ -199,18 +203,62 @@ def _has_commit(repo: Path, sha: str) -> bool:
     return True
 
 
-def _export(
-    repo: Path, ref: str, folder: Path, context: str, subdirectory: str | None
+def _fetch_blobs(
+    repo: Path, records: list[bytes], tips: list[str], context: str
 ) -> None:
-    """Writes the tree of `ref`, or its `subdirectory`, into `folder`, byte for
-    byte as committed.
+    """Fetches the blobs of `records` that `repo` lacks, listed from `tips`, in
+    one request.
+
+    `rev-list --missing=print` finds them without fetching, on any git. A tip
+    may reach other blobs, such as a prefix's siblings: only those of
+    `records` count. The want list is blobs: negotiating over every branch, as
+    `noop` skips, would only cost round trips.
+    """
+    if not tips:
+        return
+    listing = git.run(
+        "rev-list",
+        "--objects",
+        "--missing=print",
+        "--no-walk",
+        *tips,
+        repo=repo,
+        context=context,
+    )
+    wanted = {record.split(b"\t", 1)[0].split(b" ")[2] for record in records}
+    missing = [
+        line[1:]
+        for line in listing.splitlines()
+        if line.startswith(b"?") and line[1:] in wanted
+    ]
+    if missing:
+        git.run(
+            *git.FSCK,
+            "-c",
+            "fetch.negotiationAlgorithm=noop",
+            "fetch",
+            "-q",
+            "--no-tags",
+            "--no-write-fetch-head",
+            "--recurse-submodules=no",
+            "--filter=blob:none",
+            "--stdin",
+            "origin",
+            repo=repo,
+            context=context,
+            input=b"\n".join(missing) + b"\n",
+        )
+
+
+def _export(repo: Path, records: list[bytes], folder: Path, context: str) -> None:
+    """Writes the tree entries `records` into `folder`, byte for byte as committed.
 
     Unlike a checkout, no `.gitattributes` conversion or filter driver applies,
     and unlike `git archive`, `export-ignore` files are kept. Submodules are
     skipped.
     """
     entries = []
-    for record in _listing(repo, ref, subdirectory, context):
+    for record in records:
         meta, name = record.split(b"\t", 1)
         mode, kind, oid = meta.split(b" ")
         if kind == b"blob":
@@ -237,35 +285,55 @@ def _export(
 
 def _listing(
     repo: Path, ref: str, subdirectory: str | None, context: str
-) -> list[bytes]:
+) -> tuple[list[bytes], list[str]]:
     """The `ls-tree` records of `ref`'s tree, or of `subdirectory` and of the
-    entries at its proper prefixes, so a prefix that is a file or symlink is
-    exported as such.
+    blobs at its proper prefixes, so a prefix that is a file or symlink is
+    exported as such; and the objects to list their missing blobs from.
+
+    Those are trees, which a blobless repository always has, and no pathspec:
+    under one, `rev-list --no-walk` lists nothing at a commit not touching it,
+    on some git versions. The subdirectory's own tree, or for a blob on the
+    path, the folder holding it.
 
     For a prefix that is a folder git lists its children too: only exact
-    prefixes are kept. A name is matched literally and by case, whatever
+    paths are kept. A name is matched literally and by case, whatever
     `core.ignorecase` the clone recorded.
     """
     if subdirectory is None:
-        return _ls_tree(repo, context, "-r", ref)
+        return _ls_tree(repo, context, "-r", ref), [ref]
     parts = subdirectory.split("/")
-    prefixes = ["/".join(parts[:i]) for i in range(1, len(parts))]
+    paths = ["/".join(parts[:i]) for i in range(1, len(parts) + 1)]
     records = _ls_tree(repo, context, "-r", ref, "--", subdirectory)
-    if prefixes:
-        exact = {os.fsencode(prefix) for prefix in prefixes}
-        records += [
-            record
-            for record in _ls_tree(repo, context, ref, "--", *prefixes)
-            if record.split(b"\t", 1)[1] in exact
-        ]
-    return records
+    exact = {os.fsencode(path) for path in paths}
+    on_path = []  # (kind, oid, name, record) of each entry at exactly a path
+    # `-t`: the trees on the way are listed too, not only what is under them.
+    for record in _ls_tree(repo, context, "-t", ref, "--", *paths):
+        meta, name = record.split(b"\t", 1)
+        if name in exact:
+            _, kind, raw = meta.split(b" ")
+            on_path.append((kind, raw.decode(), name, record))
+    trees = {b"": f"{ref}^{{tree}}"}
+    trees |= {name: oid for kind, oid, name, _ in on_path if kind == b"tree"}
+    tips = []
+    own = os.fsencode(subdirectory)
+    for kind, oid, name, record in on_path:
+        if kind == b"tree" and name == own:
+            tips.append(oid)
+        elif kind == b"blob":
+            tips.append(trees[name.rpartition(b"/")[0]])
+            if name != own:  # the subdirectory's own is in `records` already
+                records.append(record)
+    return records, list(dict.fromkeys(tips))
+
+
+# Pathspecs name paths literally and by case, whatever the clone recorded:
+# a clone on a case-insensitive file system sets `core.ignorecase`.
+LITERAL = ["-c", "core.ignorecase=false", "--literal-pathspecs"]
 
 
 def _ls_tree(repo: Path, context: str, *args: str) -> list[bytes]:
     listing = git.run(
-        "-c",
-        "core.ignorecase=false",
-        "--literal-pathspecs",
+        *LITERAL,
         "ls-tree",
         "-z",
         "--full-tree",
