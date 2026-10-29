@@ -1267,7 +1267,7 @@ def test_failed_write_after_the_diff(
 ) -> None:
     moved_tdd(upstream)
 
-    def fail(document: object) -> None:
+    def fail(scope: object, document: object) -> None:
         raise OSError("disk full")
 
     monkeypatch.setattr(edit, "write", fail)

@@ -20,13 +20,12 @@ from skill_graft.pipeline.config import SkillId
 from skill_graft.pipeline.hull import Hull
 
 
-def read() -> tuple[tomlkit.TOMLDocument, config.Config]:
+def read(scope: paths.Scope) -> tuple[tomlkit.TOMLDocument, config.Config]:
     """The config as `tomlkit` keeps it, comments and formatting included, and as
     `load` reads it.
 
     Checked as `load` checks it first, so an edit only ever sees a valid config.
     """
-    scope = paths.in_use()
     text = config.text(scope)
     loaded = config.parse(scope, text)  # before tomlkit sees it
     return tomlkit.parse(text), loaded
@@ -34,11 +33,11 @@ def read() -> tuple[tomlkit.TOMLDocument, config.Config]:
 
 @contextmanager
 def _reading(
-    warnings: list[str],
+    scope: paths.Scope, warnings: list[str]
 ) -> Generator[tuple[tomlkit.TOMLDocument, config.Config]]:
     """`read`'s result; if the edit fails, the warnings of the config read, which
     the edited one shares: an edit never changes its sources."""
-    document, loaded = read()
+    document, loaded = read(scope)
     try:
         yield document, loaded
     except BaseException:
@@ -46,15 +45,15 @@ def _reading(
         raise
 
 
-def write(document: tomlkit.TOMLDocument) -> None:
+def write(scope: paths.Scope, document: tomlkit.TOMLDocument) -> None:
     """Replaces the config atomically; a symlink's target, not the link."""
-    files.atomic_write(paths.config_file().resolve(), tomlkit.dumps(document).encode())
+    files.atomic_write(scope.config_file.resolve(), tomlkit.dumps(document).encode())
 
 
 def add(scope: paths.Scope, warnings: list[str], skills: list[str]) -> None:
     """Appends each skill ID to `entries`."""
     cache = Cache.default()
-    with _reading(warnings) as (document, _):
+    with _reading(scope, warnings) as (document, _):
         if "entries" not in document:
             document["entries"] = tomlkit.array()  # before the first table
         array = cast(Array, document["entries"])
@@ -78,7 +77,7 @@ def add(scope: paths.Scope, warnings: list[str], skills: list[str]) -> None:
 def remove(scope: paths.Scope, warnings: list[str], skills: list[str]) -> None:
     """Deletes each skill ID from `entries`."""
     cache = Cache.default()
-    with _reading(warnings) as (document, _):
+    with _reading(scope, warnings) as (document, _):
         array = cast(Array, document.get("entries", tomlkit.array()))
         for text in dict.fromkeys(skills):
             if text not in array:
@@ -94,7 +93,7 @@ def remove(scope: paths.Scope, warnings: list[str], skills: list[str]) -> None:
 def rename(scope: paths.Scope, warnings: list[str], text: str, name: str) -> None:
     """Sets the skill's `[rename]` value to `name`."""
     cache = Cache.default()
-    with _reading(warnings) as (document, loaded):
+    with _reading(scope, warnings) as (document, loaded):
         if not config.NAME.fullmatch(name):  # before looking anything up
             raise SkillGraftError(
                 f"rename: {name!r} is not a skill name: {config.NAME.pattern}"
@@ -118,7 +117,7 @@ def rename(scope: paths.Scope, warnings: list[str], text: str, name: str) -> Non
 def bind(scope: paths.Scope, warnings: list[str], key: str, target: str) -> None:
     """Sets `[bind]` key `key` to the skill ID `target`, or to `false`."""
     cache = Cache.default()
-    with _reading(warnings) as (document, loaded):
+    with _reading(scope, warnings) as (document, loaded):
         skill = config.parse_skill_id("bind", key, loaded.sources)
         # Resolving checks the target; a no-op skips that, so it is checked here
         # first: one gone upstream is no longer bound. Present too: a missing key
@@ -141,7 +140,7 @@ def bind(scope: paths.Scope, warnings: list[str], key: str, target: str) -> None
 def unbind(scope: paths.Scope, warnings: list[str], key: str) -> None:
     """Deletes `[bind]` key `key`, leaving the table."""
     cache = Cache.default()
-    with _reading(warnings) as (document, loaded):
+    with _reading(scope, warnings) as (document, loaded):
         # Parsed first, so a malformed key or undeclared alias is said so, as by `bind`.
         if config.parse_skill_id("unbind", key, loaded.sources) not in loaded.binds:
             raise SkillGraftError(f"`{key}` is not bound")
@@ -186,7 +185,7 @@ def _finish(
     warnings.extend(loaded.warnings)
     with resolve.resolving(scope, loaded, warnings, cache) as resolution:
         resolution.writes.append(
-            (paths.config_file().resolve(), lambda: write(document))
+            (scope.config_file.resolve(), lambda: write(scope, document))
         )
     explain.show(resolution.hull)
     return resolution.hull

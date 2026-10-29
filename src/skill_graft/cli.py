@@ -362,7 +362,7 @@ def main(argv: list[str] | None = None) -> int:
         project = args.command == "init" and args.project
         with warnings_last() as warnings, scope.of(args.command, project) as current:
             if args.command == "init":
-                init_package.init(args.project)
+                init_package.init(current, project)
             elif args.command == "update":
                 update.update(
                     current,

@@ -8,6 +8,7 @@ import pytest
 from conftest import FakeApm, write_config
 
 from skill_graft.cli import main
+from skill_graft.commands import init_package
 from skill_graft.infra import apm, paths
 from skill_graft.pipeline import config
 
@@ -273,6 +274,20 @@ def test_project_package(
     assert fake_apm.calls == [["install", "./.apm/skill-graft"]]
     assert fake_apm.working_folders == [str(repo)]
     assert "    - ./.apm/skill-graft\n" in (repo / "apm.yml").read_text()
+
+
+def test_init_creates_the_package_of_the_scope_it_is_given(
+    tmp_path: Path, fake_apm: FakeApm
+) -> None:
+    project = tmp_path / "project"
+    project.mkdir()
+
+    init_package.init(paths.Scope(project), project=True)
+
+    package = project / ".apm" / "skill-graft"
+    assert tomllib.loads((package / "skill-graft.toml").read_text()) == {}
+    assert fake_apm.calls == [["install", "./.apm/skill-graft"]]
+    assert fake_apm.working_folders == [str(project)]
 
 
 def test_apm_not_installed_for_a_project(

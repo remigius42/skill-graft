@@ -216,7 +216,7 @@ def _update(
             )
         if write and moved:
             resolution.writes.append(
-                (paths.config_file().resolve(), lambda: _write_refs(moved))
+                (scope.config_file.resolve(), lambda: _write_refs(scope, moved))
             )
     explain.announce_suggestions(hull, dry_run=not write)  # once the writes succeeded
     if write:
@@ -413,19 +413,19 @@ def _print_edited(
     return edited
 
 
-def _write_refs(refs: dict[str, str]) -> None:
+def _write_refs(scope: paths.Scope, refs: dict[str, str]) -> None:
     """Sets each `sources.<alias>.ref`, keeping every comment and all formatting.
 
     Replaces the file a symlinked `skill-graft.toml` points to, not the link.
     """
     # Not edit.read: the config was checked when update loaded it.
-    document = tomlkit.parse(config.text(paths.in_use()))
+    document = tomlkit.parse(config.text(scope))
     # A table, inline table, or proxy over split tables, by how the user wrote
     # it; config.load already checked that each is a table.
     sources = cast(MutableMapping[str, Any], document["sources"])
     for alias, ref in refs.items():
         cast(MutableMapping[str, Any], sources[alias])["ref"] = ref
-    edit.write(document)
+    edit.write(scope, document)
 
 
 def _select(loaded: Config, aliases: list[str]) -> dict[str, GitSource]:

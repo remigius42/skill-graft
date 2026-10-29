@@ -55,7 +55,7 @@ Apply with the `mp-tdd` skill: each task red-green-refactor, one commit. Red is 
 
 ## 5. commands read the Scope they hold
 
-- [ ] 5.1 `init_package.init(scope, project=False)` reads `scope.user`, `scope.root`, `scope.package`,
+- [x] 5.1 `init_package.init(scope, project=False)` reads `scope.user`, `scope.root`, `scope.package`,
   `scope.config_file` (`_exists`, `_listed` take it too); `cli` passes `current`; `edit.read(scope)`,
   `edit.write(scope, document)` and the config file in `_finish` read `scope.config_file`; `update` likewise;
   `tests/commands/test_init_package.py` drives `init` with a `Scope` below `cli`; verify red, then green, and
