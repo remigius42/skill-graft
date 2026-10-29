@@ -27,7 +27,7 @@ last touched those lines.
   reference's export is looked up under the same name. `compute._folder` passes `source.subdirectory`. Tests in
   `tests/infra/test_cache.py`: the export of `x` holds `x/…` and no other path; a prefix that is a symlink or a file is
   exported as such, and a sibling of a prefix is not; `*` in a subdirectory matches only itself. Verify red, then green
-- [ ] 2.2 `tests/cli/test_subdirectory.py`: `test_shared_export` asserts two exports, each holding only its own
+- [x] 2.2 `tests/cli/test_subdirectory.py`: `test_shared_export` asserts two exports, each holding only its own
   subdirectory, per the changed **Shared export** scenario; a new **Same subdirectory** test asserts one. The existing
   **Missing at ref**, **A file, not a folder**, **Symlinked subdirectory** and **Case differs** tests pass unchanged,
   with today's messages. Verify the changed test fails first
