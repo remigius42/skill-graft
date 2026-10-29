@@ -13,7 +13,7 @@ last touched those lines.
 - [x] 1.1 `tests/conftest.py`'s `Upstream` sets `uploadpack.allowFilter` to `true` (nothing else: protocol v2 serves
   blobs by oid without `allowAnySHA1InWant`), with a `filters=False` switch to leave it unset. The whole suite passes
   unchanged (no behavior uses it yet)
-- [ ] 1.2 `git.run` sets `GIT_NO_LAZY_FETCH=1` whenever it names a repository. Test in `tests/infra/test_git.py`: in a
+- [x] 1.2 `git.run` sets `GIT_NO_LAZY_FETCH=1` whenever it names a repository. Test in `tests/infra/test_git.py`: in a
   blobless clone of a filtering `Upstream`, `git.run("cat-file", "-e", f"{sha}^{{commit}}", repo=…)` for a commit pushed
   after the clone fails and the clone still lacks it (`rev-list` from a separate, unpatched call). Verify red (clone
   made by hand with `--filter=blob:none` until 3.1 lands), then green. It, and every later test of a lookup never
