@@ -230,10 +230,12 @@ old **Hull** and the lock do not hold alike, held by one only or with another ha
 `edited since skill-graft.lock was written, not shown: <skill id>`. A missing or unreadable lock SHALL name every
 **Skill** of the old **Hull**.
 
-The diff SHALL never fetch: when a current `ref` is missing or not cached, or the current `ref`s do not resolve, it
-SHALL say so instead. A current `ref` not in the cache SHALL be named with its likely causes: a branch fetched since,
-history rewritten upstream, or a `ref` set to a commit on no branch. A dry run without `--diff` whose **Hull diff**
-marks a **Skill** `+` or `~`, or that has no previous **Hull**, SHALL print, before its `dry run:` line, the hint
+The diff SHALL never fetch a commit: when a current `ref` is missing or not cached, or the current `ref`s do not
+resolve, it SHALL say so instead. Of a current `ref` whose commit is cached, it SHALL fetch only the files it reads and
+the cache lacks; when that fails, it SHALL say so, as for `ref`s that do not resolve, and `update` SHALL go on. A
+current `ref` not in the cache SHALL be named with its likely causes: a branch fetched since, history rewritten
+upstream, or a `ref` set to a commit on no branch. A dry run without `--diff` whose **Hull diff** marks a **Skill** `+`
+or `~`, or that has no previous **Hull**, SHALL print, before its `dry run:` line, the hint
 `review: skill-graft update --dry-run --diff <file>` with the **Sources** it was given. Warnings SHALL come from the new
 tips only. `--dry-run` SHALL print the same.
 
@@ -272,6 +274,18 @@ tips only. `--dry-run` SHALL print the same.
 - **WHEN** `mp`'s `ref` A is not in the cache and its new tip B is
 - **THEN** `update` says there is no previous **Hull** to compare: `mp`'s `ref` A is not in the cache, with its likely
   causes; and it fetches nothing
+
+#### Scenario: Old ref cached, its files not
+
+- **WHEN** a project **Package**'s lock was written on another machine, `mp`'s `ref` A has never been read on this one,
+  and the user runs `update`
+- **THEN** `update` fetches the tip, then A's files, and prints the **Hull diff** from A to the tip
+
+#### Scenario: Old ref's files unreachable
+
+- **WHEN** `mp`'s `ref` A is in the cache but its files are not, its new tip B is in the cache with its files, and
+  `mp`'s remote is unreachable
+- **THEN** `update` says there is no previous **Hull** to compare, naming the failed fetch, and succeeds
 
 #### Scenario: File lines
 
@@ -748,3 +762,16 @@ before its `dry run:` line.
 
 - **WHEN** the user runs `update --help`, or an `--expect` value does not match
 - **THEN** the usage shows `--expect hull-digest`, and the mismatch error reads `its hull digest is <hull-digest>`
+
+### Requirement: Dry run on a remote refusing files by name
+
+When `update --dry-run` needs files at a tip or a current `ref` from a remote that refuses files asked by name, it SHALL
+exit non-zero, its error naming the alias and saying to run `update` without `--dry-run`, and SHALL write nothing to the
+cache, as any dry run.
+
+#### Scenario: Dry run, remote refusing files by name
+
+- **WHEN** `mp`'s remote accepts a partial clone but refuses files asked by name, the cache holds `mp`'s repository
+  without the files of its new tip, and the user runs `update --dry-run`
+- **THEN** it exits non-zero naming `mp` and saying to run `update` without `--dry-run`, and the cache folder is
+  unchanged
