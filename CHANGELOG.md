@@ -38,6 +38,9 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
   that a second `init` refuses with no way forward
 - Refusing an existing **Package** that APM does not list, `init` gives the `apm install` command that registers it
 - The `apm install` commands `init` suggests, and the one named when APM fails, are shell-quoted
+- Into a pipe its reader has already closed, such as `skill-graft tree | head -1`, a command prints its warnings, then
+  its error line, and exits 1, with no `Exception ignored … BrokenPipeError` from Python and no exit 120; so do `help`,
+  `--version` and `--help`. A command started with standard output closed no longer fails with a traceback
 
 ## [0.2.2] - 2026-10-26
 
