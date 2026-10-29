@@ -11,7 +11,7 @@ from typing import cast
 import tomlkit
 from tomlkit.items import Array, Table
 
-from skill_graft.commands import explain, resolve
+from skill_graft.commands import explain, transaction
 from skill_graft.infra import files, paths
 from skill_graft.infra.cache import Cache
 from skill_graft.infra.errors import SkillGraftError, notice
@@ -183,7 +183,7 @@ def _finish(
     # Relative paths start where `load` starts them, even for a symlinked file.
     loaded = config.parse(scope, text)
     warnings.extend(loaded.warnings)
-    with resolve.resolving(scope, loaded, warnings, cache) as resolution:
+    with transaction.resolving(scope, loaded, warnings, cache) as resolution:
         resolution.writes.append(
             (scope.config_file.resolve(), lambda: write(scope, document))
         )

@@ -12,7 +12,7 @@ from typing import Any, cast
 
 import tomlkit
 
-from skill_graft.commands import edit, explain, resolve
+from skill_graft.commands import edit, explain, transaction
 from skill_graft.infra import files, git, paths
 from skill_graft.infra.cache import Cache
 from skill_graft.infra.errors import SkillGraftError
@@ -54,7 +54,7 @@ def update(
     the real cache, and `diff_file`. Writes `diff_file`'s Deployed diff, if given;
     refuses a hull whose digest is not `expect`, if given.
     """
-    loaded = resolve.load(scope, warnings)
+    loaded = transaction.load(scope, warnings)
     if expect is not None and not re.fullmatch("[0-9a-f]{64}", expect):
         raise SkillGraftError(
             f"--expect {expect}: expected 64 hex digits, as an `apply:` line gives"
@@ -184,7 +184,7 @@ def _update(
         unchanged = " (unchanged)" if tips[alias] == source.ref else ""
         print(f"{alias} {tips[alias]}{unchanged}")
     # The lock even if no ref moved: a path source may have changed.
-    with resolve.resolving(
+    with transaction.resolving(
         scope, loaded, warnings, git_cache, tips, write=write
     ) as resolution:
         hull = resolution.hull

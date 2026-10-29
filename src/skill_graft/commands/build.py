@@ -5,7 +5,7 @@ import os
 import shutil
 from pathlib import Path
 
-from skill_graft.commands import explain, resolve
+from skill_graft.commands import explain, transaction
 from skill_graft.infra import apm, paths
 from skill_graft.infra.cache import Cache
 from skill_graft.infra.errors import SkillGraftError, notice
@@ -26,10 +26,10 @@ def build(
     lock_file = None if into is None else into / "skill-graft.lock"
     started = False
     try:
-        loaded = resolve.load(scope, warnings)
+        loaded = transaction.load(scope, warnings)
         if given is not None:
             _check_into_sources(given, loaded)
-        with resolve.resolving(
+        with transaction.resolving(
             scope, loaded, warnings, cache, lock_file=lock_file
         ) as resolution:
             resolved = resolution.hull

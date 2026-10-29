@@ -9,7 +9,7 @@ from pathlib import Path
 from typing import NamedTuple
 from urllib.parse import quote, urlsplit
 
-from skill_graft.commands import resolve
+from skill_graft.commands import transaction
 from skill_graft.infra import git, paths
 from skill_graft.infra.cache import Cache
 from skill_graft.infra.errors import SkillGraftError, notice
@@ -63,7 +63,7 @@ def _explain(
 ) -> None:
     """Runs `view` on the hull; on one failing only on hidden characters, on the
     hull as walked, so the user sees what pulls them in, then fails."""
-    loaded = resolve.load(scope, warnings)
+    loaded = transaction.load(scope, warnings)
     try:
         with compute.compute_hull(scope, loaded, cache) as resolved:
             view(loaded, resolved)

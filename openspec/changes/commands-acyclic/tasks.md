@@ -8,7 +8,7 @@ Trial check used below: `lint-imports --config <tmp toml>` with only the contrac
 
 ## 1. Break the commands cycle
 
-- [ ] 1.1 Create `commands/transaction.py` and move `load`, `Resolution`, `resolving` and `_restore` from `resolve.py`
+- [x] 1.1 Create `commands/transaction.py` and move `load`, `Resolution`, `resolving` and `_restore` from `resolve.py`
   into it unchanged (docstring: the one place every command that writes the lock does it); `resolve.py` keeps the
   `resolve` command, importing `transaction` and `explain`, its docstring narrowed to the command; `explain._explain`
   calls `transaction.load`, `build` and `update` `transaction.load` and `transaction.resolving`, and `edit._finish`
