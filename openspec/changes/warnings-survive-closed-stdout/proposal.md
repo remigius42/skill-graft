@@ -35,6 +35,6 @@ None.
 - `src/skill_graft/infra/errors.py`: `flush_stdout`, used by `warnings_last`.
 - `src/skill_graft/cli.py`: `main` flushes through it once the command line returns or exits.
 - Tests: `tests/infra/test_errors.py` (new), `tests/cli/test_warnings.py` (end to end, through a closed pipe and a
-  closed fd 1).
+  closed fd 1, and `main` in process on a closed stdout), `tests/conftest.py` (the closed-stdout double, shared).
 - `CHANGELOG.md` at archive: `### Fixed` for the `Exception ignored` and exit 120 that v0.2.2 shows. The lost warnings
   and the masked error never shipped: they came with the unreleased "warnings last", so they get no entry of their own.
