@@ -24,7 +24,9 @@ survive. The lock is output only: never an input that overrides the TOML.
 
 Git sources are cached outside the package, under `$XDG_CACHE_HOME/skill-graft/` (else `~/.cache/skill-graft/`): one
 bare repository per URL and one export per commit and `subdirectory`, the committed bytes exactly: a **Source** with a
-`subdirectory` exports only that folder, and the entries on its path. Deleting it loses nothing.
+`subdirectory` exports only that folder, and the entries on its path. A repository is cloned blobless: commits and
+trees, and the files of each export, fetched in one request when it is first made, so the first export of a commit and
+subdirectory needs the remote even when the commit is cached. Deleting it loses nothing.
 
 ## Config
 

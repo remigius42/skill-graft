@@ -21,6 +21,7 @@ from conftest import (
 from skill_graft.cli import main
 from skill_graft.commands import edit
 from skill_graft.infra import cache, files, git, paths
+from skill_graft.infra.errors import SkillGraftError
 from skill_graft.pipeline import config, deployed, lock
 
 Capsys: TypeAlias = pytest.CaptureFixture[str]
@@ -657,6 +658,49 @@ def test_old_refs_unresolvable(upstream: Upstream, capsys: Capsys) -> None:
     code, out, _ = update(capsys)
 
     assert code == 0 and "no previous hull to compare" in out
+
+
+def test_old_ref_cached_its_files_not(upstream: Upstream, capsys: Capsys) -> None:
+    old = upstream.commit({"tdd/SKILL.md": "1\n"})
+    upstream.commit({"tdd/SKILL.md": "2\n"})
+    # As a lock and config written on another machine: nothing read here yet.
+    write_config(
+        'entries = ["mp/tdd"]\n' + git_source("mp", upstream, f'ref = "{old}"\n')
+    )
+
+    code, out, _ = update(capsys)
+
+    assert code == 0 and diff_lines(out)[:2] == [
+        "hull (+ added, - removed, ~ changed):",
+        "~ mp/tdd",
+    ]
+
+
+def test_old_refs_files_unreachable(
+    upstream: Upstream, capsys: Capsys, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    old = upstream.commit({"tdd/SKILL.md": "1\n"})
+    tip = upstream.commit({"tdd/SKILL.md": "2\n"})
+    write_config(
+        'entries = ["mp/tdd"]\n' + git_source("mp", upstream, f'ref = "{tip}"\n')
+    )
+    assert main(["build", "--no-install"]) == 0  # the tip, with its files
+    write_config(
+        'entries = ["mp/tdd"]\n' + git_source("mp", upstream, f'ref = "{old}"\n')
+    )
+    run = git.run
+
+    def unreachable(*args: str, **kwargs: Any) -> bytes:
+        if "--stdin" in args:
+            raise SkillGraftError("source 'mp': `git fetch` failed: unreachable")
+        return run(*args, **kwargs)
+
+    monkeypatch.setattr(git, "run", unreachable)
+
+    code, out, _ = update(capsys)
+
+    assert code == 0 and "no previous hull to compare" in out
+    assert "`git fetch` failed: unreachable" in out
 
 
 def test_old_ref_not_cached(upstream: Upstream, capsys: Capsys) -> None:

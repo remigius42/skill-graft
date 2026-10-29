@@ -8,7 +8,7 @@ from pathlib import Path
 from typing import Any
 
 import pytest
-from conftest import Upstream, protocol_v0, seed
+from conftest import Upstream, no_lazy_fetch, protocol_v0, seed
 
 from skill_graft.infra import cache, git, paths
 from skill_graft.infra.errors import SkillGraftError
@@ -226,6 +226,27 @@ def test_ref_gone_upstream(tmp_path: Path) -> None:
         cache.Cache.default().checkout("mp", upstream.url, missing)
 
     assert "'mp'" in str(error.value) and missing in str(error.value)
+
+
+@no_lazy_fetch
+def test_ref_gone_upstream_served_by_name(tmp_path: Path) -> None:
+    upstream = Upstream(tmp_path / "up")
+    upstream.git("config", "uploadpack.allowAnySHA1InWant", "true")
+    sha = upstream.commit({"tdd/SKILL.md": "# tdd\n"})
+    tree = upstream.git("rev-parse", f"{sha}^{{tree}}")
+    orphan = upstream.git("commit-tree", tree, "-m", "on no branch")
+    git_cache = cache.Cache.default()
+
+    with pytest.raises(SkillGraftError) as error:
+        git_cache.checkout("mp", upstream.url, orphan)
+
+    assert "'mp'" in str(error.value) and orphan in str(error.value)
+    lookup = subprocess.run(
+        ["git", "--git-dir", str(git_cache.repository(upstream.url))]
+        + ["cat-file", "-e", orphan],
+        env=os.environ | {"GIT_NO_LAZY_FETCH": "1"},
+    )
+    assert lookup.returncode != 0
 
 
 def test_interrupted_checkout_is_redone(tmp_path: Path) -> None:

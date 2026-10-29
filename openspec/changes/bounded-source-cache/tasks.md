@@ -69,7 +69,7 @@ last touched those lines.
   error is the fetch's, naming the alias and URL, with no `delete`. The message itself: a blob fetch that brings nothing
   (the `fetch --stdin` call dropped by recording `git.run`), the error names the alias and the blob, and holds no
   `delete`. Verify red, then green
-- [ ] 3.5 `tests/commands/test_update.py`: scenario **Old ref cached, its files not** (a fresh cache and a lock already
+- [x] 3.5 `tests/commands/test_update.py`: scenario **Old ref cached, its files not** (a fresh cache and a lock already
   pointing at A, then `update`: the diff shows A → tip), **Old ref's files unreachable** (A's commit cached, its files
   not, the tip exported, the upstream removed: `no previous hull to compare` naming the fetch, exit 0), and **Old ref
   not cached** still fetching nothing with a blobless repository. `tests/infra/test_cache.py`: scenario **Ref gone
