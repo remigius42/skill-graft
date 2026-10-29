@@ -613,7 +613,7 @@ def test_interrupted(
     into = empty_folder(tmp_path)
     copy = vendor.vendor
 
-    def copy_then_interrupt(hull: Hull, skills: Path | None = None) -> None:
+    def copy_then_interrupt(hull: Hull, skills: Path) -> None:
         copy(hull, skills)
         raise KeyboardInterrupt
 
@@ -632,7 +632,7 @@ def test_foreign_file_kept(
     into = empty_folder(tmp_path)
     copy = vendor.vendor
 
-    def another_process_writes_first(hull: Hull, skills: Path | None = None) -> None:
+    def another_process_writes_first(hull: Hull, skills: Path) -> None:
         (into / ".apm").mkdir()
         (into / ".apm" / "x").write_text("theirs\n")
         copy(hull, skills)

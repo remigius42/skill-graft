@@ -36,7 +36,7 @@ Apply with the `mp-tdd` skill: each task red-green-refactor, one commit. Red is 
   their default; `resolving` and `update` pass `scope.lock_file`; `tests/pipeline/test_lock.py` passes a `Scope`,
   plus a project-scope `render` giving a source path relative to the package; patches of `lock.write` and
   `lock.render` take the new signatures; verify red, then green
-- [ ] 3.4 `vendor.vendor(hull, skills)` loses its default; `build` passes `scope.skills` or `--into`'s folder;
+- [x] 3.4 `vendor.vendor(hull, skills)` loses its default; `build` passes `scope.skills` or `--into`'s folder;
   patches of `vendor.vendor` updated; verify `pytest` green and mypy refuses a call without `skills`
 
 ## 4. One Cache per command

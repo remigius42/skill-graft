@@ -3,21 +3,20 @@
 import shutil
 from pathlib import Path
 
-from skill_graft.infra import files, paths
+from skill_graft.infra import files
 from skill_graft.infra.errors import SkillGraftError
 from skill_graft.pipeline import rename
 from skill_graft.pipeline.hull import Hull
 
 
-def vendor(hull: Hull, skills: Path | None = None) -> None:
-    """Replaces `skills` (default: the package's `.apm/skills/`) with one copy per
+def vendor(hull: Hull, skills: Path) -> None:
+    """Replaces `skills`, the package's `.apm/skills/` or another, with one copy per
     hull skill, swapped in when complete.
 
     Each copy is named by its deployed name and holds the rewritten bytes. The
     hull is resolved and checked before, so a failure writes nothing beyond
     undoing a run killed mid-swap.
     """
-    skills = paths.skills() if skills is None else skills
     new = skills.with_name("skills.new")
     old = skills.with_name("skills.old")
     rewrites = rename.rewrites(hull)  # may fail: before anything is written

@@ -254,7 +254,7 @@ def test_lock_hashes_what_was_vendored(
     configure(["own/tdd"], own="~/own")
     copy = vendor.vendor
 
-    def copy_then_edit(hull: Hull, skills: Path | None = None) -> None:
+    def copy_then_edit(hull: Hull, skills: Path) -> None:
         copy(hull, skills)
         (tdd / "SKILL.md").write_text("edited during the build\n")
 
