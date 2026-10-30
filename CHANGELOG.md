@@ -7,7 +7,18 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 
 ## [Unreleased]
 
+### Changed
+
+- In a hardened `/graft-check`, a reader's reply reaches the main agent only as a report filter shipped with the skill
+  admits it: a report in the report shape, at most 100 findings and 200 uses, each value one line of printable ASCII of
+  at most 200 characters, a character outside it shown as `?`. Any other reply leaves its **Skill** with no report,
+  `not in the report shape`, and none of it is shown
+- A reader that fails shows one line of its error, in printable ASCII, at most 200 characters, as a failed patcher does
+
 ### Fixed
+
+- The error line of a failed patcher no longer runs into the first line of its output when its error output ends without
+  a line break
 
 - Finding a skill's references no longer slows to minutes on a Markdown file with a long line holding many code spans
   each followed by `/`, such as `` `x`/a `` repeated: a long line takes no longer than the same text split into many
