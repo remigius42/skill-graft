@@ -24,7 +24,7 @@ Apply with the `mp-tdd` skill: each task red-green-refactor, one commit. `pre-co
   "Skill at the root" and "Hidden folder". `test_hash_inside_quotes_is_not_a_comment` asserts the escaped name;
   `test_folder_name_holding_a_line_separator` in `tests/commands/test_update.py` goes, its folder holding U+2028 no
   longer read; `update`'s quoting stays
-- [ ] 2.2 Add one sentence to `docs/adr/0007-upstream-text-is-untrusted.md`: every folder below a **Source**'s root on a
+- [x] 2.2 Add one sentence to `docs/adr/0007-upstream-text-is-untrusted.md`: every folder below a **Source**'s root on a
   **Skill**'s path, and so every segment of the lock's `upstream`, uses `[A-Za-z0-9._-]` only. Verify it reads correctly
   against the spec delta
 
