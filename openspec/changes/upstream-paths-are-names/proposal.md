@@ -45,5 +45,7 @@ None.
   error naming it.
 - `skills/graft-check/SKILL.md`: step 2 checks the lock's lines before reading it.
 - `docs/adr/0007-upstream-text-is-untrusted.md`: one sentence.
-- Tests: `tests/pipeline/test_discovery.py`, `tests/pipeline/test_config.py`, `tests/cli/test_check.py`.
+- Tests: `tests/pipeline/test_discovery.py`, `tests/pipeline/test_hull.py`, `tests/cli/test_subdirectory.py`,
+  `tests/cli/test_check.py`; `tests/commands/test_explain.py` and `tests/commands/test_update.py` each lose a test whose
+  folder names can no longer be read.
 - `CHANGELOG.md` at archive: `### Changed` for unusable **Skills** under such folders and the stricter `subdirectory`.

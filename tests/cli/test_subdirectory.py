@@ -45,7 +45,7 @@ def test_subdirectory_leaving_the_repository(capsys: Capsys, value: str) -> None
     err = refused(capsys, f'"{value}"')
 
     assert "'sources.cp.subdirectory'" in err
-    assert "no empty, '.', '..' or '.git' part" in err
+    assert "its parts of A-Z a-z 0-9 . _ -, not only dots, no '.git' part" in err
 
 
 @pytest.mark.parametrize("value", ['"a\\u0000b"', '"a\\nb"'])
@@ -53,7 +53,26 @@ def test_control_character(capsys: Capsys, value: str) -> None:
     err = refused(capsys, value)
 
     assert "'sources.cp.subdirectory'" in err and "Traceback" not in err
-    assert "no control character" in err
+    assert "A-Z a-z 0-9 . _ -" in err
+
+
+@pytest.mark.parametrize("value", ['"my skills"', '"a/$(x)"', '"\\u00e9"'])
+def test_character_outside_the_name_characters(capsys: Capsys, value: str) -> None:
+    err = refused(capsys, value)
+
+    assert "'sources.cp.subdirectory'" in err
+    assert "A-Z a-z 0-9 . _ -" in err
+
+
+def test_hidden_folder(tmp_path: Path, capsys: Capsys) -> None:
+    upstream = Upstream(tmp_path / "up")
+    sha = upstream.commit({".claude/skills/tdd/SKILL.md": "# tdd\n"})
+    write_config('entries = ["cp/tdd"]\n' + source(upstream, sha, ".claude/skills"))
+
+    code, err = build(capsys)
+
+    assert code == 0, err
+    assert vendored() == {"tdd"}
 
 
 def test_subdirectory_into_a_package(capsys: Capsys) -> None:

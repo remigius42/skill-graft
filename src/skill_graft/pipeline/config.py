@@ -15,6 +15,9 @@ from skill_graft.infra.errors import SkillGraftError
 
 # A source alias or skill name: one path segment, so `<alias>/<name>` splits cleanly.
 NAME = re.compile(r"[A-Za-z0-9][A-Za-z0-9._-]*")
+# A folder on the way to a skill: the name characters, a leading dot (`.claude`)
+# allowed, not only dots, so never `.` or `..`.
+SEGMENT = re.compile(r"\.*[A-Za-z0-9_-][A-Za-z0-9._-]*")
 
 
 class SkillId(NamedTuple):
@@ -242,24 +245,20 @@ def _git_source(alias: str, table: dict[str, object]) -> GitSource:
     if subdirectory is not None and not _relative_folder(subdirectory):
         raise SkillGraftError(
             f"'sources.{alias}.subdirectory' = {subdirectory!r}: expected a folder "
-            "relative to the repository root, like 'skills': no empty, '.', '..' or "
-            "'.git' part, no control character, not into a package (.apm/skill-graft)"
+            "relative to the repository root, like 'skills': its parts of "
+            "A-Z a-z 0-9 . _ -, not only dots, no '.git' part, not into a package "
+            "(.apm/skill-graft)"
         )
     return GitSource(url, branch, ref, subdirectory)
 
 
 def _relative_folder(path: str) -> bool:
-    """`path` as `a/b`: no empty, `.`, `..` or `.git` segment (the export never
-    writes `.git`), no control character, and not into a package, whose vendored
-    copies a source never offers."""
-    return (
-        all(
-            part not in ("", ".", "..") and part.lower() != ".git"
-            for part in path.split("/")
-        )
-        and not any(ord(c) < 32 or c == "\x7f" for c in path)
-        and not paths.in_package(Path(path))
-    )
+    """`path` as `a/b`: each segment a `SEGMENT` but `.git` (the export never
+    writes it), and not into a package, whose vendored copies a source never
+    offers."""
+    return all(
+        SEGMENT.fullmatch(part) and part.lower() != ".git" for part in path.split("/")
+    ) and not paths.in_package(Path(path))
 
 
 def _source_folder(scope: paths.Scope, alias: str, raw: str, base: Path) -> Path:

@@ -4,11 +4,13 @@ Apply with the `mp-tdd` skill: each task red-green-refactor, one commit. `pre-co
 
 ## 1. Subdirectory segments
 
-- [ ] 1.1 `SEGMENT` in `config.py`, and `_relative_folder` requiring each segment to match it, its error naming the
-  rule, as design.md says. Tests in `tests/pipeline/test_config.py`, one per scenario of the config delta's "Git source
-  subdirectory": the new "Hidden folder" loads, "Character outside the name characters" fails naming
-  `sources.cp.subdirectory` and `A-Z a-z 0-9 . _ -`; verify they fail first, and the existing subdirectory tests pass
-  unchanged
+- [x] 1.1 `SEGMENT` in `config.py`, and `_relative_folder` requiring each segment to match it, its error naming the
+  rule, as design.md says. Tests in `tests/cli/test_subdirectory.py`, beside the existing subdirectory tests, one per
+  scenario of the config delta's "Git source subdirectory": the new "Hidden folder" builds, "Character outside the name
+  characters" fails naming `sources.cp.subdirectory` and `A-Z a-z 0-9 . _ -`; verify they fail first. The existing
+  subdirectory tests pass, their asserts on the old error's wording moved to the new one's.
+  `test_mermaid_folder_names_encoded` in `tests/commands/test_explain.py` goes: its `c#/my skills/a?b` can no longer be
+  read; `explain`'s percent-encoding stays
 
 ## 2. Skill folders use name characters
 

@@ -238,26 +238,6 @@ def test_mermaid_gitlab_source_without_subdirectory(
     assert f"    n0[\"<a href='{tree}/tdd' target='_blank'" in out
 
 
-def test_mermaid_folder_names_encoded(
-    home: Path, tmp_path: Path, capsys: Capsys
-) -> None:
-    upstream = Upstream(tmp_path / "upstream")
-    sha = upstream.commit({"c#/my skills/a?b/SKILL.md": "---\nname: tdd\n---\n"})
-    url = "https://github.com/o/mp"
-    seed(upstream, url)
-    write_config(
-        f'entries = ["mp/tdd"]\n[sources.mp]\ngit = "{url}"\nref = "{sha}"\n'
-        'subdirectory = "c#/my skills"\n'
-    )
-
-    assert main(["tree", "--format", "mermaid"]) == 0
-
-    out = capsys.readouterr().out
-    tree = f"https://github.com/o/mp/tree/{sha}"
-    assert f"<a href='{tree}/c%23/my%20skills' target=" in out
-    assert f"<a href='{tree}/c%23/my%20skills/a%3Fb' target=" in out
-
-
 def test_mermaid_skill_folder_through_a_symbolic_link(
     home: Path, tmp_path: Path, capsys: Capsys
 ) -> None:
