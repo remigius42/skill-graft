@@ -58,6 +58,9 @@ upstream"); as a noun it is never the **Source** itself. _Avoid_: Original, pris
 **Deployed name**: The name a **Skill** carries once installed: its **Rename**, else its **Source**'s **Prefix** before
 its name, else its name. Unique across the **Hull**. _Avoid_: Target name, alias
 
+**Vendored copy**: A **Skill** as its **Package** holds it, **Patches** and **Renames** applied: the text the lock
+records a hash of and APM deploys. _Avoid_: Build output, deployed copy, vendor folder
+
 **Reserved name**: A name a **Deployed name** must not take because a harness already uses it, such as `code-review`.
 Comes from the list skill-graft ships, plus the user's own. _Avoid_: Built-in, blocklist
 
