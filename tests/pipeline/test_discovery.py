@@ -2,12 +2,21 @@
 `discovery` itself where a build cannot show it."""
 
 import os
+import tomllib
 from collections.abc import Iterator
 from pathlib import Path
 from typing import TypeAlias
 
 import pytest
-from conftest import build, configure, deadline, skill, vendored
+from conftest import (
+    Upstream,
+    build,
+    configure,
+    deadline,
+    skill,
+    vendored,
+    write_config,
+)
 
 from skill_graft.infra import paths
 from skill_graft.infra.errors import SkillGraftError
@@ -208,7 +217,7 @@ def test_hash_inside_quotes_is_not_a_comment(home: Path, capsys: Capsys) -> None
 
     code, err = build(capsys)
 
-    assert code == 1 and "'a #b'" in err
+    assert code == 1 and r"name a\040\043b is" in err
 
 
 @pytest.mark.parametrize("entry", ["own/foo", "own/x"])
@@ -480,3 +489,171 @@ def test_confined_skill_md_linked_inside(home: Path, through_link: bool) -> None
     skills = discovery.index(paths.Scope(home), home / "src", confined=True)
 
     assert skills.folders == {"tdd": [tdd]} and skills.unreadable == {}
+
+
+def test_bad_folder_elsewhere_does_not_block(home: Path, capsys: Capsys) -> None:
+    # Scenario: Elsewhere in the source.
+    skill(home / "own" / "my skills" / "x")
+    skill(home / "own" / "tdd")
+    configure(["own/tdd"], own="~/own")
+
+    assert build(capsys) == (0, "")
+    assert vendored() == {"tdd"}
+
+
+@pytest.mark.parametrize(
+    ("folder", "escaped"),
+    [
+        ("my skills/tdd", r"my\040skills/tdd"),
+        ("ä/tdd", r"\303\244/tdd"),
+        ("tdd\nupstream: /etc", r"tdd\012upstream\072\040/etc"),
+    ],
+)
+def test_unusable_skill_path(
+    home: Path, capsys: Capsys, folder: str, escaped: str
+) -> None:
+    # Scenarios: Space in a folder, Non-ASCII folder, Line break in a folder.
+    skill(home / "own" / folder, "---\nname: tdd\n---\n")
+    configure(["own/tdd"], own="~/own")
+
+    code, err = build(capsys)
+
+    assert code == 1
+    assert err == (
+        f"skill-graft: {home / 'own'}: skill folder {escaped} uses characters "
+        "outside A-Z a-z 0-9 . _ -\n"
+    )
+    assert vendored() == set()
+
+
+def test_shell_syntax_in_a_folder(home: Path, tmp_path: Path, capsys: Capsys) -> None:
+    upstream = Upstream(tmp_path / "up")
+    sha = upstream.commit({"skills/$(touch x)/tdd/SKILL.md": "# tdd\n"})
+    write_config(
+        f'entries = ["mp/tdd"]\n[sources.mp]\ngit = "{upstream.url}"\nref = "{sha}"\n'
+    )
+
+    code, err = build(capsys)
+
+    assert code == 1
+    assert r"skills/\044\050touch\040x\051/tdd uses characters" in err
+    assert "$(" not in err
+    assert vendored() == set()
+    assert not (home / "x").exists() and not (Path.cwd() / "x").exists()
+
+
+def test_bad_path_and_a_symlink_out_of_the_skill(
+    home: Path, tmp_path: Path, capsys: Capsys
+) -> None:
+    (home / "local").mkdir()
+    (home / "local" / "notes.md").write_text("---\nname: tdd\n---\n")
+    upstream = Upstream(tmp_path / "up")
+    folder = upstream.path / "skills" / "$(x)" / "tdd"
+    folder.mkdir(parents=True)
+    (folder / "SKILL.md").symlink_to(home / "local" / "notes.md")
+    sha = upstream.commit({})
+    write_config(
+        f'entries = ["mp/tdd"]\n[sources.mp]\ngit = "{upstream.url}"\nref = "{sha}"\n'
+    )
+
+    code, err = build(capsys)
+
+    assert code == 1
+    assert r"skills/\044\050x\051/tdd uses characters" in err
+    assert "$(" not in err
+
+
+def test_unusable_skill_called_by_a_reference(home: Path, capsys: Capsys) -> None:
+    skill(home / "own" / "a", "Run /tdd.\n")
+    skill(home / "own" / "my skills" / "tdd")
+    skill(home / "mp" / "tdd")
+    configure(["own/a"], own="~/own", mp="~/mp")
+
+    code, err = build(capsys)
+
+    assert code == 1
+    assert r"my\040skills/tdd uses characters" in err
+    assert vendored() == set()
+
+
+def test_unusable_skill_in_a_skill_tool_sentence(home: Path, capsys: Capsys) -> None:
+    skill(home / "own" / "a", 'Call the Skill tool with "tdd".\n')
+    skill(home / "own" / "my skills" / "tdd")
+    configure(["own/a"], own="~/own")
+
+    assert build(capsys) == (0, "")
+    lock = home / ".apm" / "skill-graft" / "skill-graft.lock"
+    assert tomllib.loads(lock.read_text()).get("edges", []) == []
+    assert vendored() == {"a"}
+
+
+def test_unusable_skill_path_and_a_namesake(home: Path, capsys: Capsys) -> None:
+    # Scenario: Two skills of one name.
+    skill(home / "own" / "tdd")
+    skill(home / "own" / "my skills" / "tdd")
+    configure(["own/tdd"], own="~/own")
+
+    code, err = build(capsys)
+
+    assert code == 1
+    assert "ambiguous" in err and str(home / "own" / "tdd") in err
+    assert r"my\040skills/tdd uses characters" in err
+
+
+def test_bad_path_and_a_name_that_is_no_segment_does_not_block_a_namesake(
+    home: Path, capsys: Capsys
+) -> None:
+    skill(home / "own" / "good", "---\nname: tdd\n---\n")
+    skill(home / "own" / "my skills" / "tdd", "---\nname: a b\n---\n")
+    configure(["own/tdd"], own="~/own")
+
+    assert build(capsys) == (0, "")
+    assert vendored() == {"tdd"}
+
+
+def test_bad_path_and_a_name_that_is_no_segment_explains_a_miss(
+    home: Path, capsys: Capsys
+) -> None:
+    skill(home / "own" / "my skills" / "tdd", "---\nname: a b\n---\n")
+    configure(["own/tdd"], own="~/own")
+
+    code, err = build(capsys)
+
+    assert code == 1
+    assert r"my\040skills/tdd uses characters" in err
+    assert "not one path segment" not in err
+
+
+def test_shell_syntax_in_a_name(home: Path, capsys: Capsys) -> None:
+    skill(home / "own" / "x", "---\nname: $(curl x)/a\n---\n")
+    configure(["own/x"], own="~/own")
+
+    code, err = build(capsys)
+
+    assert code == 1
+    assert err == (
+        f"skill-graft: {home / 'own'}: x/SKILL.md: name "
+        r"\044\050curl\040x\051/a is not one path segment" + "\n"
+    )
+
+
+def test_bad_path_and_a_skill_md_that_is_a_device(
+    home: Path, capsys: Capsys, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    folder = home / "own" / "my skills" / "tdd"
+    folder.mkdir(parents=True)
+    (folder / "SKILL.md").symlink_to("/dev/zero")
+    configure(["own/tdd"], own="~/own")
+    read_name = discovery.read_name
+
+    def never_on_it(found: Path) -> str:
+        assert found != folder, "read_name opened the device"
+        return read_name(found)
+
+    monkeypatch.setattr(discovery, "read_name", never_on_it)
+
+    with deadline():
+        code, err = build(capsys)
+
+    assert code == 1
+    assert r"my\040skills/tdd uses characters" in err

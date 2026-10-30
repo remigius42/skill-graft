@@ -1559,29 +1559,6 @@ def test_source_line(home: Path, upstream: Upstream, capsys: Capsys) -> None:
     ]
 
 
-@pytest.mark.parametrize(
-    ("folder", "quoted"),
-    [("a\u2028b", '"a\\342\\200\\250b/tdd"'), ("a\u202eb", '"a\\342\\200\\256b/tdd"')],
-)
-def test_folder_name_holding_a_line_separator(
-    home: Path, upstream: Upstream, capsys: Capsys, folder: str, quoted: str
-) -> None:
-    old = upstream.commit({f"{folder}/tdd/SKILL.md": "1\n"})
-    write_config(
-        'entries = ["mp/tdd"]\n' + git_source("mp", upstream, f'ref = "{old}"\n')
-    )
-    assert main(["build", "--no-install"]) == 0
-    new = upstream.commit({f"{folder}/tdd/SKILL.md": "2\n"})
-
-    assert update(capsys, "--dry-run", "--diff", "review.diff")[0] == 0
-
-    text = (home / "review.diff").read_text()
-    assert source_lines(text) == [
-        f"# source mp: {old} -> {new}; upstream folder {quoted}"
-    ]
-    assert text.isascii()
-
-
 def test_path_source_in_the_diff(
     home: Path, upstream: Upstream, capsys: Capsys
 ) -> None:

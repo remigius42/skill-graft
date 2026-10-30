@@ -57,6 +57,12 @@ first, so a `SKILL.md` they refuse is never opened.
   **Entry**
 - **THEN** the command exits non-zero, its error holding `skills/\044\050x\051/tdd` and no `$(`
 
+#### Scenario: Bad path and a SKILL.md that is a device
+
+- **WHEN** path source `own` holds `my skills/tdd/SKILL.md` as a symlink to `/dev/zero`, and `own/tdd` is the only
+  **Entry**
+- **THEN** the command exits non-zero, and `/dev/zero` is never opened
+
 #### Scenario: Bind target
 
 - **WHEN** `own/a` calls `/x`, `[bind]` has `"own/x" = "own/tdd"`, and `own`'s only `tdd` is at `my skills/tdd/`
@@ -77,6 +83,13 @@ first, so a `SKILL.md` they refuse is never opened.
 - **WHEN** `own` holds `tdd/SKILL.md` and `my skills/tdd/SKILL.md`, and `own/tdd` is an **Entry**
 - **THEN** the command exits non-zero naming both, as for an unreadable name
 
+#### Scenario: Bad path and a name that is no path segment
+
+- **WHEN** `own` holds `good/SKILL.md` with `name: tdd` and `my skills/tdd/SKILL.md` with `name: a b`, and `own/tdd` is
+  an **Entry**
+- **THEN** `build` vendors `own/tdd` from `good/`; with only the second, the command exits non-zero naming
+  `my\040skills/tdd`, as for an invalid name
+
 ### Requirement: Invalid names are escaped
 
 The error for a **Skill** whose name is no path segment SHALL write its name and its path below the walked folder with
@@ -86,9 +99,3 @@ each byte outside `[A-Za-z0-9._/-]` escaped as octal, as for an unusable path.
 
 - **WHEN** `own`'s `x/SKILL.md` holds `name: $(curl x)/a`, and `own/x` is an **Entry**
 - **THEN** the command exits non-zero, its error holding `\044\050curl\040x\051/a` and no `$(`
-
-#### Scenario: Bad path and a SKILL.md that is a device
-
-- **WHEN** path source `own` holds `my skills/tdd/SKILL.md` as a symlink to `/dev/zero`, and `own/tdd` is the only
-  **Entry**
-- **THEN** the command exits non-zero, and `/dev/zero` is never opened

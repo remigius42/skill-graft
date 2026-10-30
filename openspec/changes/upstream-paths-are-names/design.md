@@ -50,15 +50,18 @@ is what the lock records. A **Skill** at the walked folder has no parts (`Path("
 `subdirectory`, the rest of the lock's `upstream`, is checked at load. Rejected: checking in `lock.render`, which would
 fail the whole build for one bad folder anywhere in the hull, and only once written.
 
-**A bad path files as `unreadable`, after `_check`.** Its name may well be the one asked: `own/tdd` at `my skills/tdd/`
-is named `tdd`. As `unreadable`, an **Entry** naming it gets the path error, a slash or `Skill(<name>)` **Reference** to
-it in its own **Source** errors rather than resolving in another one, a Skill tool sentence stays a word, a clean
-namesake makes it ambiguous, and it blocks nothing else. The same holds for a `[bind]` target and `add`'s check, which
-reach `find` too. The order per folder: `_check` (regular file, confined symlink), then the path. A good path goes on as
-today. A bad path files the path error and no other: when `_check` passed, `read_name` only picks the key, the name when
-it reads and matches `NAME`, else the folder name; when `_check` failed, `read_name` is never called and the key is the
-folder name. So no error naming a bad path carries it raw. Rejected: `invalid`, which `_has` skips, so `/tdd` would
-silently resolve to another **Source**'s `tdd`.
+**A bad path files as `unreadable`, unless its name is known not to be the one asked.** Its name may well be the one
+asked: `own/tdd` at `my skills/tdd/` is named `tdd`. As `unreadable`, an **Entry** naming it gets the path error, a
+slash or `Skill(<name>)` **Reference** to it in its own **Source** errors rather than resolving in another one, a Skill
+tool sentence stays a word, a clean namesake makes it ambiguous, and it blocks nothing else. The same holds for a
+`[bind]` target and `add`'s check, which reach `find` too. Per folder, the path is checked first. A good path goes on as
+today. A bad path files the path error and no other, and `_name` picks where: it runs `_check` (regular file, confined
+symlink), and only when that passes `read_name`. A name that reads and matches `NAME` keys it in `unreadable`; a name
+that reads but does not match is known not to be the one asked, so the error goes to `invalid` under the folder name, as
+for a good path, and a clean namesake still resolves; a name that cannot be read, or a `_check` that fails, keys it in
+`unreadable` under the folder name. So no error naming a bad path carries it raw, and a `SKILL.md` `_check` refuses is
+never opened. Rejected: `invalid` for every bad path, which `_has` skips, so `/tdd` would silently resolve to another
+**Source**'s `tdd`.
 
 **The error escapes every byte outside `[A-Za-z0-9._/-]` as octal.**
 `<walked folder>: skill folder <escaped path> uses characters outside A-Z a-z 0-9 . _ -`, the path's `os.fsencode` bytes
@@ -115,4 +118,6 @@ trailing `/.`). Step 3 says so.
 - \[`awk` versions differ\] → POSIX `awk` with dynamic regexes and `LC_ALL=C` only; macOS's `awk` runs in CI.
 - \[The walk visits each resolved folder once, in sorted order, so a real folder with a bad name that sorts first (a
   space or `$` sorts before letters) hides a well-named symlink to the same **Skill**\] → accepted: rare, and the error
-  names the folder; a path **Source** renames it, a git one needs a fork.
+  names the folder; a path **Source** renames it, a git one needs a fork. The same holds the other way: a symlink with a
+  bad name that sorts first (`my tdd -> skills/tdd`) hides the well-named real folder, and with no `name:` the **Skill**
+  takes the link's name, so an **Entry** gets "no skill found"; a path **Source** renames or removes the link.

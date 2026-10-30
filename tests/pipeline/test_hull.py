@@ -285,6 +285,18 @@ def test_bind_to_a_missing_skill(home: Path, capsys: Capsys) -> None:
     assert code == 1 and "mp/grilling" in err and "own/nope" in err
 
 
+def test_bind_to_an_unusable_skill_path(home: Path, capsys: Capsys) -> None:
+    skill(home / "own" / "a", "Run /x.\n")
+    skill(home / "own" / "my skills" / "tdd")
+    configure(["own/a"], own="~/own")
+    with_binds('"own/x" = "own/tdd"')
+
+    code, err = build(capsys)
+
+    assert code == 1
+    assert r"my\040skills/tdd uses characters" in err
+
+
 def test_unused_bind_to_a_missing_skill(home: Path, capsys: Capsys) -> None:
     two_sources(home, "nothing\n")
     with_binds('"mp/grill" = "own/nope"')

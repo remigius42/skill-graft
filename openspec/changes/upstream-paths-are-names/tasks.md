@@ -14,13 +14,16 @@ Apply with the `mp-tdd` skill: each task red-green-refactor, one commit. `pre-co
 
 ## 2. Skill folders use name characters
 
-- [ ] 2.1 `discovery.index` checks each **Skill**'s path below the walked folder against `SEGMENT`, after `_check`, and
+- [x] 2.1 `discovery.index` checks each **Skill**'s path below the walked folder against `SEGMENT`, after `_check`, and
   files a bad one as `unreadable`, keyed and its path escaped over `os.fsencode` bytes as design.md says; the `invalid`
   error escapes its name and path the same way. Tests in `tests/pipeline/test_discovery.py`, one per scenario of the
   three skill-discovery delta requirements, written first and failing; "Shell syntax in a folder" builds a git
   **Source** with the `Upstream` helper and asserts no file `x` appears; "Bad path and a SKILL.md that is a device"
   patches `read_name` to fail if called on it; "Bind target" goes in `tests/pipeline/test_hull.py` if the bind tests
-  live there. `test_skill_at_the_source_root` passes unchanged
+  live there. `test_skill_at_the_source_root` passes unchanged, and with `test_hidden_folders_are_searched` covers
+  "Skill at the root" and "Hidden folder". `test_hash_inside_quotes_is_not_a_comment` asserts the escaped name;
+  `test_folder_name_holding_a_line_separator` in `tests/commands/test_update.py` goes, its folder holding U+2028 no
+  longer read; `update`'s quoting stays
 - [ ] 2.2 Add one sentence to `docs/adr/0007-upstream-text-is-untrusted.md`: every folder below a **Source**'s root on a
   **Skill**'s path, and so every segment of the lock's `upstream`, uses `[A-Za-z0-9._-]` only. Verify it reads correctly
   against the spec delta

@@ -3,16 +3,19 @@
 import os
 import re
 import stat
+import string
 from dataclasses import dataclass
 from pathlib import Path
 
 from skill_graft.infra import paths
 from skill_graft.infra.errors import SkillGraftError
 from skill_graft.pipeline import references
-from skill_graft.pipeline.config import NAME, SkillId
+from skill_graft.pipeline.config import NAME, SEGMENT, SkillId
 
 # A comment: `#` after whitespace, to the end of the line.
 COMMENT = re.compile(r"\s+#.*$")
+# The bytes an error shows as they are; it writes any other as `\ooo`.
+SAFE = frozenset((string.ascii_letters + string.digits + "._/-").encode())
 
 
 def _skill_folders(
@@ -101,7 +104,9 @@ class Index:
 
     A skill whose name cannot be read (`unreadable`), or is read but is not one
     path segment (`invalid`), is filed under its folder name: an entry naming that
-    folder gets the error, other entries never see it.
+    folder gets the error, other entries never see it. A skill at a path outside
+    the name characters files the path error alike: `unreadable` under its name
+    when that reads as one, `invalid` when it reads as anything else.
     """
 
     folders: dict[str, list[Path]]
@@ -129,9 +134,42 @@ def _check(folder: Path, confined: bool) -> None:
         raise SkillGraftError(f"{skill_md}: not a regular file")
 
 
+def _escaped(text: str) -> str:
+    """`text`'s file-system bytes, each outside `A-Za-z0-9._/-` written `\\ooo`,
+    so no line break, space or shell syntax an author wrote survives."""
+    return "".join(
+        chr(byte) if byte in SAFE else f"\\{byte:03o}" for byte in os.fsencode(text)
+    )
+
+
+def _name(folder: Path, confined: bool) -> str | None:
+    """A skill's name, its `SKILL.md` passing `_check` before it is read, else
+    None."""
+    try:
+        _check(folder, confined)
+        return read_name(folder)
+    except SkillGraftError:
+        return None
+
+
 def index(scope: paths.Scope, source: Path, confined: bool = False) -> Index:
     skills = Index({}, {}, {})
     for folder in _skill_folders(scope, source, confined):
+        below = folder.relative_to(source)
+        if not all(SEGMENT.fullmatch(part) for part in below.parts):
+            error = SkillGraftError(
+                f"{source}: skill folder {_escaped(str(below))} uses characters "
+                "outside A-Z a-z 0-9 . _ -"
+            )
+            name = _name(folder, confined)
+            if name is None:
+                skills.unreadable.setdefault(folder.name, []).append(error)
+            elif NAME.fullmatch(name):
+                # Unreadable, not invalid: its name may well be the one asked.
+                skills.unreadable.setdefault(name, []).append(error)
+            else:
+                skills.invalid.setdefault(folder.name, []).append(error)
+            continue
         try:
             _check(folder, confined)
             name = read_name(folder)
@@ -143,7 +181,8 @@ def index(scope: paths.Scope, source: Path, confined: bool = False) -> Index:
         else:
             skills.invalid.setdefault(folder.name, []).append(
                 SkillGraftError(
-                    f"{folder / 'SKILL.md'}: name {name!r} is not one path segment"
+                    f"{source}: {_escaped(str(below / 'SKILL.md'))}: name "
+                    f"{_escaped(name)} is not one path segment"
                 )
             )
     return skills
