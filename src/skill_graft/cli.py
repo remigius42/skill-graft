@@ -7,9 +7,12 @@ import sys
 import textwrap
 from importlib import metadata
 from pathlib import Path
-from typing import Any, NoReturn, TypeGuard
+from typing import TYPE_CHECKING, Any, NoReturn, TypeGuard
 
 from skill_graft.infra.errors import SkillGraftError, flush_stdout, warnings_last
+
+if TYPE_CHECKING:
+    from _typeshed import SupportsWrite
 
 WINDOWS = "native Windows is unsupported: run skill-graft in WSL"
 
@@ -40,6 +43,14 @@ class _Command(argparse.ArgumentParser):
     def __init__(self, *args: Any, **kwargs: Any) -> None:
         kwargs.setdefault("formatter_class", _Formatter)
         super().__init__(*args, **kwargs)
+
+    def print_help(self, file: "SupportsWrite[str] | None" = None) -> None:
+        """Writes the help itself: argparse ignores a failed write, which, with stdout
+        unbuffered, leaves no buffered help for `main`'s flush to fail on. Started
+        with stdout closed, writes to stderr, as argparse does."""
+        if file is None:
+            file = sys.stdout
+        (file or sys.stderr).write(self.format_help())
 
 
 class _Version(argparse.Action):
@@ -353,7 +364,7 @@ def main(argv: list[str] | None = None) -> int:
         if _fails_on_flush(exit.code not in (0, None)):
             raise SystemExit(1) from None
         raise
-    except OSError as error:  # a print outside any command, `--version`'s
+    except OSError as error:  # a print outside any command, `--version`'s or help's
         print(f"skill-graft: {error}", file=sys.stderr)
         _fails_on_flush(True)  # discards the rest, silently
         return 1

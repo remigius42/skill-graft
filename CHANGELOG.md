@@ -23,6 +23,9 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 - Finding a skill's references no longer slows to minutes on a Markdown file with a long line holding many code spans
   each followed by `/`, such as `` `x`/a `` repeated: a long line takes no longer than the same text split into many
 
+- With `PYTHONUNBUFFERED` set, `help`, `--help` and a command's `--help` into a pipe whose reader has closed it report
+  the broken pipe and exit 1, as without it, instead of exiting 0
+
 ## [0.3.0] - 2026-10-30
 
 ### Added

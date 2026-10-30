@@ -108,6 +108,7 @@ words:
   - pytest
   - pytestmark
   - PYTHONPATH
+  - PYTHONUNBUFFERED
   - RDONLY
   - realpath
   - reflog
@@ -137,6 +138,7 @@ words:
   - testpaths
   - tomlkit
   - tomllib
+  - typeshed
   - ufeff
   - ultraplan
   - ultrareview

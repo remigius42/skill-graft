@@ -97,6 +97,15 @@ def test_resolve_through_a_pipe(home: Path) -> None:
 BROKEN_PIPE = "skill-graft: [Errno 32] Broken pipe\n"
 
 
+@pytest.fixture(params=["buffered", "unbuffered"])
+def buffering(request: pytest.FixtureRequest, monkeypatch: pytest.MonkeyPatch) -> None:
+    """Python's stdout as by default, and as `PYTHONUNBUFFERED` leaves it: the same."""
+    if request.param == "unbuffered":
+        monkeypatch.setenv("PYTHONUNBUFFERED", "1")
+    else:
+        monkeypatch.delenv("PYTHONUNBUFFERED", raising=False)
+
+
 def into_closed_pipe(*args: str) -> tuple[int, str]:
     """`skill-graft args`'s exit code and stderr, its stdout a pipe whose reader has
     already closed it: the write fails every time, no race with a reader."""
@@ -115,6 +124,7 @@ def into_closed_pipe(*args: str) -> tuple[int, str]:
     return result.returncode, result.stderr
 
 
+@pytest.mark.usefixtures("buffering")
 def test_warnings_survive_a_closed_pipe(home: Path) -> None:
     calls_foo(home)
 
@@ -125,8 +135,13 @@ def test_warnings_survive_a_closed_pipe(home: Path) -> None:
     assert stderr.endswith(BROKEN_PIPE)
 
 
-def test_own_error_wins_over_a_closed_pipe(home: Path) -> None:
-    """`tree` prints the hull as walked before it fails on the hidden characters."""
+def test_own_error_wins_over_a_closed_pipe(
+    home: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """`tree` prints the hull as walked before it fails on the hidden characters.
+    Buffered only: unbuffered, the hull's first line fails on the pipe before `tree`
+    reaches the hidden characters, so the broken pipe is its error."""
+    monkeypatch.delenv("PYTHONUNBUFFERED", raising=False)
     skill(home / "src" / "tdd", "x\N{LEFT-TO-RIGHT ISOLATE}\n")
     write_config('entries = ["own/tdd"]\n[sources.own]\npath = "~/src"\n')
 
@@ -137,6 +152,7 @@ def test_own_error_wins_over_a_closed_pipe(home: Path) -> None:
     assert "Broken pipe" not in stderr
 
 
+@pytest.mark.usefixtures("buffering")
 def test_no_python_output_on_a_closed_pipe(home: Path) -> None:
     calls_foo(home)
 
@@ -163,6 +179,34 @@ def test_stdout_closed_from_the_start(home: Path) -> None:
 
 
 @pytest.mark.parametrize(
+    ("args", "stderr"),
+    [
+        (["help"], "usage: skill-graft "),
+        (["--version"], ""),
+        (["--help"], "usage: skill-graft "),
+        (["tree", "--help"], "usage: skill-graft tree "),
+    ],
+)
+def test_help_with_stdout_closed_from_the_start(
+    home: Path, args: list[str], stderr: str
+) -> None:
+    """Help goes to stderr, as argparse sends it; `--version` prints nowhere."""
+    result = subprocess.run(
+        [sys.executable, "-m", "skill_graft.cli", *args],
+        stderr=subprocess.PIPE,
+        text=True,
+        check=False,
+        preexec_fn=lambda: os.close(1),
+    )
+
+    assert result.returncode == 0
+    assert result.stderr.startswith(stderr)
+    assert "Traceback" not in result.stderr
+    assert bool(result.stderr) == bool(stderr)
+
+
+@pytest.mark.usefixtures("buffering")
+@pytest.mark.parametrize(
     "args", [["help"], ["--version"], ["--help"], ["tree", "--help"]]
 )
 def test_help_into_a_closed_pipe(home: Path, args: list[str]) -> None:
@@ -171,7 +215,9 @@ def test_help_into_a_closed_pipe(home: Path, args: list[str]) -> None:
     assert (code, stderr) == (1, BROKEN_PIPE)
 
 
-@pytest.mark.parametrize("args", [["help"], ["--version"]])
+@pytest.mark.parametrize(
+    "args", [["help"], ["--version"], ["--help"], ["tree", "--help"]]
+)
 def test_output_larger_than_the_buffer_into_a_closed_pipe(
     home: Path,
     discards: list[object],
@@ -179,8 +225,8 @@ def test_output_larger_than_the_buffer_into_a_closed_pipe(
     capsys: pytest.CaptureFixture[str],
     args: list[str],
 ) -> None:
-    """`help` prints through argparse, which ignores a failed write; `--version`
-    prints itself."""
+    """`help` prints through the parser, `--help` through it inside `parse_args`,
+    `--version` through its action."""
     stdout = closed_stdout(monkeypatch)
 
     code = main(args)
