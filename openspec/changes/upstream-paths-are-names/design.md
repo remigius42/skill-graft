@@ -80,10 +80,12 @@ LC_ALL=C awk '
   BEGIN { n = "[A-Za-z0-9][A-Za-z0-9._-]*"; id = "\"" n "/" n "\""; v = "none"
           s = "\\.*[A-Za-z0-9_-][A-Za-z0-9._-]*"; p = "\"[^\"\\\\]*\"" }
   /^\[/ { t = $0
-          if (t !~ /^\[\[(skills|edges|suggestions)\]\]$/ && t !~ "^\\[sources\\." n "\\]$") { bad++; t = "[[skills]]" }
+          if (t !~ /^\[\[(skills|edges|suggestions)\]\]$/ && t !~ "^\\[sources(\\.(" n "|\"" n "\"))?\\]$") {
+            bad++; t = "[[skills]]" }
           next }
   t == "" && /^version = [0-9]+$/ { v = $3; next }
-  /^$/ || t ~ /^\[sources\./ || t == "" && /^# Written by skill-graft; update reads its hashes\. Do not edit\.$/ { next }
+  /^$/ || t ~ /^\[sources\./ || t == "" && (/^# Written by skill-graft; update reads its hashes\. Do not edit\.$/ \
+    || /^(skills|edges|suggestions) = \[\]$/) { next }
   t != "" && ($0 ~ "^(id|from|to) = " id "$" || $0 ~ "^deployed = \"" n "\"$" \
     || $0 ~ "^upstream = \"(\\.|" s "(/" s ")*)\"$" || $0 ~ "^from = \\[" id "(, " id ")*\\]$" \
     || $0 ~ "^patches = \\[(" p "(, " p ")*)?\\]$" || /^(entry|bind) = (true|false)$/ \
@@ -92,16 +94,18 @@ LC_ALL=C awk '
   END { printf "version: %s, bad: %d\n", v, bad }' <lock>
 ```
 
-Every line of the lock must be blank, the header comment, `version`, a header of `[sources.<name>]` or one of the three
-tables, a line under `[sources.<name>]`, which holds the user's own config, or one of the forms above under the three
-tables. A header in any other form counts and keeps checking on, so a later bad value cannot hide behind it. `patches`
-lists the user's own config, but as plain strings only, so no second key can follow on its line. tomlkit writes each key
-on its own line, strings in basic quotes, so a value holding a quote, an escape or a line break fails its form. The
-skill reads the version first: one other than 1 takes the "Lock version" path, as today, since a newer lock may hold
-keys this command does not know; then a count above 0 ends the **Check**. `awk` exits 0 whatever it finds, so the
-skill's "a non-zero exit ends the **Check**" keeps meaning a failure. The exact forms are pinned by 3.1's test against a
-lock a real build writes. Rejected: reading the lock and then judging its values, which already puts them in the agent's
-context; a `grep -cv` pipeline, which exits 1 on a clean lock.
+Every line of the lock must be blank, the header comment, `version`, an empty table as tomlkit writes it at the top
+(`edges = []` when no **Reference** resolved), a header of `[sources]` (no sources), `[sources.<name>]`,
+`[sources."<name>"]` (tomlkit quotes an alias holding a dot) or one of the three tables, a line under
+`[sources.<name>]`, which holds the user's own config, or one of the forms above under the three tables. A header in any
+other form counts and keeps checking on, so a later bad value cannot hide behind it. `patches` lists the user's own
+config, but as plain strings only, so no second key can follow on its line. tomlkit writes each key on its own line,
+strings in basic quotes, so a value holding a quote, an escape or a line break fails its form. The skill reads the
+version first: one other than 1 takes the "Lock version" path, as today, since a newer lock may hold keys this command
+does not know; then a count above 0 ends the **Check**. `awk` exits 0 whatever it finds, so the skill's "a non-zero exit
+ends the **Check**" keeps meaning a failure. The exact forms are pinned by 3.1's test against a lock a real build
+writes. Rejected: reading the lock and then judging its values, which already puts them in the agent's context; a
+`grep -cv` pipeline, which exits 1 on a clean lock.
 
 **A git Source's root from `why` when `upstream` is `.`.** graft-check takes the lock's `upstream` off the end of
 `why`'s `upstream:` line to find the root; for a **Skill** at the root, the line is the root itself (`Path` drops a

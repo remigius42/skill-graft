@@ -30,14 +30,16 @@ Apply with the `mp-tdd` skill: each task red-green-refactor, one commit. `pre-co
 
 ## 3. graft-check checks the lock
 
-- [ ] 3.1 In `skills/graft-check/SKILL.md` step 2, before "Read the lock", the `awk` command of design.md: a version
+- [x] 3.1 In `skills/graft-check/SKILL.md` step 2, before "Read the lock", the `awk` command of design.md: a version
   other than 1 takes the existing version path, else a count above 0 ends the **Check** with "the lock holds a value
   skill-graft would not write" and the advice to update skill-graft; the version check after reading goes. Test in
   `tests/cli/test_check.py`, written first and failing: extract the command from the skill's text, run it on a lock from
   a real `build --into` with an entry, a rename, a **Bind**, a patch and a prose suggestion, which counts 0 and exits 0,
-  and on that lock edited to hold `upstream = "."` or `".claude/skills/tdd"`, which count 0; then with an `upstream`,
-  `id`, `from`, `to` or `deployed` holding `$(x)`, a space, `\n` or `..`, and with `upstream="x"` and
-  `"upstream" = "x"`, `patches = [], upstream = "$(x)"`, a header `[[skills]] # x` or `[skills.x]` and a top-level
-  `upstream = "$(x)"`, each counting 1; and `version = 2` with an unknown key, printing `version: 2`
+  and on that lock edited to hold `upstream = "."` or `".claude/skills/tdd"`, which count 0, and on a real build's lock
+  with no edges and no suggestions (`edges = []`, `suggestions = []`), one with an alias holding a dot
+  (`[sources."my.src"]`) and one with no sources (`[sources]`), which count 0; then with an `upstream`, `id`, `from`,
+  `to` or `deployed` holding `$(x)`, a space, `\n` or `..`, and with `upstream="x"` and `"upstream" = "x"`,
+  `patches = [], upstream = "$(x)"`, a header `[[skills]] # x` or `[skills.x]` and a top-level `upstream = "$(x)"`, each
+  counting 1; and `version = 2` with an unknown key, printing `version: 2`
 - [ ] 3.2 In step 3, a git **Source**'s root is the whole of `why`'s `upstream:` line when the lock's `upstream` is `.`.
   Verify by reading step 3 against the check delta's "Skill at a source's root"

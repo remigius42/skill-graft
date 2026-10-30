@@ -10,7 +10,7 @@ import tomllib
 from pathlib import Path
 
 import pytest
-from conftest import Upstream, write_config
+from conftest import Upstream, make_patch, skill, write_config, write_patch
 
 from skill_graft.cli import main
 
@@ -615,3 +615,183 @@ def test_patcher_prompt_says_a_question_mark_may_stand_for_a_character() -> None
         "each `?` in a report's `file` or `text` may stand for one character the report"
         " filter replaced" in fixes
     )
+
+
+def lock_check(tmp_path: Path, text: str) -> str:
+    """What the skill's lock check prints for a lock holding `text`, run as the
+    skill gives it, raw: its lines end in `\\`. It must exit 0."""
+    skill_md = (SKILLS / "graft-check" / "SKILL.md").read_text()
+    blocks = [block.split("```")[0] for block in skill_md.split("```sh\n")[1:]]
+    (command,) = [b for b in blocks if b.lstrip().startswith("LC_ALL=C awk")]
+    (tmp_path / "check").mkdir()
+    (tmp_path / "check" / "skill-graft.lock").write_text(text)
+    return subprocess.run(
+        command.replace("<lock>", "skill-graft.lock"),
+        shell=True,
+        cwd=tmp_path / "check",
+        capture_output=True,
+        text=True,
+        check=True,
+    ).stdout
+
+
+A = "Run /x.\nSee `notes` and `tdd`.\n"
+
+
+def built_lock(
+    home: Path, tmp_path: Path, capsys: pytest.CaptureFixture[str], entry: str
+) -> str:
+    """The lock `build --into` writes for `entry` of source `own`: `own/a` calls
+    `/x`, bound to `own/tdd`, renamed `my-tdd`, mentions `tdd` and `notes`, which
+    is no entry, in prose, and has a patch."""
+    skill(home / "own" / "a", A)
+    skill(home / "own" / "tdd")
+    skill(home / "own" / "notes")
+    write_patch(
+        "a.patch", make_patch(tmp_path, {"SKILL.md": A}, {"SKILL.md": A + "x\n"})
+    )
+    write_config(
+        f'entries = ["{entry}"]\n[sources.own]\npath = "~/own"\n'
+        '[rename]\n"own/tdd" = "my-tdd"\n[bind]\n"own/x" = "own/tdd"\n'
+        '[patches]\n"own/a" = ["patches/a.patch"]\n'
+    )
+    into = tmp_path / "into"
+    into.mkdir()
+    assert main(["build", "--into", str(into)]) == 0, capsys.readouterr().err
+    return (into / "skill-graft.lock").read_text()
+
+
+@pytest.fixture
+def lock(home: Path, tmp_path: Path, capsys: pytest.CaptureFixture[str]) -> str:
+    text = built_lock(home, tmp_path, capsys, "own/a")
+    for line in [
+        'deployed = "my-tdd"',
+        'patches = ["patches/a.patch"]',
+        "bind = true",
+        'kind = "prose"',
+        "[[suggestions]]",
+    ]:
+        assert f"\n{line}\n" in text
+    return text
+
+
+def test_lock_check_passes_a_built_lock(tmp_path: Path, lock: str) -> None:
+    assert lock_check(tmp_path, lock) == "version: 1, bad: 0\n"
+
+
+@pytest.mark.parametrize("upstream", [".", ".claude/skills/tdd"])
+def test_lock_check_passes_a_hidden_folder_and_a_skill_at_the_root(
+    tmp_path: Path, lock: str, upstream: str
+) -> None:
+    # Scenarios: Hidden folder, Skill at a source's root.
+    text = lock.replace('upstream = "a"', f'upstream = "{upstream}"')
+
+    assert lock_check(tmp_path, text) == "version: 1, bad: 0\n"
+
+
+def test_lock_check_passes_no_edges_and_no_suggestions(
+    home: Path, tmp_path: Path, capsys: pytest.CaptureFixture[str]
+) -> None:
+    text = built_lock(home, tmp_path, capsys, "own/notes")
+    assert "\nedges = []\n" in text and "\nsuggestions = []\n" in text
+
+    assert lock_check(tmp_path, text) == "version: 1, bad: 0\n"
+
+
+def built(tmp_path: Path, capsys: pytest.CaptureFixture[str], config: str) -> str:
+    """The lock `build --into` writes for `config`."""
+    write_config(config)
+    into = tmp_path / "into"
+    into.mkdir()
+    assert main(["build", "--into", str(into)]) == 0, capsys.readouterr().err
+    return (into / "skill-graft.lock").read_text()
+
+
+def test_lock_check_passes_an_alias_holding_a_dot(
+    home: Path, tmp_path: Path, capsys: pytest.CaptureFixture[str]
+) -> None:
+    skill(home / "own" / "tdd")
+    text = built(
+        tmp_path,
+        capsys,
+        'entries = ["my.src/tdd"]\n[sources."my.src"]\npath = "~/own"\n',
+    )
+    assert '\n[sources."my.src"]\n' in text
+
+    assert lock_check(tmp_path, text) == "version: 1, bad: 0\n"
+
+
+def test_lock_check_passes_no_sources(
+    tmp_path: Path, capsys: pytest.CaptureFixture[str]
+) -> None:
+    text = built(tmp_path, capsys, "entries = []\n")
+    assert "\n[sources]\n" in text
+
+    assert lock_check(tmp_path, text) == "version: 1, bad: 0\n"
+
+
+@pytest.mark.parametrize("header", ['[sources."$(x)"]', '[sources."own"', "[sources.]"])
+def test_lock_check_counts_a_sources_header_in_another_form(
+    tmp_path: Path, lock: str, header: str
+) -> None:
+    text = lock.replace("[sources.own]", header, 1)
+
+    assert lock_check(tmp_path, text) != "version: 1, bad: 0\n"
+
+
+BAD = ["$(x)", "a b", "a\\nb", ".."]
+
+
+@pytest.mark.parametrize(
+    ("line", "edited"),
+    [('upstream = "a"', f'upstream = "{v}"') for v in BAD]
+    + [('upstream = "a"', f'upstream = "a/{v}"') for v in BAD]
+    + [('id = "own/a"', f'id = "own/{v}"') for v in BAD]
+    + [('from = "own/a"', f'from = "own/{v}"') for v in BAD]
+    + [('to = "own/tdd"', f'to = "{v}/tdd"') for v in BAD]
+    + [('deployed = "my-tdd"', f'deployed = "{v}"') for v in BAD]
+    + [
+        ('upstream = "a"', 'upstream="x"'),
+        ('upstream = "a"', '"upstream" = "x"'),
+        ('patches = ["patches/a.patch"]', 'patches = [], upstream = "$(x)"'),
+        ("[[skills]]", "[[skills]] # x"),
+        ("[[skills]]", '[skills.x]\nupstream = "x"\n\n[[skills]]'),
+        ("version = 1", 'version = 1\nupstream = "$(x)"'),
+    ],
+)
+def test_lock_check_counts_a_value_skill_graft_would_not_write(
+    tmp_path: Path, lock: str, line: str, edited: str
+) -> None:
+    # Scenarios: Crafted upstream, Line in another form, Header in another form.
+    assert f"\n{line}\n" in lock
+
+    assert lock_check(tmp_path, lock.replace(line, edited, 1)) == (
+        "version: 1, bad: 1\n"
+    )
+
+
+@pytest.mark.parametrize("header", ["[[skills]] # x", "[skills.x]"])
+def test_lock_check_counts_a_bad_value_after_a_bad_header(
+    tmp_path: Path, lock: str, header: str
+) -> None:
+    # Scenario: Header in another form; the header hides nothing after it.
+    text = lock + f'\n{header}\nupstream = "$(x)"\n'
+
+    assert lock_check(tmp_path, text) == "version: 1, bad: 2\n"
+
+
+def test_lock_check_prints_a_newer_version(tmp_path: Path, lock: str) -> None:
+    text = lock.replace("version = 1", "version = 2").replace(
+        "[[skills]]\n", '[[skills]]\ncolour = "red"\n', 1
+    )
+
+    assert lock_check(tmp_path, text).startswith("version: 2, ")
+
+
+def test_lock_checked_before_it_is_read() -> None:
+    text = " ".join((SKILLS / "graft-check" / "SKILL.md").read_text().split())
+    step = text[text.index("## 2. Throwaway build") : text.index("## 3. Inputs")]
+
+    assert step.index("LC_ALL=C awk") < step.index("Only then read the lock")
+    assert "the lock holds a value skill-graft would not write" in step
+    assert "Its `version` must be 1" not in step

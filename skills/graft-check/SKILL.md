@@ -88,12 +88,38 @@ skill-graft build --into <folder>
 
 - The first stderr line, `skill-graft: package: <path>`, names the **Package**.
 - A non-zero exit ends the **Check** with the build's error.
-- Read the lock, `skill-graft.lock` in `<folder>`. Its `version` must be 1. Any other value ends the **Check**; a higher
-  one means this graft-check is older than the skill-graft that wrote the lock: tell the user to run
-  `skill-graft update` on the **Source** they installed graft-check from, in the **Package** that installed it, then
-  `skill-graft build` there, and to start a new session.
 
-Done when you hold the **Package** path and a version 1 lock.
+Before you read the lock, `<lock>`, which is `skill-graft.lock` in `<folder>`, check it with this command. It prints the
+lock's version and a count of the lines skill-graft would not write, and nothing of the lock itself:
+
+```sh
+LC_ALL=C awk '
+  BEGIN { n = "[A-Za-z0-9][A-Za-z0-9._-]*"; id = "\"" n "/" n "\""; v = "none"
+          s = "\\.*[A-Za-z0-9_-][A-Za-z0-9._-]*"; p = "\"[^\"\\\\]*\"" }
+  /^\[/ { t = $0
+          if (t !~ /^\[\[(skills|edges|suggestions)\]\]$/ && t !~ "^\\[sources(\\.(" n "|\"" n "\"))?\\]$") {
+            bad++; t = "[[skills]]" }
+          next }
+  t == "" && /^version = [0-9]+$/ { v = $3; next }
+  /^$/ || t ~ /^\[sources\./ || t == "" && (/^# Written by skill-graft; update reads its hashes\. Do not edit\.$/ \
+    || /^(skills|edges|suggestions) = \[\]$/) { next }
+  t != "" && ($0 ~ "^(id|from|to) = " id "$" || $0 ~ "^deployed = \"" n "\"$" \
+    || $0 ~ "^upstream = \"(\\.|" s "(/" s ")*)\"$" || $0 ~ "^from = \\[" id "(, " id ")*\\]$" \
+    || $0 ~ "^patches = \\[(" p "(, " p ")*)?\\]$" || /^(entry|bind) = (true|false)$/ \
+    || /^kind = "(slash|skill-tool|prose)"$/ || /^hash = "sha256:[0-9a-f]+"$/) { next }
+  { bad++ }
+  END { printf "version: %s, bad: %d\n", v, bad }' <lock>
+```
+
+- A non-zero exit ends the **Check** with its error.
+- A version other than 1 ends the **Check**; a higher one means this graft-check is older than the skill-graft that
+  wrote the lock: tell the user to run `skill-graft update` on the **Source** they installed graft-check from, in the
+  **Package** that installed it, then `skill-graft build` there, and to start a new session.
+- Otherwise a `bad` count above 0 ends the **Check**, before you read the lock or run any reader: tell the user the lock
+  holds a value skill-graft would not write, name no value, and advise updating skill-graft.
+- Only then read the lock.
+
+Done when you hold the **Package** path and a version 1 lock whose check counted 0.
 
 ## 3. Inputs
 
