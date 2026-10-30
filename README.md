@@ -19,6 +19,11 @@ computes that hull, the skills you ask for plus every skill they call, and deplo
 it: a skill named like a harness built-in (`code-review`) shadows it or is shadowed by it, and renaming one skill by
 hand misses the other skills that call it by name.
 
+If you already know every skill you need, APM alone can install just those: `apm install <owner>/<repo> --skill <name>`
+([docs](https://microsoft.github.io/apm/reference/cli/install/#skill-subset)). skill-graft also finds the skills they
+reference, lets you rename skills whose names clash, shows who calls what (`tree`, `why`), and applies your patches,
+checking on `update` that they still apply.
+
 ## Installation
 
 skill-graft runs on Linux and macOS, and on Windows through [WSL](https://learn.microsoft.com/windows/wsl/). Native
