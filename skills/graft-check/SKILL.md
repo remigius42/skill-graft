@@ -131,7 +131,8 @@ From the lock, for each **Skill** to check (`[[skills]]`, or only the arguments)
 - **Upstream folder**: the **Source**'s root joined with the **Skill**'s `upstream`.
   - A path **Source**'s root is `[sources.<alias>] path`; a relative one is relative to the **Package**.
   - A git **Source**'s root: run `skill-graft why <skill id>` for one of its **Skills**; the last line is
-    `upstream: <absolute folder>`; take the lock's `upstream` off its end. Once per git **Source**.
+    `upstream: <absolute folder>`; take the lock's `upstream` off its end, or, when that `upstream` is `.`, the root is
+    the whole folder. Once per git **Source**.
 - **Patches**: each file in the **Skill**'s `patches`, relative to the **Package** unless absolute or starting with `~`,
   as absolute paths.
 - **Targets**: `skill-graft tree` prints each edge as `<target> (<as written>[, prose][, bind])`, the target followed by

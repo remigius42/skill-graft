@@ -41,5 +41,5 @@ Apply with the `mp-tdd` skill: each task red-green-refactor, one commit. `pre-co
   `to` or `deployed` holding `$(x)`, a space, `\n` or `..`, and with `upstream="x"` and `"upstream" = "x"`,
   `patches = [], upstream = "$(x)"`, a header `[[skills]] # x` or `[skills.x]` and a top-level `upstream = "$(x)"`, each
   counting 1; and `version = 2` with an unknown key, printing `version: 2`
-- [ ] 3.2 In step 3, a git **Source**'s root is the whole of `why`'s `upstream:` line when the lock's `upstream` is `.`.
+- [x] 3.2 In step 3, a git **Source**'s root is the whole of `why`'s `upstream:` line when the lock's `upstream` is `.`.
   Verify by reading step 3 against the check delta's "Skill at a source's root"
