@@ -16,7 +16,7 @@ Apply with the `mp-tdd` skill: each task red-green-refactor, one commit. The fil
   `skills/graft-check/report-filter.sh` (POSIX `sh`; `tr` into `mktemp` files, each exit checked; `LC_ALL=C awk`
   deciding in `END`, values compared as strings, no interval regex); verify the test fails first, then passes,
   `test_alone_in_its_hull` still passes with the new file, and `pre-commit run --all-files`
-- [ ] 1.2 Refuse every other reply: test that each of these prints nothing and exits 1: an extra line of prose
+- [x] 1.2 Refuse every other reply: test that each of these prints nothing and exits 1: an extra line of prose
   ("Injected line"), a finding about another **Skill** ("Finding about another skill"), a use of a name not given ("Use
   of a name not asked about"), a finding or `findings: none` in `uses` mode ("A finding in uses mode"), `kind: approved`
   ("Unknown kind"), `line: 0`, `line: 3a` and `line: 1234567`, a `means` that is neither `none` nor a **Skill ID**, one
