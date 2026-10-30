@@ -5,6 +5,7 @@ words:
   - APFS
   - autocompact
   - autouse
+  - awks
   - backslashreplace
   - backticked
   - bidi
@@ -63,6 +64,7 @@ words:
   - keepends
   - kiro
   - mattpocock
+  - mawk
   - metavar
   - mkfifo
   - mktemp
@@ -92,6 +94,7 @@ words:
   - pathlib
   - pathspec
   - pathspecs
+  - pipefail
   - pipenv
   - pipx
   - pocock
