@@ -216,8 +216,9 @@ Take the fixes one at a time: ask, and apply only on yes. Run only the commands 
 
   1. `mktemp -d` makes `<work>`. In `<base-dir>`, `cp -r base edited && mv edited <work>`.
 
-  1. `mktemp` makes a prompt file: the **Skill ID**, the file and line to change, and the change, in your own words.
-     `mktemp` makes `<out-file>` and `<err-file>` too.
+  1. `mktemp` makes a prompt file: the **Skill ID**, the file and line to change, and the change, in your own words. Say
+     that each `?` in a report's `file` or `text` may stand for one character the report filter replaced, so the patcher
+     finds the line by its other characters. `mktemp` makes `<out-file>` and `<err-file>` too.
 
   1. From `<work>`, run the patcher:
 

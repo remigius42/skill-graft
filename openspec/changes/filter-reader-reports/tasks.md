@@ -49,7 +49,7 @@ Apply with the `mp-tdd` skill: each task red-green-refactor, one commit. The fil
   on the reader's `<err-file>` and `<out-file>`, and that the pipeline turns `Error: Reached max turns (30)` on stdout,
   with stderr empty, into that line ("Reader reaches its turn cap"); update steps 4 and 5 and `docs/security.md`'s
   main-agent bullet; verify the test fails first, then passes, and `pre-commit run --all-files`
-- [ ] 2.3 `?` in a fix: test that step 6's patcher prompt says a `?` in a report's `file` or `text` may stand for one
+- [x] 2.3 `?` in a fix: test that step 6's patcher prompt says a `?` in a report's `file` or `text` may stand for one
   character the filter replaced; update step 6; verify the test fails first, then passes, and
   `pre-commit run --all-files`
 

@@ -605,3 +605,13 @@ def test_failed_reader_shows_its_error_line(tmp_path: Path) -> None:
 
 def test_error_line_ends_at_the_end_of_the_error_output(tmp_path: Path) -> None:
     assert error_line(tmp_path, "warn", "reader text\n") == "warn\n"
+
+
+def test_patcher_prompt_says_a_question_mark_may_stand_for_a_character() -> None:
+    text = " ".join((SKILLS / "graft-check" / "SKILL.md").read_text().split())
+    fixes = text[text.index("## 6. Fixes") : text.index("## 7. Close")]
+
+    assert (
+        "each `?` in a report's `file` or `text` may stand for one character the report"
+        " filter replaced" in fixes
+    )
