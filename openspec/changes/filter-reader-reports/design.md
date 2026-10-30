@@ -94,13 +94,14 @@ Checked against `skills/graft-check/` on main (`adf0655`):
 
 - **Exit codes.** `awk` decides a reply only in a checked `END`: it exits 0 when the reply is in the report shape and 3
   when it is not, and on its own errors exits 1 or 2, depending on the dialect. The script turns 0 into 0 and 3 into 1,
-  and every other exit, its own `tr` or `mktemp` failing included, into 2. Exit 0: the script printed the admitted
-  blocks, normalized, one blank line between blocks, and the skill shows only that. Exit 1: not in the report shape,
-  nothing printed; the skill names the **Skill** as having no report with the fixed reason `not in the report shape`,
-  and opens neither file. Any other exit, 2 or `sh` not finding the script (127), is a broken filter, not a reader's
-  doing: the **Check** ends, naming the filter and its exit code. Its stderr goes to `/dev/null`, so an `awk` message
-  quoting input reaches no one. `awk` prints only in `END`, once the whole reply passed, so a reply refused halfway
-  prints nothing.
+  and every other exit, its own `tr` or `mktemp` failing or a `<mode>` other than `full` or `uses` included, into 2; a
+  hangup, interrupt or termination exits 2 too, after removing its `mktemp` files. Exit 0: the script printed the
+  admitted blocks, normalized: keys in `reader.json`'s order, an empty value as `<key>:`, one blank line between blocks,
+  and the skill shows only that. Exit 1: not in the report shape, nothing printed; the skill names the **Skill** as
+  having no report with the fixed reason `not in the report shape`, and opens neither file. Any other exit, 2 or `sh`
+  not finding the script (127), is a broken filter, not a reader's doing: the **Check** ends, naming the filter and its
+  exit code. Its stderr goes to `/dev/null`, so an `awk` message quoting input reaches no one. `awk` prints only in
+  `END`, once the whole reply passed, so a reply refused halfway prints nothing.
 
 - **A failed reader's error line, as the patcher's.** stdout and stderr go to `mktemp` files outside its working folder.
   On a non-zero exit the skill shows
@@ -111,7 +112,7 @@ Checked against `skills/graft-check/` on main (`adf0655`):
   ASCII, at most 200 characters, shown as quoted text: no more than a report's `text` carries.
 
 - **`?` in a fix.** Step 6's patcher prompt, written from a report's `file` and `text`, says that each `?` there may
-  stand for one character the filter replaced, so the patcher finds the line by its other characters with `Grep`.
+  stand for one character the filter replaced, so the patcher finds the line by its other characters.
 
 ## Risks / Trade-offs
 

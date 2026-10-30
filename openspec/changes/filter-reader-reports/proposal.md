@@ -30,7 +30,7 @@ readers' should be held to their shape by code too.
   line of its stderr, else of its stdout, in printable ASCII, at most 200 characters, as quoted text, as it does for the
   patcher.
 - `reader.json` writes a use's name as `names` gives it, and states both caps. Step 6's patcher prompt says a `?` in a
-  report's file or line may stand for a replaced character.
+  report's `file` or `text` may stand for a replaced character.
 - `docs/security.md`: Residual risks and the LLM05 row say that report text is held to its shape and bound in code, and
   that visible injection in a quoted value, short and shown, still reaches the main agent. The probe, which reads no
   **Skill** text, and an unhardened **Check**, which reads in the main agent's own session, are unchanged.

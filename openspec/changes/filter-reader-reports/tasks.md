@@ -55,6 +55,6 @@ Apply with the `mp-tdd` skill: each task red-green-refactor, one commit. The fil
 
 ## 3. Integration
 
-- [ ] 3.1 Check every scenario of the `check` delta spec against a test or a `SKILL.md` step, bring `proposal.md`,
+- [x] 3.1 Check every scenario of the `check` delta spec against a test or a `SKILL.md` step, bring `proposal.md`,
   `design.md` and `tasks.md` in line with the code (names, signatures, moved tests), and run
   `openspec validate filter-reader-reports --strict`, `uv run pytest` and `pre-commit run --all-files`
