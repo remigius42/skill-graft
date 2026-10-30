@@ -40,6 +40,23 @@ jobs:
       - name: Run the tests
         run: uv run --isolated --python 3.11 --group dev pytest -q -p no:cacheprovider
 
+  # The suite once more, as root, which ignores permissions: a test relying on them must skip there.
+  # A container job runs as root. Debian trixie's git is 2.47, new enough for the no_lazy_fetch tests.
+  test-root:
+    runs-on: ubuntu-latest
+    container: python:3.11-trixie@sha256:390127d66a75154671aa02f62a49aa7f83c386f33cdc84a8e8f060650e2e19f8
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+
+      - uses: astral-sh/setup-uv@c18668ad3cf93ea998bef934396af7bb5c839dc7 # v10.2.0
+
+      - name: Run the tests
+        run: |
+          test "$(id -u)" -eq 0
+          uv run --isolated --python 3.11 --group dev pytest -q -p no:cacheprovider
+
   # The commitlint pre-commit hook lints only .git/COMMIT_EDITMSG, so this job calls commitlint on the
   # pushed or proposed commits instead, at the versions that hook installs.
   commitlint:

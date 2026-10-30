@@ -138,6 +138,7 @@ words:
   - testpaths
   - tomlkit
   - tomllib
+  - trixie
   - typeshed
   - ufeff
   - ultraplan
