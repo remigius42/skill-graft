@@ -45,7 +45,7 @@ Apply with the `mp-tdd` skill: each task red-green-refactor, one commit. The fil
   short visible injection still reaches the main agent) and the LLM05 row; in `README.md`'s Security section, that a
   reader's reply reaches the main agent only as the filter admits it; verify the test fails first, then passes, and
   `pre-commit run --all-files`
-- [ ] 2.2 A failed reader shows why: test that on a non-zero exit steps 4 and 5 show the patcher's error-line pipeline
+- [x] 2.2 A failed reader shows why: test that on a non-zero exit steps 4 and 5 show the patcher's error-line pipeline
   on the reader's `<err-file>` and `<out-file>`, and that the pipeline turns `Error: Reached max turns (30)` on stdout,
   with stderr empty, into that line ("Reader reaches its turn cap"); update steps 4 and 5 and `docs/security.md`'s
   main-agent bullet; verify the test fails first, then passes, and `pre-commit run --all-files`

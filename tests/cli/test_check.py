@@ -131,8 +131,11 @@ def test_patcher_reply_never_reaches_the_main_agent() -> None:
 
 
 def error_line(tmp_path: Path, err: str, out: str) -> str:
-    """What the skill shows of a failed patcher that wrote `err` and `out`."""
-    (command,) = commands("cat <err-file> <out-file>")
+    """What the skill shows of a failed reader or patcher that wrote `err` and `out`:
+    step 4 and step 6 show it alike."""
+    reader, patcher = commands("{ cat <err-file>; echo; cat <out-file>; }")
+    assert reader == patcher
+    command = reader
     (tmp_path / "err").write_text(err)
     (tmp_path / "out").write_text(out)
     command = command.replace("<err-file>", str(tmp_path / "err"))
@@ -585,3 +588,20 @@ def test_reader_writes_uses_as_names_does_and_knows_the_caps() -> None:
         "List at most 100 findings, and every use: a reply of more than 200 uses is refused."
         in prompt
     )
+
+
+def test_failed_reader_shows_its_error_line(tmp_path: Path) -> None:
+    text = " ".join((SKILLS / "graft-check" / "SKILL.md").read_text().split())
+    read, report = text.index("## 4. Read"), text.index("## 5. Report")
+
+    assert "{ cat <err-file>; echo; cat <out-file>; }" in text[read:report]
+    assert (
+        "A non-zero exit means that **Skill** has no report: show its error line"
+        in (text[read:report])
+    )
+    out = "Error: Reached max turns (30)\n"
+    assert error_line(tmp_path, "", out) == out
+
+
+def test_error_line_ends_at_the_end_of_the_error_output(tmp_path: Path) -> None:
+    assert error_line(tmp_path, "warn", "reader text\n") == "warn\n"

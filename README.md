@@ -242,7 +242,8 @@ has the details.
 - In a hardened check, each reader and the patcher stop at a cap on their turns and their spend, and at most 4 readers
   run at once, all settable in `[check]` ([Limits](docs/security.md#limits)). The patcher's reply never reaches the main
   agent, and its diff reaches it only as counts.
-- A reader's reply reaches the main agent only as a report filter admits it, held to the report shape and bound in code.
+- A reader's reply reaches the main agent only as a report filter admits it, held to the report shape and bound in code,
+  or, when the reader fails, as one bounded error line.
 - Run it outside auto mode; in Claude Code's sandbox, allow the API's domain. Fix arguments and how many readers run at
   once are checked at the prompt level only.
 
