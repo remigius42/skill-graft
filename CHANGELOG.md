@@ -7,6 +7,11 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 
 ## [Unreleased]
 
+### Added
+
+- graft-check checks the lock before it reads it, and ends the **Check** on a line skill-graft would not write, naming
+  no value and advising to update skill-graft
+
 ### Changed
 
 - In a hardened `/graft-check`, a reader's reply reaches the main agent only as a report filter shipped with the skill
@@ -14,6 +19,12 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
   at most 200 characters, a character outside it shown as `?`. Any other reply leaves its **Skill** with no report,
   `not in the report shape`, and none of it is shown
 - A reader that fails shows one line of its error, in printable ASCII, at most 200 characters, as a failed patcher does
+- A **Skill** under a folder named with anything but `A-Z a-z 0-9 . _ -`, or with only dots, is unusable: an **Entry**,
+  a `[bind]` target, or a slash or `Skill(<name>)` **Reference** that needs it fails, naming the folder with every other
+  byte written in octal (`my\040skills/tdd`). Elsewhere in its **Source** it blocks nothing. A path **Source** renames
+  the folder; a git one needs a fork
+- A git **Source**'s `subdirectory` takes those characters only: `subdirectory = "my skills"` is a config error
+- The error for a **Skill** whose name is no path segment writes the name and its path with the same octal escapes
 
 ### Fixed
 
