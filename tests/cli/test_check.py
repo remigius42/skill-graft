@@ -305,3 +305,97 @@ def test_patcher_error_shown_in_printable_ascii_only(tmp_path: Path) -> None:
     shown = error_line(tmp_path, err, "")
 
     assert shown == "ok evil2J \n"
+
+
+FILTER = SKILLS / "graft-check" / "report-filter.sh"
+
+
+def report_filter(
+    mode: str, skill: str, names: list[str], reply: bytes
+) -> tuple[int, bytes]:
+    """The report filter's exit code and stdout for `reply`, from a reader of `skill`
+    in `mode`, given `names`."""
+    run = subprocess.run(
+        ["sh", str(FILTER), mode, skill, *names],
+        input=reply,
+        capture_output=True,
+        check=False,
+    )
+    return run.returncode, run.stdout
+
+
+FINDING = (
+    "skill: mp/x\nfile: SKILL.md\ntext: Hand off to grill\nkind: missed\n"
+    "why: It calls grill in prose.\n"
+)
+USE = "use: grill\nfile: SKILL.md\nline: 12\ntext: run /grill\nmeans: mp/grill\n"
+
+
+def test_filter_admits_a_well_formed_report() -> None:
+    reply = (
+        "\n\n```text\n"
+        "why: It calls grill in prose.\nkind: missed\nskill: mp/x\nfile: SKILL.md\n"
+        "text: Hand off to grill\n```\n```text\n"
+        "skill: mp/x\nfile: SKILL.md\ntext: see ../grill/x.md\n"
+        "vendored: see ../grill/x.md\nkind: link\nwhy: The link breaks.\n```\n\n"
+        f"```\n{USE}```\n"
+        "means: mp/grill\nuse: mp/grill\nfile: SKILL.md\nline: 3\ntext: /grill\n\n\n"
+    )
+
+    code, out = report_filter("full", "mp/x", ["grill", "mp/grill"], reply.encode())
+
+    assert (code, out.decode()) == (
+        0,
+        f"{FINDING}\n"
+        "skill: mp/x\nfile: SKILL.md\ntext: see ../grill/x.md\n"
+        "vendored: see ../grill/x.md\nkind: link\nwhy: The link breaks.\n\n"
+        f"{USE}\n"
+        "use: mp/grill\nfile: SKILL.md\nline: 3\ntext: /grill\nmeans: mp/grill\n",
+    )
+
+
+def test_filter_admits_nothing_to_report() -> None:
+    reply = b"findings: none\nuses: none\n"
+
+    assert report_filter("full", "mp/x", ["grill"], reply) == (
+        0,
+        b"findings: none\n\nuses: none\n",
+    )
+
+
+def test_filter_admits_uses_mode_replies() -> None:
+    assert report_filter("uses", "mp/x", ["grill"], b"uses: none\n") == (
+        0,
+        b"uses: none\n",
+    )
+    assert report_filter("uses", "mp/x", ["grill"], USE.encode()) == (
+        0,
+        USE.encode(),
+    )
+
+
+def test_filter_admits_25_findings_then_200_uses() -> None:
+    reply = "\n".join([FINDING] * 25 + [USE] * 200)
+
+    assert report_filter("full", "mp/x", ["grill"], reply.encode()) == (
+        0,
+        reply.encode(),
+    )
+
+
+def test_filter_admits_crlf_trailing_spaces_and_an_empty_text() -> None:
+    reply = FINDING.replace("kind: missed", "kind: missed ").replace(
+        "text: Hand off to grill", "text:"
+    )
+
+    code, out = report_filter(
+        "full",
+        "mp/x",
+        ["grill"],
+        (reply + "\nuses: none\n").replace("\n", "\r\n").encode(),
+    )
+
+    assert (code, out.decode()) == (
+        0,
+        FINDING.replace("text: Hand off to grill", "text:") + "\nuses: none\n",
+    )

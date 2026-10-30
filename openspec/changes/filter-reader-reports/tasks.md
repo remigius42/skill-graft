@@ -7,7 +7,7 @@ Apply with the `mp-tdd` skill: each task red-green-refactor, one commit. The fil
 
 ## 1. The report filter
 
-- [ ] 1.1 Admit the report shape: test that, run as `sh report-filter.sh <mode> <skill id> <name>…`, a finding about the
+- [x] 1.1 Admit the report shape: test that, run as `sh report-filter.sh <mode> <skill id> <name>…`, a finding about the
   given **Skill**, with and without `vendored`, a use of a given name, one under a bind key `mp/grill` ("A use under a
   bind key"), `findings: none` then `uses: none` on consecutive lines ("Nothing to report"), 25 findings then 200 uses
   ("Many uses"), and CRLF line ends, trailing spaces and an empty `text:` ("Line ends and trailing spaces") are printed
