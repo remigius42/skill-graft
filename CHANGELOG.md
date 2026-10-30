@@ -7,6 +7,8 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 
 ## [Unreleased]
 
+## [0.3.0] - 2026-10-30
+
 ### Added
 
 - The supported platforms are stated: Linux and macOS, and Windows through WSL. The README says so, and the package
@@ -203,4 +205,5 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 [0.2.1]: https://github.com/remigius42/skill-graft/compare/v0.2.0...v0.2.1
 [0.2.2]: https://github.com/remigius42/skill-graft/compare/v0.2.1...v0.2.2
 [0.2.3]: https://github.com/remigius42/skill-graft/compare/v0.2.2...v0.2.3
-[unreleased]: https://github.com/remigius42/skill-graft/compare/v0.2.3...HEAD
+[0.3.0]: https://github.com/remigius42/skill-graft/compare/v0.2.3...v0.3.0
+[unreleased]: https://github.com/remigius42/skill-graft/compare/v0.3.0...HEAD

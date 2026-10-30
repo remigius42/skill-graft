@@ -1,6 +1,6 @@
 [project]
 name = "skill-graft"
-version = "0.2.3"
+version = "0.3.0"
 description = "Graft agent skills from other people's repositories onto your own setup"
 readme = "README.md"
 license = "MIT"
