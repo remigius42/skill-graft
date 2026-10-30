@@ -25,7 +25,7 @@ Apply with the `mp-tdd` skill: each task red-green-refactor, one commit. The fil
   `use: 01` given `names: 1`, an empty `kind`, a key unknown, missing or repeated, `findings: none` inside a block, and
   an empty reply; test that an `awk` refusing its program, or a failing `tr` (a stub on `PATH` that exits 1), makes the
   script exit 2, never 1; verify the test fails first, then passes, and `pre-commit run --all-files`
-- [ ] 1.3 Quoted values in printable ASCII, bounded: test that in `text`, `vendored`, `why` and `file` each UTF-8
+- [x] 1.3 Quoted values in printable ASCII, bounded: test that in `text`, `vendored`, `why` and `file` each UTF-8
   character outside ASCII becomes one `?` ("Non-ASCII text": an em dash and a bidi override), a tab, an escape and a NUL
   each become `?`, a stray continuation byte is dropped, a 300-character value becomes its first 197 and `...` ("Long
   text"), and a value of exactly 200 is kept whole; verify the test fails first, then passes, and

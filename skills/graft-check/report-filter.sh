@@ -7,9 +7,14 @@ case $1 in
   *) exit 2 ;;
 esac
 
+trap 'rm -f "$dropped" "$reply"' EXIT
+trap 'exit 2' HUP INT TERM
+dropped=$(mktemp) || exit 2
 reply=$(mktemp) || exit 2
-trap 'rm -f "$reply"' EXIT
-LC_ALL=C tr -d '\015' > "$reply" || exit 2
+# Carriage returns and UTF-8 continuation bytes go; every other byte outside
+# printable ASCII and the line break, a UTF-8 lead byte included, becomes `?`.
+LC_ALL=C tr -d '\015\200-\277' > "$dropped" || exit 2
+LC_ALL=C tr -c '\n -~' '[?*]' < "$dropped" > "$reply" || exit 2
 
 LC_ALL=C awk '
 BEGIN {
@@ -93,6 +98,8 @@ $0 == "findings: none" || $0 == "uses: none" {
   else if ($0 ~ /^[a-z]+:$/) { key = substr($0, 1, length($0) - 1); value = "" }
   else refuse()
   if (key in block || !valid(key, value)) refuse()
+  if (key ~ /^(file|text|vendored|why)$/ && length(value) > 200)
+    value = substr(value, 1, 197) "..."
   block[key] = value
   open = 1
 }

@@ -472,3 +472,35 @@ def test_filter_failing_is_not_a_refusal(tmp_path: Path, tool: str, code: int) -
 
 def test_filter_given_an_unknown_mode_fails() -> None:
     assert report_filter("bogus", "mp/x", ["grill"], NONE.encode()) == (2, b"")
+
+
+def test_filter_shows_quoted_values_in_printable_ascii() -> None:
+    reply = (
+        "skill: mp/x\nfile: déjà.md\n"
+        "text: Hand off to grill‮ — then stop\n"
+        "vendored: a\tb\x1bc\x00d#e\nkind: rewrite\nwhy: \U0001f600 changed\n\n"
+    ).encode()
+    reply = reply.replace(b"#", b"\x80")  # a stray UTF-8 continuation byte
+
+    code, out = report_filter("full", "mp/x", ["grill"], reply + NONE.encode())
+
+    assert (code, out.decode()) == (
+        0,
+        "skill: mp/x\nfile: d?j?.md\ntext: Hand off to grill? ? then stop\n"
+        "vendored: a?b?c?de\nkind: rewrite\nwhy: ? changed\n\n" + NONE,
+    )
+
+
+def test_filter_cuts_a_value_longer_than_200_characters() -> None:
+    def finding(file: str, text: str, vendored: str, why: str) -> str:
+        return (
+            f"skill: mp/x\nfile: {file}\ntext: {text}\nvendored: {vendored}\n"
+            f"kind: link\nwhy: {why}\n"
+        )
+
+    reply = finding("f" * 300, "t" * 300, "v" * 300, "w" * 200)
+
+    code, out = report_filter("full", "mp/x", ["grill"], f"{reply}\n{NONE}".encode())
+
+    cut = finding("f" * 197 + "...", "t" * 197 + "...", "v" * 197 + "...", "w" * 200)
+    assert (code, out.decode()) == (0, f"{cut}\n{NONE}")
