@@ -575,7 +575,7 @@ def test_debris_warns(home: Path, capsys: Capsys) -> None:
     assert vendored() == {"tdd"}
 
 
-@pytest.mark.skipif(os.geteuid() == 0, reason="root reads any file")
+@pytest.mark.needs_permissions
 def test_unreadable_file(home: Path, capsys: Capsys) -> None:
     skill(home / "mp" / "tdd")
     (home / "mp" / "tdd" / "secret").write_text("x")

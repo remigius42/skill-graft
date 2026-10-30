@@ -212,6 +212,7 @@ def test_bound_reference_rewritten_on_build(home: Path) -> None:
     assert (vendored / "grill" / "SKILL.md").read_text() == "# skill\n"
 
 
+@pytest.mark.root_safe
 def test_read_only_upstream_rewritten(home: Path) -> None:
     folder = bound_grill(home)
     (folder / "refs").mkdir()

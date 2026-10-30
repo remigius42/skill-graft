@@ -311,6 +311,7 @@ def test_mode_change(tmp_path: Path) -> None:
     assert os.access(copy / "run.sh", os.X_OK)
 
 
+@pytest.mark.root_safe
 def test_read_only_upstream(tmp_path: Path) -> None:
     upstream = upstream_with(tmp_path, {"refs/loop.md": "loop\n"})
     data = make_patch(

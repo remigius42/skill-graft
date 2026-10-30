@@ -59,6 +59,10 @@ extraPaths = ["src", "tests"]
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]
+markers = [
+  "needs_permissions: takes the owner's rights away and relies on them; skipped as root",
+  "root_safe: takes the owner's rights away and passes as root too",
+]
 
 [tool.importlinter]
 root_package = "skill_graft"

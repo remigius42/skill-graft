@@ -820,7 +820,7 @@ def test_reference_turns_ambiguous_upstream(
     assert lock_file().read_bytes() == before and file.read_bytes() == toml
 
 
-@pytest.mark.skipif(os.geteuid() == 0, reason="root reads any file")
+@pytest.mark.needs_permissions
 def test_failed_lock_leaves_the_toml(
     home: Path, upstream: Upstream, capsys: Capsys
 ) -> None:

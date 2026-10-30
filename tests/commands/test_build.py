@@ -150,6 +150,7 @@ def test_crash_between_the_renames_keeps_the_previous_build(
     assert sorted(p.name for p in skills_dir(home).iterdir()) == ["chisel"]
 
 
+@pytest.mark.needs_permissions
 def test_undeletable_stale_folder(
     home: Path, capsys: pytest.CaptureFixture[str]
 ) -> None:

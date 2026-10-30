@@ -120,6 +120,39 @@ def home(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> Path:
     return home
 
 
+@pytest.fixture(autouse=True)
+def owner_rights(
+    request: pytest.FixtureRequest, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """Root ignores permissions, so a test taking the owner's rights away says
+    how it fares as root: `needs_permissions` skips it there, `root_safe` passes
+    either way. Unmarked, it fails at the chmod, though not run as root."""
+    if request.node.get_closest_marker("needs_permissions"):
+        if os.geteuid() == 0:
+            pytest.skip("root ignores permissions")
+        return
+    if request.node.get_closest_marker("root_safe"):
+        return
+    chmod = os.chmod
+
+    def check(
+        path: str | Path,
+        mode: int,
+        *,
+        dir_fd: int | None = None,
+        follow_symlinks: bool = True,
+    ) -> None:
+        owner = 0o700 if os.path.isdir(path) else 0o600
+        if mode & owner != owner:
+            pytest.fail(
+                f"chmod {oct(mode)}, by the test or by the code it runs, takes the "
+                "owner's rights away: mark the test needs_permissions or root_safe"
+            )
+        chmod(path, mode, dir_fd=dir_fd, follow_symlinks=follow_symlinks)
+
+    monkeypatch.setattr(os, "chmod", check)
+
+
 @pytest.fixture
 def scope(home: Path) -> paths.Scope:
     """The user scope, at the temporary home folder."""

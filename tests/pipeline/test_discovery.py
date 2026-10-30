@@ -362,15 +362,15 @@ def test_skill_md_not_a_regular_file_does_not_block(
         ("device", ""),
         ("fifo", ""),
         ("dangling", ": No such file or directory"),
-        ("unstatable", ": Permission denied"),
+        pytest.param(
+            "unstatable", ": Permission denied", marks=pytest.mark.needs_permissions
+        ),
     ],
 )
 @pytest.mark.usefixtures("unlock")
 def test_skill_md_not_a_regular_file_is_unreadable(
     home: Path, capsys: Capsys, how: str, cause: str
 ) -> None:
-    if how == "unstatable" and os.geteuid() == 0:
-        pytest.skip("root can stat anything")
     not_regular(home / "src" / "x" / "SKILL.md", how)
     configure(["own/x"], own="~/src")
 

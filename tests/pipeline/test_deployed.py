@@ -477,7 +477,7 @@ def test_encoding_change_shown_byte_for_byte() -> None:
     ]
 
 
-@pytest.mark.skipif(os.geteuid() == 0, reason="root reads any file")
+@pytest.mark.needs_permissions
 def test_walk_reads_one_file_at_a_time(tmp_path: Path) -> None:
     folder = skill(tmp_path / "tdd", "# tdd\n")
     (folder / "z.bin").write_bytes(b"x")

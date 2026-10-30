@@ -1,7 +1,6 @@
 """The `patches` spec end to end: a skill's patches apply before its references are
 read."""
 
-import os
 from pathlib import Path
 from typing import TypeAlias
 
@@ -177,7 +176,7 @@ def test_another_error_after_a_patch_failure(
     assert err.index("patches/tdd.patch") < err.index("own/x")
 
 
-@pytest.mark.skipif(os.geteuid() == 0, reason="root reads any file")
+@pytest.mark.needs_permissions
 def test_copy_error_after_a_patch_failure(
     home: Path, tmp_path: Path, capsys: Capsys
 ) -> None:
