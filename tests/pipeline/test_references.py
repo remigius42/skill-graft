@@ -1,5 +1,6 @@
 """Finding slash and Skill tool references in a skill's Markdown (the `hull` spec)."""
 
+import time
 from pathlib import Path
 
 import pytest
@@ -69,6 +70,8 @@ def test_paths_and_urls(tmp_path: Path, text: str) -> None:
         "fetch(`/users/${userId}/orders`)",
         "its `package.json`/build-tool scripts",
         "`lint`/check",
+        "``lint``/check",
+        "`a` `lint`/check",
     ],
 )
 def test_path_arguments_and_after_a_code_span(tmp_path: Path, text: str) -> None:
@@ -77,6 +80,24 @@ def test_path_arguments_and_after_a_code_span(tmp_path: Path, text: str) -> None
     refs = references.scan(folder)
 
     assert [r.text for r in refs if r.kind == "slash"] == []
+
+
+@pytest.mark.parametrize("text", ["`a` and `/tdd`", "`a`\n`/tdd`", "`a` ``/tdd``"])
+def test_slash_opening_a_code_span(tmp_path: Path, text: str) -> None:
+    folder = skill(tmp_path / "x", f"{text}\n")
+
+    refs = references.scan(folder)
+
+    assert [r.text for r in refs if r.kind == "slash"] == ["/tdd"]
+
+
+def test_long_line_scans_in_linear_time(tmp_path: Path) -> None:
+    folder = skill(tmp_path / "x", "`x`/a" * 8000 + "\n")
+
+    start = time.perf_counter()
+    references.scan(folder)
+
+    assert time.perf_counter() - start < 1
 
 
 @pytest.mark.parametrize(

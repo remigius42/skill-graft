@@ -41,7 +41,7 @@ SENTENCE_END = re.compile(
     r"|(?<!\be\.g)(?<!\bi\.e)(?P<stop>[.!?][\"'`*)\]]*)"
     r"(?:\s+(?=[A-Z`*(\[\"'])|\s*\Z)"
 )
-BACKTICK_RUN = re.compile(r"`+")
+BACKTICK_RUN_OR_NEWLINE = re.compile(r"`+|\n")
 QUOTED_NAME = re.compile(
     r'(?P<open>["`])(?P<name>[A-Za-z0-9][A-Za-z0-9._-]*+)(?P=open)'
 )
@@ -88,6 +88,7 @@ def scan(folder: Path) -> list[Reference]:
             if not (skip and skip[0] <= ref.span[0] < skip[1])
         ]
         taken = {ref.span for ref in named}
+        closers = _code_span_closers(text)
         here, calls = [], []
         for match in REFERENCE.finditer(text):
             if skip and skip[0] <= match.start() < skip[1]:
@@ -95,8 +96,8 @@ def scan(folder: Path) -> list[Reference]:
             group = next(g for g in FORMS if match[g])
             if group == "prose" and _yaml_key(text, match):
                 continue
-            if group == "slash" and _after_code_span(text, match.start()):
-                continue
+            if group == "slash" and match.start() in closers:
+                continue  # right after a code span closes
             name = match[group].rstrip(".") if group == "slash" else match[group]
             start = match.start(group)
             kind, text_form = FORMS[group]
@@ -142,14 +143,19 @@ def _sentence_names(
     return names
 
 
-def _after_code_span(text: str, slash: int) -> bool:
-    """Whether the `/` at `slash` follows backticks that close a code span: an odd
-    number of backtick runs (`` ` `` or ``` `` ```) before them on their line."""
-    if text[slash - 1 : slash] != "`":
-        return False
-    line_start = text.rfind("\n", 0, slash - 1) + 1
-    before = text[line_start:slash].rstrip("`")
-    return len(BACKTICK_RUN.findall(before)) % 2 == 1
+def _code_span_closers(text: str) -> set[int]:
+    """The offsets just past each backtick run (`` ` `` or ``` `` ```) that closes a
+    code span: one with an odd number of runs before it on its line. One pass, so a
+    long line costs no more than many short ones."""
+    closers, runs = set(), 0
+    for match in BACKTICK_RUN_OR_NEWLINE.finditer(text):
+        if match[0] == "\n":
+            runs = 0
+            continue
+        if runs % 2 == 1:
+            closers.add(match.end())
+        runs += 1
+    return closers
 
 
 def _inside(span: tuple[int, int], outer: tuple[int, int]) -> bool:
