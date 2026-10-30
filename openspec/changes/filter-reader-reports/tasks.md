@@ -33,7 +33,7 @@ Apply with the `mp-tdd` skill: each task red-green-refactor, one commit. The fil
 
 ## 2. The skill
 
-- [ ] 2.1 Readers through the filter: test that `SKILL.md` step 4's reader command and step 5's `uses` readers send
+- [x] 2.1 Readers through the filter: test that `SKILL.md` step 4's reader command and step 5's `uses` readers send
   stdout and stderr to `mktemp` files outside the working folder, that on exit 0 the skill runs
   `sh <report-filter.sh> <mode> <skill id> <name>… < <out-file> 2> /dev/null` and holds only what it prints, that its
   exit 1 names the **Skill** as having no report with `not in the report shape`, that any other exit ends the **Check**
