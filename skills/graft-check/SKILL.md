@@ -287,29 +287,30 @@ Take the fixes one at a time: ask, and apply only on yes. Run only the commands 
      `mkdir -p <package>/patches/ && cp change.patch <package>/patches/<n>.patch`.
 
   1. Append `"patches/<n>.patch"` to the **Skill**'s list under `[patches]` in the **Package**'s `skill-graft.toml`,
-     creating the key or the table if missing. Note which you created.
+     creating the key or the table if missing. Note which you created. Then run `skill-graft resolve`: a build refuses a
+     **Patch** the lock does not record.
 - A **Patch**, unhardened: make `base/` as in the first step above, then `cp -r base edited` beside it. Edit the files
   in `edited/` yourself, keeping `name:` as it is; then, in `<base-dir>`,
   `mkdir -p <package>/patches/ && LC_ALL=C diff -ruN base/ edited/ > <package>/patches/<n>.patch`, its exit code 1
-  meaning it wrote a diff, and append it to `[patches]` as in the last step above.
+  meaning it wrote a diff, append it to `[patches]` and run `skill-graft resolve`, as in the last step above.
 
 After each applied fix, make a throwaway build (step 2) into a new folder and compare its lock's `[[skills]]` ids with
 the previous build's. Name every **Skill** that left or joined the **Hull**.
 
-When that build fails, undo the fix and show the error:
+When that build fails, or after a **Patch** `skill-graft resolve` fails, undo the fix and show the error:
 
 - `add`: `skill-graft remove` the same **Skill IDs**.
 - `bind` or `unbind`: `skill-graft bind` the key to its noted value, or `skill-graft unbind` it if it had none.
 - A **Patch**: delete its file and remove its own item from the list; the key and the `[patches]` table only if you
-  created them.
+  created them. Then run `skill-graft resolve` again if the first one succeeded, so the lock no longer records it.
 
 Done when every proposed fix is applied or declined.
 
 ## 7. Close
 
 Compare the first throwaway build's folder with the **Package**: `diff -rq <folder>/.apm/skills <package>/.apm/skills`.
-A missing `<package>/.apm/skills` counts as a difference: the commands that edit config write the lock and leave the
-vendored copies behind.
+A missing `<package>/.apm/skills` counts as a difference.
 
 - A fix was accepted, or the folders differ: end by telling the user to run `skill-graft build`.
-- Otherwise: say the **Package** is as its config builds it, and that whether APM deployed it is not checked.
+- Otherwise: say the **Package**'s vendored copies are as its config builds them, and to run `skill-graft build` if it
+  has not run since the last change, which you cannot tell; whether APM deployed it is not checked.

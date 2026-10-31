@@ -144,7 +144,8 @@ MD
 # `defects`, the defects source prefixed `up-`, a path source `art` whose
 # `format` is not what `lead` means by /format, and a user patch of `lead`;
 # with `clean`, the clean source; with `missing`, the clean source and an entry
-# it lacks. With `built`, built in place first.
+# it lacks, which fails to resolve. Resolved; with `built`, built in place too.
+# `never-built` keeps its lock but not its vendored copies.
 project() {
   local dir="$work/$1" kind="$2" built="${3:-}"
   local package="$dir/project/.apm/skill-graft" sha
@@ -186,8 +187,12 @@ TOML
   fi
   mkdir -p "$dir/project/.claude/skills"
   cp -r "$repo/skills/graft-check" "$dir/project/.claude/skills/"
+  (cd "$dir/project" && skill-graft resolve) || [[ "$kind" == missing ]]
   if [[ -n "$built" ]]; then
     (cd "$dir/project" && skill-graft build --no-install)
+  fi
+  if [[ "$1" == never-built ]]; then
+    rm -rf "$package/.apm/skills"
   fi
   snapshot "$1" > "$dir/before"
 }

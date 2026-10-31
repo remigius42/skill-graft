@@ -87,7 +87,7 @@ every commit passes `pytest`.
 
 ## 4. graft-check
 
-- [ ] 4.1 `skills/graft-check/SKILL.md`: step 6 runs `skill-graft resolve` after appending a **Patch** to `[patches]`,
+- [x] 4.1 `skills/graft-check/SKILL.md`: step 6 runs `skill-graft resolve` after appending a **Patch** to `[patches]`,
   before the throwaway build; a failed `resolve` or build undoes the fix, then runs `skill-graft resolve` again if the
   first `resolve` succeeded. Step 7 drops "the commands that edit config write the lock and leave the vendored copies
   behind", and with nothing to build says the copies are as the config builds them, and to run `skill-graft build` if it

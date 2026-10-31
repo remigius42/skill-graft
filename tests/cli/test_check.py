@@ -818,3 +818,25 @@ def test_lock_checked_before_it_is_read() -> None:
     assert step.index("LC_ALL=C awk") < step.index("Only then read the lock")
     assert "the lock holds a value skill-graft would not write" in step
     assert "Its `version` must be 1" not in step
+
+
+def fixes_section() -> str:
+    """Step 6 of the skill's `SKILL.md`, on one line."""
+    text = " ".join((SKILLS / "graft-check" / "SKILL.md").read_text().split())
+    return text[text.index("## 6. Fixes") : text.index("## 7. Close")]
+
+
+def test_patch_fix_resolves_before_building() -> None:
+    text = fixes_section()
+    appended = text.index('Append `"patches/<n>.patch"`')
+    resolved = text.index("run `skill-graft resolve`", appended)
+
+    assert resolved < text.index("make a throwaway build", appended)
+
+
+def test_undone_patch_resolves_again() -> None:
+    text = fixes_section()
+    undo = text[text.index("undo the fix and show the error") :]
+
+    assert "`skill-graft resolve` fails" in text
+    assert "run `skill-graft resolve` again if the first one succeeded" in undo
