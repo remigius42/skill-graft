@@ -368,3 +368,21 @@ def discards(monkeypatch: pytest.MonkeyPatch) -> list[object]:
     streams: list[object] = []
     monkeypatch.setattr(errors, "_discard", streams.append)
     return streams
+
+
+def snapshot(folder: Path) -> dict[str, tuple[bool, bytes, int]]:
+    """Every path under `folder`: whether a link, its content, its mtime."""
+    if not folder.exists():
+        return {}
+    result = {}
+    for path in sorted(folder.rglob("*")):
+        content = (
+            os.readlink(path).encode()
+            if path.is_symlink()
+            else path.read_bytes()
+            if path.is_file()
+            else b""
+        )
+        mtime = path.lstat().st_mtime_ns if not path.is_dir() else 0
+        result[str(path.relative_to(folder))] = (path.is_symlink(), content, mtime)
+    return result

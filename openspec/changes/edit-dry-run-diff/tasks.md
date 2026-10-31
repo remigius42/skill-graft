@@ -34,7 +34,7 @@ without a whole command; misses the command's wiring, which the CLI seam covers)
   `tests/commands/test_review.py` ("Renamed skill" `~`, "First add", "A lock pointing outside the copies", "A removed ID
   holding a control character", a killed run's `skills.old` read); verify each fails first, then passes
 
-- [ ] 2.2 `--dry-run` for `add`, `remove`, `rename`, `bind`, `unbind` in `cli.py` and `edit.py`: the `ExitStack` with
+- [x] 2.2 `--dry-run` for `add`, `remove`, `rename`, `bind`, `unbind` in `cli.py` and `edit.py`: the `ExitStack` with
   the temporary folder and the layered cache at each command's top, before `compute.known`; `write=False`; the **Hull
   diff** before the tree, from `lock.skill_hashes`, set as `resolution.hashes`; the `review:` hint without `--diff`, its
   arguments `shlex.quote`d; the hint and the `dry run:` line registered on the stack only past the no-op check, so they

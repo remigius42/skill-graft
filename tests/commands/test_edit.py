@@ -3,12 +3,22 @@ skill-graft.toml in place."""
 
 import tomllib
 from pathlib import Path
-from typing import TypeAlias
+from typing import Any, TypeAlias, cast
 
 import pytest
-from conftest import Upstream, after_package_line, skill, write_config
+import tomlkit
+from conftest import (
+    Upstream,
+    after_package_line,
+    make_patch,
+    skill,
+    snapshot,
+    write_config,
+    write_patch,
+)
 
 from skill_graft.cli import main
+from skill_graft.infra import paths
 from skill_graft.infra.cache import Cache
 from skill_graft.pipeline import lock
 
@@ -831,3 +841,214 @@ def test_rename_reads_a_git_source_in_its_subdirectory(
 
     assert main(["rename", "cp/tdd", "t"]) == 0
     assert tomllib.loads(config.read_text())["rename"] == {"cp/tdd": "t"}
+
+
+DRY_RUN = "dry run: skill-graft.toml, skill-graft.lock and .apm/skills/ not written"
+
+
+def test_dry_run_of_an_add(home: Path, capsys: Capsys) -> None:
+    skill(home / "mp" / "tdd", "/grilling\n")
+    mp_skills(home, "grilling", "notes")
+    write_config('entries = ["mp/notes"]\n' + SOURCES)
+    assert main(["resolve"]) == 0
+    before = snapshot(package(home))
+    capsys.readouterr()
+
+    assert main(["add", "mp/tdd", "--dry-run"]) == 0
+
+    assert capsys.readouterr().out.splitlines() == [
+        "hull (+ added, - removed, ~ changed):",
+        "+ mp/grilling",
+        "  SKILL.md (new, 8 bytes)",
+        "+ mp/tdd",
+        "  SKILL.md (new, 10 bytes)",
+        "mp/notes",
+        "mp/tdd",
+        "└── mp/grilling (/grilling)",
+        "review: skill-graft add mp/tdd --dry-run --diff <file>",
+        DRY_RUN,
+    ]
+    assert snapshot(package(home)) == before
+
+
+AMBIGUOUS = SOURCES + '[sources.a]\npath = "~/a"\n[sources.b]\npath = "~/b"\n'
+
+
+def test_dry_run_of_a_failing_edit(home: Path, capsys: Capsys) -> None:
+    mp_skills(home, "tdd")
+    skill(home / "mp" / "notes", "/x\n")
+    skill(home / "a" / "x")
+    skill(home / "b" / "x")
+    write_config('entries = ["mp/tdd"]\n' + AMBIGUOUS)
+    assert main(["resolve"]) == 0
+    before = snapshot(package(home))
+
+    assert main(["add", "mp/notes", "--dry-run"]) == 1
+
+    assert snapshot(package(home)) == before
+
+
+def test_dry_run_with_an_edited_copy(home: Path, capsys: Capsys) -> None:
+    skill(home / "mp" / "tdd", "/grilling\n")
+    mp_skills(home, "grilling")
+    skill(home / "cp" / "grilling")
+    write_config('entries = ["mp/tdd"]\n' + SOURCES + '[sources.cp]\npath = "~/cp"\n')
+    assert main(["resolve"]) == 0
+    (package(home) / ".apm" / "skills" / "tdd" / "SKILL.md").write_text("edited\n")
+    capsys.readouterr()
+
+    assert main(["bind", "mp/grilling", "cp/grilling", "--dry-run"]) == 1
+
+    assert ".apm/skills/tdd" in capsys.readouterr().err
+
+
+def uncached(tmp_path: Path, alias: str, files: dict[str, str]) -> str:
+    """A git source `alias` at a commit its remote has but the cache lacks."""
+    upstream = Upstream(tmp_path / alias)
+    sha = upstream.commit(files)
+    return f'[sources.{alias}]\ngit = "{upstream.url}"\nref = "{sha}"\n'
+
+
+def test_dry_run_with_an_uncached_ref(
+    home: Path, tmp_path: Path, capsys: Capsys
+) -> None:
+    write_config(uncached(tmp_path, "mp", {"tdd/SKILL.md": "# tdd\n"}))
+
+    assert main(["add", "mp/tdd", "--dry-run"]) == 0
+
+    assert "+ mp/tdd" in capsys.readouterr().out
+    assert snapshot(paths.cache()) == {}
+
+
+def test_dry_run_checking_its_target_first(
+    home: Path, tmp_path: Path, capsys: Capsys
+) -> None:
+    skill(home / "mp" / "tdd", "/grilling\n")
+    mp_skills(home, "grilling")
+    cp = uncached(tmp_path, "cp", {"grilling/SKILL.md": "# g\n"})
+    write_config('entries = ["mp/tdd"]\n' + SOURCES + cp)
+
+    assert main(["bind", "mp/grilling", "cp/grilling", "--dry-run"]) == 0
+
+    assert snapshot(paths.cache()) == {}
+
+
+def test_dry_run_already_in_the_hull(home: Path, capsys: Capsys) -> None:
+    skill(home / "mp" / "notes", "/tdd\n")
+    mp_skills(home, "tdd")
+    write_config('entries = ["mp/notes"]\n' + SOURCES)
+    assert main(["resolve"]) == 0
+    capsys.readouterr()
+
+    assert main(["add", "mp/tdd", "--dry-run"]) == 0
+
+    out, err = capsys.readouterr()
+    assert "`mp/tdd` was already in the hull, via `mp/notes`" in err
+    assert out.splitlines()[0] == "hull unchanged"
+    assert out.splitlines()[-1] == DRY_RUN and "review:" not in out
+
+
+def test_no_op_dry_run(home: Path, capsys: Capsys) -> None:
+    mp_skills(home, "tdd")
+    write_config('entries = ["mp/tdd"]\n' + SOURCES)
+
+    assert main(["add", "mp/tdd", "--dry-run"]) == 0
+
+    out, err = capsys.readouterr()
+    assert out == "" and "`mp/tdd` is already an entry" in err
+
+
+def test_patch_failing_in_a_dry_run(home: Path, tmp_path: Path, capsys: Capsys) -> None:
+    source = uncached(tmp_path, "mp", {"tdd/SKILL.md": "# changed\n"})
+    write_patch(
+        "tdd.patch",
+        make_patch(tmp_path, {"SKILL.md": "# x\n"}, {"SKILL.md": "# x\nmore\n"}),
+    )
+    write_config(source + '[patches]\n"mp/tdd" = ["patches/tdd.patch"]\n')
+
+    assert main(["add", "mp/tdd", "--dry-run"]) == 1
+
+    err = capsys.readouterr().err
+    keep = "run `skill-graft add mp/tdd` without `--dry-run` to keep what it fetched"
+    assert f"mp/tdd: {keep}" in err and "update" not in err
+
+
+def test_dry_run_of_a_bind_changing_text(home: Path, capsys: Capsys) -> None:
+    skill(home / "mp" / "tdd", "/grilling\n")
+    mp_skills(home, "grilling")
+    skill(home / "cp" / "grilling")
+    write_config(
+        'entries = ["mp/tdd"]\n' + SOURCES + '[sources.cp]\npath = "~/cp"\n'
+        'prefix = "cp-"\n'
+    )
+    assert main(["resolve"]) == 0
+    capsys.readouterr()
+
+    assert main(["bind", "mp/grilling", "cp/grilling", "--dry-run"]) == 0
+
+    assert capsys.readouterr().out.splitlines()[:6] == [
+        "hull (+ added, - removed, ~ changed):",
+        "+ cp/grilling",
+        "  SKILL.md (new, 34 bytes)",
+        "- mp/grilling",
+        "~ mp/tdd",
+        "  SKILL.md (changed, 10 -> 13 bytes)",
+    ]
+
+
+def test_dry_run_of_a_rename(home: Path, capsys: Capsys) -> None:
+    skill(home / "mp" / "tdd", "---\nname: tdd\n---\n")
+    write_config('entries = ["mp/tdd"]\n' + SOURCES)
+    assert main(["resolve"]) == 0
+    capsys.readouterr()
+
+    assert main(["rename", "mp/tdd", "mp-tdd", "--dry-run"]) == 0
+
+    assert capsys.readouterr().out.splitlines()[:3] == [
+        "hull (+ added, - removed, ~ changed):",
+        "~ mp/tdd",
+        "  SKILL.md (changed, 18 -> 21 bytes)",
+    ]
+
+
+def test_dry_run_of_a_first_add(home: Path, capsys: Capsys) -> None:
+    skill(home / "mp" / "tdd", "/grilling\n")
+    mp_skills(home, "grilling")
+    write_config(SOURCES)
+
+    assert main(["add", "mp/tdd", "--dry-run"]) == 0
+
+    assert capsys.readouterr().out.splitlines()[:5] == [
+        "hull (+ added, - removed, ~ changed):",
+        "+ mp/grilling",
+        "  SKILL.md (new, 8 bytes)",
+        "+ mp/tdd",
+        "  SKILL.md (new, 10 bytes)",
+    ]
+    assert not (package(home) / ".apm").exists()
+
+
+def test_plain_edit_prints_no_hull_diff(home: Path, capsys: Capsys) -> None:
+    mp_skills(home, "tdd")
+    write_config(SOURCES)
+
+    assert main(["add", "mp/tdd"]) == 0
+
+    assert capsys.readouterr().out == "mp/tdd\n"
+
+
+def test_dry_run_quotes_a_removed_id(home: Path, capsys: Capsys) -> None:
+    mp_skills(home, "tdd", "notes")
+    write_config('entries = ["mp/tdd"]\n' + SOURCES)
+    assert main(["resolve"]) == 0
+    copy = skill(package(home) / ".apm" / "skills" / "x")
+    file = package(home) / "skill-graft.lock"
+    document = tomlkit.parse(file.read_text())
+    item = {"id": "mp/x\n\x1b", "entry": False, "deployed": "x", "upstream": "x"}
+    cast(Any, document["skills"]).append(item | {"hash": lock.folder_hash(copy)})
+    file.write_text(tomlkit.dumps(document))
+    capsys.readouterr()
+
+    assert main(["add", "mp/notes", "--dry-run"]) == 0
+
+    assert '- "mp/x\\n\\033"' in capsys.readouterr().out.splitlines()

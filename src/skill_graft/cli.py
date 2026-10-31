@@ -341,6 +341,8 @@ def _parser() -> tuple[_Parser, dict[str, argparse.ArgumentParser]]:
         ),
     )
     unbind.add_argument("key", metavar="alias/name", help="<source alias>/<name>")
+    for staging in (add, remove, rename, bind, unbind):
+        _review_options(staging)
     help_parser = commands.add_parser(
         "help",
         help="show the help of skill-graft or of a command",
@@ -388,6 +390,15 @@ def _fails_on_flush(failed: bool) -> bool:
     return False
 
 
+def _review_options(parser: argparse.ArgumentParser) -> None:
+    """The options a command that writes the lock offers to review it first."""
+    parser.add_argument(
+        "--dry-run",
+        action="store_true",
+        help="resolve and print the hull diff, writing nothing",
+    )
+
+
 def _main(argv: list[str] | None) -> int:
     # Here, not at load: on native Windows `main` refuses before any command module,
     # which may import a POSIX-only one such as `fcntl`, loads.
@@ -432,15 +443,15 @@ def _main(argv: list[str] | None) -> int:
                     args.expect,
                 )
             elif args.command == "add":
-                edit.add(current, warnings, args.skills)
+                edit.add(current, warnings, args.skills, args.dry_run)
             elif args.command == "remove":
-                edit.remove(current, warnings, args.skills)
+                edit.remove(current, warnings, args.skills, args.dry_run)
             elif args.command == "rename":
-                edit.rename(current, warnings, args.skill, args.name)
+                edit.rename(current, warnings, args.skill, args.name, args.dry_run)
             elif args.command == "bind":
-                edit.bind(current, warnings, args.key, args.target)
+                edit.bind(current, warnings, args.key, args.target, args.dry_run)
             elif args.command == "unbind":
-                edit.unbind(current, warnings, args.key)
+                edit.unbind(current, warnings, args.key, args.dry_run)
             elif args.command == "why":
                 explain.show_why(current, warnings, args.skill)
             elif args.command == "tree":
@@ -456,7 +467,7 @@ def _main(argv: list[str] | None) -> int:
         status = 1
     # The one place that sees every command end: `init` reads no source, and a
     # dry run writes no cache.
-    if args.command != "init" and not (args.command == "update" and args.dry_run):
+    if args.command != "init" and not getattr(args, "dry_run", False):
         housekeeping.prune()
     return status
 

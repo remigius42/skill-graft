@@ -8,6 +8,7 @@ from typing import Any, TypeAlias
 
 import pytest
 from conftest import (
+    snapshot,
     FakeApm,
     Upstream,
     deadline,
@@ -438,24 +439,6 @@ def test_nothing_new(upstream: Upstream, capsys: Capsys) -> None:
     assert update(capsys)[0] == 0
 
     assert file.read_bytes() == before and file.stat().st_mtime == 1_000_000
-
-
-def snapshot(folder: Path) -> dict[str, tuple[bool, bytes, int]]:
-    """Every path under `folder`: whether a link, its content, its mtime."""
-    if not folder.exists():
-        return {}
-    result = {}
-    for path in sorted(folder.rglob("*")):
-        content = (
-            os.readlink(path).encode()
-            if path.is_symlink()
-            else path.read_bytes()
-            if path.is_file()
-            else b""
-        )
-        mtime = path.lstat().st_mtime_ns if not path.is_dir() else 0
-        result[str(path.relative_to(folder))] = (path.is_symlink(), content, mtime)
-    return result
 
 
 def test_dry_run(upstream: Upstream, capsys: Capsys) -> None:
