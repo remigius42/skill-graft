@@ -255,9 +255,10 @@ deploy_advice() {
   report "${1:-}" | grep -iP 'skill-graft deploy\b(?!`?\s*--into)' | grep -viE "don't|do not|no need|not need"
 }
 advises_deploy() { deploy_advice "$@" > /dev/null; }
-# Advised, and not only if it has not run since the last change, as step 7 allows.
+# Advised, and not only if it has not run since the last change, as step 7 allows:
+# a line advising it with no condition, no "if", "unless" or "can't tell".
 advises_deploy_unconditionally() {
-  deploy_advice "$@" | grep -viE "(has not|hasn't) (yet )?(been )?run" > /dev/null
+  deploy_advice "$@" | grep -viE "\b(if|unless)\b|can(no|'|’)t tell" > /dev/null
 }
 # Scenario $1's `claude`: the shell lines on stdin run first, with `$real` the
 # wrapper above and `$log` a file; then every call passes through to `$real`.
