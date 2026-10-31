@@ -211,8 +211,8 @@ def _parser() -> tuple[_Parser, dict[str, argparse.ArgumentParser]]:
             "if that succeeds write the new ref into skill-graft.toml and the lock. "
             "Prints the hull diff, each changed file of each changed or added skill, "
             "and any patch hunk that no longer applies. To review an update, run "
-            "`update --dry-run --diff review.diff`, read the file in an editor, then "
-            "run the `apply:` line it prints, `update --expect <hull-digest>`."
+            "`update --dry-run --diff-file review.diff`, read the file in an editor, "
+            "then run the `apply:` line it prints, `update --expect <hull-digest>`."
         ),
     )
     update_parser.add_argument(
@@ -224,10 +224,10 @@ def _parser() -> tuple[_Parser, dict[str, argparse.ArgumentParser]]:
     update_parser.add_argument(
         "--dry-run",
         action="store_true",
-        help="show the new shas, write nothing but --diff's file",
+        help="show the new shas, write nothing but the --diff-file FILE",
     )
     update_parser.add_argument(
-        "--diff",
+        "--diff-file",
         type=Path,
         metavar="FILE",
         help=(
@@ -240,7 +240,7 @@ def _parser() -> tuple[_Parser, dict[str, argparse.ArgumentParser]]:
         metavar="hull-digest",
         help=(
             "update only if the new hull has this hull digest, as the `apply:` line "
-            "of a dry run with --diff gives it: so exactly the hull reviewed is "
+            "of a dry run with --diff-file gives it: so exactly the hull reviewed is "
             "written"
         ),
     )
@@ -396,16 +396,18 @@ def _review_options(parser: argparse.ArgumentParser) -> None:
     """The options a command that writes the lock offers to review it first."""
     parser.description = (
         f"{parser.description} To review what it would vendor first, run it with "
-        "--dry-run --diff review.diff and read review.diff in an editor, never by "
+        "--dry-run --diff-file review.diff and read review.diff in an editor, never by "
         "printing it to a terminal."
     )
     parser.add_argument(
         "--dry-run",
         action="store_true",
-        help="resolve and print the hull diff, writing nothing but --diff's file",
+        help=(
+            "resolve and print the hull diff, writing nothing but the --diff-file FILE"
+        ),
     )
     parser.add_argument(
-        "--diff",
+        "--diff-file",
         type=Path,
         metavar="FILE",
         help=(
@@ -456,30 +458,42 @@ def _main(argv: list[str] | None) -> int:
                     warnings,
                     args.aliases,
                     args.dry_run,
-                    args.diff,
+                    args.diff_file,
                     args.expect,
                 )
             elif args.command == "add":
-                edit.add(current, warnings, args.skills, args.dry_run, args.diff)
+                edit.add(current, warnings, args.skills, args.dry_run, args.diff_file)
             elif args.command == "remove":
-                edit.remove(current, warnings, args.skills, args.dry_run, args.diff)
+                edit.remove(
+                    current, warnings, args.skills, args.dry_run, args.diff_file
+                )
             elif args.command == "rename":
                 edit.rename(
-                    current, warnings, args.skill, args.name, args.dry_run, args.diff
+                    current,
+                    warnings,
+                    args.skill,
+                    args.name,
+                    args.dry_run,
+                    args.diff_file,
                 )
             elif args.command == "bind":
                 edit.bind(
-                    current, warnings, args.key, args.target, args.dry_run, args.diff
+                    current,
+                    warnings,
+                    args.key,
+                    args.target,
+                    args.dry_run,
+                    args.diff_file,
                 )
             elif args.command == "unbind":
-                edit.unbind(current, warnings, args.key, args.dry_run, args.diff)
+                edit.unbind(current, warnings, args.key, args.dry_run, args.diff_file)
             elif args.command == "why":
                 explain.show_why(current, warnings, args.skill)
             elif args.command == "tree":
                 mermaid = args.format == "mermaid"
                 explain.show_tree(current, warnings, mermaid, args.link)
             elif args.command == "resolve":
-                resolve.resolve(current, warnings, args.dry_run, args.diff)
+                resolve.resolve(current, warnings, args.dry_run, args.diff_file)
             elif args.command == "deploy":
                 deploy.deploy(current, warnings, args.into, args.no_apm_install)
         status = 0

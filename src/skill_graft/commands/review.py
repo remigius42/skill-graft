@@ -1,5 +1,5 @@
 """The review every command that writes the lock offers: the Hull diff it prints and
-the Deployed diff file `--diff` writes."""
+the Deployed diff file `--diff-file` writes."""
 
 import os
 import shlex
@@ -19,9 +19,13 @@ from skill_graft.pipeline import deployed, hidden, lock, rename
 from skill_graft.pipeline.config import Config, GitSource, SkillId
 from skill_graft.pipeline.hull import Hull, PatchError
 
-# The Deployed diff's first line, the same in every file: one starting with it is
-# one skill-graft wrote.
+# The Deployed diff's first line, the same in every file: one starting with it, or
+# with the line 0.3.0 wrote, is one skill-graft wrote.
 FIRST = (
+    "# skill-graft Deployed diff: each Skill's text as deployed, Patches and Renames"
+    " applied,\n"
+)
+FIRST_0_3 = (
     "# skill-graft Deployed diff: each Skill's text as `build` deploys it, Patches and"
     " Renames applied,\n"
 )
@@ -81,7 +85,7 @@ def vendored(skills: Path, locked: dict[str, Any] | None) -> Before:
 
 
 def check_target(file: Path) -> Path:
-    """Where to write `--diff`'s file: its folders resolved, its last part kept.
+    """Where to write `--diff-file`'s file: its folders resolved, its last part kept.
 
     Refuses a name no harness would leave alone, a place inside a package or a
     skill, and anything but a new file or a Deployed diff it wrote, which `clear`
@@ -89,7 +93,7 @@ def check_target(file: Path) -> Path:
     """
     if not file.name.endswith(".diff"):
         raise SkillGraftError(
-            f"--diff {file}: name a file ending in .diff, which no agent loads"
+            f"--diff-file {file}: name a file ending in .diff, which no agent loads"
         )
     target = file.parent.resolve() / file.name
     # As given too, but without `..`: a harness walking a package or a skill
@@ -98,25 +102,27 @@ def check_target(file: Path) -> Path:
     for folder in [*given.parents, *target.parents]:
         if paths.folded(folder).name == ".apm":
             raise SkillGraftError(
-                f"--diff {file}: inside {folder}, a folder named .apm"
+                f"--diff-file {file}: inside {folder}, a folder named .apm"
             )
         if (folder / "SKILL.md").exists():
             raise SkillGraftError(
-                f"--diff {file}: inside {folder}, a skill's folder holding a SKILL.md"
+                f"--diff-file {file}: inside {folder}, a skill's folder holding a "
+                "SKILL.md"
             )
     if not target.parent.is_dir():  # before any fetch, not at the last write
-        raise SkillGraftError(f"--diff {file}: no such folder {target.parent}")
+        raise SkillGraftError(f"--diff-file {file}: no such folder {target.parent}")
     try:
         mode = target.lstat().st_mode
     except FileNotFoundError:
         return target
     if not stat.S_ISREG(mode):
-        raise SkillGraftError(f"--diff {file}: not a regular file")
-    first = FIRST.encode()
+        raise SkillGraftError(f"--diff-file {file}: not a regular file")
+    firsts = (FIRST.encode(), FIRST_0_3.encode())
     with open(target, "rb") as written:
-        if written.read(len(first)) != first:
+        if not written.read(max(map(len, firsts))).startswith(firsts):
             raise SkillGraftError(
-                f"--diff {file}: not a Deployed diff skill-graft wrote; left as it is"
+                f"--diff-file {file}: not a Deployed diff skill-graft wrote; left as "
+                "it is"
             )
     return target
 
@@ -261,7 +267,7 @@ def _source_line(
 
 class Run:
     """One run of a command that writes the lock: its cache, a dry run's layered
-    over a temporary folder the run removes; `--diff`'s file, refused if bad before
+    over a temporary folder the run removes; `--diff-file`'s file, refused if bad before
     anything else; and the lines a dry run prints last."""
 
     def __init__(
@@ -303,7 +309,7 @@ class Run:
 
     def _hint(self) -> None:
         if self.changed and self.target is None:
-            print(f"review: skill-graft {self.command} --dry-run --diff <file>")
+            print(f"review: skill-graft {self.command} --dry-run --diff-file <file>")
 
 
 @contextmanager
@@ -340,7 +346,7 @@ def stage(
     head: str,
 ) -> None:
     """Inside `resolving`, while the patched copies exist: with `--dry-run` or
-    `--diff`, prints the Hull diff of the copies against the hull and builds the
+    `--diff-file`, prints the Hull diff of the copies against the hull and builds the
     Deployed diff under `head`; in a real run, its write comes first of the
     caller's, so a later failure undoes it."""
     target = run.target

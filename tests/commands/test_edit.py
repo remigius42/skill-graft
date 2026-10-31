@@ -866,7 +866,7 @@ def test_dry_run_of_an_add(home: Path, capsys: Capsys) -> None:
         "mp/notes",
         "mp/tdd",
         "└── mp/grilling (/grilling)",
-        "review: skill-graft add mp/tdd --dry-run --diff <file>",
+        "review: skill-graft add mp/tdd --dry-run --diff-file <file>",
         DRY_RUN,
     ]
     assert snapshot(package(home)) == before
@@ -1053,13 +1053,13 @@ def test_dry_run_quotes_a_removed_id(home: Path, capsys: Capsys) -> None:
     assert main(["add", "mp/notes", "--dry-run"]) == 0
 
     assert '- "mp/x\\n\\033"' in capsys.readouterr().out.splitlines()
-    assert main(["add", "mp/notes", "--dry-run", "--diff", "review.diff"]) == 0
+    assert main(["add", "mp/notes", "--dry-run", "--diff-file", "review.diff"]) == 0
     assert '# - "mp/x\\n\\033"\n' in (home / "review.diff").read_text()
 
 
 HEADER = (
-    "# skill-graft Deployed diff: each Skill's text as `build` deploys it, Patches and"
-    " Renames applied,\n"
+    "# skill-graft Deployed diff: each Skill's text as deployed, Patches and Renames"
+    " applied,\n"
     "# the Vendored copies against what the edited config would vendor. Not what the"
     " Sources changed upstream. Untrusted text:\n"
     "# read it in an editor, not by printing it to a terminal.\n"
@@ -1073,7 +1073,7 @@ def test_diff_file(home: Path, capsys: Capsys) -> None:
     assert main(["resolve"]) == 0
     capsys.readouterr()
 
-    assert main(["add", "mp/tdd", "--dry-run", "--diff", "review.diff"]) == 0
+    assert main(["add", "mp/tdd", "--dry-run", "--diff-file", "review.diff"]) == 0
 
     out = capsys.readouterr().out
     assert "+ mp/tdd" in out and "review:" not in out
@@ -1107,7 +1107,7 @@ def test_diff_file_of_a_removal(home: Path, capsys: Capsys) -> None:
     write_config('entries = ["mp/notes", "mp/tdd"]\n' + SOURCES)
     assert main(["resolve"]) == 0
 
-    assert main(["remove", "mp/tdd", "--dry-run", "--diff", "review.diff"]) == 0
+    assert main(["remove", "mp/tdd", "--dry-run", "--diff-file", "review.diff"]) == 0
 
     text = (home / "review.diff").read_text()
     assert text == HEADER + "#   mp/notes\n# - mp/tdd\n"
@@ -1122,7 +1122,7 @@ def test_diff_file_it_did_not_write(
     (home / "repo" / "apm.yml").write_text("name: repo\n")
     monkeypatch.chdir(home / "repo")
 
-    assert main(["add", "mp/tdd", "--dry-run", "--diff", "apm.yml"]) == 1
+    assert main(["add", "mp/tdd", "--dry-run", "--diff-file", "apm.yml"]) == 1
 
     err = capsys.readouterr().err
     assert "apm.yml" in err and "'mp'" not in err  # refused before resolving
@@ -1137,7 +1137,7 @@ def test_failed_edit_leaves_no_diff_file(home: Path, capsys: Capsys) -> None:
     write_config('entries = ["mp/tdd"]\n' + AMBIGUOUS)
     (home / "review.diff").write_text(HEADER)
 
-    assert main(["add", "mp/notes", "--dry-run", "--diff", "review.diff"]) == 1
+    assert main(["add", "mp/notes", "--dry-run", "--diff-file", "review.diff"]) == 1
 
     assert not (home / "review.diff").exists()
 
@@ -1147,7 +1147,7 @@ def test_refused_edit_leaves_no_diff_file(home: Path, capsys: Capsys) -> None:
     write_config('entries = ["mp/tdd"]\n' + SOURCES)
     (home / "review.diff").write_text(HEADER)
 
-    assert main(["remove", "mp/typo", "--diff", "review.diff"]) == 1
+    assert main(["remove", "mp/typo", "--diff-file", "review.diff"]) == 1
 
     assert "`mp/typo` is no entry" in capsys.readouterr().err
     assert not (home / "review.diff").exists()
@@ -1165,7 +1165,7 @@ def test_failure_after_the_writes_keeps_the_diff_file(
 
     monkeypatch.setattr(explain, "show", broken_pipe)
 
-    assert main(["add", "mp/notes", "--diff", "review.diff"]) == 1
+    assert main(["add", "mp/notes", "--diff-file", "review.diff"]) == 1
 
     assert entries(home) == ["mp/tdd", "mp/notes"]
     assert (home / "review.diff").read_text().startswith(HEADER)
@@ -1176,7 +1176,7 @@ def test_no_op_edit_keeps_the_diff_file(home: Path, capsys: Capsys) -> None:
     write_config('entries = ["mp/tdd"]\n' + SOURCES)
     (home / "review.diff").write_text(HEADER + "earlier\n")
 
-    assert main(["add", "mp/tdd", "--diff", "review.diff"]) == 0
+    assert main(["add", "mp/tdd", "--diff-file", "review.diff"]) == 0
 
     out, err = capsys.readouterr()
     assert out == "" and "`mp/tdd` is already an entry" in err
@@ -1187,7 +1187,7 @@ def test_diff_with_a_real_edit(home: Path, capsys: Capsys) -> None:
     mp_skills(home, "tdd", "notes")
     write_config('entries = ["mp/tdd"]\n' + SOURCES)
     assert main(["resolve"]) == 0
-    assert main(["add", "mp/notes", "--diff", "review.diff"]) == 0
+    assert main(["add", "mp/notes", "--diff-file", "review.diff"]) == 0
     text = (home / "review.diff").read_text()
     assert text.startswith(HEADER + "#   mp/tdd\n# + mp/notes\n# + mp/notes\n")
     assert entries(home) == ["mp/tdd", "mp/notes"]
@@ -1206,7 +1206,7 @@ def test_diff_with_a_failing_lock_write(
 
     monkeypatch.setattr(lock, "write", fail)
 
-    assert main(["add", "mp/notes", "--diff", "review.diff"]) == 1
+    assert main(["add", "mp/notes", "--diff-file", "review.diff"]) == 1
 
     after = {p: content for p, (_, content, _) in snapshot(package(home)).items()}
     assert after == before
@@ -1225,7 +1225,7 @@ def test_diff_file_with_a_lock_pointing_outside(home: Path, capsys: Capsys) -> N
     file.write_text(tomlkit.dumps(document))
     capsys.readouterr()
 
-    assert main(["add", "mp/notes", "--dry-run", "--diff", "review.diff"]) == 0
+    assert main(["add", "mp/notes", "--dry-run", "--diff-file", "review.diff"]) == 0
 
     assert "+ mp/tdd" in capsys.readouterr().out.splitlines()
 
@@ -1248,7 +1248,9 @@ def test_diff_file_quotes_the_locks_ref(
     file = package(home) / "skill-graft.lock"
     file.write_text(file.read_text().replace(f'"{sha}"', '"X\\n+evil\\u001b"'))
 
-    assert main(["rename", "mp/tdd", "t", "--dry-run", "--diff", "review.diff"]) == 0
+    assert (
+        main(["rename", "mp/tdd", "t", "--dry-run", "--diff-file", "review.diff"]) == 0
+    )
 
     lines = (home / "review.diff").read_text().splitlines()
     assert f'# source mp: "X\\n+evil\\033" -> {sha}; upstream folder tdd' in lines
@@ -1261,7 +1263,9 @@ def test_diff_file_without_the_locks_ref(
     file = package(home) / "skill-graft.lock"
     file.write_text(file.read_text().replace(f'ref = "{sha}"\n', ""))
 
-    assert main(["rename", "mp/tdd", "t", "--dry-run", "--diff", "review.diff"]) == 0
+    assert (
+        main(["rename", "mp/tdd", "t", "--dry-run", "--diff-file", "review.diff"]) == 0
+    )
 
     lines = (home / "review.diff").read_text().splitlines()
     assert f"# source mp: {sha}; upstream folder tdd" in lines

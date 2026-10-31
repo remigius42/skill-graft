@@ -57,6 +57,25 @@ def test_first_add_all_added(home: Path, capsys: Capsys) -> None:
     ]
 
 
+def test_overwrites_a_deployed_diff_an_earlier_release_wrote(home: Path) -> None:
+    skill(home / "mp" / "tdd")
+    configure(["mp/tdd"], mp="~/mp")
+    old = (
+        "# skill-graft Deployed diff: each Skill's text as `build` deploys it, Patches"
+        " and Renames applied,\n# written by 0.3.0\n"
+    )
+    (home / "review.diff").write_text(old)
+
+    assert main(["resolve", "--dry-run", "--diff-file", "review.diff"]) == 0
+
+    text = (home / "review.diff").read_text()
+    assert text.startswith(
+        "# skill-graft Deployed diff: each Skill's text as deployed, Patches and"
+        " Renames applied,\n"
+    )
+    assert "written by 0.3.0" not in text and "mp/tdd" in text
+
+
 def edit_lock(change: Callable[[tomlkit.TOMLDocument], None]) -> None:
     file = paths.Scope(Path.home()).lock_file
     document = tomlkit.parse(file.read_text())

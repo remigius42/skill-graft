@@ -26,7 +26,7 @@ from skill_graft.pipeline.config import Config, GitSource, SkillId
 from skill_graft.pipeline.hull import PatchError
 
 
-# Its header: what `update --diff` compares.
+# Its header: what `update --diff-file` compares.
 HEADER = review.header("at the current refs against the new ones")
 
 
@@ -56,7 +56,7 @@ def update(
     # The flags to run again with: `--expect`'s digest changes with the sources.
     flags = " --dry-run" if dry_run or expect is not None else ""
     if diff_file is not None:
-        flags += f" --diff {shlex.quote(str(diff_file))}"
+        flags += f" --diff-file {shlex.quote(str(diff_file))}"
     git_cache = Cache.default()
     tmp: Path | None = None  # a dry run's cache, layered over the real one
     with ExitStack() as stack:
@@ -131,7 +131,7 @@ def _update(
             if not isinstance(previous, str):  # else every skill is shown in full
                 edited = _print_edited(previous.hashes, lock.recorded(locked))
             given = "".join(f"{shlex.quote(alias)} " for alias in aliases)
-            rerun = f"skill-graft update {given}--dry-run --diff <file>"
+            rerun = f"skill-graft update {given}--dry-run --diff-file <file>"
             digest = lock.digest(hull, hashes)
             if expect is not None and digest != expect:
                 raise SkillGraftError(

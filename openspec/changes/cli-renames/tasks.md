@@ -6,8 +6,9 @@ Apply with the `mp-tdd` skill: each task red-green-refactor, one commit, its sea
 check each by hand. Outside released `CHANGELOG.md` sections and the Upgrading entry, none may name the command,
 `--no-install` or `--diff`, or mean vendoring. What stays: what the design keeps (the tagline "skill-graft builds a
 user's agent skills", the top-level help's "Build your agent skills", `[build-system]` and `uv_build`, `cache._build`,
-`review.FIRST`'s `` `build` ``, the scenario headers task 6.1 renames), and "built" or "rebuilt" in the sense of made
-("built before any write", "built in the test", "built-in", "build-tool"), left as written.
+0.3.0's first line of a Deployed diff in `review.py` and the tests, the scenario headers task 6.1 renames), and "built"
+or "rebuilt" in the sense of made ("built before any write", "built in the test", "built-in", "build-tool"), left as
+written.
 
 ## 1. Options spelled in full
 
@@ -47,13 +48,14 @@ user's agent skills", the top-level help's "Build your agent skills", `[build-sy
 
 ## 4. `--diff` becomes `--diff-file`
 
-- [ ] 4.1 `--diff-file` in `cli._review_options` for `resolve`, `add`, `remove`, `rename`, `bind`, `unbind`, and in
+- [x] 4.1 `--diff-file` in `cli._review_options` for `resolve`, `add`, `remove`, `rename`, `bind`, `unbind`, and in
   `_parser`'s own `--diff` of `update`, with `update`'s description (`update --dry-run --diff-file review.diff`) and
   `--expect` help; `review.py`'s errors (`--diff-file <file>: …`) and docstrings, the `review:` and `apply:` hints and
-  the `--expect` error in `update.py`; the comments in `edit.py` and `resolve.py`. `review.FIRST` keeps its bytes. Tests
-  first: "Former names refused: Old diff option", and the scenarios of `update`, `edit` and `resolve` whose output or
-  hint names the option, in `tests/commands/test_update.py`, `test_edit.py`, `test_resolve.py` and `test_review.py` (a
-  file 0.3.0 wrote, starting with `FIRST`, still overwritten); verify they fail, then pass
+  the `--expect` error in `update.py`; the comments in `edit.py` and `resolve.py`. `review.FIRST` says "each Skill's
+  text as deployed", naming no command, and `review.check_target` also takes a file starting with the line 0.3.0 wrote.
+  Tests first: "Former names refused: Old diff option", and the scenarios of `update`, `edit` and `resolve` whose output
+  or hint names the option, in `tests/commands/test_update.py`, `test_edit.py`, `test_resolve.py` and `test_review.py`
+  (a file 0.3.0 wrote, starting with its first line, still overwritten); verify they fail, then pass
 - [ ] 4.2 Docs for `--diff-file`: README.md (the getting-started flow, the staging paragraph, "Writing a patch"),
   `docs/design.md`, `docs/security.md`, each command's `--help`. Verify `pre-commit run --all-files`
 

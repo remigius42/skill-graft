@@ -7,7 +7,7 @@ from skill_graft.infra import paths
 
 # What its dry run does not write.
 WRITTEN = "skill-graft.lock and .apm/skills/"
-# Its header: what `resolve --diff` compares.
+# Its header: what `resolve --diff-file` compares.
 HEADER = review.header(
     "the Vendored copies against what `skill-graft.toml` as it stands would vendor"
 )

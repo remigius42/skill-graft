@@ -119,6 +119,13 @@ def test_old_install_option(
     assert fake_apm.calls == []
 
 
+def test_old_diff_option(home: Path, capsys: pytest.CaptureFixture[str]) -> None:
+    code, out, err = run(["update", "--dry-run", "--diff", "review.diff"], capsys)
+    assert (code, out) == (2, "")
+    assert "--diff" in err and "package:" not in err
+    assert not (home / "review.diff").exists()
+
+
 def test_no_command(capsys: pytest.CaptureFixture[str]) -> None:
     code, out, err = run([], capsys)
     assert (code, out) == (2, "")

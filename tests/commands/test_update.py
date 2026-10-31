@@ -112,10 +112,10 @@ def test_hint_keeps_the_review(
     text = config.read_text()
     review = tmp_path / "my review.diff"
 
-    code, _, err = update(capsys, "a", *flags, "--diff", str(review))
+    code, _, err = update(capsys, "a", *flags, "--diff-file", str(review))
 
     assert code == 1 and config.read_text() == text
-    assert f"skill-graft update a b --dry-run --diff '{review}'`" in err
+    assert f"skill-graft update a b --dry-run --diff-file '{review}'`" in err
 
 
 def test_entries_clash_before_update_fetches(
@@ -1072,7 +1072,7 @@ def test_hint(upstream: Upstream, capsys: Capsys) -> None:
 
     assert code == 0
     assert out.splitlines()[-2:] == [
-        "review: skill-graft update mp --dry-run --diff <file>",
+        "review: skill-graft update mp --dry-run --diff-file <file>",
         "dry run: skill-graft.toml and skill-graft.lock not written",
     ]
 
@@ -1199,8 +1199,8 @@ def test_unreadable_lock_names_every_skill(
 
 
 HEADER = (
-    "# skill-graft Deployed diff: each Skill's text as `build` deploys it, Patches and"
-    " Renames applied,\n"
+    "# skill-graft Deployed diff: each Skill's text as deployed, Patches and Renames"
+    " applied,\n"
     "# at the current refs against the new ones. Not what the Sources changed"
     " upstream. Untrusted text:\n"
     "# read it in an editor, not by printing it to a terminal.\n"
@@ -1238,7 +1238,7 @@ def tdd_diff(old: str, new: str) -> str:
 def test_diff_file(home: Path, upstream: Upstream, capsys: Capsys) -> None:
     old, new, _ = moved_tdd(upstream)
 
-    code, out, _ = update(capsys, "--diff", "review.diff")
+    code, out, _ = update(capsys, "--diff-file", "review.diff")
 
     assert code == 0 and ref("mp") == new
     assert (home / "review.diff").read_text() == HEADER + "# ~ mp/tdd\n" + tdd_diff(
@@ -1257,7 +1257,7 @@ def test_dry_run_with_a_diff_file(
         snapshot(paths.cache()),
     )
 
-    code, out, _ = update(capsys, "--dry-run", "--diff", "review.diff")
+    code, out, _ = update(capsys, "--dry-run", "--diff-file", "review.diff")
 
     assert code == 0 and "review:" not in out
     assert (home / "review.diff").read_text() == HEADER + "# ~ mp/tdd\n" + tdd_diff(
@@ -1269,10 +1269,10 @@ def test_dry_run_with_a_diff_file(
 
 def test_existing_diff_file(home: Path, upstream: Upstream, capsys: Capsys) -> None:
     old, _, _ = moved_tdd(upstream)
-    assert update(capsys, "--dry-run", "--diff", "review.diff")[0] == 0
+    assert update(capsys, "--dry-run", "--diff-file", "review.diff")[0] == 0
     newer = upstream.commit({"tdd/SKILL.md": "3\n"})
 
-    assert update(capsys, "--dry-run", "--diff", "review.diff")[0] == 0
+    assert update(capsys, "--dry-run", "--diff-file", "review.diff")[0] == 0
 
     text = (home / "review.diff").read_text()
     assert text.startswith(HEADER) and text.count(HEADER) == 1
@@ -1283,11 +1283,11 @@ def test_failed_run_removes_the_diff_file(
     home: Path, upstream: Upstream, capsys: Capsys
 ) -> None:
     moved_tdd(upstream)
-    assert update(capsys, "--dry-run", "--diff", "review.diff")[0] == 0
+    assert update(capsys, "--dry-run", "--diff-file", "review.diff")[0] == 0
     upstream.git("rm", "-q", "-r", "tdd")
     upstream.commit({"other/SKILL.md": "# other\n"})
 
-    code, _, err = update(capsys, "--dry-run", "--diff", "review.diff")
+    code, _, err = update(capsys, "--dry-run", "--diff-file", "review.diff")
 
     assert code == 1 and "mp/tdd" in err
     assert not (home / "review.diff").exists()
@@ -1304,7 +1304,7 @@ def test_a_file_it_did_not_write(
     monkeypatch.chdir(home / "repo")
 
     for name in ("apm.yml", "notes.diff"):
-        code, _, err = update(capsys, "--dry-run", "--diff", name)
+        code, _, err = update(capsys, "--dry-run", "--diff-file", name)
 
         assert code == 1 and name in err
     assert (home / "repo" / "apm.yml").read_text() == "name: repo\n"
@@ -1318,7 +1318,7 @@ def test_diff_file_a_symbolic_link(
     (home / "target.diff").write_text(HEADER)
     (home / "review.diff").symlink_to("target.diff")
 
-    code, _, err = update(capsys, "--diff", "review.diff")
+    code, _, err = update(capsys, "--diff-file", "review.diff")
 
     assert code == 1 and "review.diff" in err
     assert (home / "review.diff").is_symlink()
@@ -1338,7 +1338,7 @@ def test_diff_file_not_a_regular_file(
         (home / name).mkdir()
 
     with deadline():
-        code, _, err = update(capsys, "--dry-run", "--diff", name)
+        code, _, err = update(capsys, "--dry-run", "--diff-file", name)
 
     assert code == 1 and name in err
     assert not paths.cache().exists()
@@ -1356,7 +1356,7 @@ def test_diff_file_inside_the_package(
     (home / "link").symlink_to(home / ".apm")
     (home / "sub").mkdir()
 
-    code, _, err = update(capsys, "--diff", name)
+    code, _, err = update(capsys, "--diff-file", name)
 
     assert code == 1 and name in err and ".apm" in err
     assert not paths.cache().exists()
@@ -1367,11 +1367,12 @@ def test_not_a_diff_file_name(home: Path, upstream: Upstream, capsys: Capsys) ->
     moved_tdd(upstream)
     (home / ".claude" / "commands").mkdir(parents=True)
 
-    code, _, err = update(capsys, "--dry-run", "--diff", ".claude/commands/review.md")
-
-    assert (
-        code == 1 and ".claude/commands/review.md" in err and "ending in .diff" in err
+    code, _, err = update(
+        capsys, "--dry-run", "--diff-file", ".claude/commands/review.md"
     )
+
+    assert code == 1 and "--diff-file .claude/commands/review.md: " in err
+    assert "ending in .diff" in err
     assert not (home / ".claude" / "commands" / "review.md").exists()
 
 
@@ -1382,7 +1383,7 @@ def test_diff_file_inside_a_skills_folder(
     skill(home / ".claude" / "skills" / "mp-tdd")
     name = ".claude/skills/mp-tdd/review.diff"
 
-    code, _, err = update(capsys, "--dry-run", "--diff", name)
+    code, _, err = update(capsys, "--dry-run", "--diff-file", name)
 
     assert code == 1 and name in err
     assert not (home / name).exists()
@@ -1398,7 +1399,7 @@ def test_failed_write_after_the_diff(
 
     monkeypatch.setattr(edit, "write", fail)
 
-    code, _, err = update(capsys, "--diff", "review.diff")
+    code, _, err = update(capsys, "--diff-file", "review.diff")
 
     assert code == 1 and "disk full" in err
     assert not (home / "review.diff").exists()
@@ -1422,7 +1423,7 @@ def test_failed_diff_write(
     before, lock = file.read_bytes(), lock_file().read_bytes()
     failing_diff_write(monkeypatch)
 
-    code, _, err = update(capsys, "--diff", "review.diff")
+    code, _, err = update(capsys, "--diff-file", "review.diff")
 
     assert code == 1 and "disk full" in err
     assert file.read_bytes() == before and lock_file().read_bytes() == lock
@@ -1434,7 +1435,7 @@ def test_failed_diff_write_in_a_dry_run(
     moved_tdd(upstream)
     failing_diff_write(monkeypatch)
 
-    code, out, _ = update(capsys, "--dry-run", "--diff", "review.diff")
+    code, out, _ = update(capsys, "--dry-run", "--diff-file", "review.diff")
 
     assert code == 1 and "apply:" not in out
 
@@ -1487,7 +1488,7 @@ def test_diff_file_without_a_previous_hull(
     sha = upstream.commit({"tdd/SKILL.md": "1\n"})
     write_config('entries = ["mp/tdd"]\n' + git_source("mp", upstream))
 
-    code, _, _ = update(capsys, "--diff", "review.diff")
+    code, _, _ = update(capsys, "--diff-file", "review.diff")
 
     assert code == 0
     assert (home / "review.diff").read_text() == HEADER + (
@@ -1518,7 +1519,7 @@ def test_diff_file_after_patches_redone_for_the_tip(
     patched_source(upstream, old, redone)
     capsys.readouterr()
 
-    code, out, _ = update(capsys, "--dry-run", "--diff", "review.diff")
+    code, out, _ = update(capsys, "--dry-run", "--diff-file", "review.diff")
 
     text = (home / "review.diff").read_text()
     assert code == 0 and apply_line(out)
@@ -1534,7 +1535,7 @@ def test_diff_file_when_nothing_changed(
 ) -> None:
     moved_tdd(upstream, after="1\n")
 
-    assert update(capsys, "--diff", "review.diff")[0] == 0
+    assert update(capsys, "--diff-file", "review.diff")[0] == 0
 
     assert (
         home / "review.diff"
@@ -1552,7 +1553,7 @@ def test_patch_applied_on_both_sides(
     assert resolve_and_deploy(["deploy", "--no-apm-install"]) == 0
     upstream.commit({"tdd/SKILL.md": LINES.replace("line 9\n", "line 9 upstream\n")})
 
-    assert update(capsys, "--dry-run", "--diff", "review.diff")[0] == 0
+    assert update(capsys, "--dry-run", "--diff-file", "review.diff")[0] == 0
 
     text = (home / "review.diff").read_text()
     changed = [line for line in text.splitlines() if line[:1] in "+-"]
@@ -1575,7 +1576,7 @@ def test_renamed_skill_in_the_diff(
     assert resolve_and_deploy(["deploy", "--no-apm-install"]) == 0
     upstream.commit({"tdd/SKILL.md": "# tdd\n/grilling\n"})
 
-    assert update(capsys, "--dry-run", "--diff", "review.diff")[0] == 0
+    assert update(capsys, "--dry-run", "--diff-file", "review.diff")[0] == 0
 
     assert "\n+/mp-grilling\n" in (home / "review.diff").read_text()
 
@@ -1593,7 +1594,7 @@ def test_source_line(home: Path, upstream: Upstream, capsys: Capsys) -> None:
     upstream.git("rm", "-q", "-r", "skills/tdd")
     new = upstream.commit({"skills/dev/tdd/SKILL.md": "2\n"})
 
-    assert update(capsys, "--dry-run", "--diff", "review.diff")[0] == 0
+    assert update(capsys, "--dry-run", "--diff-file", "review.diff")[0] == 0
 
     assert source_lines((home / "review.diff").read_text()) == [
         f"# source mp: {old} -> {new}; upstream folder skills/tdd -> skills/dev/tdd"
@@ -1613,7 +1614,7 @@ def test_path_source_in_the_diff(
     assert resolve_and_deploy(["deploy", "--no-apm-install"]) == 0
     upstream.commit({"grilling/SKILL.md": "g\n"})
 
-    assert update(capsys, "mp", "--dry-run", "--diff", "review.diff")[0] == 0
+    assert update(capsys, "mp", "--dry-run", "--diff-file", "review.diff")[0] == 0
 
     text = (home / "review.diff").read_text()
     assert "# ~ own/notes\n# source own: a path source\n" in text
@@ -1645,7 +1646,7 @@ def test_edited_since_the_lock_in_the_diff(
     )
     upstream.commit({"tdd/SKILL.md": LINES.replace("line 9\n", "line 9 upstream\n")})
 
-    code, out, _ = update(capsys, "--dry-run", "--diff", "review.diff")
+    code, out, _ = update(capsys, "--dry-run", "--diff-file", "review.diff")
 
     assert code == 0 and EDITED + "mp/tdd" in out
     assert "# ~ mp/tdd\n# source mp: " in (text := (home / "review.diff").read_text())
@@ -1664,7 +1665,7 @@ def test_git_configuration_ignored(
     )
     assert resolve_and_deploy(["deploy", "--no-apm-install"]) == 0
     upstream.commit({"tdd/SKILL.md": "2\n", "tdd/a.md": "b\n"})
-    assert update(capsys, "--dry-run", "--diff", "review.diff")[0] == 0
+    assert update(capsys, "--dry-run", "--diff-file", "review.diff")[0] == 0
     plain = (home / "review.diff").read_text()
     (tmp_path / "attributes").write_text("*.md binary\n")
     (tmp_path / "order").write_text("SKILL.md\na.md\n")
@@ -1673,7 +1674,7 @@ def test_git_configuration_ignored(
         f"[diff]\n\torderFile = {tmp_path / 'order'}\n"
     )
 
-    assert update(capsys, "--dry-run", "--diff", "review.diff")[0] == 0
+    assert update(capsys, "--dry-run", "--diff-file", "review.diff")[0] == 0
 
     assert (home / "review.diff").read_text() == plain
     assert "+b\n" in plain
@@ -1693,7 +1694,7 @@ def apply_line(out: str) -> list[str]:
 def test_apply_line(upstream: Upstream, capsys: Capsys) -> None:
     _, new, _ = moved_tdd(upstream)
 
-    code, out, _ = update(capsys, "mp", "--dry-run", "--diff", "review.diff")
+    code, out, _ = update(capsys, "mp", "--dry-run", "--diff-file", "review.diff")
 
     args = apply_line(out)
     assert code == 0 and args[:2] == ["mp", "--expect"] and len(args[2]) == 64
@@ -1763,7 +1764,9 @@ def test_no_apply_line_before_a_review(upstream: Upstream, capsys: Capsys) -> No
 
     code, out, _ = update(capsys, "--dry-run")
 
-    assert code == 0 and "review: skill-graft update --dry-run --diff <file>" in out
+    assert (
+        code == 0 and "review: skill-graft update --dry-run --diff-file <file>" in out
+    )
     assert apply_line(out) == []
 
 
@@ -1784,7 +1787,7 @@ def test_apply_line_without_a_previous_hull(
 ) -> None:
     uncached_ref(upstream)
 
-    code, out, _ = update(capsys, "--dry-run", "--diff", "review.diff")
+    code, out, _ = update(capsys, "--dry-run", "--diff-file", "review.diff")
 
     assert code == 0 and apply_line(out)[:1] == ["--expect"]
     assert "# + mp/tdd\n" in (home / "review.diff").read_text()
@@ -1795,7 +1798,9 @@ def test_hint_without_a_previous_hull(upstream: Upstream, capsys: Capsys) -> Non
 
     code, out, _ = update(capsys, "--dry-run")
 
-    assert code == 0 and "review: skill-graft update --dry-run --diff <file>" in out
+    assert (
+        code == 0 and "review: skill-graft update --dry-run --diff-file <file>" in out
+    )
     assert apply_line(out) == []
 
 
@@ -1806,7 +1811,7 @@ def test_no_apply_line_after_an_edit(
     assert update(capsys)[0] == 0
     (home / "own" / "notes" / "SKILL.md").write_text("changed\n")
 
-    code, out, _ = update(capsys, "--dry-run", "--diff", "review.diff")
+    code, out, _ = update(capsys, "--dry-run", "--diff-file", "review.diff")
 
     assert code == 0 and edited(out) == [EDITED + "own/notes"]
     assert apply_line(out) == [] and "nothing to apply" not in out
@@ -1825,7 +1830,7 @@ def test_changed_by_resolution_only(
     assert resolve_and_deploy(["deploy", "--no-apm-install"]) == 0
     upstream.commit({"grilling/SKILL.md": "g\n"})
 
-    code, out, _ = update(capsys, "mp", "--dry-run", "--diff", "review.diff")
+    code, out, _ = update(capsys, "mp", "--dry-run", "--diff-file", "review.diff")
 
     assert code == 0 and "~ own/notes" in out and edited(out) == []
     before = lock_file().read_text()
@@ -1835,10 +1840,10 @@ def test_changed_by_resolution_only(
 
 
 def vetted(upstream: Upstream, capsys: Capsys) -> tuple[list[str], Path, bytes, bytes]:
-    """`update mp --dry-run --diff review.diff` once `mp/tdd` moved: the apply
+    """`update mp --dry-run --diff-file review.diff` once `mp/tdd` moved: the apply
     line's arguments, the config, its bytes and the lock's."""
     _, _, file = moved_tdd(upstream, extra="")
-    code, out, _ = update(capsys, "mp", "--dry-run", "--diff", "review.diff")
+    code, out, _ = update(capsys, "mp", "--dry-run", "--diff-file", "review.diff")
     assert code == 0 and apply_line(out)
     return apply_line(out), file, file.read_bytes(), lock_file().read_bytes()
 
@@ -1859,7 +1864,7 @@ def test_tip_moved_after_vetting(upstream: Upstream, capsys: Capsys) -> None:
     err = refused(capsys, args, file, toml, lock)
 
     assert args[2] in err and "not the one reviewed" in err and "hull digest is" in err
-    assert "skill-graft update mp --dry-run --diff <file>" in err
+    assert "skill-graft update mp --dry-run --diff-file <file>" in err
     assert len([word for word in err.split() if len(word.strip(",;:.")) == 64]) == 2
 
 
@@ -1875,7 +1880,7 @@ def test_path_source_edited_after_vetting(
     )
     assert update(capsys)[0] == 0
     upstream.commit({"tdd/SKILL.md": "2\n"})
-    code, out, _ = update(capsys, "mp", "--dry-run", "--diff", "review.diff")
+    code, out, _ = update(capsys, "mp", "--dry-run", "--diff-file", "review.diff")
     file = paths.Scope(Path.home()).package / "skill-graft.toml"
     toml, lock = file.read_bytes(), lock_file().read_bytes()
     (home / "own" / "notes" / "SKILL.md").write_text("changed\n")
@@ -1898,7 +1903,7 @@ def test_patch_edited_after_vetting(
     )
     assert resolve_and_deploy(["deploy", "--no-apm-install"]) == 0
     upstream.commit({"tdd/SKILL.md": LINES.replace("line 9\n", "line 9 upstream\n")})
-    code, out, _ = update(capsys, "mp", "--dry-run", "--diff", "review.diff")
+    code, out, _ = update(capsys, "mp", "--dry-run", "--diff-file", "review.diff")
     toml, lock = file.read_bytes(), lock_file().read_bytes()
     patched_source(
         upstream,
@@ -1936,7 +1941,9 @@ def test_diff_file_on_a_mismatch(
     _, _, file = moved_tdd(upstream)
     toml, lock = file.read_bytes(), lock_file().read_bytes()
 
-    refused(capsys, ["--expect", DIGEST, "--diff", "review.diff"], file, toml, lock)
+    refused(
+        capsys, ["--expect", DIGEST, "--diff-file", "review.diff"], file, toml, lock
+    )
 
     assert not (home / "review.diff").exists()
 
@@ -1989,7 +1996,7 @@ def test_diff_file_in_no_folder(
     write_config('entries = ["mp/tdd"]\n' + git_source("mp", upstream))
     (home / "file.txt").write_text("x\n")
 
-    code, _, err = update(capsys, "--dry-run", "--diff", name)
+    code, _, err = update(capsys, "--dry-run", "--diff-file", name)
 
     assert code == 1 and name in err and "no such folder" in err
     assert not paths.cache().exists()
@@ -2004,7 +2011,7 @@ def test_diff_file_through_a_folder_named_apm(
     (home / "proj").mkdir()
     (home / "proj" / ".Apm").symlink_to(home / "elsewhere")
 
-    code, _, err = update(capsys, "--dry-run", "--diff", "proj/.Apm/review.diff")
+    code, _, err = update(capsys, "--dry-run", "--diff-file", "proj/.Apm/review.diff")
 
     assert code == 1 and "proj/.Apm/review.diff" in err and ".apm" in err
     assert not paths.cache().exists() and not list((home / "elsewhere").iterdir())
@@ -2020,7 +2027,7 @@ def test_removed_skill_in_the_diff(
     assert resolve_and_deploy(["deploy", "--no-apm-install"]) == 0
     upstream.commit({"tdd/SKILL.md": "1\n"})
 
-    assert update(capsys, "--dry-run", "--diff", "review.diff")[0] == 0
+    assert update(capsys, "--dry-run", "--diff-file", "review.diff")[0] == 0
 
     text = (home / "review.diff").read_text()
     assert text.startswith(HEADER + "# ~ mp/tdd\n# - mp/grilling\n# ~ mp/tdd\n")
@@ -2040,7 +2047,7 @@ def test_only_removals_in_the_diff(
     upstream.git("rm", "-q", "-r", "grilling")
     upstream.commit({})
 
-    code, out, _ = update(capsys, "--dry-run", "--diff", "review.diff")
+    code, out, _ = update(capsys, "--dry-run", "--diff-file", "review.diff")
 
     assert code == 0 and diff_lines(out)[:2] == [LEGEND, "- mp/grilling"]
     assert (
@@ -2057,7 +2064,7 @@ def test_diff_file_through_a_link_in_a_skills_folder(
     folder = skill(home / "skills" / "foo")
     (folder / "out").symlink_to(home / "elsewhere")
 
-    code, _, err = update(capsys, "--dry-run", "--diff", "skills/foo/out/x.diff")
+    code, _, err = update(capsys, "--dry-run", "--diff-file", "skills/foo/out/x.diff")
 
     assert code == 1 and "skills/foo/out/x.diff" in err and "SKILL.md" in err
     assert not paths.cache().exists() and not list((home / "elsewhere").iterdir())
@@ -2073,7 +2080,7 @@ def test_marked_hull_in_the_diff(
     assert resolve_and_deploy(["deploy", "--no-apm-install"]) == 0
     upstream.commit({"tdd/SKILL.md": "/grilling\n"})
 
-    assert update(capsys, "--dry-run", "--diff", "review.diff")[0] == 0
+    assert update(capsys, "--dry-run", "--diff-file", "review.diff")[0] == 0
 
     text = (home / "review.diff").read_text()
     assert text.startswith(

@@ -356,7 +356,7 @@ def test_dry_run_of_a_ref_moved_by_hand(
     write_config(f'entries = ["mp/tdd"]\n{source}ref = "{b}"\n')
     capsys.readouterr()
 
-    assert main(["resolve", "--dry-run", "--diff", "review.diff"]) == 0
+    assert main(["resolve", "--dry-run", "--diff-file", "review.diff"]) == 0
 
     assert capsys.readouterr().out.splitlines()[-1] == DRY_RUN
     text = (home / "review.diff").read_text()
@@ -389,7 +389,7 @@ def test_dry_run_of_a_patch_written_by_hand(
     )
     capsys.readouterr()
 
-    assert main(["resolve", "--dry-run", "--diff", "review.diff"]) == 0
+    assert main(["resolve", "--dry-run", "--diff-file", "review.diff"]) == 0
 
     assert capsys.readouterr().out.splitlines()[:3] == [
         "hull (+ added, - removed, ~ changed):",
@@ -418,6 +418,6 @@ def test_dry_run_hint(home: Path, capsys: Capsys) -> None:
     assert main(["resolve", "--dry-run"]) == 0
 
     assert capsys.readouterr().out.splitlines()[-2:] == [
-        "review: skill-graft resolve --dry-run --diff <file>",
+        "review: skill-graft resolve --dry-run --diff-file <file>",
         DRY_RUN,
     ]

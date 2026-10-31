@@ -21,7 +21,7 @@ from skill_graft.pipeline.hull import Hull
 
 # What an edit's dry run does not write.
 WRITTEN = "skill-graft.toml, skill-graft.lock and .apm/skills/"
-# Its header: what an edit's `--diff` compares.
+# Its header: what an edit's `--diff-file` compares.
 HEADER = review.header(
     "the Vendored copies against what the edited config would vendor"
 )
