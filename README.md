@@ -76,20 +76,20 @@ git = "https://github.com/mattpocock/skills.git"
 Then:
 
 ```sh
-skill-graft update mp                               # set the source's ref to its branch tip
-skill-graft add mp/tdd --dry-run --diff review.diff # write the text it would vendor, nothing else
-skill-graft add mp/tdd                              # ask for the skill; vendors the hull and writes the lock
-skill-graft tree                                    # see the hull: mp/tdd and every skill it calls
-skill-graft deploy                                  # deploy what skill-graft.lock records through APM
+skill-graft update mp                                    # set the source's ref to its branch tip
+skill-graft add mp/tdd --dry-run --diff-file review.diff # write the text it would vendor, nothing else
+skill-graft add mp/tdd                                   # ask for the skill; vendors the hull and writes the lock
+skill-graft tree                                         # see the hull: mp/tdd and every skill it calls
+skill-graft deploy                                       # deploy what skill-graft.lock records through APM
 ```
 
 The dry run writes `mp/tdd` and every skill it calls, as they would deploy, to `review.diff`, and writes nothing else.
 Read it in an editor, never by printing it to a terminal: it is untrusted text. Then run the `add` itself.
 
 After editing `skill-graft.toml` or a patch by hand, run `skill-graft resolve` before `deploy`, previewing it first with
-`skill-graft resolve --dry-run --diff review.diff`: `deploy` deploys only what the lock records, and names `resolve`
-when the config or a patch differs from it. An edit to a vendored copy in `.apm/skills/` is refused too; move it into a
-patch, or delete the folder to vendor it again.
+`skill-graft resolve --dry-run --diff-file review.diff`: `deploy` deploys only what the lock records, and names
+`resolve` when the config or a patch differs from it. An edit to a vendored copy in `.apm/skills/` is refused too; move
+it into a patch, or delete the folder to vendor it again.
 
 `tdd` and the skills it calls are now in `~/.claude/skills/`. To share skills through a project instead, see
 [A package for one project](#a-package-for-one-project); to deploy them under other names, `[rename]` and `prefix` in
@@ -98,8 +98,8 @@ patch, or delete the folder to vendor it again.
 Later, to move `mp` to its new tip, review what would change first:
 
 ```sh
-skill-graft update mp --dry-run --diff review.diff   # write each changed skill's text as deployed
-skill-graft update mp --expect <hull-digest>         # the `apply:` line the dry run printed
+skill-graft update mp --dry-run --diff-file review.diff # write each changed skill's text as deployed
+skill-graft update mp --expect <hull-digest>            # the `apply:` line the dry run printed
 ```
 
 Read `review.diff` in an editor, as before. The `apply:` line updates to exactly the hull you read; a push, a path
@@ -130,11 +130,11 @@ Options are taken only spelled in full: `--dry` is a usage error, not `--dry-run
 | `unbind <alias>/<name>`                     | Remove that bind, so `<name>` resolves by default again.                                                                                     |
 | `update [source…] [--expect <hull-digest>]` | Move each git source's `ref` to its branch tip, if the hull still resolves and every patch still applies there.                              |
 
-Each staging command takes `--dry-run` and `--diff <file>`. `--dry-run` resolves and prints the hull diff, each added,
-removed or changed skill with its changed files but never their text, and writes nothing but `--diff`'s file.
-`--diff <file>` writes that text as deployed, the Deployed diff, to a new `*.diff` file, or one it wrote before; read it
-in an editor. `update` compares against the hull at the current refs, the other commands against the vendored copies.
-`update`'s `--expect <hull-digest>` updates only to the hull a dry run showed.
+Each staging command takes `--dry-run` and `--diff-file <file>`. `--dry-run` resolves and prints the hull diff, each
+added, removed or changed skill with its changed files but never their text, and writes nothing but `--diff-file`'s
+file. `--diff-file <file>` writes that text as deployed, the Deployed diff, to a new `*.diff` file, or one it wrote
+before; read it in an editor. `update` compares against the hull at the current refs, the other commands against the
+vendored copies. `update`'s `--expect <hull-digest>` updates only to the hull a dry run showed.
 
 ### Deploying
 
@@ -314,8 +314,8 @@ Then list it, after the skill's earlier patches:
 "mp/implement" = ["patches/first.patch", "patches/second.patch"]
 ```
 
-`skill-graft resolve --dry-run --diff review.diff` writes the patched skill as it would deploy to `review.diff`; read it
-in an editor, then run `skill-graft resolve`.
+`skill-graft resolve --dry-run --diff-file review.diff` writes the patched skill as it would deploy to `review.diff`;
+read it in an editor, then run `skill-graft resolve`.
 
 `diff` needs `-N`, or added and deleted files are lost; skill-graft refuses such a patch, and binary changes, by the
 lines `diff` writes for them in English: hence `LC_ALL=C`. A file such a patch leaves empty is deleted, with any folder

@@ -56,7 +56,7 @@ written.
   Tests first: "Former names refused: Old diff option", and the scenarios of `update`, `edit` and `resolve` whose output
   or hint names the option, in `tests/commands/test_update.py`, `test_edit.py`, `test_resolve.py` and `test_review.py`
   (a file 0.3.0 wrote, starting with its first line, still overwritten); verify they fail, then pass
-- [ ] 4.2 Docs for `--diff-file`: README.md (the getting-started flow, the staging paragraph, "Writing a patch"),
+- [x] 4.2 Docs for `--diff-file`: README.md (the getting-started flow, the staging paragraph, "Writing a patch"),
   `docs/design.md`, `docs/security.md`, each command's `--help`. Verify `pre-commit run --all-files`
 
 ## 5. graft-check

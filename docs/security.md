@@ -106,9 +106,9 @@ agent starts each reader, and nothing between it and its shell counts them.
   reading.
 - **Deployed Skills.** skill-graft does not judge whether a **Skill** is malicious, and no tool reliably can: past the
   **Hidden character** check, visible injection and the scripts a **Skill** ships reach your agent as written. Vet the
-  **Sources** you declare: `update --dry-run --diff <file>` writes the **Deployed diff**, each changed **Skill**'s text
-  as deployed, for you to read in an editor, and its `apply:` line updates to that **Hull** only. Where a **Skill**
-  first gets in, `add`, `remove`, `rename`, `bind`, `unbind` and `resolve` take `--dry-run --diff <file>` too: the
+  **Sources** you declare: `update --dry-run --diff-file <file>` writes the **Deployed diff**, each changed **Skill**'s
+  text as deployed, for you to read in an editor, and its `apply:` line updates to that **Hull** only. Where a **Skill**
+  first gets in, `add`, `remove`, `rename`, `bind`, `unbind` and `resolve` take `--dry-run --diff-file <file>` too: the
   **Deployed diff** of what they would vendor against the **Vendored copies**, every **Skill** added before the first
   `add`. What changed since the last `deploy` is git's to show: in a committed **Package**, the diff of its
   `.apm/skills/` since the commit you deployed.
