@@ -231,8 +231,13 @@ found() { report | grep -iF -- "$2" | grep -iF -- "$1" > /dev/null; }
 has() { report "${2:-}" | grep -iF -- "$1" > /dev/null; }
 lacks() { ! has "$@"; }
 # `skill-graft deploy` advised, not `deploy --into` narrated: no `--into` right after it.
-advises_deploy() {
-  report "${1:-}" | grep -iP 'skill-graft deploy\b(?!`?\s*--into)' | grep -viE "don't|do not|no need|not need" > /dev/null
+deploy_advice() {
+  report "${1:-}" | grep -iP 'skill-graft deploy\b(?!`?\s*--into)' | grep -viE "don't|do not|no need|not need"
+}
+advises_deploy() { deploy_advice "$@" > /dev/null; }
+# Advised, and not only if it has not run since the last change, as step 7 allows.
+advises_deploy_unconditionally() {
+  deploy_advice "$@" | grep -viE "(has not|hasn't) (yet )?(been )?run" > /dev/null
 }
 # Scenario $1's `claude`: the shell lines on stdin run first, with `$real` the
 # wrapper above and `$log` a file; then every call passes through to `$real`.
@@ -297,7 +302,7 @@ for scenario in "${selected[@]}"; do
       project clean clean
       ask clean report "/graft-check"
       check "found nothing" has nothing
-      check "no deploy advice" eval '! advises_deploy'
+      check "no unconditional deploy advice" eval '! advises_deploy_unconditionally'
       check "package unchanged" unchanged
       ;;
     never-deployed)
