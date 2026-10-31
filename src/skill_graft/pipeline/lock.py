@@ -153,7 +153,7 @@ def drift(
         return [], "skill-graft.lock is missing or unreadable"
     if old.get("version") != 1:
         return [], "skill-graft.lock is of another version"
-    if (old_hashes := recorded(old)) is None or not isinstance(old["sources"], dict):
+    if (old_hashes := recorded(old)) is None or not _well_formed(old):
         return [], "skill-graft.lock is missing or unreadable"
     new_hashes = recorded(new) or {}
     patched = {s["id"] for data in (new, old) for s in data["skills"] if "patches" in s}
@@ -210,6 +210,24 @@ def drift(
     if not parts:
         return changed, "the hull differs from skill-graft.lock in what it records"
     return changed, f"the hull differs from skill-graft.lock: {', '.join(parts)}"
+
+
+def _well_formed(data: dict[str, Any]) -> bool:
+    """Whether the loaded lock `data` has the tables `drift` reads, of their types:
+    one written by hand may not."""
+    sources, edges = data.get("sources"), data.get("edges", [])
+    suggestions = data.get("suggestions", [])
+    return (
+        isinstance(sources, dict)
+        and all(isinstance(source, dict) for source in sources.values())
+        and isinstance(edges, list)
+        and all(isinstance(edge, dict) for edge in edges)
+        and isinstance(suggestions, list)
+        and all(
+            isinstance(item, dict) and isinstance(item.get("from", []), list)
+            for item in suggestions
+        )
+    )
 
 
 def _links(data: dict[str, Any]) -> set[str]:

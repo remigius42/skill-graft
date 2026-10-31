@@ -23,7 +23,8 @@ every commit passes `pytest`.
   `test_skill_joins_refused`, `test_skill_leaves_refused`, `test_edge_change_refused`,
   `test_path_skill_new_edge_refused`, `test_path_skill_new_suggestion_refused`, `test_deployed_name_change_refused`,
   `test_ref_change_refused`, `test_unnamed_difference_refused`, `test_no_old_lock_refused`,
-  `test_other_version_refused`, `test_comment_is_no_drift`. Verify red, then green
+  `test_other_version_refused`, `test_old_lock_without_sources_refused`, `test_malformed_old_lock_refused`,
+  `test_comment_is_no_drift`. Verify red, then green
 
 ## 2. Vendoring with the lock
 

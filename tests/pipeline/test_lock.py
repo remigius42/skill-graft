@@ -9,6 +9,7 @@ import tomllib
 from pathlib import Path
 from typing import Any
 
+import pytest
 from conftest import Upstream, configure, make_patch, skill, write_config
 
 from skill_graft.cli import main
@@ -722,6 +723,37 @@ def test_other_version_refused(home: Path) -> None:
     assert lock.drift(parsed(), old, {"own"}) == (
         [],
         "skill-graft.lock is of another version",
+    )
+
+
+def test_old_lock_without_sources_refused(home: Path) -> None:
+    own_tdd(home)
+    old = parsed()
+    del old["sources"]
+
+    assert lock.drift(parsed(), old, {"own"}) == (
+        [],
+        "skill-graft.lock is missing or unreadable",
+    )
+
+
+@pytest.mark.parametrize(
+    "damage",
+    [
+        {"sources": {"own": "../x"}},
+        {"edges": 1},
+        {"edges": [1]},
+        {"suggestions": 1},
+        {"suggestions": [{"id": "own/notes", "from": 3}]},
+    ],
+)
+def test_malformed_old_lock_refused(home: Path, damage: dict[str, Any]) -> None:
+    own_tdd(home)
+    old = parsed() | damage
+
+    assert lock.drift(parsed(), old, {"own"}) == (
+        [],
+        "skill-graft.lock is missing or unreadable",
     )
 
 
