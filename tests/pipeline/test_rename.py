@@ -167,7 +167,7 @@ def test_file_changed_before_vendoring(home: Path, change: str) -> None:
             (tdd / "SKILL.md").write_bytes(b"/grilling \xff\n")
 
         with pytest.raises(SkillGraftError, match="SKILL.md"):
-            vendor.vendor(hull, paths.Scope(Path.home()).skills)
+            vendor.stage(hull, paths.Scope(Path.home()).skills)
 
         assert not (package() / ".apm" / "skills.new").exists()
 

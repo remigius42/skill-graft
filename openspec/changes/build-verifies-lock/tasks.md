@@ -27,7 +27,7 @@ every commit passes `pytest`.
 
 ## 2. Vendoring with the lock
 
-- [ ] 2.1 `pipeline/vendor.py`: `vendor` splits into `pending(skills, keep_old)`, `recover(skills, keep_old)`,
+- [x] 2.1 `pipeline/vendor.py`: `vendor` splits into `pending(skills, keep_old)`, `recover(skills, keep_old)`,
   `stage(hull, skills)` (writes `skills.new`), `swap(skills)`, `swap_back(skills)` and `clear_old(skills)`. `pending`
   names, touching nothing, the folder recovery leaves as `skills`: a lone `skills.old`; with both, `skills.old` if
   `keep_old(skills.old)`, else `skills`. `recover` makes it so and deletes `skills.new`. `build` calls them in order

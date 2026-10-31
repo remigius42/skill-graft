@@ -247,13 +247,13 @@ def test_lock_hashes_what_was_vendored(
 ) -> None:
     tdd = skill(home / "own" / "tdd", "vendored\n")
     configure(["own/tdd"], own="~/own")
-    copy = vendor.vendor
+    copy = vendor.stage
 
     def copy_then_edit(hull: Hull, skills: Path) -> None:
         copy(hull, skills)
         (tdd / "SKILL.md").write_text("edited during the build\n")
 
-    monkeypatch.setattr(vendor, "vendor", copy_then_edit)
+    monkeypatch.setattr(vendor, "stage", copy_then_edit)
 
     assert main(["build", "--no-install"]) == 0
 

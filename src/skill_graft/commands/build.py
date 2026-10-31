@@ -34,7 +34,10 @@ def build(
         ) as resolution:
             resolved = resolution.hull
             started = True  # from here on `into` may hold our writes
-            vendor.vendor(resolved, skills)
+            vendor.recover(skills, lambda old: False)
+            vendor.stage(resolved, skills)
+            vendor.swap(skills)
+            vendor.clear_old(skills)
             # Hashes the vendored copies, so the lock holds what was vendored.
             resolution.hashes = {
                 s: lock.folder_hash(skills / resolved.deployed[s])

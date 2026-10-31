@@ -1,6 +1,8 @@
-"""Writes the entries into the package's `.apm/skills/`."""
+"""Writes the entries into the package's `.apm/skills/`: staged in `skills.new/`,
+swapped in, the previous copies kept in `skills.old/` until the caller clears them."""
 
 import shutil
+from collections.abc import Callable
 from pathlib import Path
 
 from skill_graft.infra import files
@@ -9,18 +11,23 @@ from skill_graft.pipeline import rename
 from skill_graft.pipeline.hull import Hull
 
 
-def vendor(hull: Hull, skills: Path) -> None:
-    """Replaces `skills`, the package's `.apm/skills/` or another, with one copy per
-    hull skill, swapped in when complete.
+def _new(skills: Path) -> Path:
+    return skills.with_name("skills.new")
+
+
+def _old(skills: Path) -> Path:
+    return skills.with_name("skills.old")
+
+
+def stage(hull: Hull, skills: Path) -> None:
+    """Writes `skills.new` beside `skills`, the package's `.apm/skills/` or another,
+    with one copy per hull skill.
 
     Each copy is named by its deployed name and holds the rewritten bytes. The
-    hull is resolved and checked before, so a failure writes nothing beyond
-    undoing a run killed mid-swap.
+    hull is resolved and checked before, so a failure leaves no `skills.new`.
     """
-    new = skills.with_name("skills.new")
-    old = skills.with_name("skills.old")
+    new = _new(skills)
     rewrites = rename.rewrites(hull)  # may fail: before anything is written
-    _recover(skills, new, old)
     new.mkdir(parents=True)
     for skill, folder in hull.skills.items():
         written = rewrites.get(skill, {})  # by path relative to `folder`
@@ -43,20 +50,55 @@ def vendor(hull: Hull, skills: Path) -> None:
             # The copy error is the one to report; the next run clears what is left.
             shutil.rmtree(new, ignore_errors=True)
             raise SkillGraftError(f"copying {folder} failed: {error}") from None
+
+
+def swap(skills: Path) -> None:
+    """Moves `skills` aside to `skills.old`, if there is one, and `skills.new` in."""
     if skills.exists():
-        skills.rename(old)
-    new.rename(skills)
+        skills.rename(_old(skills))
+    _new(skills).rename(skills)
+
+
+def swap_back(skills: Path) -> None:
+    """Undoes `swap`, however far it got: `skills` as before it, no `skills.new`."""
+    new, old = _new(skills), _old(skills)
+    if new.exists():  # not swapped in: `skills` is the previous, or moved aside
+        shutil.rmtree(new)
+    elif skills.exists():
+        shutil.rmtree(skills)
     if old.exists():
+        old.rename(skills)
+
+
+def clear_old(skills: Path) -> None:
+    """Deletes the previous copies `swap` kept."""
+    if (old := _old(skills)).exists():
         shutil.rmtree(old)
 
 
-def _recover(skills: Path, new: Path, old: Path) -> None:
-    """Undoes a run killed mid-swap: `skills.old/` is then the previous build."""
-    if old.exists() and not skills.exists():
+def pending(skills: Path, keep_old: Callable[[Path], bool]) -> Path:
+    """The folder `recover` leaves as `skills`, touching nothing: a lone
+    `skills.old`; with both, `skills.old` if `keep_old` says so, else `skills`."""
+    old = _old(skills)
+    if old.exists() and (not skills.exists() or keep_old(old)):
+        return old
+    return skills
+
+
+def recover(skills: Path, keep_old: Callable[[Path], bool]) -> None:
+    """Undoes a run killed mid-swap, keeping as `skills` what `pending` names, and
+    deletes `skills.new`."""
+    new, old = _new(skills), _old(skills)
+    if pending(skills, keep_old) == old:
+        _delete(skills)
         old.rename(skills)
     for stale in (new, old):
-        if stale.exists():
-            try:
-                shutil.rmtree(stale)
-            except OSError as error:
-                raise SkillGraftError(f"cannot delete stale {stale}: {error}") from None
+        _delete(stale)
+
+
+def _delete(stale: Path) -> None:
+    if stale.exists():
+        try:
+            shutil.rmtree(stale)
+        except OSError as error:
+            raise SkillGraftError(f"cannot delete stale {stale}: {error}") from None

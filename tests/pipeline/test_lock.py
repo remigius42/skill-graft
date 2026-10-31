@@ -542,7 +542,8 @@ def test_copy_hash_is_skill_hash(home: Path, tmp_path: Path) -> None:
     skills = tmp_path / "out" / "skills"
 
     with compute.compute_hull(scope, config.load(scope), Cache.default()) as hull:
-        vendor.vendor(hull, skills)
+        vendor.stage(hull, skills)
+        vendor.swap(skills)
         hashes = lock.skill_hashes(hull)
 
     tdd_copy = skills / "mp-tdd"

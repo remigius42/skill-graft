@@ -487,7 +487,8 @@ def test_vendor_and_lock_into_a_given_folder(
     into = tmp_path / "into"
 
     with compute.compute_hull(scope, config.load(scope), Cache.default()) as hull:
-        vendor.vendor(hull, into / ".apm" / "skills")
+        vendor.stage(hull, into / ".apm" / "skills")
+        vendor.swap(into / ".apm" / "skills")
     lock.write("lock\n", into / "skill-graft.lock")
 
     assert (into / ".apm" / "skills" / "chisel" / "SKILL.md").is_file()
@@ -613,13 +614,13 @@ def test_interrupted(
     skill(home / "src" / "chisel")
     write_config('entries = ["own/chisel"]\n[sources.own]\npath = "~/src"\n')
     into = empty_folder(tmp_path)
-    copy = vendor.vendor
+    copy = vendor.stage
 
     def copy_then_interrupt(hull: Hull, skills: Path) -> None:
         copy(hull, skills)
         raise KeyboardInterrupt
 
-    monkeypatch.setattr(vendor, "vendor", copy_then_interrupt)
+    monkeypatch.setattr(vendor, "stage", copy_then_interrupt)
 
     with pytest.raises(KeyboardInterrupt):
         main(["build", "--into", str(into)])
@@ -632,14 +633,14 @@ def test_foreign_file_kept(
 ) -> None:
     unreadable_entry(home, monkeypatch)
     into = empty_folder(tmp_path)
-    copy = vendor.vendor
+    copy = vendor.stage
 
     def another_process_writes_first(hull: Hull, skills: Path) -> None:
         (into / ".apm").mkdir()
         (into / ".apm" / "x").write_text("theirs\n")
         copy(hull, skills)
 
-    monkeypatch.setattr(vendor, "vendor", another_process_writes_first)
+    monkeypatch.setattr(vendor, "stage", another_process_writes_first)
 
     assert main(["build", "--into", str(into)]) == 1
 
