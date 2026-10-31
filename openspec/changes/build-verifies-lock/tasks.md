@@ -13,13 +13,16 @@ every commit passes `pytest`.
   `test_stray_file_is_a_difference`; and `test_copy_hash_is_skill_hash`, pinning
   `folder_hash(copy) == skill_hashes(hull)[skill]` for a renamed, patched skill with a symlink and an executable file.
   Verify red, then green
-- [ ] 1.2 `pipeline/lock.py`: `drift(new, old, path_aliases)` returns the path **Source** **Skills** whose `hash`
+- [x] 1.2 `pipeline/lock.py`: `drift(new, old, path_aliases)` returns the path **Source** **Skills** whose `hash`
   differs, and a refusal (`None` when nothing else differs), comparing the parsed locks with each path **Source**'s
   `path`, and the `hash` of its **Skills** with no `patches` in either lock, dropped: it names each other **Skill**
-  whose hash differs and each joining or leaving, else says the **Sources**, names, edges or suggestions differ; an
-  `old` of `None` or of another `version` is refused. Tests in `tests/pipeline/test_lock.py`: `test_no_drift`,
+  whose hash differs, each joining or leaving, each other field of a **Skill**, **Source**, edge and suggestion that
+  differs (edges and suggestions as `<from> → <to> (<kind>)`), else that the lock differs in what it records; an `old`
+  of `None` or of another `version` is refused. Tests in `tests/pipeline/test_lock.py`: `test_no_drift`,
   `test_path_hash_only`, `test_path_folder_is_no_drift`, `test_patched_path_skill_refused`, `test_git_hash_refused`,
-  `test_skill_joins_refused`, `test_edge_change_refused`, `test_ref_change_refused`, `test_no_old_lock_refused`,
+  `test_skill_joins_refused`, `test_skill_leaves_refused`, `test_edge_change_refused`,
+  `test_path_skill_new_edge_refused`, `test_path_skill_new_suggestion_refused`, `test_deployed_name_change_refused`,
+  `test_ref_change_refused`, `test_unnamed_difference_refused`, `test_no_old_lock_refused`,
   `test_other_version_refused`, `test_comment_is_no_drift`. Verify red, then green
 
 ## 2. Vendoring with the lock

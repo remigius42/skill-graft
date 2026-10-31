@@ -132,6 +132,94 @@ def copy_problems(skills: Path, locked: dict[str, Any]) -> list[str]:
     return problems
 
 
+def drift(
+    new: dict[str, Any], old: dict[str, Any] | None, path_aliases: set[str]
+) -> tuple[list[str], str | None]:
+    """How the loaded lock `new` differs from `old`: the skills of the path sources
+    `path_aliases` whose hash alone differs, and the reason to refuse `new`, `None`
+    when nothing else does.
+
+    A path source's folder is no difference, nor the hash of its skills that have
+    no patches in either lock; a patched one's is, as a git source's.
+    """
+    if old is None:
+        return [], "skill-graft.lock is missing or unreadable"
+    if old.get("version") != 1:
+        return [], "skill-graft.lock is of another version"
+    if (old_hashes := recorded(old)) is None or not isinstance(old["sources"], dict):
+        return [], "skill-graft.lock is missing or unreadable"
+    new_hashes = recorded(new) or {}
+    patched = {s["id"] for data in (new, old) for s in data["skills"] if "patches" in s}
+
+    def trusted(skill_id: object) -> bool:
+        alias = str(skill_id).partition("/")[0]
+        return alias in path_aliases and str(skill_id) not in patched
+
+    def shape(data: dict[str, Any]) -> dict[str, Any]:
+        """`data` without what a path source may change."""
+        sources = {
+            alias: {k: v for k, v in source.items() if k != "path"}
+            if alias in path_aliases
+            else source
+            for alias, source in data["sources"].items()
+        }
+        skills = [
+            {k: v for k, v in s.items() if not (k == "hash" and trusted(s["id"]))}
+            for s in data["skills"]
+        ]
+        return data | {"sources": sources, "skills": skills}
+
+    differ = sorted(
+        (s for s, digest in new_hashes.items() if old_hashes.get(s, digest) != digest),
+        key=str,
+    )
+    changed = [str(s) for s in differ if trusted(s)]
+    new_shape, old_shape = shape(new), shape(old)
+    if new_shape == old_shape:
+        return changed, None
+    parts = [f"{s} changed" for s in differ if not trusted(s)]
+    parts += [f"{s} added" for s in sorted(new_hashes.keys() - old_hashes, key=str)]
+    parts += [f"{s} removed" for s in sorted(old_hashes.keys() - new_hashes, key=str)]
+    before = {s["id"]: s for s in old_shape["skills"]}
+    for skill in new_shape["skills"]:
+        if (was := before.get(skill["id"])) is not None:
+            keys = sorted((skill.keys() | was.keys()) - {"id", "hash"})
+            parts += [
+                f"{key} of {skill['id']} changed"
+                for key in keys
+                if skill.get(key) != was.get(key)
+            ]
+    sources, were = new_shape["sources"], old_shape["sources"]
+    parts += [f"source {a} added" for a in sorted(sources.keys() - were.keys())]
+    parts += [f"source {a} removed" for a in sorted(were.keys() - sources.keys())]
+    parts += [
+        f"source {a} changed"
+        for a in sorted(sources.keys() & were.keys())
+        if sources[a] != were[a]
+    ]
+    links, linked = _links(new), _links(old)
+    parts += [f"{link} added" for link in sorted(links - linked)]
+    parts += [f"{link} removed" for link in sorted(linked - links)]
+    if not parts:
+        return changed, "the hull differs from skill-graft.lock in what it records"
+    return changed, f"the hull differs from skill-graft.lock: {', '.join(parts)}"
+
+
+def _links(data: dict[str, Any]) -> set[str]:
+    """Each edge and suggestion of the loaded lock `data`, as a refusal names it:
+    `<from> → <to> (<kind>)`."""
+    links = set()
+    for edge in data.get("edges", []):
+        if isinstance(edge, dict):
+            kind = f"{edge.get('kind')}{', bind' if edge.get('bind') else ''}"
+            links.add(f"{edge.get('from')} → {edge.get('to')} ({kind})")
+    for item in data.get("suggestions", []):
+        if isinstance(item, dict):
+            for mention in item.get("from", []):
+                links.add(f"{mention} → {item.get('id')} (suggestion)")
+    return links
+
+
 def write(text: str, file: Path) -> None:
     """Replaces the lock `file` atomically."""
     files.atomic_write(file, text.encode())

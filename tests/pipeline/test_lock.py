@@ -1,5 +1,6 @@
 """The lock's content (the `resolve` spec): sources, skills, edges, hashes."""
 
+import copy
 import os
 import shutil
 from dataclasses import replace
@@ -544,7 +545,187 @@ def test_copy_hash_is_skill_hash(home: Path, tmp_path: Path) -> None:
         vendor.vendor(hull, skills)
         hashes = lock.skill_hashes(hull)
 
-    copy = skills / "mp-tdd"
-    assert copy.joinpath("run.sh").stat().st_mode & stat.S_IXUSR
-    assert copy.joinpath("SKILL.md").read_text().endswith("/mp-grilling\npatched\n")
-    assert lock.folder_hash(copy) == hashes[config.SkillId("mp", "tdd")]
+    tdd_copy = skills / "mp-tdd"
+    assert tdd_copy.joinpath("run.sh").stat().st_mode & stat.S_IXUSR
+    assert tdd_copy.joinpath("SKILL.md").read_text().endswith("/mp-grilling\npatched\n")
+    assert lock.folder_hash(tdd_copy) == hashes[config.SkillId("mp", "tdd")]
+
+
+def own_tdd(home: Path) -> Path:
+    """Entry `own/tdd`, in path source `own`; returns its folder."""
+    folder = skill(home / "own" / "tdd")
+    skill(home / "own" / "notes")
+    configure(["own/tdd"], own="~/own")
+    return folder
+
+
+def hashed(data: dict[str, Any], skill_id: str, value: str) -> dict[str, Any]:
+    """`data`, copied, with the hash of `skill_id` set to `value`."""
+    data = copy.deepcopy(data)
+    next(s for s in data["skills"] if s["id"] == skill_id)["hash"] = value
+    return data
+
+
+def test_no_drift(home: Path) -> None:
+    own_tdd(home)
+
+    assert lock.drift(parsed(), parsed(), {"own"}) == ([], None)
+
+
+def test_path_hash_only(home: Path) -> None:
+    folder = own_tdd(home)
+    old = parsed()
+    (folder / "SKILL.md").write_text("edited\n")
+
+    assert lock.drift(parsed(), old, {"own"}) == (["own/tdd"], None)
+
+
+def test_path_folder_is_no_drift(home: Path) -> None:
+    own_tdd(home)
+    old = parsed()
+    old["sources"]["own"]["path"] = "/elsewhere/own"
+
+    assert lock.drift(parsed(), old, {"own"}) == ([], None)
+
+
+def test_patched_path_skill_refused(home: Path, tmp_path: Path) -> None:
+    patched_tdd(home, tmp_path, ["a.patch"])
+    new = parsed()
+
+    changed, refusal = lock.drift(new, hashed(new, "mp/tdd", "sha256:0"), {"mp"})
+
+    assert changed == [] and refusal is not None and "mp/tdd" in refusal
+
+
+def test_git_hash_refused(home: Path) -> None:
+    own_tdd(home)
+    new = parsed()
+
+    changed, refusal = lock.drift(new, hashed(new, "own/tdd", "sha256:0"), set())
+
+    assert changed == []
+    assert refusal == "the hull differs from skill-graft.lock: own/tdd changed"
+
+
+def test_skill_joins_refused(home: Path) -> None:
+    own_tdd(home)
+    old = parsed()
+    configure(["own/tdd", "own/notes"], own="~/own")
+
+    _, refusal = lock.drift(parsed(), old, {"own"})
+
+    assert refusal == "the hull differs from skill-graft.lock: own/notes added"
+
+
+def test_skill_leaves_refused(home: Path) -> None:
+    own_tdd(home)
+    configure(["own/tdd", "own/notes"], own="~/own")
+    old = parsed()
+    configure(["own/tdd"], own="~/own")
+
+    _, refusal = lock.drift(parsed(), old, {"own"})
+
+    assert refusal == "the hull differs from skill-graft.lock: own/notes removed"
+
+
+def test_edge_change_refused(home: Path) -> None:
+    (own_tdd(home) / "SKILL.md").write_text("/notes\n")
+    old = parsed()
+    old["edges"][0]["kind"] = "prose"
+
+    assert lock.drift(parsed(), old, {"own"}) == (
+        [],
+        "the hull differs from skill-graft.lock:"
+        " own/tdd → own/notes (slash) added, own/tdd → own/notes (prose) removed",
+    )
+
+
+def test_path_skill_new_edge_refused(home: Path) -> None:
+    folder = own_tdd(home)
+    configure(["own/tdd", "own/notes"], own="~/own")
+    old = parsed()
+    (folder / "SKILL.md").write_text("see `notes`\n")
+
+    changed, refusal = lock.drift(parsed(), old, {"own"})
+
+    assert changed == ["own/tdd"]
+    assert refusal == (
+        "the hull differs from skill-graft.lock: own/tdd → own/notes (prose) added"
+    )
+
+
+def test_path_skill_new_suggestion_refused(home: Path) -> None:
+    folder = own_tdd(home)
+    old = parsed()
+    (folder / "SKILL.md").write_text("see `notes`\n")
+
+    _, refusal = lock.drift(parsed(), old, {"own"})
+
+    assert refusal == (
+        "the hull differs from skill-graft.lock: own/tdd → own/notes (suggestion) added"
+    )
+
+
+def test_deployed_name_change_refused(home: Path) -> None:
+    own_tdd(home)
+    old = parsed()
+    write_config(
+        'entries = ["own/tdd"]\n[sources.own]\npath = "~/own"\n'
+        '[rename]\n"own/tdd" = "my-tdd"\n'
+    )
+
+    _, refusal = lock.drift(parsed(), old, {"own"})
+
+    assert (
+        refusal == "the hull differs from skill-graft.lock: deployed of own/tdd changed"
+    )
+
+
+def test_ref_change_refused() -> None:
+    old: dict[str, Any] = {
+        "version": 1,
+        "sources": {"mp": {"git": "u", "ref": "a" * 40}},
+        "skills": [],
+    }
+    new = copy.deepcopy(old)
+    new["sources"]["mp"]["ref"] = "b" * 40
+
+    assert lock.drift(new, old, set())[1] == (
+        "the hull differs from skill-graft.lock: source mp changed"
+    )
+
+
+def test_unnamed_difference_refused(home: Path) -> None:
+    own_tdd(home)
+    old = parsed() | {"extra": 1}
+
+    assert lock.drift(parsed(), old, {"own"}) == (
+        [],
+        "the hull differs from skill-graft.lock in what it records",
+    )
+
+
+def test_no_old_lock_refused(home: Path) -> None:
+    own_tdd(home)
+
+    assert lock.drift(parsed(), None, {"own"}) == (
+        [],
+        "skill-graft.lock is missing or unreadable",
+    )
+
+
+def test_other_version_refused(home: Path) -> None:
+    own_tdd(home)
+    old = parsed() | {"version": 2}
+
+    assert lock.drift(parsed(), old, {"own"}) == (
+        [],
+        "skill-graft.lock is of another version",
+    )
+
+
+def test_comment_is_no_drift(home: Path) -> None:
+    own_tdd(home)
+    old = tomllib.loads("# reviewed\r\n" + render().replace("\n", "\r\n"))
+
+    assert lock.drift(parsed(), old, {"own"}) == ([], None)
