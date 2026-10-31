@@ -246,6 +246,10 @@ report() { cat "$work/$scenario/${1:-report}"; }
 found() { report | grep -iF -- "$2" | grep -iF -- "$1" > /dev/null; }
 has() { report "${2:-}" | grep -iF -- "$1" > /dev/null; }
 lacks() { ! has "$@"; }
+# A line of reply $2 saying skill $1 left the hull, in any of the words a reply uses.
+left_hull() {
+  report "$2" | grep -F -- "$1" | grep -iE "left|no longer|dropped|removed" > /dev/null
+}
 # `skill-graft deploy` advised, not `deploy --into` narrated: no `--into` right after it.
 deploy_advice() {
   report "${1:-}" | grep -iP 'skill-graft deploy\b(?!`?\s*--into)' | grep -viE "don't|do not|no need|not need"
@@ -293,6 +297,18 @@ for file in files:
 # Scenario $1's fake `claude` logged exactly one reader: the probe.
 only_probe() { [[ "$(grep -c '' "$work/$1/calls" 2> /dev/null)" == 1 ]]; }
 unchanged() { diff <(snapshot "$scenario") "$work/$scenario/before" > /dev/null; }
+# Scenario $1's vendored copies are what its config vendors: an accepted bind
+# resolves, rewriting them. Compared with a fresh deploy into a temporary folder.
+vendored_as_config() {
+  local into
+  into="$(mktemp -d)"
+  # A failed deploy shows its error and a difference its files, so a FAILED says why.
+  if ! (cd "$work/$1/project" && skill-graft deploy --into "$into" > /dev/null 2> "$into.err"); then
+    cat "$into.err" >&2
+    return 1
+  fi
+  diff -rq "$into/.apm/skills" "$work/$1/project/.apm/skill-graft/.apm/skills" >&2
+}
 # Scenario $1's fake `claude` logged the probe and at least one reader with
 # --add-dir, each with the default turn and spend caps.
 readers_capped() {
@@ -411,7 +427,7 @@ for scenario in "${selected[@]}"; do
       ask fix report "/graft-check"
       ask fix reply --continue \
         "Apply only \`skill-graft bind up/review false\`, then finish. Decline every other fix."
-      check "up/review left the hull" eval 'has "up/review" reply && has left reply'
+      check "up/review left the hull" left_hull up/review reply
       check "deploy advised" advises_deploy reply
       check "only that bind written" "$python" -I -c '
 import sys, tomllib
@@ -423,8 +439,7 @@ assert config["patches"] == {"up/lead": ["patches/lead.patch"]}, config
 assert config["entries"] == ["up/lead"], config
 assert [p.name for p in (package / "patches").iterdir()] == ["lead.patch"]
 ' "$work/fix/project/.apm/skill-graft"
-      check "vendored copies unchanged" eval \
-        'diff <(snapshot fix | grep " ./.apm/") <(grep " ./.apm/" "$work/fix/before") > /dev/null'
+      check "vendored copies as the config vendors them" vendored_as_config fix
       ;;
     injected)
       export INJECT_MARKER="$work/injected/marker" INJECT_SECRET="$work/injected/secret"
