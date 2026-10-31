@@ -27,7 +27,7 @@ without a whole command; misses the command's wiring, which the CLI seam covers)
 
 ## 2. Edits and resolve
 
-- [ ] 2.1 The old side from the lock and the copies: the lock's hashes, `upstream` folders and `[sources]` **Refs**, a
+- [x] 2.1 The old side from the lock and the copies: the lock's hashes, `upstream` folders and `[sources]` **Refs**, a
   copy's view read only through the entries of the folder `vendor.pending` names, matched by name to the lock's
   **Deployed names**, never a path joined from the lock; only a **Skill** with a copy on the old side, so one without is
   `+`, and `-` only with a copy; every one `+` with no lock; removed IDs quoted. Tests at the `review` seam in

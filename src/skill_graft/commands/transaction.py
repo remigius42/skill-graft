@@ -54,11 +54,17 @@ def _keep_old(locked: dict[str, Any] | None) -> Callable[[Path], bool]:
     return keep
 
 
+def pending(skills: Path, locked: dict[str, Any] | None) -> Path:
+    """The folder holding the copies of `skills`, as a run killed mid-swap would
+    leave it: the one the next run recovers, the loaded lock `locked` deciding."""
+    return vendor.pending(skills, _keep_old(locked))
+
+
 def check_copies(skills: Path, locked: dict[str, Any] | None) -> None:
     """Refuses copies in `skills`, as a run killed mid-swap would leave it, that
     the loaded lock `locked` does not record; and any copies at all if there is
     no lock to check them against."""
-    folder = vendor.pending(skills, _keep_old(locked))
+    folder = pending(skills, locked)
     if locked is None or lock.recorded(locked) is None:
         if folder.exists() and any(folder.iterdir()):
             raise SkillGraftError(

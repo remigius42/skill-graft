@@ -6,11 +6,12 @@ import stat
 from collections.abc import Callable
 from dataclasses import dataclass
 from pathlib import Path
+from typing import Any
 
-from skill_graft.commands import explain
+from skill_graft.commands import explain, transaction
 from skill_graft.infra import paths
 from skill_graft.infra.errors import SkillGraftError
-from skill_graft.pipeline import deployed, hidden, rename
+from skill_graft.pipeline import deployed, hidden, lock, rename
 from skill_graft.pipeline.config import Config, GitSource, SkillId
 from skill_graft.pipeline.hull import Hull, PatchError
 
@@ -41,6 +42,38 @@ class Before:
     view: Callable[[SkillId], deployed.View]
     upstream: Callable[[SkillId], str]
     refs: dict[str, str | None]
+
+
+def vendored(skills: Path, locked: dict[str, Any] | None) -> Before:
+    """The Vendored copies in `skills` as a Hull diff's old side, the loaded lock
+    `locked` naming each: only a skill with a copy, its hash the lock's.
+
+    A copy is read only as an entry of the folder, matched by name to the lock's
+    deployed names: a path in the lock is never followed.
+    """
+    hashes: dict[SkillId, str] = {}
+    folders: dict[SkillId, Path] = {}
+    upstream: dict[SkillId, str] = {}
+    refs: dict[str, str | None] = {}
+    if locked is not None and lock.recorded(locked) is not None:
+        folder = transaction.pending(skills, locked)
+        entries = {e.name: e for e in folder.iterdir()} if folder.is_dir() else {}
+        for item in locked["skills"]:
+            alias, _, name = item["id"].partition("/")
+            skill = SkillId(alias, name)
+            if (copy := entries.get(lock.deployed_name(item))) is not None:
+                hashes[skill], folders[skill] = item["hash"], copy
+                upstream[skill] = str(item.get("upstream", ""))
+        sources = locked.get("sources")
+        for alias, source in (sources if isinstance(sources, dict) else {}).items():
+            ref = source.get("ref") if isinstance(source, dict) else None
+            refs[alias] = ref if isinstance(ref, str) else None
+    return Before(
+        hashes,
+        lambda skill: deployed.deployed_files(folders[skill], {}),
+        lambda skill: upstream[skill],
+        refs,
+    )
 
 
 def check_target(file: Path) -> Path:
@@ -125,7 +158,7 @@ def print_diff(
         if old.get(skill) == new.get(skill):
             continue
         if skill not in new:
-            lines.append(f"- {skill}")
+            lines.append(f"- {deployed.quote(str(skill))}")
             continue
         lines.append(f"{'+' if skill not in old else '~'} {skill}")
         then = before.view(skill) if skill in old else {}
@@ -180,7 +213,7 @@ def deployed_diff(
             out.append("# hull unchanged\n")
     # A reference as written is upstream text: escaped as a line of the diff is.
     out += [f"# {line}\n" for line in deployed.escape(explain.tree_lines(hull, marks))]
-    out += [f"# - {skill}\n" for skill in sorted(removed)]
+    out += [f"# - {deployed.quote(str(skill))}\n" for skill in sorted(removed)]
     budget = deployed.Budget()  # one for the run: a crafted skill costs no more
     for skill in sorted(shown):
         then, now = shown[skill]

@@ -119,7 +119,7 @@ def copy_problems(skills: Path, locked: dict[str, Any]) -> list[str]:
     """
     if not skills.exists():
         return []
-    hashes = {_deployed(item): item["hash"] for item in locked["skills"]}
+    hashes = {deployed_name(item): item["hash"] for item in locked["skills"]}
     problems = []
     for entry in sorted(skills.iterdir()):
         if entry.name not in hashes or not entry.is_dir():
@@ -131,10 +131,10 @@ def copy_problems(skills: Path, locked: dict[str, Any]) -> list[str]:
 
 def deployed_names(locked: dict[str, Any]) -> set[str]:
     """The deployed name of each skill the loaded lock `locked` records."""
-    return {_deployed(item) for item in locked["skills"]}
+    return {deployed_name(item) for item in locked["skills"]}
 
 
-def _deployed(item: dict[str, Any]) -> str:
+def deployed_name(item: dict[str, Any]) -> str:
     """A lock skill's deployed name: `deployed`, else the name in its ID."""
     return str(item.get("deployed") or str(item["id"]).partition("/")[2])
 
