@@ -208,13 +208,19 @@ snapshot() { (cd "$work/$1/project/.apm/skill-graft" && find . -type f -exec sha
 # claude's arguments. A failing claude fails the scenario, after its output.
 ask() {
   local dir="$work/$1" report="$work/$1/$2" code=0
+  local skill="$work/$1/project/.claude/skills/graft-check"
   shift 2
   # --add-dir: the throwaway deploys, the cache and the sources lie outside the project.
   # The hardened Check runs `claude` readers and copies and diffs in temporary folders.
+  # `sh` runs the skill's report filter only, its path quoted as the skill asks or not.
+  # Edit is the file tool that corrects a prompt file it wrote, in $TMPDIR only.
   (cd "$dir/project" && claude -p "$@" --add-dir "$work" \
     --allowedTools "Bash(skill-graft:*)" "Bash(mktemp:*)" "Bash(diff:*)" "Bash(printenv:*)" \
     "Bash(command -v:*)" "Bash(claude:*)" "Bash(cd:*)" "Bash(cp:*)" "Bash(mv:*)" "Bash(rm:*)" \
-    "Bash(git apply:*)" "Bash(awk:*)" Read Write Grep Glob Task Agent) \
+    "Bash(git apply:*)" "Bash(awk:*)" "Bash(sh '$skill/report-filter.sh':*)" \
+    "Bash(sh $skill/report-filter.sh:*)" "Bash(cat:*)" "Bash(echo:*)" "Bash(tr:*)" \
+    "Bash(grep:*)" "Bash(cut:*)" "Bash(find:*)" "Bash(wc:*)" "Edit(/$TMPDIR/**)" \
+    Read Write Grep Glob Task Agent) \
     > "$report" || code=$?
   echo "=== $report" >&2
   cat "$report" >&2
