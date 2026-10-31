@@ -86,9 +86,10 @@ skill-graft build                                   # deploy what skill-graft.lo
 The dry run writes `mp/tdd` and every skill it calls, as they would deploy, to `review.diff`, and writes nothing else.
 Read it in an editor, never by printing it to a terminal: it is untrusted text. Then run the `add` itself.
 
-After editing `skill-graft.toml` or a patch by hand, run `skill-graft resolve` before `build`: `build` deploys only what
-the lock records, and names `resolve` when the config or a patch differs from it. An edit to a vendored copy in
-`.apm/skills/` is refused too; move it into a patch, or delete the folder to vendor it again.
+After editing `skill-graft.toml` or a patch by hand, run `skill-graft resolve` before `build`, previewing it first with
+`skill-graft resolve --dry-run --diff review.diff`: `build` deploys only what the lock records, and names `resolve` when
+the config or a patch differs from it. An edit to a vendored copy in `.apm/skills/` is refused too; move it into a
+patch, or delete the folder to vendor it again.
 
 `tdd` and the skills it calls are now in `~/.claude/skills/`. To share skills through a project instead, see
 [A package for one project](#a-package-for-one-project); to deploy them under other names, `[rename]` and `prefix` in
@@ -106,25 +107,49 @@ source's edit, a patch or a rename since then makes it refuse.
 
 ## Commands
 
-| Command                                                                 | What it does                                                                                                                                                                                                                |
-| ----------------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `init [--project]`                                                      | Create the package, `~/.apm/skill-graft/` (or `./.apm/skill-graft/`), and register it with APM.                                                                                                                             |
-| `resolve`                                                               | Compute the hull, vendor it patched and renamed into `.apm/skills/`, write the lock, print the tree and the skills prose mentions outside the hull. Run it after editing the config or a patch by hand.                     |
-| `build [--no-install \| --into <dir>]`                                  | Deploy what the lock records through APM, refusing a hull other than the lock's or an edited vendored copy. `--into <dir>` writes the skills and the lock into an empty `<dir>` instead, never touching the package or APM. |
-| `update [source…] [--dry-run] [--diff <file>] [--expect <hull-digest>]` | Move each git source's `ref` to its branch tip, if the hull still resolves and every patch still applies there, and vendor the hull; `--diff` and `--expect` below.                                                         |
-| `tree [--format text\|mermaid [--link]]`                                | Print the hull, writing nothing; with `--format mermaid`, `--link` gives a mermaid.live URL: see the warning below.                                                                                                         |
-| `why <skill>`                                                           | Print the paths from the entries that reach a skill, and its upstream folder.                                                                                                                                               |
-| `add <skill-id>…`, `remove <skill-id>…`                                 | Change `entries`, keeping the file's comments, once the result resolves; then vendor the hull and write the lock, as `rename`, `bind` and `unbind` do too.                                                                  |
-| `rename <skill-id> <name>`                                              | Set a skill's deployed name; the name it would deploy as without a key undoes it.                                                                                                                                           |
-| `bind <alias>/<name> <skill-id>\|false`                                 | Resolve `<name>` from that source to the skill, or to no reference.                                                                                                                                                         |
-| `unbind <alias>/<name>`                                                 | Remove that bind, so `<name>` resolves by default again.                                                                                                                                                                    |
-| `help [command]`, or `--help` on any command                            | Explain it.                                                                                                                                                                                                                 |
+`resolve`, `update` and the editing commands resolve and stage: they write the lock and `.apm/skills/` together, and
+never deploy. `build` checks the package against the lock and deploys it through APM.
+
+### Setup
+
+| Command            | What it does                                                                                    |
+| ------------------ | ----------------------------------------------------------------------------------------------- |
+| `init [--project]` | Create the package, `~/.apm/skill-graft/` (or `./.apm/skill-graft/`), and register it with APM. |
+
+### Staging
+
+| Command                                     | What it does                                                                                                                                 |
+| ------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------- |
+| `resolve`                                   | Compute the hull from the config as it stands, vendor it patched and renamed, print the tree and the skills prose mentions outside the hull. |
+| `add <skill-id>…`                           | Append skills to `entries`, keeping the file's comments, once the result resolves.                                                           |
+| `remove <skill-id>…`                        | Delete skills from `entries`; one another entry reaches stays in the hull.                                                                   |
+| `rename <skill-id> <name>`                  | Set a skill's deployed name; the name it would deploy as without a key undoes it.                                                            |
+| `bind <alias>/<name> <skill-id>\|false`     | Resolve `<name>` from that source to the skill, or to no reference.                                                                          |
+| `unbind <alias>/<name>`                     | Remove that bind, so `<name>` resolves by default again.                                                                                     |
+| `update [source…] [--expect <hull-digest>]` | Move each git source's `ref` to its branch tip, if the hull still resolves and every patch still applies there.                              |
+
+Each staging command takes `--dry-run` and `--diff <file>`. `--dry-run` resolves and prints the hull diff, each added,
+removed or changed skill with its changed files but never their text, and writes nothing but `--diff`'s file.
+`--diff <file>` writes that text as deployed, the Deployed diff, to a new `*.diff` file, or one it wrote before; read it
+in an editor. `update` compares against the hull at the current refs, the other commands against the vendored copies.
+`update`'s `--expect <hull-digest>` updates only to the hull a dry run showed.
+
+### Deploying
+
+| Command                                | What it does                                                                                                                                                                                                                |
+| -------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `build [--no-install \| --into <dir>]` | Deploy what the lock records through APM, refusing a hull other than the lock's or an edited vendored copy. `--into <dir>` writes the skills and the lock into an empty `<dir>` instead, never touching the package or APM. |
+
+### Inspecting
+
+| Command                                      | What it does                                                                                                        |
+| -------------------------------------------- | ------------------------------------------------------------------------------------------------------------------- |
+| `tree [--format text\|mermaid [--link]]`     | Print the hull, writing nothing; with `--format mermaid`, `--link` gives a mermaid.live URL: see the warning below. |
+| `why <skill>`                                | Print the paths from the entries that reach a skill, and its upstream folder.                                       |
+| `help [command]`, or `--help` on any command | Explain it.                                                                                                         |
 
 Warning: `tree --format mermaid --link` hands the diagram to mermaid.live, a third-party site whose page code can read
 it: it then sees which upstream repositories and refs you use, a target list for a supply-chain attack on them.
-
-`update` names each changed file of each changed or added skill, never its text; `--diff <file>` writes that text as
-deployed, the Deployed diff, to a new `*.diff` file; `--expect <hull-digest>` updates only to the hull a dry run showed.
 
 ## Config
 

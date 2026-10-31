@@ -62,7 +62,7 @@ without a whole command; misses the command's wiring, which the CLI seam covers)
   `docs/security.md`: the dry run under vetting **Sources**, and git's diff of the committed **Package** for what
   changed since the last `build`; each command's `--help`. Verify `pre-commit run --all-files`
 
-- [ ] 2.6 `README.md`'s Commands section regrouped by role: one sentence that `resolve`, `update` and the editing
+- [x] 2.6 `README.md`'s Commands section regrouped by role: one sentence that `resolve`, `update` and the editing
   commands resolve and stage (write the lock and `.apm/skills/` together, never deploy), and `build` checks the lock and
   deploys through APM; the table grouped as setup (`init`), staging (`resolve`, `add`, `remove`, `rename`, `bind`,
   `unbind`, `update`), deploying (`build`) and inspecting (`tree`, `why`, `help`); each row saying only what is its own,
