@@ -39,8 +39,8 @@ bare repository per URL and one export per commit and `subdirectory`, the commit
 `subdirectory` exports only that folder, and the entries on its path. A repository is cloned blobless: commits and
 trees, and the files of each export, fetched in one request when it is first made, so the first export of a commit and
 subdirectory needs the remote even when the commit is cached. Each commit read is pinned, a ref `refs/skill-graft/<sha>`
-in its repository, so `fetch --prune` and git's gc keep it after it vanishes upstream. Each command but `init` and
-`update --dry-run` ends by removing the exports, and leftovers of killed runs, unused for 30 days; it never removes a
+in its repository, so `fetch --prune` and git's gc keep it after it vanishes upstream. Each command but `init` and a
+`--dry-run` ends by removing the exports, and leftovers of killed runs, unused for 30 days; it never removes a
 repository. Deleting it loses nothing, unless a ref read has since vanished upstream: the cache held its only copy.
 
 ## Config
@@ -91,6 +91,17 @@ path = "~/Documents/sync/2_areas/software/chisel_skill"
   `update` does), then `.apm/skills/` and the lock together, as `resolve` does, and print what `resolve` prints. Notices
   go to stderr with the warnings. Never run APM. An edit that changes nothing (every skill ID already an entry, the
   current deployed name, the current bind) prints only its notices and neither resolves nor writes.
+- Their `--dry-run` and `--diff <file>`, and `resolve`'s, share `commands/review.py` with `update`'s. Either prints,
+  before the tree, the hull diff in `update`'s form, of the vendored copies against the hull the command would vendor: a
+  copy is matched to its skill through the lock's skill IDs and deployed names and read only as an entry of
+  `.apm/skills/` (or of the `skills.old` a killed run left), never through a path the lock names; a skill the lock
+  records without a copy, and every skill with no lock, is `+`, and a skill is `-` only when it leaves the hull and had
+  a copy; a removed skill's ID, read from the lock, is quoted. `--dry-run` writes neither the TOML, the lock,
+  `.apm/skills/`, `.gitattributes` nor the cache, fetching into a temporary folder, and ends with
+  `dry run: … not written`, after a `review: skill-graft <command> … --dry-run --diff <file>` hint when a skill is `+`
+  or `~` and there is no `--diff`. `--diff <file>` writes the Deployed diff as `update --diff` does, its header's second
+  line saying what it compares, each source line naming the lock's `ref`, quoted, and the one it would vendor; an
+  earlier file is removed once the command is past its no-op check, and on a failure before its writes went through.
 - `add` appends each skill ID to `entries` (creating the key before the first table if absent). An unknown alias or
   skill is an error; one already an entry is a notice and left alone; one already in the hull is added with a notice
   naming the skill that reaches it from the other entries.
@@ -110,12 +121,13 @@ path = "~/Documents/sync/2_areas/software/chisel_skill"
   while its target exists; resolving checks it again, as it checks every bind's. An unused bind gets the usual warning.
 - `unbind` deletes the key, leaving the table; its key is parsed as `bind`'s, and one not in `[bind]` is an error.
 - `resolve`: computes the hull from the TOML, vendors it into `.apm/skills/` and writes the lock together, prints the
-  tree, warnings and suggestions. Run it after editing the TOML or a patch by hand. Reads every declared source, each
-  git one at its `ref`, fetching only when that commit is not cached. A git source with `subdirectory` is read only in
-  that folder of the commit, as if it were the root, confined to it as discovery confines a tree; it must be a folder of
-  exactly that name there, with no symlink on the way, else the command fails naming the alias, the subdirectory and the
-  commit. `subdirectory` is relative, without `.`, `..`, empty parts, `.git`, control characters or `.apm/skill-graft`;
-  a path source points `path` at the folder instead.
+  tree, warnings and suggestions. Run it after editing the TOML or a patch by hand; `--dry-run` and `--diff <file>`, as
+  the editing commands', show first what it would vendor. Reads every declared source, each git one at its `ref`,
+  fetching only when that commit is not cached. A git source with `subdirectory` is read only in that folder of the
+  commit, as if it were the root, confined to it as discovery confines a tree; it must be a folder of exactly that name
+  there, with no symlink on the way, else the command fails naming the alias, the subdirectory and the commit.
+  `subdirectory` is relative, without `.`, `..`, empty parts, `.git`, control characters or `.apm/skill-graft`; a path
+  source points `path` at the folder instead.
 - `build`: resolves and deploys the hull only if it is the one the lock records, compared parsed, so an editor's comment
   or line endings are no difference. It refuses, writing nothing and naming `resolve`, a skill whose hash differs (a
   hand edit to the TOML or a patch, an edited cache export, an upgrade that rewrites differently), any change to the
@@ -150,11 +162,12 @@ path = "~/Documents/sync/2_areas/software/chisel_skill"
   character the hidden character check reports escaped, `\x..` only for ASCII controls and bytes that cannot be decoded.
   A line before a file says when its backslashes are doubled (it holds a backslash and an escape, so no typed escape
   reads as one), when its two sides were read in different encodings, or when it is shown byte for byte (its bytes
-  differ but its text does not); a removed skill gets a `# - <skill id>` line. Only to a new file or one it wrote
-  before, named `*.diff`, never inside an `.apm` folder or a skill's; removed first, so a failed run leaves none, and
-  written before the TOML and the lock. With no previous hull, every skill shows as added. `--expect <hull-digest>`:
-  refuses, writing nothing, unless the new hull's digest (SHA-256 over each skill's ID, deployed name and hash) is
-  `<hull-digest>`.
+  differ but its text does not). After the header, the new hull as `tree` prints it, each line commented, escaped as a
+  diff line is and marked `+` or `~` as the hull diff marks its skill, then a `# - <skill id>` line per removed skill;
+  the header's first line is the same in every Deployed diff. Only to a new file or one it wrote before, named `*.diff`,
+  never inside an `.apm` folder or a skill's; removed first, so a failed run leaves none, and written before the TOML
+  and the lock. With no previous hull, every skill shows as added. `--expect <hull-digest>`: refuses, writing nothing,
+  unless the new hull's digest (SHA-256 over each skill's ID, deployed name and hash) is `<hull-digest>`.
 - `why <skill>`: the reverse paths from the entries, as an inverted tree (`cargo tree -i`): the skill at the root, each
   child a skill whose slash or Skill tool reference reaches it, joined by `├─←` and `└─←`, labels and `(*)` as in
   `resolve`'s tree, an entry below the root marked `(entry)` and not expanded (the root always expands, marked `(entry)`
@@ -359,10 +372,11 @@ the user to accept. It takes no part in resolution.
   `PATH`; it runs rarely, so the length costs little.
 - `src/skill_graft/` is layered, each layer importing only those below it: `cli.py` (the console entry point: it parses
   and dispatches, reaching `pipeline/` and `infra/` only through `commands/`, `infra.errors` aside); `commands/`
-  (`scope`, `resolve`, `build`, `edit`, `update`, `explain`, `init_package`; `scope` builds the `Scope`, and each
-  command builds the one git `Cache` it reads through); `pipeline/` (config to **Hull** to vendored skills and lock,
-  `compute.compute_hull` computing the **Hull**); `infra/` (file system, `git`, `apm`, errors). `pipeline/` and `infra/`
-  take the `Scope` and the `Cache` as parameters; nothing holds either globally (ADR 0008).
+  (`scope`, `resolve`, `build`, `edit`, `update`, `explain`, `init_package`, and `review`, the hull diff and the
+  Deployed diff those that write the lock share; `scope` builds the `Scope`, and each command builds the one git `Cache`
+  it reads through); `pipeline/` (config to **Hull** to vendored skills and lock, `compute.compute_hull` computing the
+  **Hull**); `infra/` (file system, `git`, `apm`, errors). `pipeline/` and `infra/` take the `Scope` and the `Cache` as
+  parameters; nothing holds either globally (ADR 0008).
 
 ## Measured APM behavior
 

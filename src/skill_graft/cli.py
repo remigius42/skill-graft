@@ -392,6 +392,11 @@ def _fails_on_flush(failed: bool) -> bool:
 
 def _review_options(parser: argparse.ArgumentParser) -> None:
     """The options a command that writes the lock offers to review it first."""
+    parser.description = (
+        f"{parser.description} To review what it would vendor first, run it with "
+        "--dry-run --diff review.diff and read review.diff in an editor, never by "
+        "printing it to a terminal."
+    )
     parser.add_argument(
         "--dry-run",
         action="store_true",

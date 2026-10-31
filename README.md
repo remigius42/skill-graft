@@ -76,11 +76,15 @@ git = "https://github.com/mattpocock/skills.git"
 Then:
 
 ```sh
-skill-graft update mp    # set the source's ref to its branch tip
-skill-graft add mp/tdd   # ask for the skill; vendors the hull and writes the lock
-skill-graft tree         # see the hull: mp/tdd and every skill it calls
-skill-graft build        # deploy what skill-graft.lock records through APM
+skill-graft update mp                               # set the source's ref to its branch tip
+skill-graft add mp/tdd --dry-run --diff review.diff # write the text it would vendor, nothing else
+skill-graft add mp/tdd                              # ask for the skill; vendors the hull and writes the lock
+skill-graft tree                                    # see the hull: mp/tdd and every skill it calls
+skill-graft build                                   # deploy what skill-graft.lock records through APM
 ```
+
+The dry run writes `mp/tdd` and every skill it calls, as they would deploy, to `review.diff`, and writes nothing else.
+Read it in an editor, never by printing it to a terminal: it is untrusted text. Then run the `add` itself.
 
 After editing `skill-graft.toml` or a patch by hand, run `skill-graft resolve` before `build`: `build` deploys only what
 the lock records, and names `resolve` when the config or a patch differs from it. An edit to a vendored copy in
@@ -97,8 +101,8 @@ skill-graft update mp --dry-run --diff review.diff   # write each changed skill'
 skill-graft update mp --expect <hull-digest>         # the `apply:` line the dry run printed
 ```
 
-Read `review.diff` in an editor, never by printing it to a terminal: it is untrusted text. The `apply:` line updates to
-exactly the hull you read; a push, a path source's edit, a patch or a rename since then makes it refuse.
+Read `review.diff` in an editor, as before. The `apply:` line updates to exactly the hull you read; a push, a path
+source's edit, a patch or a rename since then makes it refuse.
 
 ## Commands
 
@@ -230,8 +234,8 @@ package. It never deploys: when the package would change, it tells you to run `s
 Git **Sources** are cached under `$XDG_CACHE_HOME/skill-graft/`, else `~/.cache/skill-graft/`: one repository per URL,
 holding commits and trees and only the files read, and one export per commit and `subdirectory`.
 
-- Any command but `init` and `update --dry-run` removes, as it ends, each export no command has used for 30 days. One
-  removed is exported again from its repository when next needed, without the remote.
+- Any command but `init` and a `--dry-run` removes, as it ends, each export no command has used for 30 days. One removed
+  is exported again from its repository when next needed, without the remote.
 - No command removes a repository. Every **Ref** read stays in its repository, with its files, even after it vanished
   from every branch upstream.
 - Deleting a repository, or the whole folder, by hand is safe unless a **Ref** you use has since vanished upstream: that
@@ -276,12 +280,15 @@ cp -r base edited
 LC_ALL=C diff -ruN base/ edited/ > ~/.apm/skill-graft/patches/second.patch
 ```
 
-Then list it, after the skill's earlier patches, and run `skill-graft resolve`:
+Then list it, after the skill's earlier patches:
 
 ```toml
 [patches]
 "mp/implement" = ["patches/first.patch", "patches/second.patch"]
 ```
+
+`skill-graft resolve --dry-run --diff review.diff` writes the patched skill as it would deploy to `review.diff`; read it
+in an editor, then run `skill-graft resolve`.
 
 `diff` needs `-N`, or added and deleted files are lost; skill-graft refuses such a patch, and binary changes, by the
 lines `diff` writes for them in English: hence `LC_ALL=C`. A file such a patch leaves empty is deleted, with any folder

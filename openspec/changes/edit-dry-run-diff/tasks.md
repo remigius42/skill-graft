@@ -56,7 +56,7 @@ without a whole command; misses the command's wiring, which the CLI seam covers)
   header line. Tests at the CLI seam in `tests/commands/test_resolve.py` for every scenario of "Resolve dry run and
   diff"; verify each fails first, then passes
 
-- [ ] 2.5 Docs: `README.md`'s getting-started flow (`add mp/tdd --dry-run --diff review.diff`, read it in an editor,
+- [x] 2.5 Docs: `README.md`'s getting-started flow (`add mp/tdd --dry-run --diff review.diff`, read it in an editor,
   then `add mp/tdd`), its "Writing a patch" section (after writing a patch, `resolve --dry-run --diff review.diff` shows
   the patched skill as deployed; read it, then `resolve`); `docs/design.md`'s entries for the six commands;
   `docs/security.md`: the dry run under vetting **Sources**, and git's diff of the committed **Package** for what
