@@ -38,10 +38,12 @@ def _flat(text: str) -> str:
 
 
 class _Command(argparse.ArgumentParser):
-    """A command's parser, wrapping help as the top level does."""
+    """A command's parser, wrapping help as the top level does, and taking each option
+    only by its full name."""
 
     def __init__(self, *args: Any, **kwargs: Any) -> None:
         kwargs.setdefault("formatter_class", _Formatter)
+        kwargs.setdefault("allow_abbrev", False)
         super().__init__(*args, **kwargs)
 
     def print_help(self, file: "SupportsWrite[str] | None" = None) -> None:

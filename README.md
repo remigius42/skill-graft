@@ -110,6 +110,8 @@ source's edit, a patch or a rename since then makes it refuse.
 `resolve`, `update` and the editing commands resolve and stage: they write the lock and `.apm/skills/` together, and
 never deploy. `build` checks the package against the lock and deploys it through APM.
 
+Options are taken only spelled in full: `--dry` is a usage error, not `--dry-run`.
+
 ### Setup
 
 | Command            | What it does                                                                                    |

@@ -8,6 +8,7 @@ from importlib import metadata
 from pathlib import Path
 
 import pytest
+from conftest import write_config
 
 from skill_graft.cli import main
 
@@ -166,6 +167,25 @@ def test_into_with_an_empty_value(
     assert (code, out) == (2, "")
     assert "--into" in err and "package:" not in err
     assert sorted(home.iterdir()) == before
+
+
+def test_prefix_of_an_option(home: Path, capsys: pytest.CaptureFixture[str]) -> None:
+    before = sorted(home.iterdir())
+    code, out, err = run(["update", "--dry"], capsys)
+    assert (code, out) == (2, "")
+    assert "--dry" in err and "package:" not in err
+    assert sorted(home.iterdir()) == before
+
+
+def test_option_in_full(home: Path, capsys: pytest.CaptureFixture[str]) -> None:
+    config = write_config("entries = []\n")
+    package = sorted(config.parent.iterdir())
+
+    code, out, _ = run(["update", "--dry-run"], capsys)
+
+    assert code == 0
+    assert "dry run:" in out
+    assert sorted(config.parent.iterdir()) == package
 
 
 class FakeDistribution(metadata.Distribution):

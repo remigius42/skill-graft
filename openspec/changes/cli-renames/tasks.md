@@ -11,9 +11,10 @@ user's agent skills", the top-level help's "Build your agent skills", `[build-sy
 
 ## 1. Options spelled in full
 
-- [ ] 1.1 `allow_abbrev=False` on `_Command` in `cli.py`, which the top-level parser and every command's parser are.
+- [x] 1.1 `allow_abbrev=False` on `_Command` in `cli.py`, which the top-level parser and every command's parser are.
   Tests in `tests/cli/test_cli.py` for "Options spelled in full" (`update --dry` exits 2 naming `--dry` before the
-  **Package** is looked for; `update --dry-run` runs); verify the tests fail first, then pass, and `pytest` is green
+  **Package** is looked for; `update --dry-run` runs); verify the tests fail first, then pass, and `pytest` is green.
+  README.md's Commands section says options are taken only spelled in full
 
 ## 2. `build` becomes `deploy`
 
