@@ -70,6 +70,10 @@ def test_command_help(capsys: pytest.CaptureFixture[str]) -> None:
     assert "branch tip" in out
     assert "--dry-run" in out
     assert "--expect hull-digest" in out and "DIGEST" not in out
+    code, out, _ = run(["build", "--help"], capsys)
+    assert code == 0 and "what skill-graft.lock records" in " ".join(out.split())
+    code, out, _ = run(["resolve", "--help"], capsys)
+    assert code == 0 and "vendor" in out
 
 
 def test_help_command_same_text(capsys: pytest.CaptureFixture[str]) -> None:

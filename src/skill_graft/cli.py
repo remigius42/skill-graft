@@ -164,22 +164,27 @@ def _parser() -> tuple[_Parser, dict[str, argparse.ArgumentParser]]:
     )
     commands.add_parser(
         "resolve",
-        help="compute the hull, write the lock, and show the tree",
+        help="compute the hull, vendor it, write the lock, and show the tree",
         description=(
             "Compute the hull (the entries and every skill their slash and Skill "
-            "tool references reach), write skill-graft.lock, and print the tree, "
-            "then the skills prose mentions outside the hull. Reads each git "
-            "source at its ref, fetching only a commit not yet cached."
+            "tool references reach), vendor its skills under their deployed names "
+            "into the package's .apm/skills/, patched and renamed, write "
+            "skill-graft.lock, and print the tree, then the skills prose mentions "
+            "outside the hull. Reads each git source at its ref, fetching only a "
+            "commit not yet cached. Run it after editing skill-graft.toml or a "
+            "patch by hand."
         ),
     )
     build = commands.add_parser(
         "build",
-        help="vendor the hull and deploy it through APM",
+        help="deploy what skill-graft.lock records through APM",
         description=(
-            "Resolve, vendor the hull's skills under their deployed names into "
-            "the package's .apm/skills/, patched and renamed, write the lock, and "
+            "Deploy what skill-graft.lock records: resolve, refuse a hull other "
+            "than the lock's (run `skill-graft resolve` to accept it) or an edited "
+            "vendored copy, vendor the hull into the package's .apm/skills/, and "
             "deploy through `apm install`: with -g for ~/.apm/skill-graft/, in the "
-            "project root for a project's package."
+            "project root for a project's package. A path source's changed skill "
+            "is deployed as is, and named."
         ),
     )
     install = build.add_mutually_exclusive_group()
