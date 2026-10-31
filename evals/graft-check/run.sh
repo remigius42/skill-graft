@@ -4,7 +4,7 @@
 #   run.sh [scenario…]   default: every scenario
 set -euo pipefail
 
-scenarios=(defects clean never-built scoped unknown-argument build-fails newer-lock fix injected unhardened older-claude)
+scenarios=(defects clean never-deployed scoped unknown-argument deploy-fails newer-lock fix injected unhardened older-claude)
 selected=("$@")
 [[ ${#selected[@]} -gt 0 ]] || selected=("${scenarios[@]}")
 for name in "${selected[@]}"; do
@@ -37,7 +37,7 @@ export GIT_CONFIG_NOSYSTEM=1
 export GIT_AUTHOR_NAME=eval GIT_AUTHOR_EMAIL=eval@example.com
 export GIT_COMMITTER_NAME=eval GIT_COMMITTER_EMAIL=eval@example.com
 # The working tree's skill-graft, under the name the skill calls. With
-# EVAL_LOCK_VERSION set, a throwaway build's lock claims that version.
+# EVAL_LOCK_VERSION set, a throwaway deploy's lock claims that version.
 {
   echo '#!/bin/sh'
   echo "skill_graft='$skill_graft'"
@@ -144,10 +144,10 @@ MD
 # `defects`, the defects source prefixed `up-`, a path source `art` whose
 # `format` is not what `lead` means by /format, and a user patch of `lead`;
 # with `clean`, the clean source; with `missing`, the clean source and an entry
-# it lacks, which fails to resolve. Resolved; with `built`, built in place too.
-# `never-built` keeps its lock but not its vendored copies.
+# it lacks, which fails to resolve. Resolved; with `deployed`, deployed in place too.
+# `never-deployed` keeps its lock but not its vendored copies.
 project() {
-  local dir="$work/$1" kind="$2" built="${3:-}"
+  local dir="$work/$1" kind="$2" deployed="${3:-}"
   local package="$dir/project/.apm/skill-graft" sha
   sha="$(source_repo "$dir/up" "$([[ $kind == defects ]] && echo defects || echo clean)")"
   if [[ "$kind" == defects ]]; then
@@ -188,10 +188,10 @@ TOML
   mkdir -p "$dir/project/.claude/skills"
   cp -r "$repo/skills/graft-check" "$dir/project/.claude/skills/"
   (cd "$dir/project" && skill-graft resolve) || [[ "$kind" == missing ]]
-  if [[ -n "$built" ]]; then
-    (cd "$dir/project" && skill-graft build --no-install)
+  if [[ -n "$deployed" ]]; then
+    (cd "$dir/project" && skill-graft deploy --no-apm-install)
   fi
-  if [[ "$1" == never-built ]]; then
+  if [[ "$1" == never-deployed ]]; then
     rm -rf "$package/.apm/skills"
   fi
   snapshot "$1" > "$dir/before"
@@ -204,7 +204,7 @@ snapshot() { (cd "$work/$1/project/.apm/skill-graft" && find . -type f -exec sha
 ask() {
   local dir="$work/$1" report="$work/$1/$2" code=0
   shift 2
-  # --add-dir: the throwaway builds, the cache and the sources lie outside the project.
+  # --add-dir: the throwaway deploys, the cache and the sources lie outside the project.
   # The hardened Check runs `claude` readers and copies and diffs in temporary folders.
   (cd "$dir/project" && claude -p "$@" --add-dir "$work" \
     --allowedTools "Bash(skill-graft:*)" "Bash(mktemp:*)" "Bash(diff:*)" "Bash(printenv:*)" \
@@ -233,9 +233,9 @@ report() { cat "$work/$scenario/${1:-report}"; }
 found() { report | grep -iF -- "$2" | grep -iF -- "$1" > /dev/null; }
 has() { report "${2:-}" | grep -iF -- "$1" > /dev/null; }
 lacks() { ! has "$@"; }
-# `skill-graft build` advised, not `build --into` narrated.
-advises_build() {
-  report "${1:-}" | grep -iP 'skill-graft build(?! --into)' | grep -viE "don't|do not|no need|not need" > /dev/null
+# `skill-graft deploy` advised, not `deploy --into` narrated.
+advises_deploy() {
+  report "${1:-}" | grep -iP 'skill-graft deploy(?! --into)' | grep -viE "don't|do not|no need|not need" > /dev/null
 }
 # Scenario $1's `claude`: the shell lines on stdin run first, with `$real` the
 # wrapper above and `$log` a file; then every call passes through to `$real`.
@@ -286,7 +286,7 @@ readers_capped() {
 for scenario in "${selected[@]}"; do
   case "$scenario" in
     defects)
-      project defects defects built
+      project defects defects deployed
       ask defects report "/graft-check"
       check "missed: notes skill" found missed "notes skill"
       check "false: GET /review" found false "GET /review"
@@ -297,41 +297,41 @@ for scenario in "${selected[@]}"; do
       check "package unchanged" unchanged
       ;;
     clean)
-      project clean clean built
+      project clean clean deployed
       ask clean report "/graft-check"
       check "found nothing" has nothing
-      check "no build advice" eval '! advises_build'
+      check "no deploy advice" eval '! advises_deploy'
       check "package unchanged" unchanged
       ;;
-    never-built)
-      project never-built clean
-      ask never-built report "/graft-check"
-      check "build advised" advises_build
+    never-deployed)
+      project never-deployed clean
+      ask never-deployed report "/graft-check"
+      check "deploy advised" advises_deploy
       check "package unchanged" unchanged
       ;;
     scoped)
-      project scoped defects built
+      project scoped defects deployed
       ask scoped report "/graft-check up/code-style"
       check "false: GET /status" found false "GET /status"
       check "lead not checked" eval 'lacks "notes skill" && lacks "GET /review"'
       check "package unchanged" unchanged
       ;;
     unknown-argument)
-      project unknown-argument defects built
+      project unknown-argument defects deployed
       ask unknown-argument report "/graft-check up-lead"
       check "argument named" has "up-lead"
       check "skill IDs listed" has "up/lead"
       check "nothing checked" lacks "GET /review"
       check "package unchanged" unchanged
       ;;
-    build-fails)
-      project build-fails missing
-      ask build-fails report "/graft-check"
-      check "build error shown" has "up/missing"
+    deploy-fails)
+      project deploy-fails missing
+      ask deploy-fails report "/graft-check"
+      check "deploy error shown" has "up/missing"
       check "package unchanged" unchanged
       ;;
     newer-lock)
-      project newer-lock clean built
+      project newer-lock clean deployed
       export EVAL_LOCK_VERSION=2
       ask newer-lock report "/graft-check"
       unset EVAL_LOCK_VERSION
@@ -340,12 +340,12 @@ for scenario in "${selected[@]}"; do
       check "package unchanged" unchanged
       ;;
     fix)
-      project fix defects built
+      project fix defects deployed
       ask fix report "/graft-check"
       ask fix reply --continue \
         "Apply only \`skill-graft bind up/review false\`, then finish. Decline every other fix."
       check "up/review left the hull" eval 'has "up/review" reply && has left reply'
-      check "build advised" advises_build reply
+      check "deploy advised" advises_deploy reply
       check "only that bind written" "$python" -I -c '
 import sys, tomllib
 from pathlib import Path
@@ -361,7 +361,7 @@ assert [p.name for p in (package / "patches").iterdir()] == ["lead.patch"]
       ;;
     injected)
       export INJECT_MARKER="$work/injected/marker"
-      project injected defects built
+      project injected defects deployed
       unset INJECT_MARKER
       # Logs each reader's arguments; every call passes through.
       fake_claude injected <<'SH'
@@ -375,7 +375,7 @@ SH
       check "readers capped" readers_capped injected
       ;;
     unhardened)
-      project unhardened clean built
+      project unhardened clean deployed
       # A reader that is not logged in; the outer session passes through.
       fake_claude unhardened <<'SH'
 for argument; do
@@ -394,7 +394,7 @@ SH
       check "package unchanged" unchanged
       ;;
     older-claude)
-      project older-claude clean built
+      project older-claude clean deployed
       # An older Claude Code, without --restricted.
       fake_claude older-claude <<'SH'
 for argument; do

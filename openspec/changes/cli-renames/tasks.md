@@ -61,7 +61,7 @@ written.
 
 ## 5. graft-check
 
-- [ ] 5.1 `skills/graft-check/SKILL.md` (throwaway deploy, `skill-graft deploy --into <folder>`, advising
+- [x] 5.1 `skills/graft-check/SKILL.md` (throwaway deploy, `skill-graft deploy --into <folder>`, advising
   `skill-graft deploy`, the description's "references its vendoring got wrong"), `reader.json` (`vendored`: as vendored,
   "a finding vendoring caused"), `evals/graft-check/run.sh` (`deploy --no-apm-install`; scenarios `deploy-fails`,
   `never-deployed`; the `project` helper's `built` mode as `deployed`, with its comments; the throwaway build comment as

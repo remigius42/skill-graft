@@ -813,7 +813,7 @@ def test_lock_check_prints_a_newer_version(tmp_path: Path, lock: str) -> None:
 
 def test_lock_checked_before_it_is_read() -> None:
     text = " ".join((SKILLS / "graft-check" / "SKILL.md").read_text().split())
-    step = text[text.index("## 2. Throwaway build") : text.index("## 3. Inputs")]
+    step = text[text.index("## 2. Throwaway deploy") : text.index("## 3. Inputs")]
 
     assert step.index("LC_ALL=C awk") < step.index("Only then read the lock")
     assert "the lock holds a value skill-graft would not write" in step
@@ -826,12 +826,12 @@ def fixes_section() -> str:
     return text[text.index("## 6. Fixes") : text.index("## 7. Close")]
 
 
-def test_patch_fix_resolves_before_building() -> None:
+def test_patch_fix_resolves_before_deploying() -> None:
     text = fixes_section()
     appended = text.index('Append `"patches/<n>.patch"`')
     resolved = text.index("run `skill-graft resolve`", appended)
 
-    assert resolved < text.index("make a throwaway build", appended)
+    assert resolved < text.index("make a throwaway deploy", appended)
 
 
 def test_undone_patch_resolves_again() -> None:
