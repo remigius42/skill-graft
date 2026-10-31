@@ -72,7 +72,7 @@ without a whole command; misses the command's wiring, which the CLI seam covers)
 
 ## 3. Changelog
 
-- [ ] 3.1 Add an entry to `CHANGELOG.md` under `[Unreleased]`: `add`, `remove`, `rename`, `bind`, `unbind` and `resolve`
+- [x] 3.1 Add an entry to `CHANGELOG.md` under `[Unreleased]`: `add`, `remove`, `rename`, `bind`, `unbind` and `resolve`
   take `--dry-run` and `--diff <file>`, showing what they would vendor before writing it; each **Deployed diff** opens
   with the marked **Hull**. Per `AGENTS.md` it lands in the archive commit; check the box there; verify
   `pre-commit run --all-files`

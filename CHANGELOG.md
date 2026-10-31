@@ -11,9 +11,15 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 
 - graft-check checks the lock before it reads it, and ends the **Check** on a line skill-graft would not write, naming
   no value and advising to update skill-graft
+- `add`, `remove`, `rename`, `bind`, `unbind` and `resolve` take `--dry-run` and `--diff <file>`, to see what they would
+  vendor before they write it. `--dry-run` prints the **Hull diff** of the **Vendored copies** against what the command
+  would vendor, each changed file named, and writes nothing; `--diff <file>` writes that text as deployed, the
+  **Deployed diff**, to read in an editor. Before the first `add` every **Skill** shows as added
 
 ### Changed
 
+- Each **Deployed diff**, `update --diff`'s too, opens after its header with the **Hull** as `tree` prints it, each
+  **Skill** marked `+` added or `~` changed, then a `# - <skill id>` line per removed **Skill**
 - In a hardened `/graft-check`, a reader's reply reaches the main agent only as a report filter shipped with the skill
   admits it: a report in the report shape, at most 100 findings and 200 uses, each value one line of printable ASCII of
   at most 200 characters, a character outside it shown as `?`. Any other reply leaves its **Skill** with no report,

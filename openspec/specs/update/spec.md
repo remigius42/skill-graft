@@ -400,21 +400,24 @@ when the current `ref`s do not resolve. When another error stops the walk there 
 
 ### Requirement: Deployed diff file
 
-`update --diff <file>` SHALL write the **Deployed diff** of the **Hull diff**'s `+` and `~` **Skills** to `<file>`, with
-a line `# - <skill id>` for each **Skill** it marks `-`, its folders resolved, its last part never followed as a
-symbolic link. Before any other step it SHALL refuse, naming it, a `<file>` whose name does not end in `.diff`; that, as
-given without `..` or once its folders are resolved, lies inside a folder named `.apm` in any case or a folder holding a
-`SKILL.md`; that lies in no existing folder; that exists and is not a regular file; or that is a regular file not
-starting with the **Deployed diff**'s header, reading no more of it than the header's first line. So it never replaces a
-file it did not write, never writes a file a harness loads as a command, rule or **Skill**, and never blocks on what it
-reads. Then it SHALL remove a file it wrote before, so a run that fails leaves none. In a dry run it SHALL write the
-file last, before any closing line. In a real `update` it SHALL write the file before `skill-graft.toml` and the lock,
-and remove it if either of those writes fails.
+`update --diff <file>` SHALL write the **Deployed diff** of the **Hull diff**'s `+` and `~` **Skills** to `<file>`, its
+folders resolved, its last part never followed as a symbolic link. Before any other step it SHALL refuse, naming it, a
+`<file>` whose name does not end in `.diff`; that, as given without `..` or once its folders are resolved, lies inside a
+folder named `.apm` in any case or a folder holding a `SKILL.md`; that lies in no existing folder; that exists and is
+not a regular file; or that is a regular file not starting with the **Deployed diff**'s header, reading no more of it
+than the header's first line. So it never replaces a file it did not write, never writes a file a harness loads as a
+command, rule or **Skill**, and never blocks on what it reads. Then it SHALL remove a file it wrote before, so a run
+that fails leaves none. In a dry run it SHALL write the file last, before any closing line. In a real `update` it SHALL
+write the file before `skill-graft.toml` and the lock, and remove it if either of those writes fails.
 
 The file SHALL start with a header saying it holds the **Skills**' text as deployed, **Patches** and **Renames**
 applied, at the current `ref`s against the new ones, not what the **Sources** changed upstream, and that it is untrusted
-text to read in an editor. When there is no previous **Hull** to compare, it SHALL hold the header, the reason, and
-every **Skill** of the new **Hull** as a `+` **Skill**, all its files added.
+text to read in an editor; its first line SHALL be the same in every **Deployed diff** skill-graft writes. After the
+header it SHALL list the new **Hull** as `tree` prints it, each line commented, escaped as a line of the diff is, and
+marked `+` or `~` for a **Skill** the **Hull diff** marks so, then one line `# - <skill id>` for each **Skill** it marks
+`-`, and no other line for it. When there is no previous **Hull** to compare, it SHALL hold the header, the reason, the
+**Hull** with every **Skill** marked `+`, and every **Skill** of the new **Hull** as a `+` **Skill**, all its files
+added.
 
 #### Scenario: Diff file
 
@@ -516,6 +519,13 @@ every **Skill** of the new **Hull** as a `+` **Skill**, all its files added.
 
 - **WHEN** `proj/.Apm` is a symbolic link to another folder and the user runs `update --diff proj/.Apm/review.diff`
 - **THEN** it exits non-zero naming the path, and writes nothing
+
+#### Scenario: Marked hull
+
+- **WHEN** at the new tip `mp/tdd` calls `/grilling` for the first time, and the user runs
+  `update --dry-run --diff review.diff`
+- **THEN** after its header `review.diff` lists the **Hull** as `tree` prints it, `mp/tdd` marked `~` and `mp/grilling`
+  under it marked `+`
 
 ### Requirement: Deployed diff content
 

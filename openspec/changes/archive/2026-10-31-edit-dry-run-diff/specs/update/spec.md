@@ -17,10 +17,11 @@ write the file before `skill-graft.toml` and the lock, and remove it if either o
 The file SHALL start with a header saying it holds the **Skills**' text as deployed, **Patches** and **Renames**
 applied, at the current `ref`s against the new ones, not what the **Sources** changed upstream, and that it is untrusted
 text to read in an editor; its first line SHALL be the same in every **Deployed diff** skill-graft writes. After the
-header it SHALL list the new **Hull** as `tree` prints it, each line commented and marked `+` or `~` for a **Skill** the
-**Hull diff** marks so, then one line `# - <skill id>` for each **Skill** it marks `-`, and no other line for it. When
-there is no previous **Hull** to compare, it SHALL hold the header, the reason, the **Hull** with every **Skill** marked
-`+`, and every **Skill** of the new **Hull** as a `+` **Skill**, all its files added.
+header it SHALL list the new **Hull** as `tree` prints it, each line commented, escaped as a line of the diff is, and
+marked `+` or `~` for a **Skill** the **Hull diff** marks so, then one line `# - <skill id>` for each **Skill** it marks
+`-`, and no other line for it. When there is no previous **Hull** to compare, it SHALL hold the header, the reason, the
+**Hull** with every **Skill** marked `+`, and every **Skill** of the new **Hull** as a `+` **Skill**, all its files
+added.
 
 #### Scenario: Diff file
 
