@@ -1,6 +1,7 @@
 """The lock's content (the `resolve` spec): sources, skills, edges, hashes."""
 
 import os
+import shutil
 from dataclasses import replace
 import stat
 import tomllib
@@ -12,7 +13,7 @@ from conftest import Upstream, configure, make_patch, skill, write_config
 from skill_graft.cli import main
 from skill_graft.infra import paths
 from skill_graft.infra.cache import Cache
-from skill_graft.pipeline import compute, config, lock
+from skill_graft.pipeline import compute, config, lock, vendor
 
 
 def render() -> str:
@@ -430,3 +431,120 @@ def test_digest_follows_a_deployed_name_alone(scope: paths.Scope, home: Path) ->
         )
 
         assert lock.digest(renamed, hashes) != lock.digest(hull, hashes)
+
+
+def copies(tmp_path: Path) -> Path:
+    """`skills/` holding the copies `tdd/` and `grilling/`."""
+    skills = tmp_path / "skills"
+    skill(skills / "tdd", "# tdd\n")
+    skill(skills / "grilling", "# grilling\n")
+    return skills
+
+
+def locking(skills: Path, renamed: dict[str, str] | None = None) -> dict[str, Any]:
+    """A lock recording each copy in `skills` as it is, as `mp/<name>`, the
+    name `renamed` maps a deployed name to, else the folder's."""
+    items = []
+    for folder in sorted(skills.iterdir()):
+        name = (renamed or {}).get(folder.name, folder.name)
+        item = {"id": f"mp/{name}", "hash": lock.folder_hash(folder)}
+        items.append(item | ({"deployed": folder.name} if name != folder.name else {}))
+    return {"version": 1, "skills": items}
+
+
+def test_copies_match(tmp_path: Path) -> None:
+    skills = copies(tmp_path)
+
+    assert lock.copy_problems(skills, locking(skills)) == []
+
+
+def test_copy_edited(tmp_path: Path) -> None:
+    skills = copies(tmp_path)
+    locked = locking(skills)
+    (skills / "tdd" / "SKILL.md").write_text("edited\n")
+
+    assert lock.copy_problems(skills, locked) == [
+        f"{skills / 'tdd'}: differs from skill-graft.lock"
+    ]
+
+
+def test_copy_unknown(tmp_path: Path) -> None:
+    skills = copies(tmp_path)
+    locked = locking(skills)
+    skill(skills / "mine")
+
+    assert lock.copy_problems(skills, locked) == [
+        f"{skills / 'mine'}: not in skill-graft.lock"
+    ]
+
+
+def test_top_level_file_unknown(tmp_path: Path) -> None:
+    skills = copies(tmp_path)
+    locked = locking(skills)
+    (skills / "README.md").write_text("x\n")
+
+    assert lock.copy_problems(skills, locked) == [
+        f"{skills / 'README.md'}: not in skill-graft.lock"
+    ]
+
+
+def test_copy_missing(tmp_path: Path) -> None:
+    skills = copies(tmp_path)
+    locked = locking(skills)
+    shutil.rmtree(skills / "tdd")
+
+    assert lock.copy_problems(skills, locked) == []
+    assert lock.copy_problems(tmp_path / "none", locked) == []
+
+
+def test_renamed_copy_checked_by_deployed_name(tmp_path: Path) -> None:
+    skills = copies(tmp_path)
+    (skills / "grilling").rename(skills / "mp-grilling")
+    locked = locking(skills, {"mp-grilling": "grilling"})
+    assert lock.copy_problems(skills, locked) == []
+
+    (skills / "mp-grilling" / "SKILL.md").write_text("edited\n")
+
+    assert lock.copy_problems(skills, locked) == [
+        f"{skills / 'mp-grilling'}: differs from skill-graft.lock"
+    ]
+
+
+def test_stray_file_is_a_difference(tmp_path: Path) -> None:
+    skills = copies(tmp_path)
+    locked = locking(skills)
+    (skills / "tdd" / ".DS_Store").write_bytes(b"\0")
+
+    assert lock.copy_problems(skills, locked) == [
+        f"{skills / 'tdd'}: differs from skill-graft.lock"
+    ]
+
+
+def test_copy_hash_is_skill_hash(home: Path, tmp_path: Path) -> None:
+    text = "# tdd\n/grilling\n"
+    tdd = skill(home / "mp" / "tdd", text)
+    (tdd / "run.sh").write_text("echo\n")
+    (tdd / "run.sh").chmod(0o755)
+    (tdd / "link.md").symlink_to("SKILL.md")
+    skill(home / "mp" / "grilling")
+    patches = home / ".apm" / "skill-graft" / "patches"
+    patches.mkdir(parents=True)
+    (patches / "a.patch").write_bytes(
+        make_patch(tmp_path, {"SKILL.md": text}, {"SKILL.md": text + "patched\n"})
+    )
+    write_config(
+        'entries = ["mp/tdd"]\n[sources.mp]\npath = "~/mp"\n'
+        '[rename]\n"mp/tdd" = "mp-tdd"\n"mp/grilling" = "mp-grilling"\n'
+        '[patches]\n"mp/tdd" = ["patches/a.patch"]\n'
+    )
+    scope = paths.Scope(home)
+    skills = tmp_path / "out" / "skills"
+
+    with compute.compute_hull(scope, config.load(scope), Cache.default()) as hull:
+        vendor.vendor(hull, skills)
+        hashes = lock.skill_hashes(hull)
+
+    copy = skills / "mp-tdd"
+    assert copy.joinpath("run.sh").stat().st_mode & stat.S_IXUSR
+    assert copy.joinpath("SKILL.md").read_text().endswith("/mp-grilling\npatched\n")
+    assert lock.folder_hash(copy) == hashes[config.SkillId("mp", "tdd")]

@@ -110,6 +110,28 @@ def digest(hull: Hull, hashes: dict[SkillId, str]) -> str:
     return hashlib.sha256(json.dumps(triples, ensure_ascii=True).encode()).hexdigest()
 
 
+def copy_problems(skills: Path, locked: dict[str, Any]) -> list[str]:
+    """One line per entry of `skills` that is not a copy the loaded lock `locked`
+    records: a folder whose hash differs from the lock's for the skill deployed
+    under its name, or no skill is, and a file; empty for a missing `skills`.
+
+    A copy the lock records but `skills` lacks is no problem: it is vendored again.
+    """
+    if not skills.exists():
+        return []
+    hashes = {}
+    for item in locked["skills"]:
+        name = item.get("deployed") or str(item["id"]).partition("/")[2]
+        hashes[name] = item["hash"]
+    problems = []
+    for entry in sorted(skills.iterdir()):
+        if entry.name not in hashes or not entry.is_dir():
+            problems.append(f"{entry}: not in skill-graft.lock")
+        elif folder_hash(entry) != hashes[entry.name]:
+            problems.append(f"{entry}: differs from skill-graft.lock")
+    return problems
+
+
 def write(text: str, file: Path) -> None:
     """Replaces the lock `file` atomically."""
     files.atomic_write(file, text.encode())

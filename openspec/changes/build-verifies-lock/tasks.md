@@ -5,7 +5,7 @@ every commit passes `pytest`.
 
 ## 1. Lock checks
 
-- [ ] 1.1 `pipeline/lock.py`: `copy_problems(skills, locked)` returns one line per folder of `skills` whose
+- [x] 1.1 `pipeline/lock.py`: `copy_problems(skills, locked)` returns one line per folder of `skills` whose
   `folder_hash` differs from the lock's for the **Skill** deployed under that name, per folder no lock **Skill** is
   deployed under, and per file at its top level; empty when they match, for a missing copy, and for a missing `skills`.
   Tests in `tests/pipeline/test_lock.py`: `test_copies_match`, `test_copy_edited`, `test_copy_unknown`,

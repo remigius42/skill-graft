@@ -123,6 +123,9 @@ registering (no lock yet), and the `graft-check` skill, whose **Patch** fix edit
   says so for each such release.
 - A stray file in a copy (Finder's `.DS_Store`, a sync tool's conflict copy) → refused as an edit. Acceptable: the error
   names the folder; skipping names would make the hash depend on a list to maintain.
+- A folder link added inside a copy → not seen: `folder_hash` reads a skill as `deployed.walk` does, which lists a
+  folder link but does not enter it, so APM deploys what it points at unchecked. Acceptable: no upstream skill holds one
+  (resolving refuses a folder link in a hull skill), so only a deliberate edit adds it, as same-user tampering below.
 - A run of `update` or an edit command killed after writing the TOML and before the lock → recovery restores the copies
   that match the old lock, but the TOML keeps the edit, so the next `build` refuses as for a hand edit and `resolve`
   accepts what the command started. Acceptable: today the same kill leaves the TOML and the lock apart unnoticed.
