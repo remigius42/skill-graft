@@ -15,6 +15,8 @@ if TYPE_CHECKING:
     from _typeshed import SupportsWrite
 
 WINDOWS = "native Windows is unsupported: run skill-graft in WSL"
+# What a dry run writes, in `--dry-run`'s help.
+_ONLY_DIFF_FILE = "nothing but the --diff-file FILE"
 
 
 class _Formatter(argparse.HelpFormatter):
@@ -224,17 +226,9 @@ def _parser() -> tuple[_Parser, dict[str, argparse.ArgumentParser]]:
     update_parser.add_argument(
         "--dry-run",
         action="store_true",
-        help="show the new shas, write nothing but the --diff-file FILE",
+        help=f"show the new shas, write {_ONLY_DIFF_FILE}",
     )
-    update_parser.add_argument(
-        "--diff-file",
-        type=Path,
-        metavar="FILE",
-        help=(
-            "write the Deployed diff, each changed skill's text as deployed, to FILE, "
-            "a new file or one it wrote before, named *.diff; read it in an editor"
-        ),
-    )
+    _diff_file_option(update_parser, "each changed skill")
     update_parser.add_argument(
         "--expect",
         metavar="hull-digest",
@@ -402,18 +396,20 @@ def _review_options(parser: argparse.ArgumentParser) -> None:
     parser.add_argument(
         "--dry-run",
         action="store_true",
-        help=(
-            "resolve and print the hull diff, writing nothing but the --diff-file FILE"
-        ),
+        help=f"resolve and print the hull diff, writing {_ONLY_DIFF_FILE}",
     )
+    _diff_file_option(parser, "each added or changed skill")
+
+
+def _diff_file_option(parser: argparse.ArgumentParser, skills: str) -> None:
+    """`--diff-file`, writing the Deployed diff of `skills`."""
     parser.add_argument(
         "--diff-file",
         type=Path,
         metavar="FILE",
         help=(
-            "write the Deployed diff, each added or changed skill's text as "
-            "deployed, to FILE, a new file or one it wrote before, named *.diff; "
-            "read it in an editor"
+            f"write the Deployed diff, {skills}'s text as deployed, to FILE, a new "
+            "file or one it wrote before, named *.diff; read it in an editor"
         ),
     )
 

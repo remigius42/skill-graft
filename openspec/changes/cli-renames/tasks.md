@@ -58,6 +58,9 @@ written.
   (a file 0.3.0 wrote, starting with its first line, still overwritten); verify they fail, then pass
 - [x] 4.2 Docs for `--diff-file`: README.md (the getting-started flow, the staging paragraph, "Writing a patch"),
   `docs/design.md`, `docs/security.md`, each command's `--help`. Verify `pre-commit run --all-files`
+- [x] 4.3 `cli._diff_file_option` adds `--diff-file` to `update` and to `_review_options`, and `cli._ONLY_DIFF_FILE`
+  holds "nothing but the --diff-file FILE" for both `--dry-run` helps. A refactor: every command's `--help` stays byte
+  for byte; verify that, and `pytest`
 
 ## 5. graft-check
 
