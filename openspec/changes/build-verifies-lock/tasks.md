@@ -68,17 +68,17 @@ every commit passes `pytest`.
 
 ## 3. Build deploys the lock
 
-- [ ] 3.1 `commands/build.py`: sets `verify` to `drift` against the **Package**'s lock (for `--into` too), refusing with
+- [x] 3.1 `commands/build.py`: sets `verify` to `drift` against the **Package**'s lock (for `--into` too), refusing with
   the refusal and `skill-graft resolve`; once `resolving` has written the lock, prints the path **Source** notice for
-  each **Skill** `drift` returned. `pipeline/lock.py`'s header becomes
+  each **Skill** `drift` returned, but not for `--into`, which deploys nothing. `pipeline/lock.py`'s header becomes
   `# Written by skill-graft, which reads it back. Do not edit.` `tests/conftest.py`'s `build` helper runs `resolve`
-  first, and so does each test that builds from a hand-written config and expects success.
-  `tests/commands/test_resolve.py`'s `test_lock_edited_by_hand`, the removed "The lock is output only", becomes
-  `test_lock_edited_by_hand_refused`: `build` exits 1 naming `skill-graft resolve`. Tests in
+  first, and so does each test that builds from a hand-written config and expects success, through the new
+  `conftest.resolve_and_build`. `tests/commands/test_resolve.py`'s `test_lock_edited_by_hand`, the removed "The lock is
+  output only", becomes `test_lock_edited_by_hand_refused`: `build` exits 1 naming `skill-graft resolve`. Tests in
   `tests/commands/test_build.py` for every scenario of "Build deploys the lock", "Changed path Source deployed",
   "Vendored copies match the lock" and "Vendored copies keep their bytes in git" (the last through a real clone with
-  `core.autocrlf=true`), and `--into`'s "Config edited by hand" and "Package never built". Verify each new test red
-  first, then the whole suite green
+  `core.autocrlf=true`), `--into`'s "Config edited by hand" and "Package never built", and
+  `test_no_notice_into_a_folder`. Verify each new test red first, then the whole suite green
 - [ ] 3.2 `cli.py`: `build`'s help says it deploys what `skill-graft.lock` records, and `resolve`'s that it vendors;
   `tests/cli/test_cli.py`'s `test_command_help` checks both. Verify red, then green
 - [ ] 3.3 `commands/init_package.py`: when APM fails after registering, the message says

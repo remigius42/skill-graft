@@ -10,7 +10,14 @@ import tomllib
 from pathlib import Path
 
 import pytest
-from conftest import Upstream, make_patch, skill, write_config, write_patch
+from conftest import (
+    Upstream,
+    make_patch,
+    resolve_and_build,
+    skill,
+    write_config,
+    write_patch,
+)
 
 from skill_graft.cli import main
 
@@ -657,7 +664,9 @@ def built_lock(
     )
     into = tmp_path / "into"
     into.mkdir()
-    assert main(["build", "--into", str(into)]) == 0, capsys.readouterr().err
+    assert resolve_and_build(["build", "--into", str(into)]) == 0, (
+        capsys.readouterr().err
+    )
     return (into / "skill-graft.lock").read_text()
 
 
@@ -677,6 +686,18 @@ def lock(home: Path, tmp_path: Path, capsys: pytest.CaptureFixture[str]) -> str:
 
 def test_lock_check_passes_a_built_lock(tmp_path: Path, lock: str) -> None:
     assert lock_check(tmp_path, lock) == "version: 1, bad: 0\n"
+
+
+def test_lock_check_passes_an_older_skill_graft_header(
+    tmp_path: Path, lock: str
+) -> None:
+    text = lock.replace(
+        "# Written by skill-graft, which reads it back. Do not edit.",
+        "# Written by skill-graft; update reads its hashes. Do not edit.",
+    )
+    assert text != lock
+
+    assert lock_check(tmp_path, text) == "version: 1, bad: 0\n"
 
 
 @pytest.mark.parametrize("upstream", [".", ".claude/skills/tdd"])
@@ -703,7 +724,9 @@ def built(tmp_path: Path, capsys: pytest.CaptureFixture[str], config: str) -> st
     write_config(config)
     into = tmp_path / "into"
     into.mkdir()
-    assert main(["build", "--into", str(into)]) == 0, capsys.readouterr().err
+    assert resolve_and_build(["build", "--into", str(into)]) == 0, (
+        capsys.readouterr().err
+    )
     return (into / "skill-graft.lock").read_text()
 
 

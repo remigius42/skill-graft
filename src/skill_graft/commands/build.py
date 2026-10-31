@@ -3,13 +3,14 @@
 import contextlib
 import os
 import shutil
+import tomllib
 from pathlib import Path
 
 from skill_graft.commands import explain, transaction
 from skill_graft.infra import apm, paths
 from skill_graft.infra.cache import Cache
 from skill_graft.infra.errors import SkillGraftError, notice
-from skill_graft.pipeline import config
+from skill_graft.pipeline import config, lock
 
 
 def build(
@@ -25,10 +26,27 @@ def build(
     skills = scope.skills if into is None else into / ".apm" / "skills"
     lock_file = None if into is None else into / "skill-graft.lock"
     started = False
+    changed: list[str] = []
     try:
         loaded = transaction.load(scope, warnings)
         if given is not None:
             _check_into_sources(given, loaded)
+        recorded = lock.load(scope.lock_file)  # the package's, for `--into` too
+        path_aliases = {
+            alias
+            for alias, source in loaded.sources.items()
+            if isinstance(source, config.PathSource)
+        }
+
+        def verify(text: str) -> None:
+            """Refuses a hull other than the one the package's lock records."""
+            found, refusal = lock.drift(tomllib.loads(text), recorded, path_aliases)
+            if refusal is not None:
+                raise SkillGraftError(
+                    f"{refusal}; run `skill-graft resolve` to accept it, then build"
+                )
+            changed.extend(found)
+
         with transaction.resolving(
             scope,
             loaded,
@@ -39,6 +57,7 @@ def build(
             checked=into is not None,  # its folder is empty: no copies to check
         ) as resolution:
             resolved = resolution.hull
+            resolution.verify = verify
             started = True  # from here on `into` may hold our writes
     except BaseException:
         # After the work folder is gone, which a TMPDIR may put in `into`.
@@ -46,6 +65,13 @@ def build(
             _undo_into(into)
         raise
     if into is None:  # its hint, `resolve`, would rewrite the package's lock
+        # Once the lock is written: never a change rolled back. Not `--into`'s,
+        # which deploys nothing and leaves the package's lock as it is.
+        for skill in changed:
+            notice(
+                f"{skill} changed in its path source since skill-graft.lock:"
+                " deployed as is"
+            )
         # Once nothing before APM can fail.
         explain.announce_suggestions(resolved)
         if not no_install:

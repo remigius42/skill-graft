@@ -237,6 +237,7 @@ def test_output_larger_than_the_buffer_into_a_closed_pipe(
 
 def test_build(home: Path, tmp_path: Path, fake_apm: FakeApm) -> None:
     calls_foo(home)
+    assert main(["resolve"]) == 0
 
     code, text = run(tmp_path, "build")
 

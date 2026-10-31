@@ -4,7 +4,7 @@ import shutil
 from pathlib import Path
 
 import pytest
-from conftest import Upstream, skill
+from conftest import Upstream, resolve_and_build, skill
 
 from skill_graft.cli import main
 
@@ -19,7 +19,7 @@ def test_init_then_build_deploys_the_entry(home: Path) -> None:
     (package / "skill-graft.toml").write_text(
         'entries = ["own/chisel"]\n[sources.own]\npath = "~/src"\n'
     )
-    assert main(["build"]) == 0
+    assert resolve_and_build(["build"]) == 0
 
     assert f"- {package}" in (home / ".apm" / "apm.yml").read_text()
     # No `targets:` in ~/.apm/apm.yml, so APM 0.33.0 deploys to ~/.agents/skills.
@@ -53,7 +53,7 @@ def test_init_project_then_build_deploys_it(
     )
     monkeypatch.chdir(repo / "src")
 
-    assert main(["build"]) == 0
+    assert resolve_and_build(["build"]) == 0
 
     assert (repo / ".claude" / "skills" / "chisel" / "SKILL.md").exists()
     assert "- ./.apm/skill-graft" in (repo / "apm.yml").read_text()

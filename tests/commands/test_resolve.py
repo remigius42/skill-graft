@@ -5,7 +5,14 @@ from pathlib import Path
 from typing import TypeAlias
 
 import pytest
-from conftest import Upstream, configure, make_patch, skill, write_config
+from conftest import (
+    Upstream,
+    configure,
+    make_patch,
+    resolve_and_build,
+    skill,
+    write_config,
+)
 
 from skill_graft.cli import main
 from skill_graft.pipeline import lock, vendor
@@ -151,6 +158,8 @@ def test_build_announces_suggestions(home: Path, capsys: Capsys) -> None:
     skill(home / "mp" / "diagnosing-bugs")
     skill(home / "mp" / "notes")
     configure(["mp/tdd"], mp="~/mp")
+    assert main(["resolve"]) == 0
+    capsys.readouterr()
 
     assert main(["build", "--no-install"]) == 0
 
@@ -164,7 +173,7 @@ def test_build_without_suggestions_prints_no_line(home: Path, capsys: Capsys) ->
     skill(home / "mp" / "notes")
     configure(["mp/tdd"], mp="~/mp")
 
-    assert main(["build", "--no-install"]) == 0
+    assert resolve_and_build(["build", "--no-install"]) == 0
 
     assert "prose suggestion(s)" not in capsys.readouterr().err
 
@@ -238,7 +247,7 @@ def test_build_writes_the_lock(home: Path) -> None:
     skill(home / "own" / "grilling")
     configure(["own/tdd"], own="~/own")
 
-    assert main(["build", "--no-install"]) == 0
+    assert resolve_and_build(["build", "--no-install"]) == 0
 
     skills = tomllib.loads(lock_file(home).read_text())["skills"]
     assert [s["id"] for s in skills] == ["own/grilling", "own/tdd"]
@@ -257,7 +266,7 @@ def test_lock_hashes_what_was_vendored(
 
     monkeypatch.setattr(vendor, "stage", copy_then_edit)
 
-    assert main(["build", "--no-install"]) == 0
+    assert resolve_and_build(["build", "--no-install"]) == 0
 
     vendored = home / ".apm" / "skill-graft" / ".apm" / "skills" / "tdd"
     locked = tomllib.loads(lock_file(home).read_text())["skills"][0]["hash"]
@@ -301,27 +310,32 @@ def test_lock_write_fails(home: Path, monkeypatch: pytest.MonkeyPatch) -> None:
 def test_vendoring_fails(home: Path) -> None:
     tdd = skill(home / "own" / "tdd")
     configure(["own/tdd"], own="~/own")
-    main(["build", "--no-install"])
+    resolve_and_build(["build", "--no-install"])
     before = lock_file(home).read_bytes()
     (tdd / "dangling").symlink_to("missing")
 
-    assert main(["build", "--no-install"]) == 1
+    assert resolve_and_build(["build", "--no-install"]) == 1
 
     assert lock_file(home).read_bytes() == before
 
 
-def test_lock_edited_by_hand(home: Path, tmp_path: Path) -> None:
+def test_lock_edited_by_hand_refused(
+    home: Path, tmp_path: Path, capsys: Capsys
+) -> None:
     upstream = Upstream(tmp_path / "up")
     a = upstream.commit({"tdd/SKILL.md": "a\n"})
     b = upstream.commit({"tdd/SKILL.md": "b\n"})
     write_config(
         f'entries = ["mp/tdd"]\n[sources.mp]\ngit = "{upstream.url}"\nref = "{a}"\n'
     )
-    main(["build", "--no-install"])
+    assert main(["resolve"]) == 0
     lock_file(home).write_text(lock_file(home).read_text().replace(a, b))
+    edited = lock_file(home).read_bytes()
+    capsys.readouterr()
 
-    assert main(["build", "--no-install"]) == 0
+    assert main(["build", "--no-install"]) == 1
 
+    assert "skill-graft resolve" in capsys.readouterr().err
     vendored = home / ".apm" / "skill-graft" / ".apm" / "skills" / "tdd" / "SKILL.md"
     assert vendored.read_text() == "a\n"
-    assert tomllib.loads(lock_file(home).read_text())["sources"]["mp"]["ref"] == a
+    assert lock_file(home).read_bytes() == edited

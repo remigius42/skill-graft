@@ -70,7 +70,7 @@ def render(
         suggestions.append(tomlkit.item({"id": str(skill_id), "from": mentions}))
     document["suggestions"] = suggestions
     # A string, not a tomlkit comment: tomlkit hoists an empty section above that.
-    header = "# Written by skill-graft; update reads its hashes. Do not edit.\n"
+    header = "# Written by skill-graft, which reads it back. Do not edit.\n"
     return header + tomlkit.dumps(document)
 
 

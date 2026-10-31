@@ -7,7 +7,7 @@ from contextlib import nullcontext
 from pathlib import Path
 
 import pytest
-from conftest import FakeApm, skill
+from conftest import FakeApm, resolve_and_build, skill
 
 from skill_graft.cli import main
 from skill_graft.commands import scope
@@ -30,7 +30,7 @@ def test_inside_a_project(home: Path, monkeypatch: pytest.MonkeyPatch) -> None:
     package = project(home / "repo")
     monkeypatch.chdir(home / "repo" / "src")
 
-    assert main(["build", "--no-install"]) == 0
+    assert resolve_and_build(["build", "--no-install"]) == 0
 
     assert (package / ".apm" / "skills" / "chisel" / "SKILL.md").exists()
     assert (package / "skill-graft.lock").exists()
@@ -54,7 +54,7 @@ def test_nested_projects(home: Path, monkeypatch: pytest.MonkeyPatch) -> None:
     (home / "a" / "b" / "c").mkdir()
     monkeypatch.chdir(home / "a" / "b" / "c")
 
-    assert main(["build", "--no-install"]) == 0
+    assert resolve_and_build(["build", "--no-install"]) == 0
 
     assert (inner / "skill-graft.lock").exists()
     assert not (outer / "skill-graft.lock").exists()
@@ -80,7 +80,7 @@ def test_working_folder_outside_home(
     package = project(tmp_path / "srv" / "repo")
     monkeypatch.chdir(tmp_path / "srv" / "repo")
 
-    assert main(["build", "--no-install"]) == 0
+    assert resolve_and_build(["build", "--no-install"]) == 0
 
     assert (package / "skill-graft.lock").exists()
 
@@ -122,7 +122,7 @@ def test_project_build_from_a_subfolder(
     project(home / "repo")
     monkeypatch.chdir(home / "repo" / "src")
 
-    assert main(["build"]) == 0
+    assert resolve_and_build(["build"]) == 0
 
     assert fake_apm.calls == [["install", "./.apm/skill-graft"]]
     assert fake_apm.working_folders == [str(home / "repo")]
@@ -139,7 +139,7 @@ def test_project_package_not_registered(
     monkeypatch.chdir(home / "repo")
     fake_apm.register = False
 
-    assert main(["build"]) == 1
+    assert resolve_and_build(["build"]) == 1
 
     err = capsys.readouterr().err
     assert f"{home}/repo/apm.yml does not list {home}/repo/.apm/skill-graft" in err
@@ -156,7 +156,7 @@ def test_undecodable_project_manifest(
     monkeypatch.chdir(home / "repo")
     fake_apm.register = False
 
-    assert main(["build"]) == 1
+    assert resolve_and_build(["build"]) == 1
 
     assert f"skill-graft: {home}/repo/apm.yml:" in capsys.readouterr().err
 
@@ -168,7 +168,7 @@ def test_no_install_reads_no_project_manifest(
     (home / "repo" / "apm.yml").mkdir()  # unreadable as a file
     monkeypatch.chdir(home / "repo")
 
-    assert main(["build", "--no-install"]) == 0
+    assert resolve_and_build(["build", "--no-install"]) == 0
 
     assert fake_apm.calls == []
 
@@ -230,7 +230,7 @@ def test_build_names_the_package(
     package = project(home / "repo")
     monkeypatch.chdir(home / "repo" / "src")
 
-    assert main(["build", "--no-install"]) == 0
+    assert resolve_and_build(["build", "--no-install"]) == 0
 
     assert capsys.readouterr().err.startswith(f"skill-graft: package: {package}\n")
 
@@ -346,7 +346,7 @@ def test_build_into_keeps_project_paths(
     into = tmp_path / "into"
     into.mkdir()
 
-    assert main(["build", "--into", str(into)]) == 0
+    assert resolve_and_build(["build", "--into", str(into)]) == 0
 
     assert lock_sources(into) == {"own": {"path": "../../src"}}
 
@@ -357,6 +357,8 @@ def test_build_into_names_both(
     package = project(home / "repo")
     monkeypatch.chdir(home / "repo")
     (home / "repo" / "into").mkdir()
+    assert main(["resolve"]) == 0
+    capsys.readouterr()
 
     assert main(["build", "--into", "into"]) == 0
 

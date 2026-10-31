@@ -11,6 +11,7 @@ from conftest import (
     build,
     configure,
     deadline,
+    resolve_and_build,
     seed,
     skill,
     vendored,
@@ -197,7 +198,7 @@ def test_build_into_fetches_an_uncached_ref(home: Path, tmp_path: Path) -> None:
     into = tmp_path / "into"
     into.mkdir()
 
-    assert main(["build", "--into", str(into)]) == 0
+    assert resolve_and_build(["build", "--into", str(into)]) == 0
 
     assert (home / ".cache" / "skill-graft" / "repos").is_dir()
     assert (into / ".apm" / "skills" / "tdd" / "SKILL.md").read_text() == "# tdd\n"

@@ -287,10 +287,28 @@ def configure(entries: list[str], **sources: str) -> None:
 
 
 def build(capsys: pytest.CaptureFixture[str]) -> tuple[int, str]:
-    """Runs `skill-graft build --no-install`; returns its exit code and stderr,
-    without the package line (`test_scope.py` checks that)."""
+    """Runs `skill-graft resolve`, then, if it succeeds, `skill-graft build
+    --no-install`; returns the exit code and stderr of the last, without the
+    package line (`test_scope.py` checks that)."""
+    code = main(["resolve"])
+    if code != 0:
+        return code, after_package_line(capsys.readouterr().err)
+    capsys.readouterr()
     code = main(["build", "--no-install"])
     return code, after_package_line(capsys.readouterr().err)
+
+
+def resolve_and_build(
+    args: list[str], capsys: pytest.CaptureFixture[str] | None = None
+) -> int:
+    """Runs `skill-graft resolve`, then, if it succeeds, the build `args`: a
+    config written by hand is accepted before it is built. Given `capsys`, only
+    the build's output is left to read."""
+    if code := main(["resolve"]):
+        return code
+    if capsys is not None:
+        capsys.readouterr()
+    return main(args)
 
 
 def after_package_line(err: str) -> str:

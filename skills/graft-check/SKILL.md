@@ -101,7 +101,7 @@ LC_ALL=C awk '
             bad++; t = "[[skills]]" }
           next }
   t == "" && /^version = [0-9]+$/ { v = $3; next }
-  /^$/ || t ~ /^\[sources\./ || t == "" && (/^# Written by skill-graft; update reads its hashes\. Do not edit\.$/ \
+  /^$/ || t ~ /^\[sources\./ || t == "" && (/^# Written by skill-graft(; update reads its hashes|, which reads it back)\. Do not edit\.$/ \
     || /^(skills|edges|suggestions) = \[\]$/) { next }
   t != "" && ($0 ~ "^(id|from|to) = " id "$" || $0 ~ "^deployed = \"" n "\"$" \
     || $0 ~ "^upstream = \"(\\.|" s "(/" s ")*)\"$" || $0 ~ "^from = \\[" id "(, " id ")*\\]$" \
