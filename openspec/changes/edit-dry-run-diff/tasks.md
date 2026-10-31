@@ -11,7 +11,7 @@ without a whole command; misses the command's wiring, which the CLI seam covers)
 
 ## 1. Shared review code
 
-- [ ] 1.1 Move `HEADER`, `_diff_target`, `_fetch_hint`, the **Hull diff** lines and the file assembly out of
+- [x] 1.1 Move `HEADER`, `_diff_target`, `_fetch_hint`, the **Hull diff** lines and the file assembly out of
   `commands/update.py` into a new `commands/review.py`, which `update.py` imports. The old side becomes one object:
   hashes by **Skill ID**, a view on demand, an upstream folder for the source line; `update` builds it from its old
   **Hull**. The header splits into its shared first line and a per-command second line; `_diff_target` into its refusals
