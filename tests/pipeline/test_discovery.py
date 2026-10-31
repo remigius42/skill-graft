@@ -1,5 +1,5 @@
-"""The `skill-discovery` spec, through `skill-graft deploy --no-install`, and through
-`discovery` itself where a deploy cannot show it."""
+"""The `skill-discovery` spec, through `skill-graft deploy --no-apm-install`, and
+through `discovery` itself where a deploy cannot show it."""
 
 import os
 import tomllib

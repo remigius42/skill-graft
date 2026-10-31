@@ -8,7 +8,7 @@ from importlib import metadata
 from pathlib import Path
 
 import pytest
-from conftest import write_config
+from conftest import FakeApm, write_config
 
 from skill_graft.cli import main
 
@@ -110,6 +110,15 @@ def test_old_command(home: Path, capsys: pytest.CaptureFixture[str]) -> None:
     assert sorted(home.iterdir()) == before
 
 
+def test_old_install_option(
+    fake_apm: FakeApm, capsys: pytest.CaptureFixture[str]
+) -> None:
+    code, out, err = run(["deploy", "--no-install"], capsys)
+    assert (code, out) == (2, "")
+    assert "--no-install" in err and "package:" not in err
+    assert fake_apm.calls == []
+
+
 def test_no_command(capsys: pytest.CaptureFixture[str]) -> None:
     code, out, err = run([], capsys)
     assert (code, out) == (2, "")
@@ -152,14 +161,14 @@ def test_unbind_missing_argument(capsys: pytest.CaptureFixture[str]) -> None:
 def test_deploy_help_lists_into(capsys: pytest.CaptureFixture[str]) -> None:
     code, out, _ = run(["deploy", "--help"], capsys)
     assert code == 0
-    assert "[--no-install | --into DIR]" in out
+    assert "[--no-apm-install | --into DIR]" in out
 
 
-def test_into_with_no_install(capsys: pytest.CaptureFixture[str]) -> None:
-    code, out, err = run(["deploy", "--into", "d", "--no-install"], capsys)
+def test_into_with_no_apm_install(capsys: pytest.CaptureFixture[str]) -> None:
+    code, out, err = run(["deploy", "--into", "d", "--no-apm-install"], capsys)
     assert (code, out) == (2, "")
     assert err.startswith("usage: skill-graft deploy")
-    assert "--into" in err and "--no-install" in err and "package:" not in err
+    assert "--into" in err and "--no-apm-install" in err and "package:" not in err
 
 
 def test_into_without_a_value(capsys: pytest.CaptureFixture[str]) -> None:

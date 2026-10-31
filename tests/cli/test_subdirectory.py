@@ -112,7 +112,7 @@ def not_at_the_ref(
         'entries = ["cp/tdd"]\n' + source(upstream, sha, subdirectory)
     )
 
-    code = main([command] + (["--no-install"] if command == "deploy" else []))
+    code = main([command] + (["--no-apm-install"] if command == "deploy" else []))
     err = capsys.readouterr().err
 
     assert code == 1

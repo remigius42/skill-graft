@@ -148,7 +148,7 @@ def test_resolve_and_deploy_agree_with_patches(home: Path, tmp_path: Path) -> No
     assert main(["resolve"]) == 0
     resolved = lock_file.read_bytes()
 
-    assert main(["deploy", "--no-install"]) == 0
+    assert main(["deploy", "--no-apm-install"]) == 0
 
     assert lock_file.read_bytes() == resolved
 
@@ -258,7 +258,7 @@ def test_resolve_and_deploy_agree_with_renames(home: Path) -> None:
 
     assert main(["resolve"]) == 0
     resolved = lock.read_bytes()
-    assert main(["deploy", "--no-install"]) == 0
+    assert main(["deploy", "--no-apm-install"]) == 0
 
     assert lock.read_bytes() == resolved
 

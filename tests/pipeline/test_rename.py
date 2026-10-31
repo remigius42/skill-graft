@@ -212,7 +212,7 @@ def bound_grill(home: Path, tdd: str = "Run /grilling.\n") -> Path:
 def test_bound_reference_rewritten_on_deploy(home: Path) -> None:
     bound_grill(home)
 
-    assert resolve_and_deploy(["deploy", "--no-install"]) == 0
+    assert resolve_and_deploy(["deploy", "--no-apm-install"]) == 0
 
     vendored = package() / ".apm" / "skills"
     assert (vendored / "tdd" / "SKILL.md").read_text() == "Run /grill.\n"
@@ -227,7 +227,7 @@ def test_read_only_upstream_rewritten(home: Path) -> None:
     for path, mode in [(folder / "refs" / "loop.md", 0o444), (folder / "refs", 0o555)]:
         path.chmod(mode)
     try:
-        assert resolve_and_deploy(["deploy", "--no-install"]) == 0
+        assert resolve_and_deploy(["deploy", "--no-apm-install"]) == 0
 
         copy = package() / ".apm" / "skills" / "tdd" / "refs"
         assert (copy / "loop.md").read_text() == "/grill\n"
@@ -244,7 +244,7 @@ def test_resolve_and_deploy_agree(home: Path) -> None:
 
     assert main(["resolve"]) == 0
     resolved_lock = lock.read_bytes()
-    assert main(["deploy", "--no-install"]) == 0
+    assert main(["deploy", "--no-apm-install"]) == 0
 
     assert lock.read_bytes() == resolved_lock
 
@@ -287,7 +287,7 @@ def test_renamed_skill_vendored(home: Path, capsys: pytest.CaptureFixture[str]) 
     skill(home / "mp" / "grilling")
     with_renames(home, ["mp/tdd"], '"mp/tdd" = "mp-tdd"\n"mp/grilling" = "mp-grilling"')
 
-    assert resolve_and_deploy(["deploy", "--no-install"], capsys) == 0
+    assert resolve_and_deploy(["deploy", "--no-apm-install"], capsys) == 0
 
     assert after_package_line(capsys.readouterr().err) == ""
     assert {p.name for p in skills_dir().iterdir()} == {"mp-tdd", "mp-grilling"}
@@ -301,8 +301,8 @@ def test_renamed_in_a_skill_tool_sentence(home: Path) -> None:
     skill(home / "mp" / "grilling")
     with_renames(home, ["mp/tdd"], '"mp/grilling" = "mp-grilling"')
 
-    assert resolve_and_deploy(["deploy", "--no-install"]) == 0
-    assert resolve_and_deploy(["deploy", "--no-install"]) == 0
+    assert resolve_and_deploy(["deploy", "--no-apm-install"]) == 0
+    assert resolve_and_deploy(["deploy", "--no-apm-install"]) == 0
 
     assert (skills_dir() / "tdd" / "SKILL.md").read_text() == (
         'Call the Skill tool with "mp-grilling".\n'
@@ -317,7 +317,7 @@ def test_bind_silences_a_skill_tool_sentence(home: Path) -> None:
         '[bind]\n"mp/grilling" = false\n'
     )
 
-    assert resolve_and_deploy(["deploy", "--no-install"]) == 0
+    assert resolve_and_deploy(["deploy", "--no-apm-install"]) == 0
 
     assert {p.name for p in skills_dir().iterdir()} == {"tdd"}
 
@@ -329,7 +329,7 @@ def test_rename_outside_the_hull(
     skill(home / "mp" / "review")
     with_renames(home, ["mp/tdd"], '"mp/review" = "mp-review"')
 
-    assert resolve_and_deploy(["deploy", "--no-install"], capsys) == 0
+    assert resolve_and_deploy(["deploy", "--no-apm-install"], capsys) == 0
 
     err = capsys.readouterr().err
     assert err.count("mp/review") == 1 and "renames no skill in the hull" in err
@@ -340,11 +340,11 @@ def test_clash_across_sources(home: Path, capsys: pytest.CaptureFixture[str]) ->
     skill(home / "own" / "tdd")
     skill(home / "own" / "x")
     with_renames(home, ["own/x"], '"own/x" = "own-x"')
-    assert resolve_and_deploy(["deploy", "--no-install"]) == 0
+    assert resolve_and_deploy(["deploy", "--no-apm-install"]) == 0
     lock = (package() / "skill-graft.lock").read_bytes()
     with_renames(home, ["mp/tdd", "own/tdd"], '"own/x" = "own-x"')
 
-    assert resolve_and_deploy(["deploy", "--no-install"]) == 1
+    assert resolve_and_deploy(["deploy", "--no-apm-install"]) == 1
 
     err = capsys.readouterr().err
     assert "mp/tdd" in err and "own/tdd" in err
@@ -358,7 +358,7 @@ def test_rename_settles_a_clash(home: Path) -> None:
     skill(home / "own" / "tdd")
     with_renames(home, ["mp/tdd", "own/tdd"], '"own/tdd" = "own-tdd"')
 
-    assert resolve_and_deploy(["deploy", "--no-install"]) == 0
+    assert resolve_and_deploy(["deploy", "--no-apm-install"]) == 0
 
     assert {p.name for p in skills_dir().iterdir()} == {"tdd", "own-tdd"}
 
@@ -369,7 +369,7 @@ def test_reserved_by_the_user(home: Path, capsys: pytest.CaptureFixture[str]) ->
     file = package() / "skill-graft.toml"
     file.write_text('reserved = ["Review"]\n' + file.read_text())
 
-    for args in [["resolve"], ["deploy", "--no-install"]]:
+    for args in [["resolve"], ["deploy", "--no-apm-install"]]:
         assert main(args) == 1
         err = capsys.readouterr().err
         assert "mp/review" in err and "reserved" in err
@@ -383,7 +383,7 @@ def test_renamed_out_of_the_way(home: Path, capsys: pytest.CaptureFixture[str]) 
     file = package() / "skill-graft.toml"
     file.write_text('reserved = ["review"]\n' + file.read_text())
 
-    assert resolve_and_deploy(["deploy", "--no-install"], capsys) == 0
+    assert resolve_and_deploy(["deploy", "--no-apm-install"], capsys) == 0
     assert after_package_line(capsys.readouterr().err) == ""
 
 
@@ -391,7 +391,7 @@ def test_shipped_clash(home: Path, capsys: pytest.CaptureFixture[str]) -> None:
     skill(home / "mp" / "code-review")
     with_renames(home, ["mp/code-review"], "")
 
-    assert resolve_and_deploy(["deploy", "--no-install"], capsys) == 0
+    assert resolve_and_deploy(["deploy", "--no-apm-install"], capsys) == 0
 
     err = capsys.readouterr().err
     assert err.count("mp/code-review") == 2  # one warning, its rename line
@@ -404,7 +404,7 @@ def test_renamed_onto_a_shipped_name(
     skill(home / "mp" / "check")
     with_renames(home, ["mp/check"], '"mp/check" = "review"')
 
-    assert resolve_and_deploy(["deploy", "--no-install"]) == 0
+    assert resolve_and_deploy(["deploy", "--no-apm-install"]) == 0
 
     err = capsys.readouterr().err
     assert "mp/check" in err and "`review`" in err and "[rename]" not in err
@@ -416,7 +416,7 @@ def test_both_lists(home: Path) -> None:
     file = package() / "skill-graft.toml"
     file.write_text('reserved = ["code-review"]\n' + file.read_text())
 
-    assert main(["deploy", "--no-install"]) == 1
+    assert main(["deploy", "--no-apm-install"]) == 1
 
 
 def test_rename_onto_another_skills_name(
@@ -479,7 +479,7 @@ def test_dependency_prefixed(home: Path) -> None:
     skill(home / "own" / "notes")
     with_prefixes(home, ["mp/tdd", "own/notes"], mp="mp-")
 
-    assert resolve_and_deploy(["deploy", "--no-install"]) == 0
+    assert resolve_and_deploy(["deploy", "--no-apm-install"]) == 0
 
     assert {p.name for p in skills_dir().iterdir()} == {
         "mp-tdd",
@@ -499,7 +499,7 @@ def test_rename_wins_over_the_prefix_used_as_written(home: Path) -> None:
     skill(home / "mp" / "grilling")
     with_prefixes(home, ["mp/tdd", "mp/grilling"], '"mp/tdd" = "tdd"', mp="mp")
 
-    assert resolve_and_deploy(["deploy", "--no-install"]) == 0
+    assert resolve_and_deploy(["deploy", "--no-apm-install"]) == 0
 
     assert {p.name for p in skills_dir().iterdir()} == {"tdd", "mpgrilling"}
 
@@ -511,7 +511,7 @@ def test_bound_to_a_prefixed_skill(home: Path) -> None:
     file = package() / "skill-graft.toml"
     file.write_text(file.read_text() + '[bind]\n"mp/grilling" = "own/grill"\n')
 
-    assert resolve_and_deploy(["deploy", "--no-install"]) == 0
+    assert resolve_and_deploy(["deploy", "--no-apm-install"]) == 0
 
     assert (skills_dir() / "tdd" / "SKILL.md").read_text() == "Run /own-grill.\n"
 
@@ -596,7 +596,7 @@ def test_prefixed_onto_a_shipped_name(
     skill(home / "own" / "view")
     with_prefixes(home, ["own/view"], own="re")
 
-    assert resolve_and_deploy(["deploy", "--no-install"], capsys) == 0
+    assert resolve_and_deploy(["deploy", "--no-apm-install"], capsys) == 0
 
     err = after_package_line(capsys.readouterr().err)
     assert "own/view" in err and "`review`" in err

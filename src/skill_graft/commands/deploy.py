@@ -14,7 +14,7 @@ from skill_graft.pipeline import config, lock
 
 
 def deploy(
-    scope: paths.Scope, warnings: list[str], given: Path | None, no_install: bool
+    scope: paths.Scope, warnings: list[str], given: Path | None, no_apm_install: bool
 ) -> None:
     """Vendors the hull and writes the lock, then runs APM; `given` (`--into`)
     mirrors the package's layout in another folder instead, and runs no APM."""
@@ -74,7 +74,7 @@ def deploy(
             )
         # Once nothing before APM can fail.
         explain.announce_suggestions(resolved)
-        if not no_install:
+        if not no_apm_install:
             apm.install(scope)
 
 

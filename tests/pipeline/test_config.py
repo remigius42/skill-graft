@@ -1,4 +1,4 @@
-"""The `config` spec, through `skill-graft deploy --no-install`."""
+"""The `config` spec, through `skill-graft deploy --no-apm-install`."""
 
 from pathlib import Path
 from typing import TypeAlias

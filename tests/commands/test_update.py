@@ -293,7 +293,7 @@ def test_source_without_a_ref_then_deploys(upstream: Upstream, capsys: Capsys) -
     write_config('entries = ["mp/tdd"]\n' + git_source("mp", upstream))
 
     assert update(capsys)[0] == 0
-    assert main(["deploy", "--no-install"]) == 0
+    assert main(["deploy", "--no-apm-install"]) == 0
 
     assert vendored() == {"tdd"}
 
@@ -446,7 +446,7 @@ def test_dry_run(upstream: Upstream, capsys: Capsys) -> None:
     file = write_config(
         'entries = ["mp/tdd"]\n' + git_source("mp", upstream, f'ref = "{old}"\n')
     )
-    assert resolve_and_deploy(["deploy", "--no-install"]) == 0
+    assert resolve_and_deploy(["deploy", "--no-apm-install"]) == 0
     capsys.readouterr()
     new = upstream.commit({"tdd/SKILL.md": "2\n"})
     before, cached = file.read_bytes(), snapshot(paths.cache())
@@ -602,7 +602,7 @@ def test_dry_run_leaves_the_lock(upstream: Upstream, capsys: Capsys) -> None:
     write_config(
         'entries = ["mp/tdd"]\n' + git_source("mp", upstream, f'ref = "{old}"\n')
     )
-    assert resolve_and_deploy(["deploy", "--no-install"]) == 0
+    assert resolve_and_deploy(["deploy", "--no-apm-install"]) == 0
     upstream.commit({"tdd/SKILL.md": "2\n"})
     before = lock_file().read_bytes()
 
@@ -628,7 +628,7 @@ def test_skill_added_upstream(upstream: Upstream, capsys: Capsys) -> None:
     write_config(
         'entries = ["mp/tdd"]\n' + git_source("mp", upstream, f'ref = "{old}"\n')
     )
-    resolve_and_deploy(["deploy", "--no-install"])  # caches the old ref
+    resolve_and_deploy(["deploy", "--no-apm-install"])  # caches the old ref
 
     code, out, _ = update(capsys)
 
@@ -648,7 +648,7 @@ def test_skill_dropped_upstream(upstream: Upstream, capsys: Capsys) -> None:
     write_config(
         'entries = ["mp/tdd"]\n' + git_source("mp", upstream, f'ref = "{old}"\n')
     )
-    resolve_and_deploy(["deploy", "--no-install"])
+    resolve_and_deploy(["deploy", "--no-apm-install"])
 
     code, out, _ = update(capsys)
 
@@ -667,7 +667,7 @@ def test_nothing_changed(upstream: Upstream, capsys: Capsys) -> None:
     write_config(
         'entries = ["mp/tdd"]\n' + git_source("mp", upstream, f'ref = "{old}"\n')
     )
-    main(["deploy", "--no-install"])
+    main(["deploy", "--no-apm-install"])
 
     code, out, _ = update(capsys, "--dry-run")
 
@@ -709,7 +709,7 @@ def test_old_refs_files_unreachable(
         'entries = ["mp/tdd"]\n' + git_source("mp", upstream, f'ref = "{tip}"\n')
     )
     assert (
-        resolve_and_deploy(["deploy", "--no-install"]) == 0
+        resolve_and_deploy(["deploy", "--no-apm-install"]) == 0
     )  # the tip, with its files
     write_config(
         'entries = ["mp/tdd"]\n' + git_source("mp", upstream, f'ref = "{old}"\n')
@@ -734,7 +734,7 @@ def test_old_ref_not_cached(upstream: Upstream, capsys: Capsys) -> None:
     write_config(
         'entries = ["mp/tdd"]\n' + git_source("mp", upstream, f'ref = "{tip}"\n')
     )
-    main(["deploy", "--no-install"])  # caches the tip
+    main(["deploy", "--no-apm-install"])  # caches the tip
     missing = "0" * 40  # a ref no cache holds
     write_config(
         'entries = ["mp/tdd"]\n' + git_source("mp", upstream, f'ref = "{missing}"\n')
@@ -759,7 +759,7 @@ def test_warnings_once(upstream: Upstream, capsys: Capsys) -> None:
     write_config(
         'entries = ["mp/tdd"]\n' + git_source("mp", upstream, f'ref = "{old}"\n')
     )
-    main(["deploy", "--no-install"])
+    main(["deploy", "--no-apm-install"])
     capsys.readouterr()
 
     code, _, err = update(capsys)
@@ -802,7 +802,7 @@ def test_dry_run_moving_no_ref_announces_suggestions(
     write_config(
         'entries = ["mp/tdd"]\n' + git_source("mp", upstream, f'ref = "{tip}"\n')
     )
-    assert resolve_and_deploy(["deploy", "--no-install"]) == 0
+    assert resolve_and_deploy(["deploy", "--no-apm-install"]) == 0
     capsys.readouterr()  # deploy's own suggestion line
 
     code, _, err = update(capsys, "--dry-run")
@@ -818,7 +818,7 @@ def test_dry_run_prints_the_diff(upstream: Upstream, capsys: Capsys) -> None:
     write_config(
         'entries = ["mp/tdd"]\n' + git_source("mp", upstream, f'ref = "{old}"\n')
     )
-    main(["deploy", "--no-install"])
+    main(["deploy", "--no-apm-install"])
 
     code, out, _ = update(capsys, "--dry-run")
 
@@ -879,7 +879,9 @@ def test_broken_old_ref_only_skips_the_diff(upstream: Upstream, capsys: Capsys) 
     write_config(
         'entries = ["mp/tdd"]\n' + git_source("mp", upstream, f'ref = "{old}"\n')
     )
-    assert main(["deploy", "--no-install"]) == 1  # the link is broken; old is cached
+    assert (
+        main(["deploy", "--no-apm-install"]) == 1
+    )  # the link is broken; old is cached
     capsys.readouterr()
 
     code, out, _ = update(capsys)
@@ -914,7 +916,7 @@ def test_patch_fails_at_the_tip(
     file = patched_source(
         upstream, old, make_patch(tmp_path, {"SKILL.md": LINES}, {"SKILL.md": edited})
     )
-    assert resolve_and_deploy(["deploy", "--no-install"]) == 0
+    assert resolve_and_deploy(["deploy", "--no-apm-install"]) == 0
     before, toml = lock_file().read_bytes(), file.read_bytes()
     capsys.readouterr()
 
@@ -977,7 +979,7 @@ def test_dry_run_with_a_failing_patch(
     patched_source(
         upstream, old, make_patch(tmp_path, {"SKILL.md": LINES}, {"SKILL.md": edited})
     )
-    assert resolve_and_deploy(["deploy", "--no-install"]) == 0
+    assert resolve_and_deploy(["deploy", "--no-apm-install"]) == 0
     upstream.commit({"tdd/SKILL.md": LINES.replace("line 5\n", "line 5 upstream\n")})
     capsys.readouterr()
 
@@ -1001,7 +1003,7 @@ def test_dry_run_keeps_the_hidden_characters(
         upstream, old, make_patch(tmp_path, {"SKILL.md": LINES}, {"SKILL.md": edited})
     )
     file.write_text(file.read_text().replace('"mp/tdd"]', '"mp/tdd", "mp/notes"]', 1))
-    assert resolve_and_deploy(["deploy", "--no-install"]) == 0
+    assert resolve_and_deploy(["deploy", "--no-apm-install"]) == 0
     upstream.commit(
         {
             "tdd/SKILL.md": LINES.replace("line 5\n", "line 5 upstream\n"),
@@ -1045,7 +1047,7 @@ def test_file_lines(upstream: Upstream, capsys: Capsys) -> None:
     write_config(
         'entries = ["mp/tdd"]\n' + git_source("mp", upstream, f'ref = "{old}"\n')
     )
-    resolve_and_deploy(["deploy", "--no-install"])
+    resolve_and_deploy(["deploy", "--no-apm-install"])
 
     code, out, _ = update(capsys)
 
@@ -1064,7 +1066,7 @@ def test_hint(upstream: Upstream, capsys: Capsys) -> None:
     write_config(
         'entries = ["mp/tdd"]\n' + git_source("mp", upstream, f'ref = "{old}"\n')
     )
-    main(["deploy", "--no-install"])
+    main(["deploy", "--no-apm-install"])
 
     code, out, _ = update(capsys, "mp", "--dry-run")
 
@@ -1081,7 +1083,7 @@ def test_no_hint_after_a_real_update(upstream: Upstream, capsys: Capsys) -> None
     write_config(
         'entries = ["mp/tdd"]\n' + git_source("mp", upstream, f'ref = "{old}"\n')
     )
-    main(["deploy", "--no-install"])
+    main(["deploy", "--no-apm-install"])
 
     code, out, _ = update(capsys)
 
@@ -1096,7 +1098,7 @@ def test_error_while_both_hulls_are_open(
     file = write_config(
         'entries = ["mp/tdd"]\n' + git_source("mp", upstream, f'ref = "{old}"\n')
     )
-    main(["deploy", "--no-install"])
+    main(["deploy", "--no-apm-install"])
     before = file.read_bytes()
 
     def fail(old: object, new: object) -> list[str]:
@@ -1215,7 +1217,7 @@ def moved_tdd(
         + git_source("mp", upstream, f'ref = "{old}"\n')
         + extra
     )
-    assert resolve_and_deploy(["deploy", "--no-install"]) == 0
+    assert resolve_and_deploy(["deploy", "--no-apm-install"]) == 0
     new = upstream.commit({"tdd/SKILL.md": after})
     return old, new, file
 
@@ -1547,7 +1549,7 @@ def test_patch_applied_on_both_sides(
     patched_source(
         upstream, old, make_patch(tmp_path, {"SKILL.md": LINES}, {"SKILL.md": edited})
     )
-    assert resolve_and_deploy(["deploy", "--no-install"]) == 0
+    assert resolve_and_deploy(["deploy", "--no-apm-install"]) == 0
     upstream.commit({"tdd/SKILL.md": LINES.replace("line 9\n", "line 9 upstream\n")})
 
     assert update(capsys, "--dry-run", "--diff", "review.diff")[0] == 0
@@ -1570,7 +1572,7 @@ def test_renamed_skill_in_the_diff(
         'entries = ["mp/tdd"]\n'
         + git_source("mp", upstream, f'ref = "{old}"\nprefix = "mp-"\n')
     )
-    assert resolve_and_deploy(["deploy", "--no-install"]) == 0
+    assert resolve_and_deploy(["deploy", "--no-apm-install"]) == 0
     upstream.commit({"tdd/SKILL.md": "# tdd\n/grilling\n"})
 
     assert update(capsys, "--dry-run", "--diff", "review.diff")[0] == 0
@@ -1587,7 +1589,7 @@ def test_source_line(home: Path, upstream: Upstream, capsys: Capsys) -> None:
     write_config(
         'entries = ["mp/tdd"]\n' + git_source("mp", upstream, f'ref = "{old}"\n')
     )
-    assert resolve_and_deploy(["deploy", "--no-install"]) == 0
+    assert resolve_and_deploy(["deploy", "--no-apm-install"]) == 0
     upstream.git("rm", "-q", "-r", "skills/tdd")
     new = upstream.commit({"skills/dev/tdd/SKILL.md": "2\n"})
 
@@ -1608,7 +1610,7 @@ def test_path_source_in_the_diff(
         + git_source("mp", upstream, f'ref = "{old}"\nprefix = "mp-"\n')
         + '[sources.own]\npath = "~/own"\n'
     )
-    assert resolve_and_deploy(["deploy", "--no-install"]) == 0
+    assert resolve_and_deploy(["deploy", "--no-apm-install"]) == 0
     upstream.commit({"grilling/SKILL.md": "g\n"})
 
     assert update(capsys, "mp", "--dry-run", "--diff", "review.diff")[0] == 0
@@ -1631,7 +1633,7 @@ def test_edited_since_the_lock_in_the_diff(
             {"SKILL.md": LINES.replace("line 3\n", "line three\n")},
         ),
     )
-    assert resolve_and_deploy(["deploy", "--no-install"]) == 0
+    assert resolve_and_deploy(["deploy", "--no-apm-install"]) == 0
     patched_source(
         upstream,
         old,
@@ -1660,7 +1662,7 @@ def test_git_configuration_ignored(
     write_config(
         'entries = ["mp/tdd"]\n' + git_source("mp", upstream, f'ref = "{old}"\n')
     )
-    assert resolve_and_deploy(["deploy", "--no-install"]) == 0
+    assert resolve_and_deploy(["deploy", "--no-apm-install"]) == 0
     upstream.commit({"tdd/SKILL.md": "2\n", "tdd/a.md": "b\n"})
     assert update(capsys, "--dry-run", "--diff", "review.diff")[0] == 0
     plain = (home / "review.diff").read_text()
@@ -1708,7 +1710,7 @@ def deployed_at_tip(upstream: Upstream) -> str:
     write_config(
         'entries = ["mp/tdd"]\n' + git_source("mp", upstream, f'ref = "{tip}"\n')
     )
-    assert resolve_and_deploy(["deploy", "--no-install"]) == 0
+    assert resolve_and_deploy(["deploy", "--no-apm-install"]) == 0
     return tip
 
 
@@ -1771,7 +1773,7 @@ def uncached_ref(upstream: Upstream) -> None:
     write_config(
         'entries = ["mp/tdd"]\n' + git_source("mp", upstream, f'ref = "{tip}"\n')
     )
-    assert resolve_and_deploy(["deploy", "--no-install"]) == 0
+    assert resolve_and_deploy(["deploy", "--no-apm-install"]) == 0
     write_config(
         'entries = ["mp/tdd"]\n' + git_source("mp", upstream, f'ref = "{"0" * 40}"\n')
     )
@@ -1820,7 +1822,7 @@ def test_changed_by_resolution_only(
         + git_source("mp", upstream, f'ref = "{old}"\nprefix = "mp-"\n')
         + '[sources.own]\npath = "~/own"\n'
     )
-    assert resolve_and_deploy(["deploy", "--no-install"]) == 0
+    assert resolve_and_deploy(["deploy", "--no-apm-install"]) == 0
     upstream.commit({"grilling/SKILL.md": "g\n"})
 
     code, out, _ = update(capsys, "mp", "--dry-run", "--diff", "review.diff")
@@ -1894,7 +1896,7 @@ def test_patch_edited_after_vetting(
             {"SKILL.md": LINES.replace("line 3\n", "line three\n")},
         ),
     )
-    assert resolve_and_deploy(["deploy", "--no-install"]) == 0
+    assert resolve_and_deploy(["deploy", "--no-apm-install"]) == 0
     upstream.commit({"tdd/SKILL.md": LINES.replace("line 9\n", "line 9 upstream\n")})
     code, out, _ = update(capsys, "mp", "--dry-run", "--diff", "review.diff")
     toml, lock = file.read_bytes(), lock_file().read_bytes()
@@ -2015,7 +2017,7 @@ def test_removed_skill_in_the_diff(
     write_config(
         'entries = ["mp/tdd"]\n' + git_source("mp", upstream, f'ref = "{old}"\n')
     )
-    assert resolve_and_deploy(["deploy", "--no-install"]) == 0
+    assert resolve_and_deploy(["deploy", "--no-apm-install"]) == 0
     upstream.commit({"tdd/SKILL.md": "1\n"})
 
     assert update(capsys, "--dry-run", "--diff", "review.diff")[0] == 0
@@ -2034,7 +2036,7 @@ def test_only_removals_in_the_diff(
         + git_source("mp", upstream, f'ref = "{old}"\n')
         + '[sources.own]\npath = "~/own"\n'
     )
-    assert resolve_and_deploy(["deploy", "--no-install"]) == 0
+    assert resolve_and_deploy(["deploy", "--no-apm-install"]) == 0
     upstream.git("rm", "-q", "-r", "grilling")
     upstream.commit({})
 
@@ -2068,7 +2070,7 @@ def test_marked_hull_in_the_diff(
     write_config(
         'entries = ["mp/tdd"]\n' + git_source("mp", upstream, f'ref = "{old}"\n')
     )
-    assert resolve_and_deploy(["deploy", "--no-install"]) == 0
+    assert resolve_and_deploy(["deploy", "--no-apm-install"]) == 0
     upstream.commit({"tdd/SKILL.md": "/grilling\n"})
 
     assert update(capsys, "--dry-run", "--diff", "review.diff")[0] == 0

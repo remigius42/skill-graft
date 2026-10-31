@@ -39,10 +39,11 @@ user's agent skills", the top-level help's "Build your agent skills", `[build-sy
 
 ## 3. `--no-install` becomes `--no-apm-install`
 
-- [ ] 3.1 `--no-apm-install` in `cli.py` (help: stop before running APM) and `deploy.deploy`'s parameter; `--into` with
-  it a usage error naming both; every test using it; README's table and `docs/design.md`. Tests first: "Former names
-  refused: Old install option", "Deploy without running APM" and "Into never runs APM: With no-apm-install" in
-  `tests/cli/test_cli.py` and `tests/commands/test_deploy.py`; verify they fail, then pass
+- [x] 3.1 `--no-apm-install` in `cli.py` (help: stop before running APM) and `deploy.deploy`'s parameter; `--into` with
+  it a usage error naming both; every test using it; README's Deploying table (what `--no-apm-install` does) and
+  `docs/design.md`. Tests first: "Former names refused: Old install option", "Deploy without running APM" and "Into
+  never runs APM: With no-apm-install" in `tests/cli/test_cli.py` and `tests/commands/test_deploy.py`; verify they fail,
+  then pass
 
 ## 4. `--diff` becomes `--diff-file`
 

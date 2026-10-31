@@ -30,7 +30,7 @@ def test_inside_a_project(home: Path, monkeypatch: pytest.MonkeyPatch) -> None:
     package = project(home / "repo")
     monkeypatch.chdir(home / "repo" / "src")
 
-    assert resolve_and_deploy(["deploy", "--no-install"]) == 0
+    assert resolve_and_deploy(["deploy", "--no-apm-install"]) == 0
 
     assert (package / ".apm" / "skills" / "chisel" / "SKILL.md").exists()
     assert (package / "skill-graft.lock").exists()
@@ -54,7 +54,7 @@ def test_nested_projects(home: Path, monkeypatch: pytest.MonkeyPatch) -> None:
     (home / "a" / "b" / "c").mkdir()
     monkeypatch.chdir(home / "a" / "b" / "c")
 
-    assert resolve_and_deploy(["deploy", "--no-install"]) == 0
+    assert resolve_and_deploy(["deploy", "--no-apm-install"]) == 0
 
     assert (inner / "skill-graft.lock").exists()
     assert not (outer / "skill-graft.lock").exists()
@@ -80,7 +80,7 @@ def test_working_folder_outside_home(
     package = project(tmp_path / "srv" / "repo")
     monkeypatch.chdir(tmp_path / "srv" / "repo")
 
-    assert resolve_and_deploy(["deploy", "--no-install"]) == 0
+    assert resolve_and_deploy(["deploy", "--no-apm-install"]) == 0
 
     assert (package / "skill-graft.lock").exists()
 
@@ -108,7 +108,7 @@ def test_project_package_without_config(
     package.mkdir(parents=True)
     monkeypatch.chdir(home / "repo")
 
-    assert main(["deploy", "--no-install"]) == 1
+    assert main(["deploy", "--no-apm-install"]) == 1
 
     err = capsys.readouterr().err
     assert f"{package}/skill-graft.toml" in err
@@ -161,14 +161,14 @@ def test_undecodable_project_manifest(
     assert f"skill-graft: {home}/repo/apm.yml:" in capsys.readouterr().err
 
 
-def test_no_install_reads_no_project_manifest(
+def test_no_apm_install_reads_no_project_manifest(
     home: Path, monkeypatch: pytest.MonkeyPatch, fake_apm: FakeApm
 ) -> None:
     project(home / "repo")
     (home / "repo" / "apm.yml").mkdir()  # unreadable as a file
     monkeypatch.chdir(home / "repo")
 
-    assert resolve_and_deploy(["deploy", "--no-install"]) == 0
+    assert resolve_and_deploy(["deploy", "--no-apm-install"]) == 0
 
     assert fake_apm.calls == []
 
@@ -230,7 +230,7 @@ def test_deploy_names_the_package(
     package = project(home / "repo")
     monkeypatch.chdir(home / "repo" / "src")
 
-    assert resolve_and_deploy(["deploy", "--no-install"]) == 0
+    assert resolve_and_deploy(["deploy", "--no-apm-install"]) == 0
 
     assert capsys.readouterr().err.startswith(f"skill-graft: package: {package}\n")
 

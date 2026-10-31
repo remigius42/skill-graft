@@ -136,8 +136,8 @@ path = "~/Documents/sync/2_areas/software/chisel_skill"
   vendors such a changed skill, writes its new hash, and once the lock is written names it,
   `<skill id> changed in its path source since skill-graft.lock: deployed as is`. A patched one is checked as a git
   one's. Then it writes `.apm/skills/` and the lock as `resolve` does and runs the same `apm install` as `init`, in the
-  project root for a project package. `--no-install` stops before APM. Fails unless `apm` exits 0 and the scope's
-  `apm.yml` (`~/.apm/apm.yml`, or the project's) lists the package. `--into <dir>` (not with `--no-install`) writes
+  project root for a project package. `--no-apm-install` stops before APM. Fails unless `apm` exits 0 and the scope's
+  `apm.yml` (`~/.apm/apm.yml`, or the project's) lists the package. `--into <dir>` (not with `--no-apm-install`) writes
   `<dir>/.apm/skills/` and `<dir>/skill-graft.lock` instead, checked against the package's lock as an in-place deploy
   is, the same lock bytes an in-place deploy writes, and never runs APM or changes the package. `<dir>` must be an
   existing, empty folder, not in a package (any `.apm/skill-graft` path, ignoring case), a path source's folder, or in

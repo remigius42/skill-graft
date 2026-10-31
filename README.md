@@ -138,9 +138,9 @@ in an editor. `update` compares against the hull at the current refs, the other 
 
 ### Deploying
 
-| Command                                 | What it does                                                                                                                                                                                                                |
-| --------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `deploy [--no-install \| --into <dir>]` | Deploy what the lock records through APM, refusing a hull other than the lock's or an edited vendored copy. `--into <dir>` writes the skills and the lock into an empty `<dir>` instead, never touching the package or APM. |
+| Command                                     | What it does                                                                                                                                                                                                                                                             |
+| ------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| `deploy [--no-apm-install \| --into <dir>]` | Deploy what the lock records through APM, refusing a hull other than the lock's or an edited vendored copy. `--no-apm-install` stops before running APM. `--into <dir>` writes the skills and the lock into an empty `<dir>` instead, never touching the package or APM. |
 
 ### Inspecting
 

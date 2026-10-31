@@ -1,4 +1,4 @@
-"""The `git-sources` spec, through `skill-graft deploy --no-install`."""
+"""The `git-sources` spec, through `skill-graft deploy --no-apm-install`."""
 
 import shutil
 import subprocess
@@ -120,7 +120,7 @@ def test_skill_md_linked_out_of_the_tree(
     (upstream.path / "evil" / "SKILL.md").symlink_to(home / "local" / "notes.md")
     git_source(upstream, "mp/evil")
 
-    code = main(["deploy", "--no-install"])
+    code = main(["deploy", "--no-apm-install"])
 
     out, err = capsys.readouterr()
     assert code == 1

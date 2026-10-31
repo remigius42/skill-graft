@@ -32,7 +32,7 @@ def test_whole_folder_copied(home: Path) -> None:
     (source / "refs" / "notes.bin").write_bytes(b"notes\x00\xff")
     write_config('entries = ["own/chisel"]\n[sources.own]\npath = "~/src"\n')
 
-    assert resolve_and_deploy(["deploy", "--no-install"]) == 0
+    assert resolve_and_deploy(["deploy", "--no-apm-install"]) == 0
 
     vendored = skills_dir(home) / "chisel"
     assert (vendored / "SKILL.md").read_text() == "# skill\n"
@@ -43,10 +43,10 @@ def test_removed_entry(home: Path) -> None:
     skill(home / "src" / "chisel")
     skill(home / "src" / "tdd")
     write_config('entries = ["own/chisel"]\n[sources.own]\npath = "~/src"\n')
-    resolve_and_deploy(["deploy", "--no-install"])
+    resolve_and_deploy(["deploy", "--no-apm-install"])
     write_config('entries = ["own/tdd"]\n[sources.own]\npath = "~/src"\n')
 
-    assert resolve_and_deploy(["deploy", "--no-install"]) == 0
+    assert resolve_and_deploy(["deploy", "--no-apm-install"]) == 0
 
     assert sorted(p.name for p in skills_dir(home).iterdir()) == ["tdd"]
 
@@ -56,7 +56,7 @@ def test_referenced_skill_vendored(home: Path) -> None:
     skill(home / "src" / "grilling")
     write_config('entries = ["own/tdd"]\n[sources.own]\npath = "~/src"\n')
 
-    assert resolve_and_deploy(["deploy", "--no-install"]) == 0
+    assert resolve_and_deploy(["deploy", "--no-apm-install"]) == 0
 
     assert sorted(p.name for p in skills_dir(home).iterdir()) == ["grilling", "tdd"]
 
@@ -65,10 +65,10 @@ def test_skill_no_longer_referenced_is_removed(home: Path) -> None:
     tdd = skill(home / "src" / "tdd", "Run /grilling.\n")
     skill(home / "src" / "grilling")
     write_config('entries = ["own/tdd"]\n[sources.own]\npath = "~/src"\n')
-    resolve_and_deploy(["deploy", "--no-install"])
+    resolve_and_deploy(["deploy", "--no-apm-install"])
     (tdd / "SKILL.md").write_text("Nothing.\n")
 
-    assert resolve_and_deploy(["deploy", "--no-install"]) == 0
+    assert resolve_and_deploy(["deploy", "--no-apm-install"]) == 0
 
     assert sorted(p.name for p in skills_dir(home).iterdir()) == ["tdd"]
 
@@ -79,7 +79,7 @@ def test_warning_does_not_stop_deploy(
     skill(home / "src" / "tdd", "Run /foo.\n")
     write_config('entries = ["own/tdd"]\n[sources.own]\npath = "~/src"\n')
 
-    assert resolve_and_deploy(["deploy", "--no-install"]) == 0
+    assert resolve_and_deploy(["deploy", "--no-apm-install"]) == 0
 
     assert "skill-graft: warning: `own/tdd` calls `/foo`" in capsys.readouterr().err
 
@@ -92,7 +92,7 @@ def test_symlink_in_a_referenced_skill(
     (grilling / "out").symlink_to(home / "secret")
     write_config('entries = ["own/tdd"]\n[sources.own]\npath = "~/src"\n')
 
-    assert main(["deploy", "--no-install"]) == 1
+    assert main(["deploy", "--no-apm-install"]) == 1
 
     assert "out" in capsys.readouterr().err and not skills_dir(home).exists()
 
@@ -117,7 +117,7 @@ def test_failed_deploy_announces_no_suggestions(
     skill(home / "src" / "diagnosing-bugs")
     write_config('entries = ["own/tdd"]\n[sources.own]\npath = "~/src"\n')
 
-    assert main(["deploy", "--no-install"]) == 1
+    assert main(["deploy", "--no-apm-install"]) == 1
 
     assert "prose suggestion(s)" not in capsys.readouterr().err
 
@@ -128,11 +128,11 @@ def test_copy_fails(
     skill(home / "src" / "chisel")
     broken = skill(home / "src" / "tdd")
     write_config('entries = ["own/chisel"]\n[sources.own]\npath = "~/src"\n')
-    resolve_and_deploy(["deploy", "--no-install"])
+    resolve_and_deploy(["deploy", "--no-apm-install"])
     unreadable(broken, monkeypatch)
     write_config('entries = ["own/tdd"]\n[sources.own]\npath = "~/src"\n')
 
-    assert resolve_and_deploy(["deploy", "--no-install"]) == 1
+    assert resolve_and_deploy(["deploy", "--no-apm-install"]) == 1
 
     err = capsys.readouterr().err
     assert "copying" in err and "secret" in err
@@ -146,14 +146,14 @@ def test_crash_between_the_renames_keeps_the_previous_deploy(
     skill(home / "src" / "chisel")
     broken = skill(home / "src" / "tdd")
     write_config('entries = ["own/chisel"]\n[sources.own]\npath = "~/src"\n')
-    resolve_and_deploy(["deploy", "--no-install"])
+    resolve_and_deploy(["deploy", "--no-apm-install"])
     # A run killed after moving skills/ aside and before moving skills.new/ in.
     skills_dir(home).rename(skills_dir(home).with_name("skills.old"))
     skill(skills_dir(home).with_name("skills.new") / "half")
     unreadable(broken, monkeypatch)
     write_config('entries = ["own/tdd"]\n[sources.own]\npath = "~/src"\n')
 
-    assert resolve_and_deploy(["deploy", "--no-install"]) == 1
+    assert resolve_and_deploy(["deploy", "--no-apm-install"]) == 1
 
     assert sorted(p.name for p in skills_dir(home).parent.iterdir()) == ["skills"]
     assert sorted(p.name for p in skills_dir(home).iterdir()) == ["chisel"]
@@ -167,7 +167,7 @@ def test_undeletable_stale_folder(
     locked = skill(skills_dir(home).with_name("skills.new") / "half")
     locked.chmod(0o500)
     try:
-        assert resolve_and_deploy(["deploy", "--no-install"]) == 1
+        assert resolve_and_deploy(["deploy", "--no-apm-install"]) == 1
     finally:
         locked.chmod(0o700)
 
@@ -184,7 +184,7 @@ def test_clash_is_reported_before_searching(
         '[sources.mp]\npath = "~/mp"\n[sources.own]\npath = "~/own"\n'
     )
 
-    assert main(["deploy", "--no-install"]) == 1
+    assert main(["deploy", "--no-apm-install"]) == 1
 
     assert "deployed name 'tdd'" in capsys.readouterr().err
 
@@ -201,7 +201,7 @@ def test_entries_clash_before_any_fetch(
         '[sources.own]\npath = "~/own"\n'
     )
 
-    assert main(["deploy", "--no-install"]) == 1
+    assert main(["deploy", "--no-apm-install"]) == 1
 
     err = capsys.readouterr().err
     assert "mp/tdd" in err and "own/tdd" in err
@@ -218,7 +218,7 @@ def test_missing_ref_before_entries_clash(
         '[sources.own]\npath = "~/own"\n'
     )
 
-    assert main(["deploy", "--no-install"]) == 1
+    assert main(["deploy", "--no-apm-install"]) == 1
 
     assert "skill-graft update mp" in capsys.readouterr().err
 
@@ -231,7 +231,7 @@ def test_clash_ignores_case(home: Path, capsys: pytest.CaptureFixture[str]) -> N
         '[sources.mp]\npath = "~/mp"\n[sources.own]\npath = "~/own"\n'
     )
 
-    assert main(["deploy", "--no-install"]) == 1
+    assert main(["deploy", "--no-apm-install"]) == 1
 
     err = capsys.readouterr().err
     assert "mp/tdd" in err and "own/TDD" in err
@@ -243,13 +243,13 @@ def test_clash_across_sources(home: Path, capsys: pytest.CaptureFixture[str]) ->
     skill(home / "own" / "tdd")
     skill(home / "own" / "chisel")
     write_config('entries = ["own/chisel"]\n[sources.own]\npath = "~/own"\n')
-    resolve_and_deploy(["deploy", "--no-install"])
+    resolve_and_deploy(["deploy", "--no-apm-install"])
     write_config(
         'entries = ["mp/tdd", "own/tdd"]\n'
         '[sources.mp]\npath = "~/mp"\n[sources.own]\npath = "~/own"\n'
     )
 
-    assert resolve_and_deploy(["deploy", "--no-install"]) == 1
+    assert resolve_and_deploy(["deploy", "--no-apm-install"]) == 1
 
     err = capsys.readouterr().err
     assert "mp/tdd" in err and "own/tdd" in err
@@ -277,7 +277,7 @@ def test_symlink_leaving_the_skill_writes_nothing(
     (chisel / link).symlink_to(target)
     write_config('entries = ["own/chisel"]\n[sources.own]\npath = "~/src"\n')
 
-    assert main(["deploy", "--no-install"]) == 1
+    assert main(["deploy", "--no-apm-install"]) == 1
 
     assert f"chisel/{link}" in capsys.readouterr().err
     assert not skills_dir(home).parent.exists()
@@ -289,7 +289,7 @@ def test_symlink_in_git_metadata_is_ignored(home: Path) -> None:
     (chisel / ".git" / "hook").symlink_to(home)
     write_config('entries = ["own/chisel"]\n[sources.own]\npath = "~/chisel"\n')
 
-    assert resolve_and_deploy(["deploy", "--no-install"]) == 0
+    assert resolve_and_deploy(["deploy", "--no-apm-install"]) == 0
 
     assert sorted(p.name for p in (skills_dir(home) / "chisel").iterdir()) == [
         "SKILL.md"
@@ -303,7 +303,7 @@ def test_symlink_loop_is_an_error(
     (chisel / "loop").symlink_to("loop")
     write_config('entries = ["own/chisel"]\n[sources.own]\npath = "~/src"\n')
 
-    assert main(["deploy", "--no-install"]) == 1
+    assert main(["deploy", "--no-apm-install"]) == 1
 
     assert "chisel/loop" in capsys.readouterr().err
 
@@ -315,7 +315,7 @@ def test_symlink_inside_the_skill_is_copied(home: Path) -> None:
     (chisel / "notes.md").symlink_to("refs/notes.md")
     write_config('entries = ["own/chisel"]\n[sources.own]\npath = "~/src"\n')
 
-    assert resolve_and_deploy(["deploy", "--no-install"]) == 0
+    assert resolve_and_deploy(["deploy", "--no-apm-install"]) == 0
 
     copied = skills_dir(home) / "chisel" / "notes.md"
     assert not copied.is_symlink() and copied.read_text() == "inside\n"
@@ -328,7 +328,7 @@ def test_skill_md_linked_to_a_device(home: Path) -> None:
     write_config('entries = ["own/tdd"]\n[sources.own]\npath = "~/src"\n')
 
     with deadline():
-        assert resolve_and_deploy(["deploy", "--no-install"]) == 0
+        assert resolve_and_deploy(["deploy", "--no-apm-install"]) == 0
 
     assert sorted(p.name for p in skills_dir(home).iterdir()) == ["tdd"]
 
@@ -339,7 +339,7 @@ def test_entry_names_a_fifo(home: Path, capsys: pytest.CaptureFixture[str]) -> N
     write_config('entries = ["own/x"]\n[sources.own]\npath = "~/src"\n')
 
     with deadline():
-        assert main(["deploy", "--no-install"]) == 1
+        assert main(["deploy", "--no-apm-install"]) == 1
 
     assert "x/SKILL.md: not a regular file" in capsys.readouterr().err
 
@@ -350,18 +350,18 @@ def test_git_metadata_is_not_vendored(home: Path) -> None:
     (source / ".git" / "HEAD").write_text("ref: refs/heads/main\n")
     write_config('entries = ["own/chisel"]\n[sources.own]\npath = "~/chisel"\n')
 
-    assert resolve_and_deploy(["deploy", "--no-install"]) == 0
+    assert resolve_and_deploy(["deploy", "--no-apm-install"]) == 0
 
     assert sorted(p.name for p in (skills_dir(home) / "chisel").iterdir()) == [
         "SKILL.md"
     ]
 
 
-def test_no_install_does_not_run_apm(home: Path, fake_apm: FakeApm) -> None:
+def test_no_apm_install_does_not_run_apm(home: Path, fake_apm: FakeApm) -> None:
     skill(home / "src" / "chisel")
     write_config('entries = ["own/chisel"]\n[sources.own]\npath = "~/src"\n')
 
-    assert resolve_and_deploy(["deploy", "--no-install"]) == 0
+    assert resolve_and_deploy(["deploy", "--no-apm-install"]) == 0
 
     assert (skills_dir(home) / "chisel" / "SKILL.md").exists()
     assert fake_apm.calls == []
@@ -543,7 +543,7 @@ def test_throwaway_deploy(
 def test_package_untouched(home: Path, tmp_path: Path) -> None:
     chisel = skill(home / "src" / "chisel")
     write_config('entries = ["own/chisel"]\n[sources.own]\npath = "~/src"\n')
-    assert resolve_and_deploy(["deploy", "--no-install"]) == 0
+    assert resolve_and_deploy(["deploy", "--no-apm-install"]) == 0
     package = home / ".apm" / "skill-graft"
     before = snapshot(package)
     (chisel / "SKILL.md").write_text("# changed\n")
@@ -577,7 +577,7 @@ def test_same_lock(home: Path, tmp_path: Path) -> None:
     into = empty_folder(tmp_path)
 
     assert resolve_and_deploy(["deploy", "--into", str(into)]) == 0
-    assert resolve_and_deploy(["deploy", "--no-install"]) == 0
+    assert resolve_and_deploy(["deploy", "--no-apm-install"]) == 0
 
     package_lock = home / ".apm" / "skill-graft" / "skill-graft.lock"
     assert (into / "skill-graft.lock").read_bytes() == package_lock.read_bytes()
@@ -943,9 +943,9 @@ def git_and_own(home: Path, tmp_path: Path, extra: str = "") -> Upstream:
 
 
 def refused(capsys: Capsys, *args: str) -> str:
-    """Runs a refused `deploy --no-install`, or the command `args`; its stderr."""
+    """Runs a refused `deploy --no-apm-install`, or the command `args`; its stderr."""
     capsys.readouterr()
-    assert main(list(args) or ["deploy", "--no-install"]) == 1
+    assert main(list(args) or ["deploy", "--no-apm-install"]) == 1
     return capsys.readouterr().err
 
 
@@ -953,7 +953,7 @@ def test_nothing_changed(home: Path, tmp_path: Path) -> None:
     git_and_own(home, tmp_path)
     before = (package() / "skill-graft.lock").read_bytes()
 
-    assert main(["deploy", "--no-install"]) == 0
+    assert main(["deploy", "--no-apm-install"]) == 0
 
     assert (package() / "skill-graft.lock").read_bytes() == before
 
@@ -1013,7 +1013,7 @@ def test_accepted_with_resolve(home: Path, tmp_path: Path, capsys: Capsys) -> No
     refused(capsys)
 
     assert main(["resolve"]) == 0
-    assert main(["deploy", "--no-install"]) == 0
+    assert main(["deploy", "--no-apm-install"]) == 0
 
     assert vendored() == {"tdd", "chisel", "notes"}
 
@@ -1046,7 +1046,7 @@ def test_vendoring_fails_keeps_lock_and_copies(home: Path, tmp_path: Path) -> No
     (home / "own" / "chisel" / "SKILL.md").write_text("changed\n")
     (home / "own" / "chisel" / "dangling").symlink_to("missing")
 
-    assert main(["deploy", "--no-install"]) == 1
+    assert main(["deploy", "--no-apm-install"]) == 1
 
     assert snapshot(package()) == before
 
@@ -1059,7 +1059,7 @@ def test_own_skill_edited(home: Path, tmp_path: Path, capsys: Capsys) -> None:
     (home / "own" / "chisel" / "SKILL.md").write_text("changed\n")
     capsys.readouterr()
 
-    assert main(["deploy", "--no-install"]) == 0
+    assert main(["deploy", "--no-apm-install"]) == 0
 
     assert NOTICE in capsys.readouterr().err
     assert (skills_dir(home) / "chisel" / "SKILL.md").read_text() == "changed\n"
@@ -1115,7 +1115,7 @@ def test_path_source_elsewhere_on_another_machine(
         lock_file.read_text().replace(str(home / "skills"), "/home/other/skills")
     )
 
-    assert main(["deploy", "--no-install"]) == 0
+    assert main(["deploy", "--no-apm-install"]) == 0
 
     locked = lock.load(lock_file) or {}
     assert locked["sources"] == {"own": {"path": str(home / "skills")}}
@@ -1189,7 +1189,7 @@ def test_copy_deleted(home: Path, tmp_path: Path) -> None:
     git_and_own(home, tmp_path)
     shutil.rmtree(skills_dir(home) / "tdd")
 
-    assert main(["deploy", "--no-install"]) == 0
+    assert main(["deploy", "--no-apm-install"]) == 0
 
     assert (skills_dir(home) / "tdd" / "SKILL.md").read_text() == "# tdd\n"
 
@@ -1233,7 +1233,7 @@ def test_killed_before_the_lock_was_written(
     shutil.copytree(skills_dir(home), skills_dir(home).with_name("skills.old"))
     (skills_dir(home) / "tdd" / "SKILL.md").write_text("from the killed run\n")
 
-    assert main(["deploy", "--no-install"]) == 0
+    assert main(["deploy", "--no-apm-install"]) == 0
 
     assert (skills_dir(home) / "tdd" / "SKILL.md").read_text() == "# tdd\n"
 
@@ -1245,7 +1245,7 @@ def test_killed_after_the_lock_was_written(home: Path, tmp_path: Path) -> None:
     assert main(["update"]) == 0
     previous.rename(skills_dir(home).with_name("skills.old"))
 
-    assert main(["deploy", "--no-install"]) == 0
+    assert main(["deploy", "--no-apm-install"]) == 0
 
     assert (skills_dir(home) / "tdd" / "SKILL.md").read_text() == "# tdd 2\n"
     assert not skills_dir(home).with_name("skills.old").exists()
@@ -1259,7 +1259,7 @@ def test_killed_after_the_lock_was_written_skills_only_added(
     assert main(["add", "mp/notes"]) == 0
     previous.rename(skills_dir(home).with_name("skills.old"))
 
-    assert main(["deploy", "--no-install"]) == 0
+    assert main(["deploy", "--no-apm-install"]) == 0
 
     assert (skills_dir(home) / "notes" / "SKILL.md").read_text() == "# notes\n"
     assert not skills_dir(home).with_name("skills.old").exists()
@@ -1339,7 +1339,7 @@ def test_checkout_converting_line_endings(
     monkeypatch.chdir(clone)
     capsys.readouterr()
 
-    assert main(["deploy", "--no-install"]) == 0
+    assert main(["deploy", "--no-apm-install"]) == 0
 
     assert "differs" not in capsys.readouterr().err
 

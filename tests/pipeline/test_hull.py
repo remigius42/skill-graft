@@ -1,4 +1,4 @@
-"""The `hull` spec, through `skill-graft deploy --no-install`."""
+"""The `hull` spec, through `skill-graft deploy --no-apm-install`."""
 
 import os
 import shutil
@@ -209,7 +209,9 @@ def test_fifo_is_an_error(home: Path, capsys: Capsys, command: str) -> None:
     os.mkfifo(home / "mp" / "grilling" / "pipe")
     two_sources(home, "/grilling\n")
 
-    assert main([command, "--no-install"] if command == "deploy" else [command]) == 1
+    assert (
+        main([command, "--no-apm-install"] if command == "deploy" else [command]) == 1
+    )
 
     err = capsys.readouterr().err
     assert "pipe" in err and "not a regular file" in err

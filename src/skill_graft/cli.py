@@ -191,7 +191,7 @@ def _parser() -> tuple[_Parser, dict[str, argparse.ArgumentParser]]:
     )
     install = deploy.add_mutually_exclusive_group()
     install.add_argument(
-        "--no-install", action="store_true", help="stop before running APM"
+        "--no-apm-install", action="store_true", help="stop before running APM"
     )
     install.add_argument(
         "--into",
@@ -481,7 +481,7 @@ def _main(argv: list[str] | None) -> int:
             elif args.command == "resolve":
                 resolve.resolve(current, warnings, args.dry_run, args.diff)
             elif args.command == "deploy":
-                deploy.deploy(current, warnings, args.into, args.no_install)
+                deploy.deploy(current, warnings, args.into, args.no_apm_install)
         status = 0
     except (SkillGraftError, OSError) as error:
         print(f"skill-graft: {error}", file=sys.stderr)

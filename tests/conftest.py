@@ -288,13 +288,13 @@ def configure(entries: list[str], **sources: str) -> None:
 
 def deploy(capsys: pytest.CaptureFixture[str]) -> tuple[int, str]:
     """Runs `skill-graft resolve`, then, if it succeeds, `skill-graft deploy
-    --no-install`; returns the exit code and stderr of the last, without the
+    --no-apm-install`; returns the exit code and stderr of the last, without the
     package line (`test_scope.py` checks that)."""
     code = main(["resolve"])
     if code != 0:
         return code, after_package_line(capsys.readouterr().err)
     capsys.readouterr()
-    code = main(["deploy", "--no-install"])
+    code = main(["deploy", "--no-apm-install"])
     return code, after_package_line(capsys.readouterr().err)
 
 
