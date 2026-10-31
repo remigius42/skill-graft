@@ -39,7 +39,8 @@ act on them.
   resolve.
 
 Run each command in this skill as its own Bash call, as written here, so the user's permission rules see each one; write
-prompt files with your file tool.
+prompt files with your file tool. Fill in each placeholder as a literal value, with no shell variable, loop or brace
+group of your own: Claude Code refuses a command it cannot check before it runs.
 
 `<report-filter.sh>` and `<run-claude.sh>` are those files in this skill's folder, as absolute paths, each single-quoted
 in a command. In Claude Code that folder is `${CLAUDE_SKILL_DIR}`; in another harness, the folder you loaded this

@@ -306,6 +306,17 @@ def test_no_command_combines_cd_with_a_redirection() -> None:
     assert "from `<work>`" not in text.lower()
 
 
+def test_skill_asks_for_no_shell_of_the_agents_own() -> None:
+    # Seen from the main agent: `U=...; V=...; sh ... "$U"`, refused until it
+    # wrote each command out.
+    text = " ".join((SKILLS / "graft-check" / "SKILL.md").read_text().split())
+
+    assert (
+        "with no shell variable, loop or brace group of your own: Claude Code"
+        " refuses a command it cannot check before it runs" in text
+    )
+
+
 def test_no_command_opens_a_brace_group() -> None:
     # Claude Code's Bash guard refuses a `{ ...; }` group as one it cannot check;
     # an awk program's braces sit inside its quotes, after no `|`, `;` or `&`.
