@@ -98,7 +98,7 @@ every commit passes `pytest`.
 
 ## 5. Docs
 
-- [ ] 5.1 `docs/design.md`: the files table (`.apm/skills/<name>/` written by `resolve`, `build`, `update` and the
+- [x] 5.1 `docs/design.md`: the files table (`.apm/skills/<name>/` written by `resolve`, `build`, `update` and the
   editing commands, and `.gitattributes`), "The lock is output only" replaced, and the `build`, `resolve`, `update`,
   `init` and editing-command entries; `docs/security.md`: the LLM03 row says `build` checks the lock's hashes, and the
   Future work bullet goes; `README.md`: the workflow runs `resolve` after a hand edit, the commands table says which

@@ -77,10 +77,14 @@ Then:
 
 ```sh
 skill-graft update mp    # set the source's ref to its branch tip
-skill-graft add mp/tdd   # ask for the skill
+skill-graft add mp/tdd   # ask for the skill; vendors the hull and writes the lock
 skill-graft tree         # see the hull: mp/tdd and every skill it calls
-skill-graft build        # vendor the hull and deploy it through APM
+skill-graft build        # deploy what skill-graft.lock records through APM
 ```
+
+After editing `skill-graft.toml` or a patch by hand, run `skill-graft resolve` before `build`: `build` deploys only what
+the lock records, and names `resolve` when the config or a patch differs from it. An edit to a vendored copy in
+`.apm/skills/` is refused too; move it into a patch, or delete the folder to vendor it again.
 
 `tdd` and the skills it calls are now in `~/.claude/skills/`. To share skills through a project instead, see
 [A package for one project](#a-package-for-one-project); to deploy them under other names, `[rename]` and `prefix` in
@@ -98,19 +102,19 @@ exactly the hull you read; a push, a path source's edit, a patch or a rename sin
 
 ## Commands
 
-| Command                                                                 | What it does                                                                                                                                                                                          |
-| ----------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `init [--project]`                                                      | Create the package, `~/.apm/skill-graft/` (or `./.apm/skill-graft/`), and register it with APM.                                                                                                       |
-| `resolve`                                                               | Compute the hull, write the lock, print the tree and the skills prose mentions outside the hull.                                                                                                      |
-| `build [--no-install \| --into <dir>]`                                  | Resolve, vendor the hull patched and renamed into `.apm/skills/`, deploy through APM. `--into <dir>` writes the skills and the lock into an empty `<dir>` instead, never touching the package or APM. |
-| `update [source…] [--dry-run] [--diff <file>] [--expect <hull-digest>]` | Move each git source's `ref` to its branch tip, if the hull still resolves and every patch still applies there; `--diff` and `--expect` below.                                                        |
-| `tree [--format text\|mermaid [--link]]`                                | Print the hull, writing nothing; with `--format mermaid`, `--link` gives a mermaid.live URL: see the warning below.                                                                                   |
-| `why <skill>`                                                           | Print the paths from the entries that reach a skill, and its upstream folder.                                                                                                                         |
-| `add <skill-id>…`, `remove <skill-id>…`                                 | Change `entries`, keeping the file's comments, once the result resolves.                                                                                                                              |
-| `rename <skill-id> <name>`                                              | Set a skill's deployed name; the name it would deploy as without a key undoes it.                                                                                                                     |
-| `bind <alias>/<name> <skill-id>\|false`                                 | Resolve `<name>` from that source to the skill, or to no reference.                                                                                                                                   |
-| `unbind <alias>/<name>`                                                 | Remove that bind, so `<name>` resolves by default again.                                                                                                                                              |
-| `help [command]`, or `--help` on any command                            | Explain it.                                                                                                                                                                                           |
+| Command                                                                 | What it does                                                                                                                                                                                                                |
+| ----------------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `init [--project]`                                                      | Create the package, `~/.apm/skill-graft/` (or `./.apm/skill-graft/`), and register it with APM.                                                                                                                             |
+| `resolve`                                                               | Compute the hull, vendor it patched and renamed into `.apm/skills/`, write the lock, print the tree and the skills prose mentions outside the hull. Run it after editing the config or a patch by hand.                     |
+| `build [--no-install \| --into <dir>]`                                  | Deploy what the lock records through APM, refusing a hull other than the lock's or an edited vendored copy. `--into <dir>` writes the skills and the lock into an empty `<dir>` instead, never touching the package or APM. |
+| `update [source…] [--dry-run] [--diff <file>] [--expect <hull-digest>]` | Move each git source's `ref` to its branch tip, if the hull still resolves and every patch still applies there, and vendor the hull; `--diff` and `--expect` below.                                                         |
+| `tree [--format text\|mermaid [--link]]`                                | Print the hull, writing nothing; with `--format mermaid`, `--link` gives a mermaid.live URL: see the warning below.                                                                                                         |
+| `why <skill>`                                                           | Print the paths from the entries that reach a skill, and its upstream folder.                                                                                                                                               |
+| `add <skill-id>…`, `remove <skill-id>…`                                 | Change `entries`, keeping the file's comments, once the result resolves; then vendor the hull and write the lock, as `rename`, `bind` and `unbind` do too.                                                                  |
+| `rename <skill-id> <name>`                                              | Set a skill's deployed name; the name it would deploy as without a key undoes it.                                                                                                                                           |
+| `bind <alias>/<name> <skill-id>\|false`                                 | Resolve `<name>` from that source to the skill, or to no reference.                                                                                                                                                         |
+| `unbind <alias>/<name>`                                                 | Remove that bind, so `<name>` resolves by default again.                                                                                                                                                                    |
+| `help [command]`, or `--help` on any command                            | Explain it.                                                                                                                                                                                                                 |
 
 Warning: `tree --format mermaid --link` hands the diagram to mermaid.live, a third-party site whose page code can read
 it: it then sees which upstream repositories and refs you use, a target list for a supply-chain attack on them.
@@ -185,10 +189,12 @@ shares through one repository, run `skill-graft init --project` in its root (whi
 command then acts on the nearest `.apm/skill-graft/` above the working folder, and on `~/.apm/skill-graft/` when there
 is none.
 
-Commit the whole `.apm/skill-graft/`, vendored skills included, with `apm.yml` and `apm.lock.yaml`. Teammates then need
-only APM: `apm install` deploys the skills, and only whoever changes them runs skill-graft. Keep path sources inside the
-project (`path = "../../skills"`) and the rest git sources: the lock then records them relative to the package and reads
-the same on every machine; a path outside the project is recorded absolute.
+Commit the whole `.apm/skill-graft/`, vendored skills and its `.gitattributes` included, with `apm.yml` and
+`apm.lock.yaml`; `.gitattributes` keeps git from changing the vendored skills' line endings, which `build` would refuse
+as edits. Teammates then need only APM: `apm install` deploys the skills, and only whoever changes them runs
+skill-graft. Keep path sources inside the project (`path = "../../skills"`) and the rest git sources: the lock then
+records them relative to the package and reads the same on every machine; a path outside the project is recorded
+absolute.
 
 ## Checking a package
 
@@ -270,7 +276,7 @@ cp -r base edited
 LC_ALL=C diff -ruN base/ edited/ > ~/.apm/skill-graft/patches/second.patch
 ```
 
-Then list it, after the skill's earlier patches:
+Then list it, after the skill's earlier patches, and run `skill-graft resolve`:
 
 ```toml
 [patches]

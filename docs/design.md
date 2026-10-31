@@ -15,12 +15,24 @@ home folder, else the user scope's (ADR 0004).
 | `skill-graft.lock`    | `resolve`, `build`, `update`, and the editing commands | provenance: resolved shas, the hull and its edges, hashes   |
 | `patches/`            | the user                                               | unified diffs for content changes                           |
 | `apm.yml`             | `init`                                                 | `name` and `version`, nothing else                          |
-| `.apm/skills/<name>/` | `build`                                                | the vendored, patched, renamed skills                       |
+| `.apm/skills/<name>/` | `resolve`, `build`, `update`, and the editing commands | the vendored, patched, renamed skills                       |
+| `.gitattributes`      | `resolve`, `build`, `update`, and the editing commands | `-text` for `.apm/skills/` and `patches/`, if missing       |
 
-`build --into <dir>` writes the lock and `.apm/skills/` into `<dir>` instead, leaving the package as it is.
+`build --into <dir>` writes the lock and `.apm/skills/` into `<dir>` instead, leaving the package as it is, and writes
+no `.gitattributes`.
 
 `resolve` never rewrites `skill-graft.toml`. Commands that edit it on purpose use `tomlkit`, so comments and formatting
-survive. The lock is output only: never an input that overrides the TOML.
+survive. `build` deploys what the lock records (ADR 0009): `resolve`, `update` and the editing commands are how a change
+gets in. Each writes `.apm/skills/` and the lock together, through `commands/transaction.py`: it stages the copies in
+`.apm/skills.new/` while the patched folders exist, then, after the TOML, swaps them in (the previous ones to
+`.apm/skills.old/`) and writes the lock; on any failure the swap is undone and the TOML restored. A run killed mid-swap
+is recovered by the next writing one: `skills.old` is kept when it holds exactly the lock's copies, else `skills`. Every
+command that vendors first checks `.apm/skills/` against the lock and refuses, writing nothing, a copy whose hash
+differs from the lock's (a stray file included), a folder the lock lists no skill under, and a file directly in it,
+saying to move the edit into a patch or delete the folder; a copy the lock lists that is missing is vendored again.
+Without a lock it can read, of version 1, non-empty copies cannot be checked: the error says to delete `.apm/skills/`
+and run `resolve`. `.gitattributes` keeps git from converting the committed copies' and patches' line endings, which
+would read as edits; one the user wrote is left as it is.
 
 Git sources are cached outside the package, under `$XDG_CACHE_HOME/skill-graft/` (else `~/.cache/skill-graft/`): one
 bare repository per URL and one export per commit and `subdirectory`, the committed bytes exactly: a **Source** with a
@@ -72,12 +84,13 @@ path = "~/Documents/sync/2_areas/software/chisel_skill"
   Without `apm` on `PATH`, creates nothing and says to run `init` again once APM is installed. `init --project` does the
   same in `./.apm/skill-graft/`, registering it with `apm install ./.apm/skill-graft` run there; refused in the home
   folder, and if APM leaves it unregistered, the folder is removed again. Refusing an existing folder it names the same
-  command, and the folder to run it in.
+  command, and the folder to run it in. When APM fails after listing a project package, the folder stays and `init` says
+  to fix that, then run `resolve`, then `build`.
 - `add <skill-id>…`, `remove <skill-id>…`, `rename <skill-id> <name>`, `bind <alias>/<name> <target>`,
   `unbind <alias>/<name>`: resolve the edited config in memory and only if that succeeds write the TOML (in place, as
-  `update` does), then the lock, and print what `resolve` prints. Notices go to stderr with the warnings. Never build.
-  An edit that changes nothing (every skill ID already an entry, the current deployed name, the current bind) prints
-  only its notices and neither resolves nor writes.
+  `update` does), then `.apm/skills/` and the lock together, as `resolve` does, and print what `resolve` prints. Notices
+  go to stderr with the warnings. Never run APM. An edit that changes nothing (every skill ID already an entry, the
+  current deployed name, the current bind) prints only its notices and neither resolves nor writes.
 - `add` appends each skill ID to `entries` (creating the key before the first table if absent). An unknown alias or
   skill is an error; one already an entry is a notice and left alone; one already in the hull is added with a notice
   naming the skill that reaches it from the other entries.
@@ -96,28 +109,37 @@ path = "~/Documents/sync/2_areas/software/chisel_skill"
   before anything else, as `rename` checks its skill, reading only its source, so the current value is a notice only
   while its target exists; resolving checks it again, as it checks every bind's. An unused bind gets the usual warning.
 - `unbind` deletes the key, leaving the table; its key is parsed as `bind`'s, and one not in `[bind]` is an error.
-- `resolve`: computes the hull from the TOML, writes the lock, prints the tree, warnings and suggestions. Reads every
-  declared source, each git one at its `ref`, fetching only when that commit is not cached. A git source with
-  `subdirectory` is read only in that folder of the commit, as if it were the root, confined to it as discovery confines
-  a tree; it must be a folder of exactly that name there, with no symlink on the way, else the command fails naming the
-  alias, the subdirectory and the commit. `subdirectory` is relative, without `.`, `..`, empty parts, `.git`, control
-  characters or `.apm/skill-graft`; a path source points `path` at the folder instead.
-- `build`: resolves, writes `.apm/skills/`, then the lock, then runs the same `apm install` as `init`, in the project
-  root for a project package. `--no-install` stops before APM. Fails unless `apm` exits 0 and the scope's `apm.yml`
-  (`~/.apm/apm.yml`, or the project's) lists the package. `--into <dir>` (not with `--no-install`) writes
-  `<dir>/.apm/skills/` and `<dir>/skill-graft.lock` instead, the same lock bytes an in-place build writes, and never
-  runs APM or changes the package. `<dir>` must be an existing, empty folder, not in a package (any `.apm/skill-graft`
-  path, ignoring case), a path source's folder, or in or around the cache; a failed build removes what it wrote there.
-  It prints no hint to `resolve` for prose suggestions, which would rewrite the package's lock; `<dir>`'s lock lists
-  them.
+- `resolve`: computes the hull from the TOML, vendors it into `.apm/skills/` and writes the lock together, prints the
+  tree, warnings and suggestions. Run it after editing the TOML or a patch by hand. Reads every declared source, each
+  git one at its `ref`, fetching only when that commit is not cached. A git source with `subdirectory` is read only in
+  that folder of the commit, as if it were the root, confined to it as discovery confines a tree; it must be a folder of
+  exactly that name there, with no symlink on the way, else the command fails naming the alias, the subdirectory and the
+  commit. `subdirectory` is relative, without `.`, `..`, empty parts, `.git`, control characters or `.apm/skill-graft`;
+  a path source points `path` at the folder instead.
+- `build`: resolves and deploys the hull only if it is the one the lock records, compared parsed, so an editor's comment
+  or line endings are no difference. It refuses, writing nothing and naming `resolve`, a skill whose hash differs (a
+  hand edit to the TOML or a patch, an edited cache export, an upgrade that rewrites differently), any change to the
+  hull's shape (a skill joining or leaving, a deployed name, edge, suggestion or source), and a missing lock or one of
+  another version. A path source's folder is no difference, nor the text of its skills without patches: `build` vendors
+  such a changed skill, writes its new hash, and once the lock is written names it,
+  `<skill id> changed in its path source since skill-graft.lock: deployed as is`. A patched one is checked as a git
+  one's. Then it writes `.apm/skills/` and the lock as `resolve` does and runs the same `apm install` as `init`, in the
+  project root for a project package. `--no-install` stops before APM. Fails unless `apm` exits 0 and the scope's
+  `apm.yml` (`~/.apm/apm.yml`, or the project's) lists the package. `--into <dir>` (not with `--no-install`) writes
+  `<dir>/.apm/skills/` and `<dir>/skill-graft.lock` instead, checked against the package's lock as an in-place build is,
+  the same lock bytes an in-place build writes, and never runs APM or changes the package. `<dir>` must be an existing,
+  empty folder, not in a package (any `.apm/skill-graft` path, ignoring case), a path source's folder, or in or around
+  the cache; a failed build removes what it wrote there. It prints no hint to `resolve` for prose suggestions, which
+  would rewrite the package's lock; `<dir>`'s lock lists them.
 - Writing commands (`init`, `resolve`, `build`, `update`, `add`, `remove`, `rename`, `bind`, `unbind`) first print
   `skill-graft: package: <path>`.
-- `update [source…]`: fetches, resolves at each branch tip, and only if that succeeds writes the lock, and the tips'
-  shas into `ref` when one moved; prints the hull diff (`+` added, `-` removed, `~` changed, against the hull at the
-  current refs if those are cached, never fetching for it) and any failing patch hunks. Under each `+` and `~`, a line
-  per file whose bytes or executable bit differ, its sizes, quoted as git's `core.quotePath` quotes it, a space too,
-  never its text; then each skill whose old side differs from the lock's hash, as edited since the lock was written.
-  `--dry-run` does all of it without writing the TOML, the lock or the cache, and ends with a `review:` hint, or, its
+- `update [source…]`: checks `.apm/skills/` against the lock before contacting any remote, `--dry-run` too; fetches,
+  resolves at each branch tip, and only if that succeeds writes `.apm/skills/` and the lock, and the tips' shas into
+  `ref` when one moved; prints the hull diff (`+` added, `-` removed, `~` changed, against the hull at the current refs
+  if those are cached, never fetching for it) and any failing patch hunks. Under each `+` and `~`, a line per file whose
+  bytes or executable bit differ, its sizes, quoted as git's `core.quotePath` quotes it, a space too, never its text;
+  then each skill whose old side differs from the lock's hash, as edited since the lock was written. `--dry-run` does
+  all of it without writing the TOML, the lock, `.apm/skills/` or the cache, and ends with a `review:` hint, or, its
   diff file written and nothing edited since the lock, an `apply:` line; `nothing to apply` instead when no `ref` moves
   and the lock it would write parses to what the lock file parses to. Its prose-suggestion line says to update, then run
   `resolve`, only when a `ref` moves; else it is `update`'s, `resolve` already seeing those tips. A tip without a
@@ -293,7 +315,7 @@ drift.
   skill-graft's own copy) to `base/` in a fresh `mktemp -d`, outside any repository, deletes `base/.git` if there is
   one, and in `base/`, with no `apply.*` git settings of its own, applies the skill's earlier patches with
   `git apply -p1`; then copies that to `edited/`, edits it and runs
-  `LC_ALL=C diff -ruN base/ edited/ > patches/<name>.patch`, then adds the patch to the key's list.
+  `LC_ALL=C diff -ruN base/ edited/ > patches/<name>.patch`, then adds the patch to the key's list and runs `resolve`.
 - When `update` fails on a hunk, it names each failing skill's upstream folder at the tip (its export in the cache) to
   redo the patch against, after the skill's earlier patches, as above; `ref` stays, and the next `update` moves it once
   the patches apply. Until then `build` at the old `ref` fails too. `--dry-run` writes no cache, so it reports the hunks
@@ -305,13 +327,14 @@ drift.
 
 ## Feedback
 
-The lock (TOML, sorted except `patches`, read back only for `update`'s hashes, the same on every machine for a project
-package whose path sources lie inside the project) records each source's `ref` and `subdirectory`, or folder (in project
-scope relative to the package when inside the project), each hull skill with a SHA-256 of its folder as vendored
-(patches and rewrites applied), its `upstream` folder (relative to its source's root: the cache export, `subdirectory`
-included, or the path source's folder; `why` prints it absolute), its `deployed` name when renamed or prefixed and its
-`patches` in apply order when patched, each edge with its kind (`slash`, `skill-tool`, `prose`) plus `bind = true` when
-a bind decided it, and each prose suggestion with the skills mentioning it, so the explanation is a view of it:
+The lock (TOML, sorted except `patches`, read back by `build`, which deploys only what it records, by every command that
+vendors, to check the copies, and for `update`'s hashes, the same on every machine for a project package whose path
+sources lie inside the project) records each source's `ref` and `subdirectory`, or folder (in project scope relative to
+the package when inside the project), each hull skill with a SHA-256 of its folder as vendored (patches and rewrites
+applied), its `upstream` folder (relative to its source's root: the cache export, `subdirectory` included, or the path
+source's folder; `why` prints it absolute), its `deployed` name when renamed or prefixed and its `patches` in apply
+order when patched, each edge with its kind (`slash`, `skill-tool`, `prose`) plus `bind = true` when a bind decided it,
+and each prose suggestion with the skills mentioning it, so the explanation is a view of it:
 
 - `resolve` prints a tree in the style of `cargo tree`: one line per edge naming the reference as written upstream, each
   skill expanded once and later lines marked `(*)`, a renamed or prefixed skill as `<id> as <deployed name>`, a patched
