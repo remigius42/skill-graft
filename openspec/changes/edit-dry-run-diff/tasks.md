@@ -17,7 +17,7 @@ without a whole command; misses the command's wiring, which the CLI seam covers)
   **Hull**. The header splits into its shared first line and a per-command second line; `_diff_target` into its refusals
   and its removal of an earlier file; `_fetch_hint` takes the command line to name, `update`'s text unchanged. A move,
   no new test: `tests/commands/test_update.py` passes unchanged before and after, `lint-imports` green
-- [ ] 1.2 `explain.tree(hull, marks=None)`: each line prefixed with its target's mark or two spaces when `marks` is
+- [x] 1.2 `explain.tree(hull, marks=None)`: each line prefixed with its target's mark or two spaces when `marks` is
   given, unchanged without. Tests at the `explain.tree` seam in `tests/commands/test_explain.py` (a marked entry, a
   marked child, a `(*)` repeat marked as its skill, no marks unchanged); verify each fails first, then passes
 - [ ] 1.3 The marked tree in every **Deployed diff** file: after the header, the new **Hull**'s tree commented, each

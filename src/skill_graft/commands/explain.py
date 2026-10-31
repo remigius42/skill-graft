@@ -116,17 +116,19 @@ def _outside(hull: Hull, skill: SkillId) -> str:
     return f"`{skill}` is not in the hull{mentions}: `skill-graft add {skill}`"
 
 
-def tree(hull: Hull) -> str:
+def tree(hull: Hull, marks: dict[SkillId, str] | None = None) -> str:
     """The hull as `cargo tree` prints: one line per edge, repeats marked `(*)`.
 
     Each entry expands at the top level; any other skill at its first line. A
     renamed or prefixed skill shows its deployed name, a patched one `(patched)`.
     A prose edge shows only when the build rewrites it; it pulls nothing in, so
-    its target expands elsewhere: `(*)`.
+    its target expands elsewhere: `(*)`. Given `marks`, each line starts with its
+    skill's mark or two spaces.
     """
     children = _shown_edges(hull)
     expanded: set[SkillId] = set()
     lines: list[str] = []
+    targets: list[SkillId] = []  # each line's skill
 
     def expand(skill_id: SkillId, prefix: str) -> None:
         expanded.add(skill_id)
@@ -143,12 +145,16 @@ def tree(hull: Hull) -> str:
                 f"{_node_label(hull, edge.target)} ({_edge_label(edge)})"
             )
             lines.append(line + (" (*)" if repeat else ""))
+            targets.append(edge.target)
             if not repeat:
                 expand(edge.target, prefix + ("    " if last else "│   "))
 
     for entry in hull.entries:
         lines.append(_node_label(hull, entry))
+        targets.append(entry)
         expand(entry, "")
+    if marks is not None:
+        lines = [f"{marks.get(s, ' ')} {line}" for s, line in zip(targets, lines)]
     return "".join(f"{line}\n" for line in lines)
 
 

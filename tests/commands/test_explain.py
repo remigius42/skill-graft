@@ -13,7 +13,9 @@ from conftest import Upstream, configure, make_patch, seed, skill, write_config
 
 from skill_graft.cli import main
 from skill_graft.commands import explain
+from skill_graft.infra import paths
 from skill_graft.infra.cache import Cache
+from skill_graft.pipeline import compute, config
 
 Capsys: TypeAlias = pytest.CaptureFixture[str]
 
@@ -525,6 +527,57 @@ def test_tree_fails_on_a_failing_patch(
     out, err = capsys.readouterr()
     assert out == ""
     assert "patches/tdd.patch: SKILL.md: hunk" in err
+
+
+def marked(marks: dict[str, str] | None) -> str:
+    """`explain.tree` of the config's hull, each skill ID in `marks` marked."""
+    scope = paths.Scope(Path.home())
+    with compute.compute_hull(scope, config.load(scope), Cache.default()) as hull:
+        if marks is None:
+            return explain.tree(hull)
+        ids = {str(s): s for s in hull.skills}
+        return explain.tree(hull, {ids[s]: mark for s, mark in marks.items()})
+
+
+def test_tree_marks_an_entry(home: Path) -> None:
+    skill(home / "mp" / "tdd")
+    skill(home / "mp" / "notes")
+    configure(["mp/tdd", "mp/notes"], mp="~/mp")
+
+    assert marked({"mp/tdd": "+"}) == "+ mp/tdd\n  mp/notes\n"
+
+
+def test_tree_marks_a_child(home: Path) -> None:
+    skill(home / "mp" / "tdd", "/grilling\n")
+    skill(home / "mp" / "grilling", "/notes\n")
+    skill(home / "mp" / "notes")
+    configure(["mp/tdd"], mp="~/mp")
+
+    assert marked({"mp/tdd": "~", "mp/notes": "+"}) == (
+        "~ mp/tdd\n  └── mp/grilling (/grilling)\n+     └── mp/notes (/notes)\n"
+    )
+
+
+def test_tree_marks_a_repeat_as_its_skill(home: Path) -> None:
+    skill(home / "mp" / "tdd", "/grilling, /notes\n")
+    skill(home / "mp" / "grilling", "/notes\n")
+    skill(home / "mp" / "notes")
+    configure(["mp/tdd"], mp="~/mp")
+
+    assert marked({"mp/notes": "+"}) == (
+        "  mp/tdd\n"
+        "  ├── mp/grilling (/grilling)\n"
+        "+ │   └── mp/notes (/notes)\n"
+        "+ └── mp/notes (/notes) (*)\n"
+    )
+
+
+def test_tree_without_marks_unchanged(home: Path) -> None:
+    skill(home / "mp" / "tdd", "/grilling\n")
+    skill(home / "mp" / "grilling")
+    configure(["mp/tdd"], mp="~/mp")
+
+    assert marked(None) == "mp/tdd\n└── mp/grilling (/grilling)\n"
 
 
 def test_why_names_a_path_sources_upstream_folder(home: Path, capsys: Capsys) -> None:
