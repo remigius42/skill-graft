@@ -306,6 +306,15 @@ def test_no_command_combines_cd_with_a_redirection() -> None:
     assert "from `<work>`" not in text.lower()
 
 
+def test_no_command_opens_a_brace_group() -> None:
+    # Claude Code's Bash guard refuses a `{ ...; }` group as one it cannot check;
+    # an awk program's braces sit inside its quotes, after no `|`, `;` or `&`.
+    text = (SKILLS / "graft-check" / "SKILL.md").read_text()
+    blocks = [block.split("```")[0] for block in text.split("```sh\n")[1:]]
+
+    assert [b for b in blocks if re.search(r"(^|[|;&]\s*)\{\s", b, re.M)] == []
+
+
 def test_probe_runs_as_every_reader_runs() -> None:
     text = " ".join((SKILLS / "graft-check" / "SKILL.md").read_text().split())
     step = text[text.index("## 1. Hardened or not") : text.index("## 2. Throwaway")]
@@ -317,7 +326,7 @@ def test_probe_runs_as_every_reader_runs() -> None:
 def error_line(tmp_path: Path, err: str, out: str) -> str:
     """What the skill shows of a failed reader or patcher that wrote `err` and `out`:
     step 4 and step 6 show it alike."""
-    reader, patcher = commands("{ cat <err>; echo; cat <out>; }")
+    reader, patcher = commands("echo | cat <err> - <out>")
     assert reader == patcher
     (tmp_path / "err").write_text(err)
     (tmp_path / "out").write_text(out)
@@ -801,7 +810,7 @@ def test_failed_reader_shows_its_error_line(tmp_path: Path) -> None:
     text = " ".join((SKILLS / "graft-check" / "SKILL.md").read_text().split())
     read, report = text.index("## 4. Read"), text.index("## 5. Report")
 
-    assert "{ cat <err>; echo; cat <out>; }" in text[read:report]
+    assert "echo | cat <err> - <out>" in text[read:report]
     assert (
         "A non-zero exit means that **Skill** has no report: show its error line"
         in (text[read:report])

@@ -186,7 +186,7 @@ Hardened, each reader is its own `claude` process:
    quoted text.
 
    ```sh
-   { cat <err>; echo; cat <out>; } | LC_ALL=C tr -cd '\040-\176\n' | grep -m 1 . | cut -c 1-200
+   echo | cat <err> - <out> | LC_ALL=C tr -cd '\040-\176\n' | grep -m 1 . | cut -c 1-200
    ```
 
    On exit 0, run the report filter on the reply, with `<mode>` the reader's, `<skill id>` its `skill`, and each of its
@@ -271,7 +271,7 @@ Take the fixes one at a time: ask, and apply only on yes. Run only the commands 
      printable ASCII only, at most 200 characters, as quoted text.
 
      ```sh
-     { cat <err>; echo; cat <out>; } | LC_ALL=C tr -cd '\040-\176\n' | grep -m 1 . | cut -c 1-200
+     echo | cat <err> - <out> | LC_ALL=C tr -cd '\040-\176\n' | grep -m 1 . | cut -c 1-200
      ```
 
   1. `(cd <work> && cp -r edited <base-dir>)`. Then, in `<base-dir>`, count the file names holding a control character,
