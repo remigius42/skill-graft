@@ -18,6 +18,7 @@ from conftest import (
 )
 
 from skill_graft.cli import main
+from skill_graft.commands import explain
 from skill_graft.infra import paths
 from skill_graft.infra.cache import Cache
 from skill_graft.pipeline import lock
@@ -1139,6 +1140,35 @@ def test_failed_edit_leaves_no_diff_file(home: Path, capsys: Capsys) -> None:
     assert main(["add", "mp/notes", "--dry-run", "--diff", "review.diff"]) == 1
 
     assert not (home / "review.diff").exists()
+
+
+def test_refused_edit_leaves_no_diff_file(home: Path, capsys: Capsys) -> None:
+    mp_skills(home, "tdd")
+    write_config('entries = ["mp/tdd"]\n' + SOURCES)
+    (home / "review.diff").write_text(HEADER)
+
+    assert main(["remove", "mp/typo", "--diff", "review.diff"]) == 1
+
+    assert "`mp/typo` is no entry" in capsys.readouterr().err
+    assert not (home / "review.diff").exists()
+
+
+def test_failure_after_the_writes_keeps_the_diff_file(
+    home: Path, capsys: Capsys, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    mp_skills(home, "tdd", "notes")
+    write_config('entries = ["mp/tdd"]\n' + SOURCES)
+    assert main(["resolve"]) == 0
+
+    def broken_pipe(hull: object) -> None:  # as `… | head -1` would
+        raise BrokenPipeError
+
+    monkeypatch.setattr(explain, "show", broken_pipe)
+
+    assert main(["add", "mp/notes", "--diff", "review.diff"]) == 1
+
+    assert entries(home) == ["mp/tdd", "mp/notes"]
+    assert (home / "review.diff").read_text().startswith(HEADER)
 
 
 def test_no_op_edit_keeps_the_diff_file(home: Path, capsys: Capsys) -> None:

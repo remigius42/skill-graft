@@ -12,11 +12,13 @@ without a whole command; misses the command's wiring, which the CLI seam covers)
 ## 1. Shared review code
 
 - [x] 1.1 Move `HEADER`, `_diff_target`, `_fetch_hint`, the **Hull diff** lines and the file assembly out of
-  `commands/update.py` into a new `commands/review.py`, which `update.py` imports. The old side becomes one object:
-  hashes by **Skill ID**, a view on demand, an upstream folder for the source line; `update` builds it from its old
-  **Hull**. The header splits into its shared first line and a per-command second line; `_diff_target` into its refusals
-  and its removal of an earlier file; `_fetch_hint` takes the command line to name, `update`'s text unchanged. A move,
-  no new test: `tests/commands/test_update.py` passes unchanged before and after, `lint-imports` green
+  `commands/update.py` into a new `commands/review.py`, which `update.py` imports. The old side becomes one object,
+  `review.Before`: hashes by **Skill ID**, a view on demand, an upstream folder for the source line, each git
+  **Source**'s **Ref**; `update` builds it from its old **Hull**. The header splits into its shared first line
+  (`review.FIRST`) and a per-command second line (`review.header`); `_diff_target` into its refusals
+  (`review.check_target`) and its removal of an earlier file (`review.clear`); `_fetch_hint` becomes
+  `review.fetch_hint(error, tmp, fetch)`, taking the text to show, `update`'s text unchanged. A move, no new test:
+  `tests/commands/test_update.py` passes unchanged before and after, `lint-imports` green
 - [x] 1.2 `explain.tree(hull, marks=None)`: each line prefixed with its target's mark or two spaces when `marks` is
   given, unchanged without. Tests at the `explain.tree` seam in `tests/commands/test_explain.py` (a marked entry, a
   marked child, a `(*)` repeat marked as its skill, no marks unchanged); verify each fails first, then passes
@@ -38,18 +40,19 @@ without a whole command; misses the command's wiring, which the CLI seam covers)
   the temporary folder and the layered cache at each command's top, before `compute.known`; `write=False`; the **Hull
   diff** before the tree, from `lock.skill_hashes`, set as `resolution.hashes`; the `review:` hint without `--diff`, its
   arguments `shlex.quote`d; the hint and the `dry run:` line registered on the stack only past the no-op check, so they
-  print last on stdout and a no-op prints only its notices; `_fetch_hint` naming the command on a `PatchError`; no prune
-  in `cli.py`; a plain edit's output unchanged. Tests at the CLI seam in `tests/commands/test_edit.py` for every
-  scenario of "Edit dry run writes nothing" and "Edit reports the hull diff"; verify each fails first, then passes
+  print last on stdout and a no-op prints only its notices; `review.fetch_hint` naming the command on a `PatchError` (in
+  2.4 this machinery moved into `review.Run` and `review.running`, shared with `resolve`); no prune in `cli.py`; a plain
+  edit's output unchanged. Tests at the CLI seam in `tests/commands/test_edit.py` for every scenario of "Edit dry run
+  writes nothing" and "Edit reports the hull diff"; verify each fails first, then passes
 
 - [x] 2.3 `--diff <file>` for the five: `review`'s refusals before anything else; an earlier file removed past the no-op
-  check, before resolving; the **Hull diff** printed as with `--dry-run`; the file built inside `resolving`, written
-  last in a dry run, else a write before the TOML, undone with it; the header's second line, the marked tree escaped,
-  each `+` and `~` **Skill**'s source line with the lock's and the new `ref`, `old -> new` when they differ, old and new
-  upstream folder, and its diff. Tests at the CLI seam for every scenario of "Edit deployed diff file"; verify each
-  fails first, then passes
+  check, before resolving, and on any failure; the **Hull diff** printed as with `--dry-run`; the file built inside
+  `resolving`, written last in a dry run, else a write before the TOML, undone with it; the header's second line, the
+  marked tree escaped, each `+` and `~` **Skill**'s source line with the lock's `ref`, quoted, and the new one,
+  `old -> new` when they differ, the new alone when the lock records none, old and new upstream folder, and its diff.
+  Tests at the CLI seam for every scenario of "Edit deployed diff file"; verify each fails first, then passes
 
-- [ ] 2.4 `resolve --dry-run` and `--diff <file>` in `cli.py` and `resolve.resolve`, through the same code, with its own
+- [x] 2.4 `resolve --dry-run` and `--diff <file>` in `cli.py` and `resolve.resolve`, through the same code, with its own
   header line. Tests at the CLI seam in `tests/commands/test_resolve.py` for every scenario of "Resolve dry run and
   diff"; verify each fails first, then passes
 

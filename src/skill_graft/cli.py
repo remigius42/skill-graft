@@ -162,7 +162,7 @@ def _parser() -> tuple[_Parser, dict[str, argparse.ArgumentParser]]:
             "register it with `apm install ./.apm/skill-graft` here"
         ),
     )
-    commands.add_parser(
+    resolve = commands.add_parser(
         "resolve",
         help="compute the hull, vendor it, write the lock, and show the tree",
         description=(
@@ -341,7 +341,7 @@ def _parser() -> tuple[_Parser, dict[str, argparse.ArgumentParser]]:
         ),
     )
     unbind.add_argument("key", metavar="alias/name", help="<source alias>/<name>")
-    for staging in (add, remove, rename, bind, unbind):
+    for staging in (resolve, add, remove, rename, bind, unbind):
         _review_options(staging)
     help_parser = commands.add_parser(
         "help",
@@ -472,7 +472,7 @@ def _main(argv: list[str] | None) -> int:
                 mermaid = args.format == "mermaid"
                 explain.show_tree(current, warnings, mermaid, args.link)
             elif args.command == "resolve":
-                resolve.resolve(current, warnings)
+                resolve.resolve(current, warnings, args.dry_run, args.diff)
             elif args.command == "build":
                 build.build(current, warnings, args.into, args.no_install)
         status = 0

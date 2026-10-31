@@ -3,11 +3,9 @@
 Each edit resolves the edited text first and writes nothing unless it resolves.
 """
 
-import shlex
-import tempfile
 from collections import deque
 from collections.abc import Generator
-from contextlib import ExitStack, contextmanager
+from contextlib import contextmanager
 from pathlib import Path
 from typing import cast
 
@@ -16,12 +14,13 @@ from tomlkit.items import Array, Table
 
 from skill_graft.commands import explain, review, transaction
 from skill_graft.infra import files, paths
-from skill_graft.infra.cache import Cache
 from skill_graft.infra.errors import SkillGraftError, notice
-from skill_graft.pipeline import compute, config, lock
+from skill_graft.pipeline import compute, config
 from skill_graft.pipeline.config import SkillId
-from skill_graft.pipeline.hull import Hull, PatchError
+from skill_graft.pipeline.hull import Hull
 
+# What an edit's dry run does not write.
+WRITTEN = "skill-graft.toml, skill-graft.lock and .apm/skills/"
 # Its header: what an edit's `--diff` compares.
 HEADER = review.header(
     "the Vendored copies against what the edited config would vendor"
@@ -66,12 +65,12 @@ def add(
     diff: Path | None = None,
 ) -> None:
     """Appends each skill ID to `entries`."""
-    with _running(["add", *skills], dry_run, diff) as run:
+    with review.running(["add", *skills], dry_run, diff, WRITTEN) as run:
         _add(scope, warnings, skills, run)
 
 
 def _add(
-    scope: paths.Scope, warnings: list[str], skills: list[str], run: "_Run"
+    scope: paths.Scope, warnings: list[str], skills: list[str], run: review.Run
 ) -> None:
     with _reading(scope, warnings) as (document, _):
         if "entries" not in document:
@@ -86,7 +85,7 @@ def _add(
                 added.append(text)
         if not added:
             return
-        run.edits()
+        run.proceed()
         hull = _finish(scope, warnings, document, run)
     # The hull before the edit: what the other entries reach.
     parents = _reach(hull, [e for e in hull.entries if str(e) not in added])
@@ -103,12 +102,12 @@ def remove(
     diff: Path | None = None,
 ) -> None:
     """Deletes each skill ID from `entries`."""
-    with _running(["remove", *skills], dry_run, diff) as run:
+    with review.running(["remove", *skills], dry_run, diff, WRITTEN) as run:
         _remove(scope, warnings, skills, run)
 
 
 def _remove(
-    scope: paths.Scope, warnings: list[str], skills: list[str], run: "_Run"
+    scope: paths.Scope, warnings: list[str], skills: list[str], run: review.Run
 ) -> None:
     with _reading(scope, warnings) as (document, _):
         array = cast(Array, document.get("entries", tomlkit.array()))
@@ -116,7 +115,7 @@ def _remove(
             if text not in array:
                 raise SkillGraftError(f"`{text}` is no entry")
             array.remove(text)
-        run.edits()
+        run.proceed()
         hull = _finish(scope, warnings, document, run)
     parents = _reach(hull, hull.entries)  # the remaining entries
     for skill, parent in parents.items():
@@ -133,12 +132,12 @@ def rename(
     diff: Path | None = None,
 ) -> None:
     """Sets the skill's `[rename]` value to `name`."""
-    with _running(["rename", text, name], dry_run, diff) as run:
+    with review.running(["rename", text, name], dry_run, diff, WRITTEN) as run:
         _rename(scope, warnings, text, name, run)
 
 
 def _rename(
-    scope: paths.Scope, warnings: list[str], text: str, name: str, run: "_Run"
+    scope: paths.Scope, warnings: list[str], text: str, name: str, run: review.Run
 ) -> None:
     with _reading(scope, warnings) as (document, loaded):
         if not config.NAME.fullmatch(name):  # before looking anything up
@@ -158,7 +157,7 @@ def _rename(
             del table[text]
         else:
             table[text] = name
-        run.edits()
+        run.proceed()
         _finish(scope, warnings, document, run)
 
 
@@ -171,12 +170,12 @@ def bind(
     diff: Path | None = None,
 ) -> None:
     """Sets `[bind]` key `key` to the skill ID `target`, or to `false`."""
-    with _running(["bind", key, target], dry_run, diff) as run:
+    with review.running(["bind", key, target], dry_run, diff, WRITTEN) as run:
         _bind(scope, warnings, key, target, run)
 
 
 def _bind(
-    scope: paths.Scope, warnings: list[str], key: str, target: str, run: "_Run"
+    scope: paths.Scope, warnings: list[str], key: str, target: str, run: review.Run
 ) -> None:
     with _reading(scope, warnings) as (document, loaded):
         skill = config.parse_skill_id("bind", key, loaded.sources)
@@ -196,7 +195,7 @@ def _bind(
         if "bind" not in document:
             document.add("bind", tomlkit.table())
         cast(Table, document["bind"])[key] = False if target == "false" else target
-        run.edits()
+        run.proceed()
         _finish(scope, warnings, document, run)
 
 
@@ -208,17 +207,17 @@ def unbind(
     diff: Path | None = None,
 ) -> None:
     """Deletes `[bind]` key `key`, leaving the table."""
-    with _running(["unbind", key], dry_run, diff) as run:
+    with review.running(["unbind", key], dry_run, diff, WRITTEN) as run:
         _unbind(scope, warnings, key, run)
 
 
-def _unbind(scope: paths.Scope, warnings: list[str], key: str, run: "_Run") -> None:
+def _unbind(scope: paths.Scope, warnings: list[str], key: str, run: review.Run) -> None:
     with _reading(scope, warnings) as (document, loaded):
         # Parsed first, so a malformed key or undeclared alias is said so, as by `bind`.
         if config.parse_skill_id("unbind", key, loaded.sources) not in loaded.binds:
             raise SkillGraftError(f"`{key}` is not bound")
         del cast(Table, document["bind"])[key]
-        run.edits()
+        run.proceed()
         _finish(scope, warnings, document, run)
 
 
@@ -249,7 +248,7 @@ def _finish(
     scope: paths.Scope,
     warnings: list[str],
     document: tomlkit.TOMLDocument,
-    run: "_Run",
+    run: review.Run,
 ) -> Hull:
     """Resolves the edited config; only if it resolves, writes it and the lock,
     leaving neither changed if the lock fails. A dry run writes neither, and
@@ -258,88 +257,14 @@ def _finish(
     # Relative paths start where `load` starts them, even for a symlinked file.
     loaded = config.parse(scope, text)
     warnings.extend(loaded.warnings)
-    shown = {}
-    text = ""  # the Deployed diff, built before any write
-    target = run.target
     with transaction.resolving(
         scope, loaded, warnings, run.cache, write=not run.dry_run
     ) as resolution:
-        if run.dry_run or target is not None:  # while the patched copies exist
-            hull = resolution.hull
-            hashes = resolution.hashes = lock.skill_hashes(hull)
-            before = review.vendored(scope.skills, lock.load(scope.lock_file))
-            shown = review.print_diff(before, hull, hashes)
-            if target is not None:
-                text = review.deployed_diff(
-                    HEADER, loaded, {}, before, hull, hashes, shown, []
-                )
-        if not run.dry_run and target is not None:  # first: undone with the rest
-            resolution.writes.append(
-                (target, lambda: files.atomic_write(target, text.encode()))
-            )
+        review.stage(run, scope, loaded, resolution, HEADER)
         resolution.writes.append(
             (scope.config_file.resolve(), lambda: write(scope, document))
         )
-    run.changed = bool(shown)
+    run.committed = True
     explain.show(resolution.hull)
-    if run.dry_run and target is not None:
-        files.atomic_write(target, text.encode())
+    review.finish(run)
     return resolution.hull
-
-
-class _Run:
-    """One edit's run: its cache, a dry run's layered over a temporary folder the
-    run removes; `--diff`'s file, refused if bad before anything else; and the
-    lines a dry run prints last."""
-
-    def __init__(
-        self, stack: ExitStack, command: list[str], dry_run: bool, diff: Path | None
-    ) -> None:
-        self.target = None if diff is None else review.check_target(diff)
-        self.stack = stack
-        self.command = " ".join(shlex.quote(arg) for arg in command)
-        self.dry_run = dry_run
-        self.cache = Cache.default()
-        self.tmp: Path | None = None
-        self.changed = False  # whether the Hull diff marks a skill `+` or `~`
-        if dry_run:
-            self.tmp = Path(
-                stack.enter_context(tempfile.TemporaryDirectory(prefix="skill-graft-"))
-            )
-            self.cache = Cache(self.tmp, self.cache)
-
-    def edits(self) -> None:
-        """Past the no-op check: removes an earlier Deployed diff, so a failing run
-        leaves none; registers a dry run's last lines, the hint first, printed
-        even on a failure."""
-        if self.target is not None:
-            review.clear(self.target)
-        if not self.dry_run:
-            return
-        self.stack.callback(
-            print,
-            "dry run: skill-graft.toml, skill-graft.lock and .apm/skills/ not written",
-        )
-        self.stack.callback(self._hint)
-
-    def _hint(self) -> None:
-        if self.changed and self.target is None:
-            print(f"review: skill-graft {self.command} --dry-run --diff <file>")
-
-
-@contextmanager
-def _running(command: list[str], dry_run: bool, diff: Path | None) -> Generator[_Run]:
-    """The run of the edit `command` names; a failing patch named, in a dry run,
-    with how to keep what it fetched."""
-    with ExitStack() as stack:
-        run = _Run(stack, command, dry_run, diff)
-        try:
-            yield run
-        except PatchError as error:
-            if run.tmp is None:
-                raise
-            keep = (
-                f"run `skill-graft {run.command}` without `--dry-run` "
-                "to keep what it fetched"
-            )
-            raise review.fetch_hint(error, run.tmp, keep) from None

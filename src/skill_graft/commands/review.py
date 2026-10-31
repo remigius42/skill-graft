@@ -2,14 +2,18 @@
 the Deployed diff file `--diff` writes."""
 
 import os
+import shlex
 import stat
-from collections.abc import Callable
+import tempfile
+from collections.abc import Callable, Generator
+from contextlib import ExitStack, contextmanager
 from dataclasses import dataclass
 from pathlib import Path
 from typing import Any
 
 from skill_graft.commands import explain, transaction
-from skill_graft.infra import paths
+from skill_graft.infra import files, paths
+from skill_graft.infra.cache import Cache
 from skill_graft.infra.errors import SkillGraftError
 from skill_graft.pipeline import deployed, hidden, lock, rename
 from skill_graft.pipeline.config import Config, GitSource, SkillId
@@ -253,3 +257,110 @@ def _source_line(
     )
     shown = " -> ".join(folders) if len(set(folders)) > 1 else folders[-1]
     return f"# source {skill.alias}: {refs}; upstream folder {shown}\n"
+
+
+class Run:
+    """One run of a command that writes the lock: its cache, a dry run's layered
+    over a temporary folder the run removes; `--diff`'s file, refused if bad before
+    anything else; and the lines a dry run prints last."""
+
+    def __init__(
+        self,
+        stack: ExitStack,
+        command: list[str],
+        dry_run: bool,
+        diff: Path | None,
+        written: str,
+    ) -> None:
+        self.target = None if diff is None else check_target(diff)
+        self.stack = stack
+        self.command = " ".join(shlex.quote(arg) for arg in command)
+        self.dry_run = dry_run
+        self.written = written
+        self.cache = Cache.default()
+        self.tmp: Path | None = None
+        self.shown: dict[SkillId, tuple[deployed.View, deployed.View]] = {}
+        self.text = ""  # the Deployed diff, built before any write
+        self.changed = False  # whether the Hull diff marks a skill `+` or `~`
+        # Whether the writes went through: a later failure keeps the Deployed diff.
+        self.committed = False
+        if dry_run:
+            self.tmp = Path(
+                stack.enter_context(tempfile.TemporaryDirectory(prefix="skill-graft-"))
+            )
+            self.cache = Cache(self.tmp, self.cache)
+
+    def proceed(self) -> None:
+        """Past the command's no-op check: removes an earlier Deployed diff, so a
+        failing run leaves none; registers a dry run's last lines, the hint first,
+        printed even on a failure."""
+        if self.target is not None:
+            clear(self.target)
+        if not self.dry_run:
+            return
+        self.stack.callback(print, f"dry run: {self.written} not written")
+        self.stack.callback(self._hint)
+
+    def _hint(self) -> None:
+        if self.changed and self.target is None:
+            print(f"review: skill-graft {self.command} --dry-run --diff <file>")
+
+
+@contextmanager
+def running(
+    command: list[str], dry_run: bool, diff: Path | None, written: str
+) -> Generator[Run]:
+    """The run of `command`, whose dry run writes none of `written`; on any
+    failure, no Deployed diff left; a failing patch named, in a dry run, with how
+    to keep what it fetched."""
+    with ExitStack() as stack:
+        run = Run(stack, command, dry_run, diff, written)
+        try:
+            try:
+                yield run
+            except PatchError as error:
+                if run.tmp is None:
+                    raise
+                keep = (
+                    f"run `skill-graft {run.command}` without `--dry-run` "
+                    "to keep what it fetched"
+                )
+                raise fetch_hint(error, run.tmp, keep) from None
+        except BaseException:
+            if run.target is not None and not run.committed:
+                clear(run.target)
+            raise
+
+
+def stage(
+    run: Run,
+    scope: paths.Scope,
+    loaded: Config,
+    resolution: transaction.Resolution,
+    head: str,
+) -> None:
+    """Inside `resolving`, while the patched copies exist: with `--dry-run` or
+    `--diff`, prints the Hull diff of the copies against the hull and builds the
+    Deployed diff under `head`; in a real run, its write comes first of the
+    caller's, so a later failure undoes it."""
+    target = run.target
+    if not run.dry_run and target is None:
+        return
+    hull = resolution.hull
+    hashes = resolution.hashes = lock.skill_hashes(hull)
+    before = vendored(scope.skills, lock.load(scope.lock_file))
+    run.shown = print_diff(before, hull, hashes)
+    if target is None:
+        return
+    run.text = deployed_diff(head, loaded, {}, before, hull, hashes, run.shown, [])
+    if not run.dry_run:
+        resolution.writes.append(
+            (target, lambda: files.atomic_write(target, run.text.encode()))
+        )
+
+
+def finish(run: Run) -> None:
+    """After the writes: a dry run's Deployed diff, written last."""
+    run.changed = bool(run.shown)
+    if run.dry_run and run.target is not None:
+        files.atomic_write(run.target, run.text.encode())

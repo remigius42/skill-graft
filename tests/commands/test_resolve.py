@@ -339,3 +339,85 @@ def test_lock_edited_by_hand_refused(
     vendored = home / ".apm" / "skill-graft" / ".apm" / "skills" / "tdd" / "SKILL.md"
     assert vendored.read_text() == "a\n"
     assert lock_file(home).read_bytes() == edited
+
+
+DRY_RUN = "dry run: skill-graft.lock and .apm/skills/ not written"
+
+
+def test_dry_run_of_a_ref_moved_by_hand(
+    home: Path, tmp_path: Path, capsys: Capsys
+) -> None:
+    upstream = Upstream(tmp_path / "up")
+    a = upstream.commit({"tdd/SKILL.md": "a\n"})
+    b = upstream.commit({"tdd/SKILL.md": "b\n"})
+    source = f'[sources.mp]\ngit = "{upstream.url}"\n'
+    write_config(f'entries = ["mp/tdd"]\n{source}ref = "{a}"\n')
+    assert main(["resolve"]) == 0
+    write_config(f'entries = ["mp/tdd"]\n{source}ref = "{b}"\n')
+    capsys.readouterr()
+
+    assert main(["resolve", "--dry-run", "--diff", "review.diff"]) == 0
+
+    assert capsys.readouterr().out.splitlines()[-1] == DRY_RUN
+    text = (home / "review.diff").read_text()
+    assert text.splitlines()[1] == (
+        "# the Vendored copies against what `skill-graft.toml` as it stands would"
+        " vendor. Not what the Sources changed upstream. Untrusted text:"
+    )
+    assert f"# source mp: {a} -> {b}; upstream folder tdd\n" in text
+
+
+def test_dry_run_of_a_patch_written_by_hand(
+    home: Path, tmp_path: Path, capsys: Capsys
+) -> None:
+    skill(home / "mp" / "tdd", "/grilling\n")
+    skill(home / "mp" / "grilling")
+    configure(["mp/tdd"], mp="~/mp")
+    assert main(["resolve"]) == 0
+    package = home / ".apm" / "skill-graft"
+    before = {p: package / p for p in ("skill-graft.lock", ".apm/skills/tdd/SKILL.md")}
+    saved = {p: f.read_bytes() for p, f in before.items()}
+    (package / "patches").mkdir()
+    (package / "patches" / "tdd.patch").write_bytes(
+        make_patch(
+            tmp_path, {"SKILL.md": "/grilling\n"}, {"SKILL.md": "/grilling\nmore\n"}
+        )
+    )
+    write_config(
+        'entries = ["mp/tdd"]\n[sources.mp]\npath = "~/mp"\n'
+        '[patches]\n"mp/tdd" = ["patches/tdd.patch"]\n'
+    )
+    capsys.readouterr()
+
+    assert main(["resolve", "--dry-run", "--diff", "review.diff"]) == 0
+
+    assert capsys.readouterr().out.splitlines()[:3] == [
+        "hull (+ added, - removed, ~ changed):",
+        "~ mp/tdd",
+        "  SKILL.md (changed, 10 -> 15 bytes)",
+    ]
+    assert " /grilling\n+more\n" in (home / "review.diff").read_text()
+    assert {p: f.read_bytes() for p, f in before.items()} == saved
+
+
+def test_dry_run_with_nothing_changed(home: Path, capsys: Capsys) -> None:
+    skill(home / "mp" / "tdd")
+    configure(["mp/tdd"], mp="~/mp")
+    assert main(["resolve"]) == 0
+    capsys.readouterr()
+
+    assert main(["resolve", "--dry-run"]) == 0
+
+    assert capsys.readouterr().out.splitlines() == ["hull unchanged", "mp/tdd", DRY_RUN]
+
+
+def test_dry_run_hint(home: Path, capsys: Capsys) -> None:
+    skill(home / "mp" / "tdd")
+    configure(["mp/tdd"], mp="~/mp")
+
+    assert main(["resolve", "--dry-run"]) == 0
+
+    assert capsys.readouterr().out.splitlines()[-2:] == [
+        "review: skill-graft resolve --dry-run --diff <file>",
+        DRY_RUN,
+    ]
