@@ -11,14 +11,21 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 
 - graft-check checks the lock before it reads it, and ends the **Check** on a line skill-graft would not write, naming
   no value and advising to update skill-graft
-- `add`, `remove`, `rename`, `bind`, `unbind` and `resolve` take `--dry-run` and `--diff <file>`, to see what they would
-  vendor before they write it. `--dry-run` prints the **Hull diff** of the **Vendored copies** against what the command
-  would vendor, each changed file named, and writes nothing; `--diff <file>` writes that text as deployed, the
-  **Deployed diff**, to read in an editor. Before the first `add` every **Skill** shows as added
+- `add`, `remove`, `rename`, `bind`, `unbind` and `resolve` take `--dry-run` and `--diff-file <file>`, to see what they
+  would vendor before they write it. `--dry-run` prints the **Hull diff** of the **Vendored copies** against what the
+  command would vendor, each changed file named, and writes nothing; `--diff-file <file>` writes that text as deployed,
+  the **Deployed diff**, to read in an editor. Before the first `add` every **Skill** shows as added
 
 ### Changed
 
-- Each **Deployed diff**, `update --diff`'s too, opens after its header with the **Hull** as `tree` prints it, each
+- **BREAKING**: `build` is now `deploy`, its `--no-install` is `--no-apm-install`, and `update --diff <file>` is
+  `update --diff-file <file>`; the old names exit 2. `deploy --into <dir>` is what `build --into <dir>` was. Options are
+  no longer accepted abbreviated: `--dry` for `--dry-run` exits 2. Upgrade skill-graft first, then update its **Source**
+  (`skill-graft update skill-graft` under `init`'s alias) and run `skill-graft deploy`: a graft-check vendored before
+  this release runs `build --into` and ends with an error, and the new one runs `deploy --into`, which an older
+  skill-graft refuses
+- A **Deployed diff**'s first line names no command; a `review.diff` 0.3.0 wrote is still overwritten
+- Each **Deployed diff**, `update --diff-file`'s too, opens after its header with the **Hull** as `tree` prints it, each
   **Skill** marked `+` added or `~` changed, then a `# - <skill id>` line per removed **Skill**
 - In a hardened `/graft-check`, a reader's reply reaches the main agent only as a report filter shipped with the skill
   admits it: a report in the report shape, at most 100 findings and 200 uses, each value one line of printable ASCII of
@@ -31,13 +38,13 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
   the folder; a git one needs a fork
 - A git **Source**'s `subdirectory` takes those characters only: `subdirectory = "my skills"` is a config error
 - The error for a **Skill** whose name is no path segment writes the name and its path with the same octal escapes
-- `build` deploys only what `skill-graft.lock` records. It refuses, writing nothing and naming `skill-graft resolve`, a
+- `deploy` deploys only what `skill-graft.lock` records. It refuses, writing nothing and naming `skill-graft resolve`, a
   git **Source**'s **Skill** or a patched one whose hash differs from the lock's (the config or a **Patch** edited by
   hand, an edited cache export), any change to the **Hull**'s shape, and a missing lock or one of another `version`. The
   refusal names what differs: each **Skill**, edge (`own/tdd → own/notes (prose) added`), suggestion, deployed name or
   **Source**. A path **Source**'s **Skill** without **Patches** whose text changed is still deployed, and named:
   `<skill> changed in its path source since skill-graft.lock: deployed as is`. After editing `skill-graft.toml` or a
-  **Patch** by hand, run `skill-graft resolve`, then `build`
+  **Patch** by hand, run `skill-graft resolve`, then `deploy`
 - `resolve`, `update` and `add`, `remove`, `rename`, `bind`, `unbind` now write the **Vendored copies** in
   `.apm/skills/` too, together with the lock: on any failure both keep their bytes. Each also writes
   `.apm/skill-graft/.gitattributes` when the **Package** has none, so git keeps the committed copies' and **Patches**'
@@ -49,12 +56,12 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
   to delete `.apm/skills/`, then run `skill-graft resolve`
 - `graft-check` runs `skill-graft resolve` after adding a **Patch** fix, and again after undoing one
 - When APM fails after `init --project` registered the **Package**, `init` says to run `skill-graft resolve`, then
-  `skill-graft build`
+  `skill-graft deploy`
 - Upgrading: a **Package** whose lock a `resolve` or an edit wrote after its last `build` holds copies older than its
   lock, which the first command refuses as edited. Check them, then delete `.apm/skills/` and run `skill-graft resolve`.
   A clone whose copies git already converted, as with `core.autocrlf`, is refused too: once `.gitattributes` is
   committed, delete them and check them out again (`git checkout -- .apm/skill-graft/.apm/skills`), or delete them and
-  run `resolve`. A skill-graft upgrade that renders the lock or rewrites differently makes `build` refuse until
+  run `resolve`. A skill-graft upgrade that renders the lock or rewrites differently makes `deploy` refuse until
   `skill-graft resolve`
 
 ### Fixed

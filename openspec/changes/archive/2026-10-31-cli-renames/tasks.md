@@ -85,7 +85,7 @@ written.
 
 ## 6. Archive
 
-- [ ] 6.1 In the archive commit: in `CHANGELOG.md`'s `[Unreleased]`, every `build` that names the command as it works in
+- [x] 6.1 In the archive commit: in `CHANGELOG.md`'s `[Unreleased]`, every `build` that names the command as it works in
   this release becomes `deploy`, and the Added entry for the edits' and `resolve`'s new option names it `--diff-file`;
   the Upgrading entry's runs made under 0.3.0 ("after its last `build`") keep `build`. Under `### Changed` this entry:
   "**BREAKING**: `build` is now `deploy`, its `--no-install` is `--no-apm-install`, and `update --diff <file>` is

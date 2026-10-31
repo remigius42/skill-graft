@@ -2,8 +2,8 @@
 
 ## Purpose
 
-Fetches git **Sources** into a cache outside the package and reads each at its **Ref**, so a build is the same wherever
-and whenever it runs.
+Fetches git **Sources** into a cache outside the package and reads each at its **Ref**, so vendoring is the same
+wherever and whenever it runs.
 
 ## Requirements
 
@@ -16,8 +16,8 @@ fetches it again. An interrupted clone or export SHALL never be mistaken for a c
 
 #### Scenario: Default location
 
-- **WHEN** `XDG_CACHE_HOME` is unset and `build` reads a git **Source**
-- **THEN** its repository and export are under `~/.cache/skill-graft/`, and `build` writes nothing under
+- **WHEN** `XDG_CACHE_HOME` is unset and `deploy` reads a git **Source**
+- **THEN** its repository and export are under `~/.cache/skill-graft/`, and `deploy` writes nothing under
   `~/.apm/skill-graft/` outside `.apm/skills/` and `skill-graft.lock`
 
 #### Scenario: Shared URL
@@ -27,19 +27,19 @@ fetches it again. An interrupted clone or export SHALL never be mistaken for a c
 
 #### Scenario: Cache deleted
 
-- **WHEN** the user deletes the cache folder and runs `build`
-- **THEN** `build` fetches again and vendors the same files
+- **WHEN** the user deletes the cache folder and runs `deploy`
+- **THEN** `deploy` fetches again and vendors the same files
 
 #### Scenario: Ref vanished, then cache deleted
 
 - **WHEN** `ref` names commit A, A has been read before, the remote's branch was then reset so that A is on no branch,
-  and the user deletes the cache folder and runs `build`
-- **THEN** `build` exits non-zero naming the alias and the `ref`
+  and the user deletes the cache folder and runs `deploy`
+- **THEN** `deploy` exits non-zero naming the alias and the `ref`
 
 #### Scenario: Interrupted checkout
 
 - **WHEN** a previous run left a partial export of the `ref` behind
-- **THEN** the next `build` ignores it, exports the `ref` again, and vendors every file
+- **THEN** the next `deploy` ignores it, exports the `ref` again, and vendors every file
 
 #### Scenario: Concurrent runs
 
@@ -49,7 +49,7 @@ fetches it again. An interrupted clone or export SHALL never be mistaken for a c
 #### Scenario: Interrupted clone
 
 - **WHEN** a previous run was killed while cloning a git **Source** for the first time
-- **THEN** the next `build` clones it again and succeeds
+- **THEN** the next `deploy` clones it again and succeeds
 
 ### Requirement: Hash format of the remote
 
@@ -58,7 +58,7 @@ The cache repository SHALL use the remote's object format, SHA-1 or SHA-256, so 
 #### Scenario: SHA-256 remote
 
 - **WHEN** a git **Source** names a SHA-256 repository and `ref` is a 64-digit commit name in it
-- **THEN** `build` vendors the skills at that commit
+- **THEN** `deploy` vendors the skills at that commit
 
 ### Requirement: Read at the ref
 
@@ -71,13 +71,13 @@ With git 2.44 or later, looking up whether the cache holds a commit or a file SH
 #### Scenario: Upstream moved on
 
 - **WHEN** `ref` names commit A, A has been read before, the remote's branch has moved to commit B, and the user runs
-  `build`
+  `deploy`
 - **THEN** the vendored skills are those at A, the remote is not contacted, and `skill-graft.toml` is unchanged
 
 #### Scenario: Fresh machine
 
 - **WHEN** the cache is empty and `ref` names commit A
-- **THEN** `build` clones the repository and vendors the skills at A
+- **THEN** `deploy` clones the repository and vendors the skills at A
 
 #### Scenario: Ref gone upstream
 
@@ -91,20 +91,20 @@ With git 2.44 or later, looking up whether the cache holds a commit or a file SH
   URL and A with `subdirectory = "y"` for the first time, and the remote is unreachable
 - **THEN** reading `b` exits non-zero naming `b` and the URL
 
-### Requirement: Build needs every ref
+### Requirement: Deploy needs every ref
 
-`build` SHALL fail when any git **Source** has no `ref`, whether or not an **Entry** uses it, naming every such alias
-and telling the user to run the one `skill-graft update` command naming them all. `build` SHALL then write nothing.
+`deploy` SHALL fail when any git **Source** has no `ref`, whether or not an **Entry** uses it, naming every such alias
+and telling the user to run the one `skill-graft update` command naming them all. `deploy` SHALL then write nothing.
 
 #### Scenario: New git source
 
 - **WHEN** `[sources.mp]` has `git` but no `ref`
-- **THEN** `build` exits non-zero naming `mp` and `skill-graft update mp`
+- **THEN** `deploy` exits non-zero naming `mp` and `skill-graft update mp`
 
 #### Scenario: Several new git sources
 
 - **WHEN** `[sources.a]` and `[sources.b]` both have `git` but no `ref`
-- **THEN** `build` exits non-zero naming `a`, `b` and `skill-graft update a b`
+- **THEN** `deploy` exits non-zero naming `a`, `b` and `skill-graft update a b`
 
 ### Requirement: The checkout is the upstream tree
 
@@ -120,7 +120,7 @@ as committed).
 #### Scenario: Skill from git
 
 - **WHEN** commit A of source `mp` holds `skills/tdd/SKILL.md` and `skills/tdd/refs/x.md`, and `mp/tdd` is an **Entry**
-- **THEN** `build` vendors `.apm/skills/tdd/` holding both files, without `.git`
+- **THEN** `deploy` vendors `.apm/skills/tdd/` holding both files, without `.git`
 
 #### Scenario: Attributes ignored
 
@@ -132,7 +132,7 @@ as committed).
 
 - **WHEN** commit A holds `out` as a symlink to a local folder holding `secret/SKILL.md`, and `mp/secret` is an
   **Entry**
-- **THEN** `build` exits non-zero naming `mp/secret`, and nothing local is vendored
+- **THEN** `deploy` exits non-zero naming `mp/secret`, and nothing local is vendored
 
 #### Scenario: SKILL.md linked out of the tree
 
@@ -145,13 +145,13 @@ as committed).
 
 - **WHEN** commit A holds `evil/SKILL.md` as a symlink to `/dev/zero`, and `mp/tdd`, another **Skill** of commit A, is
   the only **Entry**
-- **THEN** `build` finishes and vendors `tdd`
+- **THEN** `deploy` finishes and vendors `tdd`
 
 #### Scenario: SKILL.md linked inside its skill
 
 - **WHEN** commit A holds `tdd/SKILL.md` as a symlink to `tdd/main.md`, whose front matter holds `name: tdd`, and
   `mp/tdd` is an **Entry**
-- **THEN** `build` vendors `.apm/skills/tdd/` with `SKILL.md` holding `main.md`'s content
+- **THEN** `deploy` vendors `.apm/skills/tdd/` with `SKILL.md` holding `main.md`'s content
 
 #### Scenario: Hostile tree
 
@@ -174,7 +174,7 @@ even as targets of a **Reference**.
 
 - **WHEN** commit A of `cp` holds `pstack/skills/tdd/SKILL.md` and `harness/skills/tdd/SKILL.md`,
   `subdirectory = "pstack/skills"`, and `cp/tdd` is an **Entry**
-- **THEN** `build` vendors `pstack/skills/tdd` as `tdd`, without an error about several skills matching
+- **THEN** `deploy` vendors `pstack/skills/tdd` as `tdd`, without an error about several skills matching
 
 #### Scenario: Skill outside the subdirectory
 
@@ -201,7 +201,7 @@ when at that commit the subdirectory is missing, is not a folder, or has a symli
 #### Scenario: Missing at ref
 
 - **WHEN** `subdirectory = "pstack/skills"` and commit A has no `pstack/skills`
-- **THEN** `resolve` and `build` exit non-zero naming the alias, `pstack/skills` and A, and write nothing
+- **THEN** `resolve` and `deploy` exit non-zero naming the alias, `pstack/skills` and A, and write nothing
 
 #### Scenario: A file, not a folder
 
@@ -262,8 +262,8 @@ exported again from the cached repository when next needed, without the remote.
 
 #### Scenario: Export in use kept
 
-- **WHEN** the export of `mp`'s `ref` was last used 31 days ago, and the user runs `build`
-- **THEN** `build` vendors from it, and the export is still in the cache afterwards
+- **WHEN** the export of `mp`'s `ref` was last used 31 days ago, and the user runs `deploy`
+- **THEN** `deploy` vendors from it, and the export is still in the cache afterwards
 
 #### Scenario: Recent export kept
 
@@ -272,8 +272,8 @@ exported again from the cached repository when next needed, without the remote.
 
 #### Scenario: Failed command prunes too
 
-- **WHEN** the cache holds an export last used 31 days ago, and `build` fails on a patch that does not apply
-- **THEN** after `build` the export is gone
+- **WHEN** the cache holds an export last used 31 days ago, and `deploy` fails on a patch that does not apply
+- **THEN** after `deploy` the export is gone
 
 #### Scenario: Leftover removed
 
@@ -293,7 +293,7 @@ exported again from the cached repository when next needed, without the remote.
 #### Scenario: Pruned export read offline
 
 - **WHEN** the export of `mp`'s `ref` was removed as unused, and `mp`'s remote is unreachable
-- **THEN** `build` exports the `ref` again from the cache and vendors the same files
+- **THEN** `deploy` exports the `ref` again from the cache and vendors the same files
 
 ### Requirement: Repositories are kept
 
@@ -308,9 +308,9 @@ its remote and later fetches and git's housekeeping ran: the repository may then
 
 #### Scenario: Ref vanished upstream
 
-- **WHEN** `ref` names commit A, `build` has read A, the remote's branch was then reset so that A is on no branch, the
+- **WHEN** `ref` names commit A, `deploy` has read A, the remote's branch was then reset so that A is on no branch, the
   repository was fetched again and garbage-collected, its export of A was pruned, and the remote is unreachable
-- **THEN** `build` exports A again from the cache and vendors the same files
+- **THEN** `deploy` exports A again from the cache and vendors the same files
 
 ### Requirement: Fetch only what is read
 
@@ -325,19 +325,19 @@ was.
 
 - **WHEN** commit A of `cp` holds `pstack/skills/tdd/SKILL.md` and `harness/big.bin`, `subdirectory = "pstack/skills"`,
   and the cache is empty
-- **THEN** after `build` the cache holds neither the contents of `harness/big.bin` nor an export of it
+- **THEN** after `deploy` the cache holds neither the contents of `harness/big.bin` nor an export of it
 
 #### Scenario: Remote without partial clones
 
 - **WHEN** `[sources.mp]` names a remote that refuses partial clones
-- **THEN** `build` clones it whole and vendors the skills at the `ref`
+- **THEN** `deploy` clones it whole and vendors the skills at the `ref`
 
 #### Scenario: Remote refusing files by name
 
 - **WHEN** `[sources.mp]` names a remote that accepts a partial clone but speaks a protocol that refuses files asked by
   name, and the cache is empty
-- **THEN** `build` vendors the skills at the `ref`, the repository then holds every file of every branch, and a later
-  `build` at another `ref` asks the remote for nothing by name
+- **THEN** `deploy` vendors the skills at the `ref`, the repository then holds every file of every branch, and a later
+  `deploy` at another `ref` asks the remote for nothing by name
 
 #### Scenario: Files unreachable for a moment
 

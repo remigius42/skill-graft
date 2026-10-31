@@ -66,7 +66,7 @@ skill folders) SHALL be a warning naming the alias and the folder; in project sc
 
 ### Requirement: Entries
 
-`entries` SHALL be a list of **Skill IDs** of the form `<alias>/<name>`. An empty or absent list is valid and builds no
+`entries` SHALL be a list of **Skill IDs** of the form `<alias>/<name>`. An empty or absent list is valid and vendors no
 skills.
 
 #### Scenario: Entry with an undeclared alias

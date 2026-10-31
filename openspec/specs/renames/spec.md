@@ -46,7 +46,7 @@ or reached through a **Reference**, and its **Deployed name** SHALL be carried i
 #### Scenario: Dependency prefixed
 
 - **WHEN** `[sources.mp]` has `prefix = "mp-"`, **Entry** `mp/tdd` calls `/grilling`, and no `[rename]` key names either
-- **THEN** `build` vendors `.apm/skills/mp-tdd/` and `.apm/skills/mp-grilling/`, their `name:` lines are `mp-tdd` and
+- **THEN** `deploy` vendors `.apm/skills/mp-tdd/` and `.apm/skills/mp-grilling/`, their `name:` lines are `mp-tdd` and
   `mp-grilling`, and the vendored `mp-tdd/SKILL.md` holds `/mp-grilling` where it held `/grilling`
 
 #### Scenario: Prose follows the prefix
@@ -67,7 +67,7 @@ or reached through a **Reference**, and its **Deployed name** SHALL be carried i
 
 ### Requirement: Renamed folder and name
 
-`build` SHALL vendor each **Hull** **Skill** to `.apm/skills/<deployed name>/`. The `SKILL.md` of a **Skill** whose
+`deploy` SHALL vendor each **Hull** **Skill** to `.apm/skills/<deployed name>/`. The `SKILL.md` of a **Skill** whose
 **Deployed name** differs from its name SHALL carry `name: <deployed name>`, quoted when YAML would read the bare name
 as anything but that string (`true`, `null`, `123`): an existing `name:` line replaced, else inserted as the front
 matter's first line, else a front matter of just that line prepended. Any other **Skill**'s `name:` SHALL be unchanged.
@@ -99,7 +99,7 @@ matter's first line, else a front matter of just that line prepended. Any other 
 
 ### Requirement: References carry the deployed name
 
-In every UTF-8 Markdown file of every **Hull** **Skill**, `build` SHALL rewrite each **Reference** that resolves,
+In every UTF-8 Markdown file of every **Hull** **Skill**, `deploy` SHALL rewrite each **Reference** that resolves,
 **Binds** applied, to a **Hull** **Skill** whose **Deployed name** differs from the name written, keeping its form
 (`/x`, `Skill(x)` with its quotes and arguments, `` `x` ``, bare `x`); a self-**Reference** included. All other bytes,
 and files that are not UTF-8, SHALL be unchanged.
@@ -162,13 +162,13 @@ value of a renamed one to change; else, for a prefixed one, that a `[rename]` ke
 #### Scenario: Clash across sources
 
 - **WHEN** `mp/tdd` and `own/tdd` are both **Entries**, neither renamed
-- **THEN** `build` exits non-zero naming both and `[rename]`, and leaves `.apm/skills/` and the lock unchanged
+- **THEN** `deploy` exits non-zero naming both and `[rename]`, and leaves `.apm/skills/` and the lock unchanged
 
 #### Scenario: Entries clash before any fetch
 
 - **WHEN** **Entries** `mp/tdd` and `own/tdd` have no `[rename]` key, and `mp` is a git **Source** whose `ref` is not
   cached
-- **THEN** `build` exits non-zero naming both, and fetches nothing
+- **THEN** `deploy` exits non-zero naming both, and fetches nothing
 
 #### Scenario: Entries clash before update fetches
 
@@ -186,12 +186,12 @@ value of a renamed one to change; else, for a prefixed one, that a `[rename]` ke
 #### Scenario: Clash through a reference
 
 - **WHEN** **Entry** `own/grilling` exists, and **Entry** `mp/tdd` calls `/grilling`, resolved to `mp/grilling`
-- **THEN** `build` exits non-zero naming `mp/grilling` and `own/grilling`
+- **THEN** `deploy` exits non-zero naming `mp/grilling` and `own/grilling`
 
 #### Scenario: Rename settles a clash
 
 - **WHEN** `mp/tdd` and `own/tdd` are both **Entries**, and `[rename]` has `"own/tdd" = "own-tdd"`
-- **THEN** `build` vendors `tdd/` and `own-tdd/`, and exits 0
+- **THEN** `deploy` vendors `tdd/` and `own-tdd/`, and exits 0
 
 #### Scenario: Rename onto another skill's name
 
@@ -230,7 +230,7 @@ A **Deployed name** equal, ignoring case, to a name in the user's `reserved` lis
 #### Scenario: Reserved by the user
 
 - **WHEN** `reserved = ["review"]` and `mp/review` is in the **Hull**, not renamed
-- **THEN** `resolve` and `build` exit non-zero naming `mp/review`, `review` and `"mp/review" = "mp-review"`
+- **THEN** `resolve` and `deploy` exit non-zero naming `mp/review`, `review` and `"mp/review" = "mp-review"`
 
 #### Scenario: Renamed out of the way
 

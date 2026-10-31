@@ -12,7 +12,7 @@ Every folder under a **Source** that holds a file named `SKILL.md` SHALL be a **
 hidden folders other than `.git` and through symlinked folders, each resolved folder visited once. A **Skill** is its
 whole folder, so discovery SHALL NOT look for further **Skills** inside one. Discovery SHALL NOT enter a folder that
 resolves into `~/.apm/skill-graft/`, nor any folder whose path, as reached or resolved, runs through `.apm/skill-graft`,
-so a build never reads its own output or another **Package**'s.
+so vendoring never reads its own output or another **Package**'s.
 
 #### Scenario: Nested layout
 
@@ -41,7 +41,7 @@ so a build never reads its own output or another **Package**'s.
 
 #### Scenario: Symlink into the package
 
-- **WHEN** a source holds a symlink to `~/.apm`, and a previous build vendored skills there
+- **WHEN** a source holds a symlink to `~/.apm`, and a previous `resolve` vendored skills there
 - **THEN** discovery does not look inside `~/.apm/skill-graft/`, so the vendored copies are not **Skills**
 
 #### Scenario: Another project's package
@@ -124,7 +124,7 @@ holds in every **Source**, path **Sources** included, and when the file is repla
 
 - **WHEN** path source `own` holds `x/SKILL.md` as a symlink to `/dev/zero`, and `own/tdd`, another **Skill** of `own`,
   is the only **Entry**
-- **THEN** `build` finishes and vendors `tdd`
+- **THEN** `deploy` finishes and vendors `tdd`
 
 #### Scenario: Entry names it
 
@@ -140,17 +140,17 @@ symlinks, SHALL match `[A-Za-z0-9._-]+`, not only dots; a **Skill** at the walke
 #### Scenario: Skill at the root
 
 - **WHEN** path source `own` is `~/own`, which holds `SKILL.md`, and `own/own` is an **Entry**
-- **THEN** `build` vendors `own`, and the lock records `upstream = "."`
+- **THEN** `deploy` vendors `own`, and the lock records `upstream = "."`
 
 #### Scenario: Hidden folder
 
 - **WHEN** a source holds `.claude/skills/tdd/SKILL.md` and `mp/tdd` is an **Entry**
-- **THEN** `build` vendors `tdd`
+- **THEN** `deploy` vendors `tdd`
 
 #### Scenario: Elsewhere in the source
 
 - **WHEN** path source `own` holds `my skills/x/SKILL.md` and `tdd/SKILL.md`, and `own/tdd` is the only **Entry**
-- **THEN** `build` finishes and vendors `tdd`
+- **THEN** `deploy` finishes and vendors `tdd`
 
 ### Requirement: An unusable skill path is an error where needed
 
@@ -207,7 +207,7 @@ first, so a `SKILL.md` they refuse is never opened.
 #### Scenario: Skill tool sentence
 
 - **WHEN** `own/a` says to call the Skill tool with `"tdd"`, and `own`'s only `tdd` is at `my skills/tdd/`
-- **THEN** `build` finishes, with no edge from `own/a` to a `tdd`
+- **THEN** `deploy` finishes, with no edge from `own/a` to a `tdd`
 
 #### Scenario: Two skills of one name
 
@@ -218,7 +218,7 @@ first, so a `SKILL.md` they refuse is never opened.
 
 - **WHEN** `own` holds `good/SKILL.md` with `name: tdd` and `my skills/tdd/SKILL.md` with `name: a b`, and `own/tdd` is
   an **Entry**
-- **THEN** `build` vendors `own/tdd` from `good/`; with only the second, the command exits non-zero naming
+- **THEN** `deploy` vendors `own/tdd` from `good/`; with only the second, the command exits non-zero naming
   `my\040skills/tdd`, as for an invalid name
 
 ### Requirement: Invalid names are escaped

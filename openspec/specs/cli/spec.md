@@ -16,7 +16,7 @@ in the glossary's terms, and each argument and option with its meaning, to stand
 #### Scenario: Top-level help
 
 - **WHEN** the user runs `skill-graft --help`
-- **THEN** it exits 0 and lists `init`, `resolve`, `build`, `update`, `why`, `tree`, `add`, `remove`, `rename`, `bind`,
+- **THEN** it exits 0 and lists `init`, `resolve`, `deploy`, `update`, `why`, `tree`, `add`, `remove`, `rename`, `bind`,
   `unbind` and `help`, each with a summary
 
 #### Scenario: Command help
@@ -168,9 +168,9 @@ only its notices.
 - **WHEN** an **Entry** calls `/foo`, no **Source** has `foo`, and the user runs `skill-graft resolve`
 - **THEN** the `/foo` warning is printed after the tree and the suggestions
 
-#### Scenario: Build
+#### Scenario: Deploy
 
-- **WHEN** an **Entry** calls `/foo`, no **Source** has `foo`, and the user runs `skill-graft build`
+- **WHEN** an **Entry** calls `/foo`, no **Source** has `foo`, and the user runs `skill-graft deploy`
 - **THEN** the `/foo` warning is printed after APM's output
 
 #### Scenario: Update
@@ -272,3 +272,38 @@ including the exit codes of help, `--version` and usage errors.
 
 - **WHEN** the user runs `skill-graft --version` on Linux or macOS
 - **THEN** it prints the version and exits 0
+
+### Requirement: Options spelled in full
+
+Every option SHALL be given by its full name: a prefix of an option, even one only it starts with, SHALL be a usage
+error (exit 2) naming it, reported before the **Package** is looked for.
+
+#### Scenario: Prefix of an option
+
+- **WHEN** the user runs `skill-graft update --dry`
+- **THEN** it exits 2 naming `--dry`, and nothing is read or written
+
+#### Scenario: Full name
+
+- **WHEN** the user runs `skill-graft update --dry-run`
+- **THEN** it runs as a dry run
+
+### Requirement: Former names refused
+
+`build`, `--no-install` and `--diff`, renamed to `deploy`, `--no-apm-install` and `--diff-file`, SHALL be usage errors
+(exit 2) like any unknown command or option, with no alias and no deprecation notice.
+
+#### Scenario: Old command
+
+- **WHEN** the user runs `skill-graft build`
+- **THEN** it exits 2 naming `build` and listing `deploy` among the commands, and nothing is written
+
+#### Scenario: Old install option
+
+- **WHEN** the user runs `skill-graft deploy --no-install`
+- **THEN** it exits 2 naming `--no-install`, and `apm` is not run
+
+#### Scenario: Old diff option
+
+- **WHEN** the user runs `skill-graft update --dry-run --diff review.diff`
+- **THEN** it exits 2 naming `--diff`, and `review.diff` is not written

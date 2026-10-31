@@ -138,13 +138,13 @@ SHALL go on.
 
 ### Requirement: Writing commands fail alike
 
-`resolve`, `build` (with `--into` too), `update`, and the commands that edit the config SHALL fail on a **Hidden
+`resolve`, `deploy` (with `--into` too), `update`, and the commands that edit the config SHALL fail on a **Hidden
 character** as `resolve` does, writing nothing: no lock, no `.apm/skills/`, no `ref`, no config change, and no `apm`
 run.
 
-#### Scenario: Build into a folder
+#### Scenario: Deploy into a folder
 
-- **WHEN** a **Hull** **Skill** holds U+E0041 and the user runs `skill-graft build --into <dir>`
+- **WHEN** a **Hull** **Skill** holds U+E0041 and the user runs `skill-graft deploy --into <dir>`
 - **THEN** it exits 1 and `<dir>` stays empty
 
 #### Scenario: Update to a tip holding one

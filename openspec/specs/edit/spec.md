@@ -310,7 +310,7 @@ notice and change nothing, once the target is checked.
 `rename` SHALL check its **Skill ID**, and `bind` its target **Skill ID**, by reading only that **Skill**'s **Source**,
 fetching only a commit missing from the cache, before any other **Source** is read or its `ref` checked. A **Skill**
 missing from its **Source** SHALL be reported before another **Source**'s missing `ref` or failed fetch. A no-op SHALL
-read no other **Source**. A git **Source** of that **Skill** without a `ref` SHALL fail as `build` does, naming every
+read no other **Source**. A git **Source** of that **Skill** without a `ref` SHALL fail as `deploy` does, naming every
 git **Source** without one.
 
 #### Scenario: Unknown skill before another source
@@ -380,11 +380,11 @@ to `<name>` from that **Source** resolve by default again. A malformed key or an
 
 `add`, `remove`, `rename`, `bind` and `unbind` with `--dry-run` SHALL check, resolve and print as without it, exiting
 with the same code, but SHALL write neither `skill-graft.toml`, `skill-graft.lock`, `.apm/skills/`, `.gitattributes` nor
-the cache, nor anything outside a temporary folder it removes before exiting, except the **Deployed diff** file `--diff`
-names. It SHALL say `dry run: skill-graft.toml, skill-graft.lock and .apm/skills/ not written`, as its last line on
-standard output. An edit that changes no value SHALL print only its notices, as without `--dry-run`, and no `dry run:`
-line. A **Patch** failing in a dry run SHALL say, as `update --dry-run` does, that the upstream folder it names was
-fetched into a temporary folder, and to run the same command without `--dry-run` to keep it.
+the cache, nor anything outside a temporary folder it removes before exiting, except the **Deployed diff** file
+`--diff-file` names. It SHALL say `dry run: skill-graft.toml, skill-graft.lock and .apm/skills/ not written`, as its
+last line on standard output. An edit that changes no value SHALL print only its notices, as without `--dry-run`, and no
+`dry run:` line. A **Patch** failing in a dry run SHALL say, as `update --dry-run` does, that the upstream folder it
+names was fetched into a temporary folder, and to run the same command without `--dry-run` to keep it.
 
 #### Scenario: Dry run of an add
 
@@ -433,15 +433,15 @@ fetched into a temporary folder, and to run the same command without `--dry-run`
 
 ### Requirement: Edit reports the hull diff
 
-An edit with `--dry-run` or `--diff` SHALL print, before its tree, the **Hull diff** of the **Vendored copies** against
-the **Hull** it would vendor, in `update`'s form: `hull (+ added, - removed, ~ changed):`, then `+`, `-` or `~` and the
-**Skill ID** per **Skill**, sorted, each changed file under a `+` or `~` line as `update` names them; or
+An edit with `--dry-run` or `--diff-file` SHALL print, before its tree, the **Hull diff** of the **Vendored copies**
+against the **Hull** it would vendor, in `update`'s form: `hull (+ added, - removed, ~ changed):`, then `+`, `-` or `~`
+and the **Skill ID** per **Skill**, sorted, each changed file under a `+` or `~` line as `update` names them; or
 `hull unchanged`. A plain edit SHALL print as before. A **Skill** is matched to its copy through the lock's **Skill
 IDs** and **Deployed names**, and a copy read only as an entry of `.apm/skills/`; one the lock records without a copy,
 and every **Skill** with no lock, is `+`, and a **Skill** is `-` only when it leaves the **Hull** and had a copy. A
-removed **Skill**'s ID, read from the lock, SHALL be quoted as file paths are. Without `--diff`, when it marks a
-**Skill** `+` or `~`, it SHALL print `review: skill-graft <command> <arguments> --dry-run --diff <file>`, each argument
-quoted for a POSIX shell, right before its `dry run:` line.
+removed **Skill**'s ID, read from the lock, SHALL be quoted as file paths are. Without `--diff-file`, when it marks a
+**Skill** `+` or `~`, it SHALL print `review: skill-graft <command> <arguments> --dry-run --diff-file <file>`, each
+argument quoted for a POSIX shell, right before its `dry run:` line.
 
 #### Scenario: Skills joining
 
@@ -467,8 +467,8 @@ quoted for a POSIX shell, right before its `dry run:` line.
 
 #### Scenario: Hint
 
-- **WHEN** the user runs `add mp/tdd --dry-run` without `--diff`, and `mp/tdd` joins the **Hull**
-- **THEN** it prints `review: skill-graft add mp/tdd --dry-run --diff <file>` before its `dry run:` line
+- **WHEN** the user runs `add mp/tdd --dry-run` without `--diff-file`, and `mp/tdd` joins the **Hull**
+- **THEN** it prints `review: skill-graft add mp/tdd --dry-run --diff-file <file>` before its `dry run:` line
 
 #### Scenario: Nothing changed
 
@@ -477,13 +477,13 @@ quoted for a POSIX shell, right before its `dry run:` line.
 
 #### Scenario: Plain edit unchanged
 
-- **WHEN** the user runs `add mp/tdd` without `--dry-run` or `--diff`
+- **WHEN** the user runs `add mp/tdd` without `--dry-run` or `--diff-file`
 - **THEN** it prints what it printed before, and no **Hull diff**
 
 #### Scenario: A lock pointing outside the copies
 
 - **WHEN** the lock records `mp/tdd` with `deployed = "../../outside"` and no copy deployed under that name, and the
-  user runs `add mp/notes --dry-run --diff review.diff`
+  user runs `add mp/notes --dry-run --diff-file review.diff`
 - **THEN** it reads nothing outside `.apm/skills/`, and prints `mp/tdd` as `+`
 
 #### Scenario: A removed ID holding a control character
@@ -493,8 +493,8 @@ quoted for a POSIX shell, right before its `dry run:` line.
 
 ### Requirement: Edit deployed diff file
 
-An edit with `--diff <file>` SHALL write the **Deployed diff** of its **Hull diff**'s `+` and `~` **Skills** to
-`<file>`, refusing and ordering its writes as `update --diff` does: last in a dry run, before `skill-graft.toml`
+An edit with `--diff-file <file>` SHALL write the **Deployed diff** of its **Hull diff**'s `+` and `~` **Skills** to
+`<file>`, refusing and ordering its writes as `update --diff-file` does: last in a dry run, before `skill-graft.toml`
 otherwise, and removed if a later write fails. It SHALL remove an earlier file it wrote there once the edit is past its
 no-op check, before resolving, and when it fails before its writes went through: an edit that changes no value leaves it
 as it was, one that fails leaves none, and one that fails once written, such as on a closed standard output, keeps the
@@ -505,45 +505,46 @@ second line SHALL say it compares the **Vendored copies** against what the edite
 
 #### Scenario: Diff file
 
-- **WHEN** the user runs `add mp/tdd --dry-run --diff review.diff`, and `mp/tdd` and `mp/grilling` join the **Hull**
+- **WHEN** the user runs `add mp/tdd --dry-run --diff-file review.diff`, and `mp/tdd` and `mp/grilling` join the
+  **Hull**
 - **THEN** `review.diff` starts with the header and the marked **Hull**, then both **Skills**' files as added
 
 #### Scenario: Removed skill
 
-- **WHEN** the user runs `remove mp/tdd --dry-run --diff review.diff`, and `mp/tdd` leaves the **Hull**
+- **WHEN** the user runs `remove mp/tdd --dry-run --diff-file review.diff`, and `mp/tdd` leaves the **Hull**
 - **THEN** `review.diff` holds the line `# - mp/tdd`, and none of `mp/tdd`'s text
 
 #### Scenario: A file it did not write
 
-- **WHEN** the user runs `add mp/tdd --dry-run --diff apm.yml` in a project-scope **Package**
+- **WHEN** the user runs `add mp/tdd --dry-run --diff-file apm.yml` in a project-scope **Package**
 - **THEN** it exits non-zero naming `apm.yml`, which keeps its bytes, before resolving
 
 #### Scenario: A failed edit leaves no file
 
-- **WHEN** `review.diff` holds an earlier run's **Deployed diff**, and `add mp/notes --dry-run --diff review.diff` fails
-  because `mp/notes` calls `/x`, which matches several other **Sources** and no **Bind**
+- **WHEN** `review.diff` holds an earlier run's **Deployed diff**, and `add mp/notes --dry-run --diff-file review.diff`
+  fails because `mp/notes` calls `/x`, which matches several other **Sources** and no **Bind**
 - **THEN** `review.diff` no longer exists
 
 #### Scenario: A refused edit leaves no file
 
-- **WHEN** `review.diff` holds an earlier run's **Deployed diff**, and `remove mp/typo --diff review.diff` fails because
-  `mp/typo` is no **Entry**
+- **WHEN** `review.diff` holds an earlier run's **Deployed diff**, and `remove mp/typo --diff-file review.diff` fails
+  because `mp/typo` is no **Entry**
 - **THEN** `review.diff` no longer exists
 
 #### Scenario: A ref the lock holds
 
 - **WHEN** the lock records `mp`'s `ref` holding a line feed, or no `ref`, and the user runs
-  `rename mp/tdd t --dry-run --diff review.diff`
+  `rename mp/tdd t --dry-run --diff-file review.diff`
 - **THEN** `mp/tdd`'s source line names that `ref` quoted, on one line, or only the new `ref`
 
 #### Scenario: A no-op edit keeps the file
 
 - **WHEN** `review.diff` holds an earlier run's **Deployed diff**, `mp/tdd` is already an **Entry**, and the user runs
-  `add mp/tdd --diff review.diff`
+  `add mp/tdd --diff-file review.diff`
 - **THEN** it prints only its notice, and `review.diff` keeps its bytes
 
 #### Scenario: Diff with a real edit
 
-- **WHEN** the user runs `add mp/tdd --diff review.diff` and writing `skill-graft.lock` fails
+- **WHEN** the user runs `add mp/tdd --diff-file review.diff` and writing `skill-graft.lock` fails
 - **THEN** it exits non-zero, `skill-graft.toml`, the lock and `.apm/skills/` keep their bytes, and `review.diff` does
   not exist

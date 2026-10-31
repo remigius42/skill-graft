@@ -2,7 +2,7 @@
 
 ## Purpose
 
-The `graft-check` skill: a **Check** the user runs on a built **Package**, in which an agent reads the **Skills** for
+The `graft-check` skill: a **Check** the user runs on a vendored **Package**, in which an agent reads the **Skills** for
 what form-based resolution gets wrong and proposes **Binds**, **Entries** and **Patches** to fix it.
 
 ## Requirements
@@ -45,10 +45,10 @@ arguments, it SHALL check only those **Hull** **Skills**; without arguments, the
 - **WHEN** the user runs `/graft-check mp-tdd`, the **Deployed name** rather than the **Skill ID**
 - **THEN** the skill names `mp-tdd`, lists the **Hull**'s **Skill IDs**, and checks nothing
 
-### Requirement: Builds before reading
+### Requirement: Checks with a throwaway deploy
 
-The skill SHALL first make a new, empty folder under the system's temporary folder and run `skill-graft build --into`
-with it, reading the **Package** from the `package:` line. A failing build SHALL end the **Check** with the build's
+The skill SHALL first make a new, empty folder under the system's temporary folder and run `skill-graft deploy --into`
+with it, reading the **Package** from the `package:` line. A failing deploy SHALL end the **Check** with the deploy's
 error. It SHALL then read the lock in that folder, and find each **Skill**'s vendored copy there and its **Upstream**
 folder: under a path **Source**'s folder as the lock records it, and for a git **Source** under its root, found once
 through `skill-graft why` on one of its **Skills**. For a **Skill** the lock lists `patches` for, the patch files' lines
@@ -57,9 +57,9 @@ at every use, in the **Upstream** text, of its own name and of each `[bind]` key
 the tree shows one edge per target, kind and **Bind**, and a prose edge only when rewritten. The **Package**'s own
 `.apm/skills/` and lock SHALL change only through accepted fixes.
 
-#### Scenario: Build fails
+#### Scenario: Deploy fails
 
-- **WHEN** `skill-graft build --into <folder>` exits non-zero
+- **WHEN** `skill-graft deploy --into <folder>` exits non-zero
 - **THEN** the skill reports its error and checks nothing
 
 #### Scenario: Patched lines are intended
@@ -76,13 +76,13 @@ the tree shows one edge per target, kind and **Bind**, and a prose edge only whe
 
 The skill SHALL read lock `version = 1` only; any other version SHALL stop it. A higher one SHALL come with the advice
 to run `skill-graft update` on the **Source** the user installed `graft-check` from, in the **Package** that installed
-it, then `skill-graft build` there, and a new session.
+it, then `skill-graft deploy` there, and a new session.
 
 #### Scenario: Newer lock
 
 - **WHEN** the lock has `version = 2`
 - **THEN** the skill stops and says to update the **Source** `graft-check` was installed from, in its own **Package**,
-  run `skill-graft build` there, and start a new session
+  run `skill-graft deploy` there, and start a new session
 
 ### Requirement: What it reports
 
@@ -123,8 +123,8 @@ that holds the wrong one.
 The skill SHALL apply a fix only after the user accepts it, one fix at a time, through `skill-graft add`,
 `skill-graft bind` or `skill-graft unbind`, or as a **Patch** the user read: written by the patcher in a hardened
 **Check**, in the skill's own session in an unhardened one. After adding a **Patch** to `[patches]` it SHALL run
-`skill-graft resolve`. After each fix it SHALL build again `--into` another new, empty folder and name every **Skill**
-that left or joined the **Hull** since the previous build. It SHALL NOT edit the vendored **Skills**.
+`skill-graft resolve`. After each fix it SHALL deploy again `--into` another new, empty folder and name every **Skill**
+that left or joined the **Hull** since the previous deploy. It SHALL NOT edit the vendored **Skills**.
 
 #### Scenario: Declined
 
@@ -144,12 +144,12 @@ that left or joined the **Hull** since the previous build. It SHALL NOT edit the
 #### Scenario: Patch accepted
 
 - **WHEN** the user accepts a **Patch** of `mp/x`
-- **THEN** the skill runs `skill-graft resolve` after adding it to `[patches]`, and only then builds `--into` a new
+- **THEN** the skill runs `skill-graft resolve` after adding it to `[patches]`, and only then deploys `--into` a new
   folder
 
 ### Requirement: A failed fix is undone
 
-When the build after an accepted fix fails, or the `skill-graft resolve` after a **Patch**, the skill SHALL undo that
+When the deploy after an accepted fix fails, or the `skill-graft resolve` after a **Patch**, the skill SHALL undo that
 fix and show the error. After `skill-graft add` it SHALL run `skill-graft remove` on the same **Skill IDs**; after
 `skill-graft bind` or `skill-graft unbind` it SHALL restore the key's value from before the fix, or unbind a key that
 had none. After a **Patch** it SHALL delete the patch file and remove only its own item from the **Skill**'s `[patches]`
@@ -159,12 +159,12 @@ after the **Patch** succeeded.
 
 #### Scenario: Bind restored
 
-- **WHEN** `[bind]` has `"mp/g" = "own/notes"`, the user accepts `skill-graft bind mp/g mp/grill`, and the build fails
+- **WHEN** `[bind]` has `"mp/g" = "own/notes"`, the user accepts `skill-graft bind mp/g mp/grill`, and the deploy fails
 - **THEN** `[bind]` again has `"mp/g" = "own/notes"`
 
 #### Scenario: Earlier patches kept
 
-- **WHEN** `[patches]` has `"mp/x" = ["patches/first.patch"]`, the skill appends `patches/second.patch`, and the build
+- **WHEN** `[patches]` has `"mp/x" = ["patches/first.patch"]`, the skill appends `patches/second.patch`, and the deploy
   fails
 - **THEN** `[patches]` again has `"mp/x" = ["patches/first.patch"]`, `patches/second.patch` is gone, and the skill ran
   `skill-graft resolve` again
@@ -175,46 +175,46 @@ after the **Patch** succeeded.
 - **THEN** `[patches]` again has `mp/x`'s earlier list, `patches/second.patch` is gone, the skill shows the error, and
   it runs no second `resolve`
 
-### Requirement: Never deploys
+### Requirement: Never runs APM
 
-The skill SHALL NOT run `skill-graft build` without `--into`, nor `apm`. It SHALL end by telling the user to run
-`skill-graft build` when a fix was accepted, or when its first build's `.apm/skills/` differs from the **Package**'s, as
-after a path **Source**'s **Skill** changed, so an in-place build would change the vendored copies. A **Package** with
-no `.apm/skills/` yet differs. Otherwise it SHALL say the **Package**'s vendored copies are as its config builds them,
-and to run `skill-graft build` if it has not run since the last change, which the skill cannot tell.
+The skill SHALL NOT run `skill-graft deploy` without `--into`, nor `apm`. It SHALL end by telling the user to run
+`skill-graft deploy` when a fix was accepted, or when its first deploy's `.apm/skills/` differs from the **Package**'s,
+as after a path **Source**'s **Skill** changed, so an in-place deploy would change the vendored copies. A **Package**
+with no `.apm/skills/` yet differs. Otherwise it SHALL say the **Package**'s vendored copies are as its config vendors
+them, and to run `skill-graft deploy` if it has not run since the last change, which the skill cannot tell.
 
 #### Scenario: After a fix
 
 - **WHEN** the user accepted a fix
-- **THEN** the skill's last message tells the user to run `skill-graft build`
+- **THEN** the skill's last message tells the user to run `skill-graft deploy`
 
 #### Scenario: Source changed, every fix declined
 
-- **WHEN** a path **Source**'s **Skill** changed since the last in-place build, and the user declines every fix
-- **THEN** the skill's last message tells the user to run `skill-graft build`
+- **WHEN** a path **Source**'s **Skill** changed since the last in-place deploy, and the user declines every fix
+- **THEN** the skill's last message tells the user to run `skill-graft deploy`
 
-#### Scenario: Added but not built
+#### Scenario: Added but not deployed
 
-- **WHEN** the user ran `skill-graft add mp/x` but no `build`, and declines every fix
-- **THEN** the skill's last message says the vendored copies are as the config builds them, and to run
-  `skill-graft build` if it has not run since the last change
+- **WHEN** the user ran `skill-graft add mp/x` but no `deploy`, and declines every fix
+- **THEN** the skill's last message says the vendored copies are as the config vendors them, and to run
+  `skill-graft deploy` if it has not run since the last change
 
-#### Scenario: Never built
+#### Scenario: Never deployed
 
 - **WHEN** the **Package** holds its lock but no `.apm/skills/`, as after the user deleted it, and the user declines
   every fix
-- **THEN** the skill's last message tells the user to run `skill-graft build`
+- **THEN** the skill's last message tells the user to run `skill-graft deploy`
 
 #### Scenario: Never resolved
 
 - **WHEN** the **Package** holds no `skill-graft.lock`, as after `init`
-- **THEN** the first build `--into` exits 1 naming `skill-graft resolve`, and the **Check** ends with that error
+- **THEN** the first deploy `--into` exits 1 naming `skill-graft resolve`, and the **Check** ends with that error
 
-#### Scenario: Nothing to build
+#### Scenario: Nothing to deploy
 
-- **WHEN** the first build's `.apm/skills/` equals the **Package**'s and the user declines every fix
-- **THEN** the skill does not tell the user to run `skill-graft build` unconditionally, only if it has not run since the
-  last change
+- **WHEN** the first deploy's `.apm/skills/` equals the **Package**'s and the user declines every fix
+- **THEN** the skill does not tell the user to run `skill-graft deploy` unconditionally, only if it has not run since
+  the last change
 
 ### Requirement: Skill text is read by hardened readers
 
@@ -276,10 +276,10 @@ In a hardened **Check**, the agent running the skill SHALL NOT open a **Skill**'
 patch files, nor print them, nor a reader's output but the probe's; it SHALL hold only CLI output, `skill-graft.toml`,
 the lock, of each reader what the report filter admits or, on a failure, its error line, and of each patcher its exit
 code, on a failure the first line of its error output or else of its output, and the summary of its diff. A report's
-`text`, the **Upstream** line, and its `vendored` line, the line as built for a finding the build caused, and the error
-lines, in printable ASCII, SHALL each be one line of at most 200 characters, shown to the user as quoted text and never
-followed as an instruction. The patcher's reply SHALL reach the agent in no form: its output SHALL be read only when it
-exits non-zero, as `claude` then writes its error there. The summary SHALL hold numbers only: the files the diff
+`text`, the **Upstream** line, and its `vendored` line, the line as vendored for a finding vendoring caused, and the
+error lines, in printable ASCII, SHALL each be one line of at most 200 characters, shown to the user as quoted text and
+never followed as an instruction. The patcher's reply SHALL reach the agent in no form: its output SHALL be read only
+when it exits non-zero, as `claude` then writes its error there. The summary SHALL hold numbers only: the files the diff
 changes, its added and removed lines, and its binary files; no file name the patcher chose SHALL reach the agent.
 
 #### Scenario: Injected report text

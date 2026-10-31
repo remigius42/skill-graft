@@ -10,13 +10,13 @@ change what a **Skill** says and what it reaches, and fails loudly when it no lo
 ### Requirement: Patches apply before references are read
 
 When the walk reaches a **Skill** that `[patches]` names, its **Patches** SHALL apply in list order, each to the result
-of the one before, to a copy of its folder; the **Skill**'s **References** SHALL be read from that copy, and `build`
+of the one before, to a copy of its folder; the **Skill**'s **References** SHALL be read from that copy, and `deploy`
 SHALL vendor it, **Renames** applied on top. The **Upstream** folder SHALL never change.
 
 #### Scenario: Patch changes the text
 
 - **WHEN** `[patches]` has `"mp/tdd" = ["patches/tdd.patch"]`, which replaces a line of `mp/tdd`'s `SKILL.md`
-- **THEN** `build` vendors `tdd/SKILL.md` with the replaced line, and the **Source**'s `SKILL.md` keeps its bytes
+- **THEN** `deploy` vendors `tdd/SKILL.md` with the replaced line, and the **Source**'s `SKILL.md` keeps its bytes
 
 #### Scenario: Patch adds a reference
 
@@ -116,9 +116,9 @@ header; a patch git refuses whole SHALL be reported with its patch file and git'
 - **WHEN** `"mp/tdd" = ["patches/a.patch", "patches/b.patch"]`, and `a.patch` fails
 - **THEN** the error names `a.patch`'s failure and says `b.patch` was not tried
 
-#### Scenario: Build writes nothing
+#### Scenario: Deploy writes nothing
 
-- **WHEN** a patch fails during `build`
+- **WHEN** a patch fails during `deploy`
 - **THEN** `.apm/skills/`, the lock and `apm` are untouched
 
 ### Requirement: One run reports every failure
@@ -211,7 +211,7 @@ configuration without **Patches** reached by the walk SHALL not need `git` for t
 #### Scenario: Path sources without patches
 
 - **WHEN** `git` is not on `PATH`, every **Source** is a path **Source**, and `[patches]` is empty
-- **THEN** `build --no-install` succeeds
+- **THEN** `deploy --no-apm-install` succeeds
 
 ### Requirement: Unused patches warn
 

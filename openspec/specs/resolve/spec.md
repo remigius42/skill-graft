@@ -9,10 +9,10 @@
 
 ### Requirement: Resolve command
 
-`skill-graft resolve` SHALL compute the **Hull** from `skill-graft.toml`, vendor it into `.apm/skills/` as `build` does,
-write `skill-graft.lock`, print the tree to standard output and the warnings to standard error, and exit 0. The
+`skill-graft resolve` SHALL compute the **Hull** from `skill-graft.toml`, vendor it into `.apm/skills/` as `deploy`
+does, write `skill-graft.lock`, print the tree to standard output and the warnings to standard error, and exit 0. The
 **Vendored copies** and the lock SHALL be written together: on any failure, or an interrupt, both keep their bytes. It
-SHALL NOT write `skill-graft.toml` or run `apm`. Like `build`, it SHALL fail on any git **Source** without `ref`.
+SHALL NOT write `skill-graft.toml` or run `apm`. Like `deploy`, it SHALL fail on any git **Source** without `ref`.
 
 #### Scenario: Resolve succeeds
 
@@ -115,7 +115,7 @@ lock SHALL be replaced atomically.
 there; under each **Skill**, one line per edge naming the **Skill** and the **Reference** as written upstream (`/name`,
 `Skill(name)`, `` `name` `` or `name` plus `prose`, plus `bind` when a **Bind** decided it). A renamed **Skill** SHALL
 be named `<skill id> as <deployed name>` on every line, and a patched one SHALL be followed by `(patched)` on every
-line. A `prose` edge SHALL have a line only when the build rewrites it: its target's **Deployed name** differs from the
+line. A `prose` edge SHALL have a line only when vendoring rewrites it: its target's **Deployed name** differs from the
 name written. A **Skill** SHALL be expanded once, at its first depth-first line; its later lines, and any nested line
 for an **Entry**, SHALL end in `(*)` and not expand.
 
@@ -178,7 +178,7 @@ for an **Entry**, SHALL end in `(*)` and not expand.
 
 The lock SHALL record each renamed **Hull** **Skill**'s `deployed` name, and each suggested **Skill** with the **Skill
 IDs** mentioning it, sorted. Each hash SHALL cover the folder as vendored, after renaming and rewriting, so `resolve`
-and `build` write the same lock for the same input.
+and `deploy` write the same lock for the same input.
 
 #### Scenario: Renamed skill
 
@@ -197,21 +197,21 @@ and `build` write the same lock for the same input.
   `/grilling`
 - **THEN** the hashes of `mp/grilling` and `mp/tdd` differ between the two locks
 
-#### Scenario: Resolve and build agree
+#### Scenario: Resolve and deploy agree
 
-- **WHEN** the user runs `resolve`, saves the lock, then runs `build --no-install`, with renames declared
+- **WHEN** the user runs `resolve`, saves the lock, then runs `deploy --no-apm-install`, with renames declared
 - **THEN** both locks are byte for byte equal
 
 ### Requirement: Prose suggestions
 
 `resolve` SHALL print, after the tree, each suggested **Skill** with the **Skills** mentioning it and how to accept it
-(`skill-graft add <skill id>`, named in the header), sorted, on standard output. `build` and `update` SHALL NOT print
+(`skill-graft add <skill id>`, named in the header), sorted, on standard output. `deploy` and `update` SHALL NOT print
 them, but when there are any SHALL print one line on standard error,
 `skill-graft: <n> prose suggestion(s): run skill-graft resolve`; `update` counts those of the new tips, and after
 `--dry-run`, whose tips `resolve` cannot see yet, prints
 `skill-graft: <n> prose suggestion(s) at the new tips: update, then run skill-graft resolve` instead, unless it moves no
-`ref`: `resolve` then sees the same tips, and the line is `update`'s. `build --into` SHALL print no such line: `resolve`
-would rewrite the **Package**'s lock, and the lock in the `--into` folder lists the suggestions.
+`ref`: `resolve` then sees the same tips, and the line is `update`'s. `deploy --into` SHALL print no such line:
+`resolve` would rewrite the **Package**'s lock, and the lock in the `--into` folder lists the suggestions.
 
 #### Scenario: Suggestion printed
 
@@ -222,17 +222,17 @@ would rewrite the **Package**'s lock, and the lock in the `--into` folder lists 
 #### Scenario: No suggestions
 
 - **WHEN** no prose **Reference** points outside the **Hull**
-- **THEN** `resolve` prints the tree alone, and `build` prints no suggestion line
+- **THEN** `resolve` prints the tree alone, and `deploy` prints no suggestion line
 
-#### Scenario: Build announces suggestions
+#### Scenario: Deploy announces suggestions
 
 - **WHEN** `mp` has `diagnosing-bugs` and `notes`, **Entry** `mp/tdd` mentions `diagnosing-bugs` and `` `notes` `` but
-  calls neither, and the user runs `build`
+  calls neither, and the user runs `deploy`
 - **THEN** stderr holds `skill-graft: 2 prose suggestion(s): run skill-graft resolve`, and stdout no suggestion block
 
-#### Scenario: Build into a folder announces none
+#### Scenario: Deploy into a folder announces none
 
-- **WHEN** **Entry** `mp/tdd` mentions `diagnosing-bugs`, not in the **Hull**, and the user runs `build --into <dir>`
+- **WHEN** **Entry** `mp/tdd` mentions `diagnosing-bugs`, not in the **Hull**, and the user runs `deploy --into <dir>`
 - **THEN** stderr holds no `prose suggestion(s)` line, and `<dir>/skill-graft.lock` lists `mp/diagnosing-bugs`
 
 #### Scenario: Update announces suggestions
@@ -257,7 +257,7 @@ The lock SHALL record each **Hull** **Skill**'s `upstream` folder relative to it
 **Scope**: the folder its **Patches** apply to, in the cache export at the `ref` or in a path **Source**. A git
 **Source**'s root is the repository's, so `upstream` includes any `subdirectory`. A patched **Skill** SHALL also record
 its `patches`, as written in the TOML, in apply order. Each hash SHALL cover the folder as vendored, **Patches**
-applied, so `resolve` and `build` write the same lock for the same input.
+applied, so `resolve` and `deploy` write the same lock for the same input.
 
 #### Scenario: Upstream recorded
 
@@ -293,9 +293,9 @@ applied, so `resolve` and `build` write the same lock for the same input.
 - **WHEN** `resolve` runs, then a patch to `mp/tdd` is declared and it runs again
 - **THEN** the hash of `mp/tdd` differs between the two locks, and its `upstream` does not
 
-#### Scenario: Resolve and build agree with patches
+#### Scenario: Resolve and deploy agree with patches
 
-- **WHEN** the user runs `resolve`, saves the lock, then runs `build --no-install`, with patches declared
+- **WHEN** the user runs `resolve`, saves the lock, then runs `deploy --no-apm-install`, with patches declared
 - **THEN** both locks are byte for byte equal
 
 ### Requirement: Lock layout version
@@ -313,21 +313,22 @@ suggestion with `id` and `from`. Any change to these keys or their meaning SHALL
 
 ### Requirement: Resolve dry run and diff
 
-`resolve --dry-run` and `resolve --diff <file>` SHALL behave as the editing commands' `--dry-run` and `--diff` do, the
-**Hull diff** that of the **Vendored copies** against the **Hull** of `skill-graft.toml` as it stands, and the hint
-`review: skill-graft resolve --dry-run --diff <file>`. Its dry run SHALL say
+`resolve --dry-run` and `resolve --diff-file <file>` SHALL behave as the editing commands' `--dry-run` and `--diff-file`
+do, the **Hull diff** that of the **Vendored copies** against the **Hull** of `skill-graft.toml` as it stands, and the
+hint `review: skill-graft resolve --dry-run --diff-file <file>`. Its dry run SHALL say
 `dry run: skill-graft.lock and .apm/skills/ not written`. Its file's header's second line SHALL say it compares the
 **Vendored copies** against what `skill-graft.toml` as it stands would vendor.
 
 #### Scenario: A ref moved by hand
 
 - **WHEN** the user set `sources.mp.ref` to B by hand, the lock records A, `mp/tdd` changed between them, and the user
-  runs `resolve --dry-run --diff review.diff`
+  runs `resolve --dry-run --diff-file review.diff`
 - **THEN** `mp/tdd`'s source line in `review.diff` names `mp`, A and B
 
 #### Scenario: A patch written by hand
 
-- **WHEN** the user added a **Patch** of `mp/tdd` to `[patches]` by hand and runs `resolve --dry-run --diff review.diff`
+- **WHEN** the user added a **Patch** of `mp/tdd` to `[patches]` by hand and runs
+  `resolve --dry-run --diff-file review.diff`
 - **THEN** it prints `~ mp/tdd` naming each file the **Patch** changes, `review.diff` holds that text as deployed, and
   `skill-graft.lock` and `.apm/skills/` are unchanged
 

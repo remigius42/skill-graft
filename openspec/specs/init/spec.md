@@ -29,8 +29,8 @@ Creates the skill-graft APM package under `~/.apm/skill-graft/` and registers it
 - **WHEN** the user runs `skill-graft init`
 - **THEN** `skill-graft.toml` holds, commented out, a **Source** `skill-graft` of
   `https://github.com/remigius42/skill-graft.git` with `subdirectory = "skills"`, followed by
-  `skill-graft update skill-graft`, `skill-graft add skill-graft/graft-check` and `skill-graft build`, with a note that
-  every `build` fails until that `update` has set the `ref`, and uncommenting the **Source** alone gives a config that
+  `skill-graft update skill-graft`, `skill-graft add skill-graft/graft-check` and `skill-graft deploy`, with a note that
+  every `deploy` fails until that `update` has set the `ref`, and uncommenting the **Source** alone gives a config that
   loads
 
 #### Scenario: Project package
@@ -47,7 +47,7 @@ non-zero, create nothing, run no `apm`, and say to install APM and run the same 
 working folder and succeed only if APM exits 0 and `apm.yml` there lists the package; if the package is then not listed
 there, it SHALL remove what it created (`.apm/skill-graft/`, and `.apm/` if it made that too), so no unregistered
 **Package** is left for commands to find. If APM fails but did list the package, the folder SHALL stay and `init` SHALL
-say to fix the problem and run `skill-graft resolve`, then `skill-graft build`. skill-graft SHALL NOT write either
+say to fix the problem and run `skill-graft resolve`, then `skill-graft deploy`. skill-graft SHALL NOT write either
 `apm.yml` itself.
 
 #### Scenario: Registration succeeds
@@ -95,7 +95,7 @@ say to fix the problem and run `skill-graft resolve`, then `skill-graft build`. 
 
 - **WHEN** `init --project` runs, and APM lists `./.apm/skill-graft` in `apm.yml` but exits non-zero
 - **THEN** `init` exits non-zero, keeps the folder, and says to fix the problem and run `skill-graft resolve`, then
-  `skill-graft build`
+  `skill-graft deploy`
 
 ### Requirement: Init refuses an existing folder
 

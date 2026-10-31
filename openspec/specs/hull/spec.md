@@ -150,7 +150,7 @@ still rewritten as the `renames` capability says.
 #### Scenario: Special file
 
 - **WHEN** a **Hull** **Skill** holds a FIFO named `pipe`
-- **THEN** `resolve` and `build` exit non-zero naming `pipe` as not a regular file, without reading it
+- **THEN** `resolve` and `deploy` exit non-zero naming `pipe` as not a regular file, without reading it
 
 #### Scenario: Self-reference
 

@@ -15,8 +15,8 @@ with project root `d`. Paths are compared resolved.
 
 #### Scenario: Inside a project
 
-- **WHEN** `~/repo/.apm/skill-graft/` exists and the user runs `skill-graft build` in `~/repo/src`
-- **THEN** `build` reads `~/repo/.apm/skill-graft/skill-graft.toml`, not the user scope's
+- **WHEN** `~/repo/.apm/skill-graft/` exists and the user runs `skill-graft deploy` in `~/repo/src`
+- **THEN** `deploy` reads `~/repo/.apm/skill-graft/skill-graft.toml`, not the user scope's
 
 #### Scenario: Project without a package
 
@@ -44,9 +44,9 @@ Where another capability names a file or folder under `~/.apm/skill-graft/`, it 
 **Package** in effect, unless it names the user scope's **Package**. Git **Sources** stay cached per user, whatever the
 **Scope**.
 
-#### Scenario: Project build
+#### Scenario: Project deploy
 
-- **WHEN** the user runs `skill-graft build --no-install` in a project with a **Package**
+- **WHEN** the user runs `skill-graft deploy --no-apm-install` in a project with a **Package**
 - **THEN** the **Hull** is vendored into `<project>/.apm/skill-graft/.apm/skills/` and the lock written to
   `<project>/.apm/skill-graft/skill-graft.lock`, and `~/.apm/skill-graft/` is neither created nor changed
 
@@ -63,7 +63,7 @@ the **Package** folder and run `skill-graft init --project` in the project root.
 
 #### Scenario: Project package without config
 
-- **WHEN** `~/repo/.apm/skill-graft/` exists without `skill-graft.toml` and the user runs `build` in `~/repo`
+- **WHEN** `~/repo/.apm/skill-graft/` exists without `skill-graft.toml` and the user runs `deploy` in `~/repo`
 - **THEN** it exits non-zero naming `~/repo/.apm/skill-graft/skill-graft.toml` and `skill-graft init --project`
 
 ### Requirement: Working folder is gone
@@ -78,14 +78,14 @@ When the working folder no longer exists, every command except `help` and plain 
 
 ### Requirement: Commands that write name the package
 
-`init`, `resolve`, `build`, `update`, `add`, `remove`, `rename`, `bind` and `unbind` SHALL print
+`init`, `resolve`, `deploy`, `update`, `add`, `remove`, `rename`, `bind` and `unbind` SHALL print
 `skill-graft: package: <absolute path of the Package>` on stderr before the command's own output, in either **Scope**,
 including when the command fails after its arguments parsed. `tree`, `why` and `help` SHALL NOT print it, and neither
 SHALL a usage error or `init --project` refused in the home folder.
 
-#### Scenario: Build names the package
+#### Scenario: Deploy names the package
 
-- **WHEN** the user runs `skill-graft build` in a project with a **Package**
+- **WHEN** the user runs `skill-graft deploy` in a project with a **Package**
 - **THEN** stderr starts with `skill-graft: package: <project>/.apm/skill-graft`
 
 #### Scenario: Read-only command
