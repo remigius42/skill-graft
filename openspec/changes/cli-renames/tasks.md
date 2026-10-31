@@ -74,6 +74,10 @@ written.
 - [x] 5.2 `evals/graft-check/run.sh`: the `project` helper drops its `deployed` mode, whose `deploy --no-apm-install`
   repeated what `resolve`, run first, had already vendored; its callers and `evals/graft-check/README.md` with it.
   Verify `bash -n evals/graft-check/run.sh`; the eval itself runs only when asked
+- [x] 5.3 `evals/graft-check/run.sh`: `advises_deploy` matches `` skill-graft deploy\b(?!`?\s*--into) ``: a report
+  narrating the throwaway deploy (`` `skill-graft deploy` --into <folder> ``) is no advice, nor "skill-graft deployed",
+  while advice that mentions `--into` later on its line still counts. Verify sample lines through the filter and
+  `bash -n evals/graft-check/run.sh`; the eval itself runs only when asked
 
 ## 6. Archive
 

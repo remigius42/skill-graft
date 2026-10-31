@@ -230,9 +230,9 @@ report() { cat "$work/$scenario/${1:-report}"; }
 found() { report | grep -iF -- "$2" | grep -iF -- "$1" > /dev/null; }
 has() { report "${2:-}" | grep -iF -- "$1" > /dev/null; }
 lacks() { ! has "$@"; }
-# `skill-graft deploy` advised, not `deploy --into` narrated.
+# `skill-graft deploy` advised, not `deploy --into` narrated: no `--into` right after it.
 advises_deploy() {
-  report "${1:-}" | grep -iP 'skill-graft deploy(?! --into)' | grep -viE "don't|do not|no need|not need" > /dev/null
+  report "${1:-}" | grep -iP 'skill-graft deploy\b(?!`?\s*--into)' | grep -viE "don't|do not|no need|not need" > /dev/null
 }
 # Scenario $1's `claude`: the shell lines on stdin run first, with `$real` the
 # wrapper above and `$log` a file; then every call passes through to `$real`.
