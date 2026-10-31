@@ -71,6 +71,9 @@ written.
   throwaway deploy; `advises_deploy` matching `skill-graft deploy(?! --into)`) and `evals/graft-check/README.md`. Verify
   `bash -n evals/graft-check/run.sh`, `pytest tests/cli/test_check.py`, `pre-commit run --all-files`, and the greps
   above; the eval itself runs only when asked
+- [x] 5.2 `evals/graft-check/run.sh`: the `project` helper drops its `deployed` mode, whose `deploy --no-apm-install`
+  repeated what `resolve`, run first, had already vendored; its callers and `evals/graft-check/README.md` with it.
+  Verify `bash -n evals/graft-check/run.sh`; the eval itself runs only when asked
 
 ## 6. Archive
 

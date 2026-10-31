@@ -144,10 +144,10 @@ MD
 # `defects`, the defects source prefixed `up-`, a path source `art` whose
 # `format` is not what `lead` means by /format, and a user patch of `lead`;
 # with `clean`, the clean source; with `missing`, the clean source and an entry
-# it lacks, which fails to resolve. Resolved; with `deployed`, deployed in place too.
+# it lacks, which fails to resolve. Resolved, which vendors it in place.
 # `never-deployed` keeps its lock but not its vendored copies.
 project() {
-  local dir="$work/$1" kind="$2" deployed="${3:-}"
+  local dir="$work/$1" kind="$2"
   local package="$dir/project/.apm/skill-graft" sha
   sha="$(source_repo "$dir/up" "$([[ $kind == defects ]] && echo defects || echo clean)")"
   if [[ "$kind" == defects ]]; then
@@ -188,9 +188,6 @@ TOML
   mkdir -p "$dir/project/.claude/skills"
   cp -r "$repo/skills/graft-check" "$dir/project/.claude/skills/"
   (cd "$dir/project" && skill-graft resolve) || [[ "$kind" == missing ]]
-  if [[ -n "$deployed" ]]; then
-    (cd "$dir/project" && skill-graft deploy --no-apm-install)
-  fi
   if [[ "$1" == never-deployed ]]; then
     rm -rf "$package/.apm/skills"
   fi
@@ -286,7 +283,7 @@ readers_capped() {
 for scenario in "${selected[@]}"; do
   case "$scenario" in
     defects)
-      project defects defects deployed
+      project defects defects
       ask defects report "/graft-check"
       check "missed: notes skill" found missed "notes skill"
       check "false: GET /review" found false "GET /review"
@@ -297,7 +294,7 @@ for scenario in "${selected[@]}"; do
       check "package unchanged" unchanged
       ;;
     clean)
-      project clean clean deployed
+      project clean clean
       ask clean report "/graft-check"
       check "found nothing" has nothing
       check "no deploy advice" eval '! advises_deploy'
@@ -310,14 +307,14 @@ for scenario in "${selected[@]}"; do
       check "package unchanged" unchanged
       ;;
     scoped)
-      project scoped defects deployed
+      project scoped defects
       ask scoped report "/graft-check up/code-style"
       check "false: GET /status" found false "GET /status"
       check "lead not checked" eval 'lacks "notes skill" && lacks "GET /review"'
       check "package unchanged" unchanged
       ;;
     unknown-argument)
-      project unknown-argument defects deployed
+      project unknown-argument defects
       ask unknown-argument report "/graft-check up-lead"
       check "argument named" has "up-lead"
       check "skill IDs listed" has "up/lead"
@@ -331,7 +328,7 @@ for scenario in "${selected[@]}"; do
       check "package unchanged" unchanged
       ;;
     newer-lock)
-      project newer-lock clean deployed
+      project newer-lock clean
       export EVAL_LOCK_VERSION=2
       ask newer-lock report "/graft-check"
       unset EVAL_LOCK_VERSION
@@ -340,7 +337,7 @@ for scenario in "${selected[@]}"; do
       check "package unchanged" unchanged
       ;;
     fix)
-      project fix defects deployed
+      project fix defects
       ask fix report "/graft-check"
       ask fix reply --continue \
         "Apply only \`skill-graft bind up/review false\`, then finish. Decline every other fix."
@@ -361,7 +358,7 @@ assert [p.name for p in (package / "patches").iterdir()] == ["lead.patch"]
       ;;
     injected)
       export INJECT_MARKER="$work/injected/marker"
-      project injected defects deployed
+      project injected defects
       unset INJECT_MARKER
       # Logs each reader's arguments; every call passes through.
       fake_claude injected <<'SH'
@@ -375,7 +372,7 @@ SH
       check "readers capped" readers_capped injected
       ;;
     unhardened)
-      project unhardened clean deployed
+      project unhardened clean
       # A reader that is not logged in; the outer session passes through.
       fake_claude unhardened <<'SH'
 for argument; do
@@ -394,7 +391,7 @@ SH
       check "package unchanged" unchanged
       ;;
     older-claude)
-      project older-claude clean deployed
+      project older-claude clean
       # An older Claude Code, without --restricted.
       fake_claude older-claude <<'SH'
 for argument; do
