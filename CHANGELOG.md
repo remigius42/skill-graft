@@ -29,8 +29,8 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
   **Skill** marked `+` added or `~` changed, then a `# - <skill id>` line per removed **Skill**
 - In a hardened `/graft-check`, a reader's reply reaches the main agent only as a report filter shipped with the skill
   admits it: a report in the report shape, at most 100 findings and 200 uses, each value one line of printable ASCII of
-  at most 200 characters, a character outside it shown as `?`. Any other reply leaves its **Skill** with no report,
-  `not in the report shape`, and none of it is shown
+  at most 200 characters, a character outside it shown as `?`. Any other reply runs its reader once more; a second one
+  leaves its **Skill** with no report, `not in the report shape`, and none of either is shown
 - A reader that fails shows one line of its error, in printable ASCII, at most 200 characters, as a failed patcher does
 - A **Skill** under a folder named with anything but `A-Z a-z 0-9 . _ -`, or with only dots, is unusable: an **Entry**,
   a `[bind]` target, or a slash or `Skill(<name>)` **Reference** that needs it fails, naming the folder with every other

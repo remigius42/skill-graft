@@ -197,13 +197,14 @@ Hardened, each reader is its own `claude` process:
    sh <report-filter.sh> <mode> <skill id> <name>… < <out> 2> /dev/null
    ```
 
-   Its exit 0: what it prints is the reader's report, and you hold nothing else of the reply. Its exit 1: that **Skill**
-   has no report, `not in the report shape`. Any other exit ends the **Check**: name the report filter and its exit
-   code.
+   Its exit 0: what it prints is the reader's report, and you hold nothing else of the reply. Its exit 1: run that
+   reader once more, with a new working folder and `<files>`; a second exit 1 leaves that **Skill** with no report,
+   `not in the report shape`. Any other exit ends the **Check**: name the report filter and its exit code.
 
 At most `<readers-at-once>` readers run at once: run them in batches of at most `<readers-at-once>`, each batch's Bash
-calls together, the next batch once all of them have returned. Say in the report which **Skills** have no report, and
-why.
+calls together, the next batch once all of them have returned. A reader run once more joins the next batch and counts
+toward its `<readers-at-once>`: a **Skill** costs at most twice `<reader-budget-usd>`. Say in the report which
+**Skills** have no report, and why.
 
 Unhardened, give each **Skill** a subagent in this session, or read them one by one yourself, following the reader's
 prompt in `reader.json` in this skill's folder.

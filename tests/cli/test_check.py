@@ -775,7 +775,17 @@ def test_reader_reply_reaches_the_main_agent_only_through_the_filter() -> None:
     assert "nor a reader's output but the probe's" in quarantine
     step = text[read:report]
     assert "Its exit 0: what it prints is the reader's report" in step
-    assert "Its exit 1: that **Skill** has no report, `not in the report shape`" in step
+    # Seen from readers: a line of narration first, or a `line:` in a finding.
+    assert (
+        "Its exit 1: run that reader once more, with a new working folder and"
+        " `<files>`; a second exit 1 leaves that **Skill** with no report,"
+        " `not in the report shape`" in step
+    )
+    assert (
+        "A reader run once more joins the next batch and counts toward its"
+        " `<readers-at-once>`: a **Skill** costs at most twice `<reader-budget-usd>`"
+        in step
+    )
     assert (
         "Any other exit ends the **Check**: name the report filter and its exit code"
         in (step)
