@@ -424,8 +424,20 @@ def test_unreadable_lock_cannot_check(scope: paths.Scope, text: str | None) -> N
 
     message = str(raised.value)
     assert "cannot be checked" in message and "differs" not in message
+    assert "missing, unreadable or of another version" in message
     assert f"delete {scope.skills}" in message and "skill-graft resolve" in message
     assert snapshot(scope.package) == before
+
+
+def test_cannot_check_names_a_lone_old(scope: paths.Scope) -> None:
+    resolve(scope)
+    scope.skills.rename(old := scope.skills.with_name("skills.old"))
+    scope.lock_file.unlink()
+
+    with pytest.raises(SkillGraftError) as raised:
+        resolve(scope)
+
+    assert f"delete {old}," in str(raised.value)
 
 
 def test_dry_run_checks_copies(scope: paths.Scope) -> None:

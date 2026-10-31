@@ -62,8 +62,9 @@ def check_copies(skills: Path, locked: dict[str, Any] | None) -> None:
     if locked is None or lock.recorded(locked) is None:
         if folder.exists() and any(folder.iterdir()):
             raise SkillGraftError(
-                f"skill-graft.lock is missing or unreadable, so {skills} cannot be"
-                f" checked: delete {skills}, then run `skill-graft resolve`"
+                "skill-graft.lock is missing, unreadable or of another version, so"
+                f" {folder} cannot be checked: delete {folder}, then run"
+                " `skill-graft resolve`"
             )
         return
     if problems := lock.copy_problems(folder, locked):

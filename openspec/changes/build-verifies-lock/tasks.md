@@ -55,12 +55,12 @@ every commit passes `pytest`.
   `test_killed_after_lock_recovered`, `test_killed_after_lock_adding_only_recovered`,
   `test_gitattributes_written_if_missing`, `test_own_gitattributes_kept`, `test_into_writes_no_gitattributes`,
   `test_first_resolve_lock_write_fails_leaves_no_copies`, `test_checked_skips_the_check`,
-  `test_previous_copies_left_behind_never_replace_an_edit`; in `tests/pipeline/test_vendor.py`,
-  `test_clear_old_leaves_nothing_recover_takes_back`; tests that list a **Package**'s files now expect `.gitattributes`
-  once it was resolved; in `test_resolve.py`, `test_edit.py` and `test_update.py`, the scenarios "Resolve succeeds",
-  "Resolution error", "Lock write fails", "Edit succeeds", "Edit fails to resolve", "Lock write interrupted", "No
-  deploy" and "Dry run" now expect `.apm/skills/` written, restored or untouched as the specs say. Verify red, then
-  green
+  `test_previous_copies_left_behind_never_replace_an_edit`, `test_cannot_check_names_a_lone_old`; in
+  `tests/pipeline/test_vendor.py`, `test_clear_old_leaves_nothing_recover_takes_back`; tests that list a **Package**'s
+  files now expect `.gitattributes` once it was resolved; in `test_resolve.py`, `test_edit.py` and `test_update.py`, the
+  scenarios "Resolve succeeds", "Resolution error", "Lock write fails", "Edit succeeds", "Edit fails to resolve", "Lock
+  write interrupted", "No deploy" and "Dry run" now expect `.apm/skills/` written, restored or untouched as the specs
+  say. Verify red, then green
 - [x] 2.3 `commands/update.py`: calls `transaction.check_copies` before listing remotes, and passes `checked=True` to
   `resolving`. Test in `tests/commands/test_update.py`, `test_edited_copy_refused_before_any_remote` (also with
   `--dry-run`): exits 1 naming `.apm/skills/tdd`, with no sha line printed and the cache folder unchanged; and

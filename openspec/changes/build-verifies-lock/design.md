@@ -68,11 +68,13 @@ registering (no lock yet), and the `graft-check` skill, whose **Patch** fix edit
   `transaction.check_copies(skills, locked)` checks the folder `pending` names, so a dry run and a refused `build`
   report what a writing run would and change nothing, and raises a `SkillGraftError` with those lines and the way out:
   move the edit into a **Patch**, or delete the folder. When the lock is missing, cannot be read or is of another
-  `version` and `skills` holds anything, it raises instead an error saying the lock is missing or unreadable, so
-  `.apm/skills/` cannot be checked, and to delete `.apm/skills/`, then run `skill-graft resolve`: the copies are not to
-  blame. `resolving` runs it first, writing or not, unless the caller passes `checked=True`; `--into`'s `skills` is
-  empty, so it passes. `update` calls it before listing remotes, so an edited copy is reported before any network or
-  cache work, and passes `checked=True`, so the copies are hashed once.
+  `version` and `skills` holds anything, it raises instead an error saying the lock is missing, unreadable or of another
+  version, so `.apm/skills/` cannot be checked, and to delete `.apm/skills/`, then run `skill-graft resolve`: the copies
+  are not to blame. It names the folder `pending` names, not always `.apm/skills/`: after a killed run that is a lone
+  `.apm/skills.old/`, which deleting `.apm/skills/` would leave, so the refusal would never go away. `resolving` runs it
+  first, writing or not, unless the caller passes `checked=True`; `--into`'s `skills` is empty, so it passes. `update`
+  calls it before listing remotes, so an edited copy is reported before any network or cache work, and passes
+  `checked=True`, so the copies are hashed once.
 - **Hashes come from `skill_hashes`.** `build`'s hashing of the copies goes; the lock's hashes are `skill_hashes(hull)`
   for every command, as for `update` today. A test pins `folder_hash(copy) == skill_hashes(hull)[skill]` for a renamed,
   patched, symlinked and executable **Skill**: the copy check fails every second command without it.
