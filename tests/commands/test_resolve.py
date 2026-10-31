@@ -30,7 +30,8 @@ def test_resolve_succeeds(home: Path, capsys: Capsys) -> None:
     skills = tomllib.loads(lock_file(home).read_text())["skills"]
     assert [s["id"] for s in skills] == ["own/grilling", "own/tdd"]
     assert config.read_bytes() == before
-    assert not (home / ".apm" / "skill-graft" / ".apm").exists()
+    skills = home / ".apm" / "skill-graft" / ".apm" / "skills"
+    assert sorted(p.name for p in skills.iterdir()) == ["grilling", "tdd"]
 
 
 def test_tree(home: Path, capsys: Capsys) -> None:
@@ -184,13 +185,14 @@ def test_resolution_error(home: Path, capsys: Capsys) -> None:
     skill(home / "own" / "notes")
     configure(["own/tdd"], own="~/own")
     main(["resolve"])
-    before = lock_file(home).read_bytes()
+    copy = home / ".apm" / "skill-graft" / ".apm" / "skills" / "tdd" / "SKILL.md"
+    before = (lock_file(home).read_bytes(), copy.read_bytes())
     skill(home / "own" / "tdd", "/missing-entry\n")
     configure(["own/tdd", "own/nope"], own="~/own")
 
     assert main(["resolve"]) == 1
 
-    assert lock_file(home).read_bytes() == before
+    assert (lock_file(home).read_bytes(), copy.read_bytes()) == before
 
 
 def test_git_source_without_ref(tmp_path: Path, capsys: Capsys) -> None:
@@ -276,6 +278,24 @@ def test_git_file_is_not_hashed(home: Path) -> None:
     assert main(["build", "--no-install"]) == 0
 
     assert locked() == resolved
+
+
+def test_lock_write_fails(home: Path, monkeypatch: pytest.MonkeyPatch) -> None:
+    tdd = skill(home / "own" / "tdd")
+    configure(["own/tdd"], own="~/own")
+    assert main(["resolve"]) == 0
+    copy = home / ".apm" / "skill-graft" / ".apm" / "skills" / "tdd" / "SKILL.md"
+    before = (lock_file(home).read_bytes(), copy.read_bytes())
+    (tdd / "SKILL.md").write_text("changed\n")
+
+    def fail(text: str, file: Path) -> None:
+        raise OSError("disk full")
+
+    monkeypatch.setattr(lock, "write", fail)
+
+    assert main(["resolve"]) == 1
+
+    assert (lock_file(home).read_bytes(), copy.read_bytes()) == before
 
 
 def test_vendoring_fails(home: Path) -> None:

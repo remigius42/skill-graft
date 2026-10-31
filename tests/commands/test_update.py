@@ -1,6 +1,7 @@
 """The `update` spec, through `skill-graft update`."""
 
 import os
+import shutil
 import tempfile
 from pathlib import Path
 from typing import Any, TypeAlias
@@ -332,7 +333,9 @@ def test_no_deploy(upstream: Upstream, fake_apm: FakeApm, capsys: Capsys) -> Non
 
     assert update(capsys)[0] == 0
 
-    assert vendored() == set() and fake_apm.calls == []
+    assert vendored() == {"tdd"} and fake_apm.calls == []
+    tdd = paths.Scope(Path.home()).skills / "tdd" / "SKILL.md"
+    assert tdd.read_text() == "# tdd\n"
 
 
 def test_comments_survive(upstream: Upstream, capsys: Capsys) -> None:
@@ -379,7 +382,8 @@ def test_failed_write_leaves_no_temporary_file(
 
     assert code == 1 and "disk full" in err
     assert file.read_bytes() == before
-    assert sorted(p.name for p in file.parent.iterdir()) == ["skill-graft.toml"]
+    assert sorted(p.name for p in file.parent.iterdir()) == [".apm", "skill-graft.toml"]
+    assert list((file.parent / ".apm").iterdir()) == []
 
 
 def test_line_endings_and_encoding_survive(upstream: Upstream, capsys: Capsys) -> None:
@@ -467,6 +471,8 @@ def test_dry_run(upstream: Upstream, capsys: Capsys) -> None:
     assert code == 0
     assert out.splitlines()[0] == f"mp {new}" and "not written" in out
     assert file.read_bytes() == before and snapshot(paths.cache()) == cached
+    skills = paths.Scope(Path.home()).skills
+    assert vendored() == {"tdd"} and (skills / "tdd" / "SKILL.md").read_text() == "1\n"
 
 
 def test_dry_run_remote_refusing_files_by_name(
@@ -1149,6 +1155,7 @@ def test_missing_lock_names_every_skill(
     mp_and_own(home, upstream, '["mp/tdd", "own/notes"]')
     assert update(capsys)[0] == 0
     lock_file().unlink()
+    shutil.rmtree(paths.Scope(Path.home()).skills)  # else they cannot be checked
 
     code, out, _ = update(capsys, "--dry-run")
 
@@ -1162,6 +1169,7 @@ def test_unreadable_lock_names_every_skill(
     mp_and_own(home, upstream, '["mp/tdd"]')
     assert update(capsys)[0] == 0
     lock_file().write_bytes(text.encode("latin-1"))
+    shutil.rmtree(paths.Scope(Path.home()).skills)  # else they cannot be checked
 
     code, out, _ = update(capsys, "--dry-run")
 
@@ -1428,6 +1436,8 @@ def test_lock_write_fails(
 
     assert code == 1 and "disk full" in err
     assert file.read_bytes() == before and lock_file().read_bytes() == lock_before
+    assert vendored() == {"tdd"}
+    assert (paths.Scope(Path.home()).skills / "tdd" / "SKILL.md").read_text() == "1\n"
 
 
 def test_lock_write_interrupted(
@@ -1441,6 +1451,8 @@ def test_lock_write_interrupted(
         update(capsys)
 
     assert file.read_bytes() == before and lock_file().read_bytes() == lock_before
+    assert vendored() == {"tdd"}
+    assert (paths.Scope(Path.home()).skills / "tdd" / "SKILL.md").read_text() == "1\n"
 
 
 def test_diff_file_without_a_previous_hull(

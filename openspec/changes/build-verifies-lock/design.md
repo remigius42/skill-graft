@@ -58,7 +58,10 @@ registering (no lock yet), and the `graft-check` skill, whose **Patch** fix edit
   `keep_old` is true when `skills.old` holds exactly the lock's **Vendored copies**, none missing and each matching: a
   run that only added **Skills** and was killed after its lock write leaves `skills.old` short of the new ones, so the
   complete `skills` is kept. `vendor.recover` does what `pending` names and deletes `skills.new`; it runs only right
-  before staging. `transaction` builds `keep_old` from `lock`, so `vendor` imports no `lock`.
+  before staging. `transaction` builds `keep_old` from `lock`, so `vendor` imports no `lock`. `vendor.clear_old` first
+  renames `skills.old` to `skills.trash`, which `recover` always deletes and never keeps: a run that changed nothing
+  leaves a `skills.old` equal to the lock, and if its delete failed or was killed, the next run would take it back over
+  an edit made since, without a word. Only a kill between the lock write and that rename still can.
 - **The copy check.** `lock.copy_problems(skills, locked)` returns one line per entry of `skills` whose hash differs
   from the lock's for the **Skill** deployed under that name, per folder no **Skill** of the lock is deployed under, and
   per file at its top level, which a swap would drop; empty when they match. A missing copy is no problem.
@@ -137,6 +140,10 @@ registering (no lock yet), and the `graft-check` skill, whose **Patch** fix edit
   lock. Acceptable: rare, and deleting the folders is the way out; telling this apart would need a record of the run.
 - A teammate's `build` in project scope rewrites the committed lock's absolute path **Source** folders → as today.
 - `resolve` and the editing commands now copy the **Hull** → the copy is small next to resolution's git work.
+- A path **Source**'s file saved while a command runs, after `render` hashed it and before `stage` copied it → the lock
+  records one text, the copy holds the other, and the next command refuses the copy as edited. Acceptable: the window is
+  a run's milliseconds, and deleting the folder is the way out; hashing the staged copies instead would read every copy
+  once more on every run.
 - Same-user tampering → not prevented: the lock is as writable as the cache (ADR 0009).
 - Many tests build from a config written by hand → `tests/conftest.py`'s `build` helper runs `resolve` first; direct
   `main(["build", …])` calls in tests that expect success do too.

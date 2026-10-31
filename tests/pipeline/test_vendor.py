@@ -127,3 +127,12 @@ def test_recover_drops_new(tmp_path: Path) -> None:
 
     assert held(skills) == ["a"]
     assert held(skills.with_name("skills.new")) is None
+
+
+def test_clear_old_leaves_nothing_recover_takes_back(tmp_path: Path) -> None:
+    skills = folders(tmp_path, current="a", trash="b")
+
+    vendor.recover(skills, lambda _: True)
+
+    assert held(skills) == ["a"]
+    assert held(skills.with_name("skills.trash")) is None

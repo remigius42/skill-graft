@@ -36,7 +36,8 @@ def test_add_succeeds(home: Path, capsys: Capsys) -> None:
     assert entries(home) == ["mp/tdd", "mp/notes"]
     assert 'id = "mp/notes"' in (package(home) / "skill-graft.lock").read_text()
     assert capsys.readouterr().out == "mp/tdd\nmp/notes\n"
-    assert not (package(home) / ".apm").exists()
+    notes = package(home) / ".apm" / "skills" / "notes" / "SKILL.md"
+    assert notes.read_bytes() == (home / "mp" / "notes" / "SKILL.md").read_bytes()
 
 
 def mp_skills(home: Path, *names: str) -> None:
@@ -460,6 +461,7 @@ def test_lock_write_interrupted(
     config = write_config('entries = ["mp/tdd"]\n' + SOURCES)
     assert main(["resolve"]) == 0
     lock_file = package(home) / "skill-graft.lock"
+    skills = package(home) / ".apm" / "skills"
     before = (config.read_bytes(), lock_file.read_bytes())
 
     def interrupt(text: str, file: Path) -> None:
@@ -471,6 +473,8 @@ def test_lock_write_interrupted(
         main(["add", "mp/notes"])
 
     assert (config.read_bytes(), lock_file.read_bytes()) == before
+    assert sorted(p.name for p in skills.iterdir()) == ["tdd"]
+    assert sorted(p.name for p in skills.parent.iterdir()) == ["skills"]
 
 
 def test_edit_fails_to_resolve(home: Path, capsys: Capsys) -> None:
@@ -484,13 +488,16 @@ def test_edit_fails_to_resolve(home: Path, capsys: Capsys) -> None:
         '[sources.b]\npath = "~/b"\n'
     )
     assert main(["resolve"]) == 0
+    skills = package(home) / ".apm" / "skills"
     before = (config.read_bytes(), (package(home) / "skill-graft.lock").read_bytes())
+    vendored = sorted(p.name for p in skills.iterdir())
     capsys.readouterr()
 
     assert main(["add", "mp/notes"]) == 1
 
     after = (config.read_bytes(), (package(home) / "skill-graft.lock").read_bytes())
     assert after == before
+    assert sorted(p.name for p in skills.iterdir()) == vendored == ["tdd"]
     assert capsys.readouterr().out == ""
 
 

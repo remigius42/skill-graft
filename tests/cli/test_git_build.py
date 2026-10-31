@@ -47,7 +47,8 @@ def test_skill_from_git(home: Path, tmp_path: Path, capsys: Capsys) -> None:
     assert not (tdd / ".git").exists()
     assert (home / ".cache" / "skill-graft" / "repos").is_dir()
     assert package_files(home) == before | {
-        home / ".apm" / "skill-graft" / "skill-graft.lock"
+        home / ".apm" / "skill-graft" / "skill-graft.lock",
+        home / ".apm" / "skill-graft" / ".gitattributes",
     }
 
 

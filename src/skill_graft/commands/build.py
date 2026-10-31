@@ -9,7 +9,7 @@ from skill_graft.commands import explain, transaction
 from skill_graft.infra import apm, paths
 from skill_graft.infra.cache import Cache
 from skill_graft.infra.errors import SkillGraftError, notice
-from skill_graft.pipeline import config, lock, vendor
+from skill_graft.pipeline import config
 
 
 def build(
@@ -30,19 +30,16 @@ def build(
         if given is not None:
             _check_into_sources(given, loaded)
         with transaction.resolving(
-            scope, loaded, warnings, cache, lock_file=lock_file
+            scope,
+            loaded,
+            warnings,
+            cache,
+            lock_file=lock_file,
+            skills=skills,
+            checked=into is not None,  # its folder is empty: no copies to check
         ) as resolution:
             resolved = resolution.hull
             started = True  # from here on `into` may hold our writes
-            vendor.recover(skills, lambda old: False)
-            vendor.stage(resolved, skills)
-            vendor.swap(skills)
-            vendor.clear_old(skills)
-            # Hashes the vendored copies, so the lock holds what was vendored.
-            resolution.hashes = {
-                s: lock.folder_hash(skills / resolved.deployed[s])
-                for s in resolved.skills
-            }
     except BaseException:
         # After the work folder is gone, which a TMPDIR may put in `into`.
         if into is not None and started:
@@ -89,7 +86,12 @@ def _undo_into(into: Path) -> None:
     Never raises: the build's own error is the one to report.
     """
     folder = into / ".apm"
-    for name in ("skills.new", "skills.old", "skills"):  # `.new` stays on Ctrl-C
+    for name in (
+        "skills.new",
+        "skills.old",
+        "skills.trash",
+        "skills",
+    ):  # `.new` stays on Ctrl-C
         shutil.rmtree(folder / name, ignore_errors=True)
     with contextlib.suppress(OSError):
         (into / "skill-graft.lock").unlink(missing_ok=True)

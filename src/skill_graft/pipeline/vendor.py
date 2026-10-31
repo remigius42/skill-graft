@@ -70,10 +70,21 @@ def swap_back(skills: Path) -> None:
         old.rename(skills)
 
 
+def _trash(skills: Path) -> Path:
+    return skills.with_name("skills.trash")
+
+
 def clear_old(skills: Path) -> None:
-    """Deletes the previous copies `swap` kept."""
-    if (old := _old(skills)).exists():
-        shutil.rmtree(old)
+    """Deletes the previous copies `swap` kept, renamed to `skills.trash` first: a
+    delete that fails or is killed never leaves them for `recover` to take back
+    over an edit made since."""
+    old, trash = _old(skills), _trash(skills)
+    if old.exists():
+        try:
+            old.rename(trash)
+        except OSError as error:
+            raise SkillGraftError(f"cannot delete stale {old}: {error}") from None
+    _delete(trash)
 
 
 def pending(skills: Path, keep_old: Callable[[Path], bool]) -> Path:
@@ -87,12 +98,12 @@ def pending(skills: Path, keep_old: Callable[[Path], bool]) -> Path:
 
 def recover(skills: Path, keep_old: Callable[[Path], bool]) -> None:
     """Undoes a run killed mid-swap, keeping as `skills` what `pending` names, and
-    deletes `skills.new`."""
+    deletes `skills.new` and `skills.trash`."""
     new, old = _new(skills), _old(skills)
     if pending(skills, keep_old) == old:
         _delete(skills)
         old.rename(skills)
-    for stale in (new, old):
+    for stale in (new, old, _trash(skills)):
         _delete(stale)
 
 
