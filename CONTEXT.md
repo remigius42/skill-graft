@@ -31,12 +31,13 @@ the default, or that they resolve nowhere: such a name is then not a **Reference
 **Hull**: The **Entries** plus every **Skill** reachable from them through slash and Skill tool **References**. Prose
 **References** never extend it. _Avoid_: Closure, graph, dependency tree
 
-**Hull diff**: What an `update` changes in the **Hull**: each **Skill** that joins it, leaves it, or changes as
-deployed. _Avoid_: Update diff, changelog
+**Hull diff**: Each **Skill**, by **Skill ID**, that joins, leaves, or changes as deployed, before against after: for an
+`update`, the **Hull** at the current **Refs** against the new ones; for `resolve` and the editing commands, the
+**Vendored copies** against the **Hull** they would vendor. _Avoid_: Update diff, changelog
 
-**Deployed diff**: The text of each **Skill** an `update` changes or adds, as deployed, **Patches** and **Renames**
-applied, at the current **Refs** against the new ones. Not what the **Source** changed, and never a **Patch**. _Avoid_:
-Update diff, upstream diff, review patch
+**Deployed diff**: The text of each **Skill** that changes or joins as deployed, **Patches** and **Renames** applied,
+before against after, as the **Hull diff** pairs them. Not what the **Source** changed, and never a **Patch**. _Avoid_:
+Update diff, edit diff, upstream diff, review patch
 
 **Hull digest**: One SHA-256 over every **Skill** of a **Hull**: its **Skill ID**, **Deployed name** and hash as
 deployed. Equal digests deploy the same text under the same names. _Avoid_: Lock hash, checksum, pin
