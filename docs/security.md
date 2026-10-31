@@ -36,7 +36,11 @@ headless agents, checked on Claude Code 2.1.309:
   files, its other folders granted with `--add-dir`: its **Upstream** folder, its vendored copy, its targets'
   **Upstream** folders. `--restricted` confines the file tools to those folders and drops every tool that runs code, and
   ignores the user's settings, so none can widen it. The reader definition ships with the skill
-  (`skills/graft-check/reader.json`).
+  (`skills/graft-check/reader.json`), as does the script that starts the probe, a reader or the patcher in its folder,
+  its output in files (`skills/graft-check/run-claude.sh`). The script sets their confining flags itself, takes their
+  definitions from its own folder, runs only in a folder under `$TMPDIR` and refuses any other value that is not an
+  absolute path or a number. A permission rule allowing it allows no other `claude` run than a reader of the folders it
+  is given, which may lie anywhere, or a patcher in a temporary folder.
 - **The main agent** never opens a **Skill**'s **Upstream** text, vendored copy or patch files, nor a reader's output
   but the probe's. It holds CLI output, `skill-graft.toml`, the lock, of each reader what the report filter
   (`skills/graft-check/report-filter.sh`) admits of its reply or, when it fails, the first line of its errors, and of

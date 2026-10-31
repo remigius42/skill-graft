@@ -212,13 +212,15 @@ ask() {
   shift 2
   # --add-dir: the throwaway deploys, the cache and the sources lie outside the project.
   # The hardened Check runs `claude` readers and copies and diffs in temporary folders.
-  # `sh` runs the skill's report filter only, its path quoted as the skill asks or not.
-  # Edit is the file tool that corrects a prompt file it wrote, in $TMPDIR only.
+  # `sh` runs the skill's two scripts only, each path quoted as the skill asks or not;
+  # every `claude` the Check starts goes through run-claude.sh. Edit is the file tool
+  # that corrects a prompt file it wrote, in $TMPDIR only.
   (cd "$dir/project" && claude -p "$@" --add-dir "$work" \
     --allowedTools "Bash(skill-graft:*)" "Bash(mktemp:*)" "Bash(diff:*)" "Bash(printenv:*)" \
-    "Bash(command -v:*)" "Bash(claude:*)" "Bash(cd:*)" "Bash(cp:*)" "Bash(mv:*)" "Bash(rm:*)" \
+    "Bash(command -v:*)" "Bash(cd:*)" "Bash(cp:*)" "Bash(mv:*)" "Bash(rm:*)" \
     "Bash(git apply:*)" "Bash(awk:*)" "Bash(sh '$skill/report-filter.sh':*)" \
-    "Bash(sh $skill/report-filter.sh:*)" "Bash(cat:*)" "Bash(echo:*)" "Bash(tr:*)" \
+    "Bash(sh $skill/report-filter.sh:*)" "Bash(sh '$skill/run-claude.sh':*)" \
+    "Bash(sh $skill/run-claude.sh:*)" "Bash(cat:*)" "Bash(echo:*)" "Bash(tr:*)" \
     "Bash(grep:*)" "Bash(cut:*)" "Bash(find:*)" "Bash(wc:*)" "Edit(/$TMPDIR/**)" \
     Read Write Grep Glob Task Agent) \
     > "$report" || code=$?

@@ -3,6 +3,7 @@ and that installing it pulls in nothing else."""
 
 import json
 import os
+import re
 import shutil
 import subprocess
 import sys
@@ -86,12 +87,16 @@ def commands(start: str) -> list[str]:
 
 
 def test_every_claude_has_a_turn_and_budget_cap() -> None:
-    probe, reader, patcher = commands("claude -p")
+    probe, reader, patcher = commands("sh <run-claude.sh>")
 
-    assert "--max-turns 30 --max-budget-usd 1.0" in probe
-    assert "--max-turns <reader-turns> --max-budget-usd <reader-budget-usd>" in reader
-    assert (
-        "--max-turns <patcher-turns> --max-budget-usd <patcher-budget-usd>" in patcher
+    assert commands("claude") == []
+    assert probe == "sh <run-claude.sh> reader <empty folder> <files> 30 1.0"
+    assert reader == (
+        "sh <run-claude.sh> reader <working folder> <files> <reader-turns>"
+        " <reader-budget-usd> \\ <upstream> <vendored copy> <target upstream>…"
+    )
+    assert patcher == (
+        "sh <run-claude.sh> patcher <work> <files> <patcher-turns> <patcher-budget-usd>"
     )
 
 
@@ -130,24 +135,196 @@ def test_patcher_only_edits() -> None:
 
 
 def test_patcher_reply_never_reaches_the_main_agent() -> None:
-    (patcher,) = [c for c in commands("claude -p") if "--agent patcher" in c]
+    (patcher,) = commands("sh <run-claude.sh> patcher")
     text = " ".join((SKILLS / "graft-check" / "SKILL.md").read_text().split())
 
-    assert patcher.endswith("< <prompt file> > <out-file> 2> <err-file>")
-    assert "On exit 0, never open `<out-file>`" in text
+    assert patcher.startswith("sh <run-claude.sh> patcher <work> <files> ")
+    assert "On exit 0, never open `<out>`" in text
+
+
+RUN_CLAUDE = SKILLS / "graft-check" / "run-claude.sh"
+
+
+def run_claude(
+    tmp_path: Path, *args: str, prompt: bool = True
+) -> subprocess.CompletedProcess[str]:
+    """`run-claude.sh` run with `args` and `TMPDIR` set to `tmp_path`, a fake
+    `claude` on PATH printing where it runs, its arguments and its stdin, writing
+    `err` to stderr and exiting 3. `tmp_path / "work"` is a working folder and
+    `tmp_path / "files"` the files folder, its `prompt` written unless not
+    `prompt`."""
+    bin_dir = tmp_path / "bin"
+    bin_dir.mkdir()
+    fake = bin_dir / "claude"
+    fake.write_text('#!/bin/sh\npwd\nprintf "%s\\n" "$@"\ncat\necho err >&2\nexit 3\n')
+    fake.chmod(0o755)
+    (tmp_path / "work").mkdir()
+    (tmp_path / "files").mkdir()
+    if prompt:
+        (tmp_path / "files" / "prompt").write_text("the prompt\n")
+    path = f"{bin_dir}{os.pathsep}{os.environ['PATH']}"
+    return subprocess.run(
+        ["sh", str(RUN_CLAUDE), *args],
+        env={**os.environ, "PATH": path, "TMPDIR": str(tmp_path)},
+        capture_output=True,
+        text=True,
+        check=False,
+    )
+
+
+def test_run_claude_confines_a_reader(tmp_path: Path) -> None:
+    work, files = str(tmp_path / "work"), str(tmp_path / "files")
+    agents = RUN_CLAUDE.parent.resolve() / "reader.json"
+
+    run = run_claude(tmp_path, "reader", work, files, "30", "1.0", "/up", "/v")
+
+    assert (run.returncode, run.stdout, run.stderr) == (3, "", "")
+    assert (tmp_path / "files" / "out").read_text().split("\n") == [
+        work,
+        *"-p --max-turns 30 --max-budget-usd 1.0 --restricted --strict-mcp-config".split(),
+        *f"--tools Read,Grep,Glob --agents {agents} --agent reader".split(),
+        *"--add-dir /up --add-dir /v".split(),
+        "the prompt",
+        "",
+    ]
+    assert (tmp_path / "files" / "err").read_text() == "err\n"
+
+
+def test_run_claude_confines_the_patcher(tmp_path: Path) -> None:
+    work, files = str(tmp_path / "work"), str(tmp_path / "files")
+    agents = RUN_CLAUDE.parent.resolve() / "patcher.json"
+
+    run = run_claude(tmp_path, "patcher", work, files, "10", "0.5")
+
+    assert run.returncode == 3
+    assert (tmp_path / "files" / "out").read_text().split("\n")[1:-2] == [
+        *"-p --max-turns 10 --max-budget-usd 0.5 --restricted --strict-mcp-config".split(),
+        *"--tools Read,Edit,Write --permission-mode acceptEdits".split(),
+        *f"--agents {agents} --agent patcher".split(),
+    ]
+
+
+@pytest.mark.parametrize(
+    "args",
+    [
+        ["writer", "W", "D", "30", "1.0"],
+        ["patcher", "W", "D", "10", "0.5", "/up"],
+        ["reader", "W", "D", "--dangerously-skip-permissions", "1.0"],
+        ["reader", "W", "D", "30", "-1"],
+        ["reader", "W", "D", "30", "1.0", "--dangerously-skip-permissions"],
+        ["reader", "relative", "D", "30", "1.0"],
+        ["reader", "OUT", "D", "30", "1.0"],
+        ["reader", "TMP", "D", "30", "1.0"],
+        ["reader", "UP", "D", "30", "1.0"],
+        ["reader", "W", "D", "30"],
+    ],
+)
+def test_run_claude_refuses_what_could_widen_it(
+    tmp_path: Path, args: list[str]
+) -> None:
+    # A permission rule admitting run-claude.sh then admits no other claude run
+    # than its two agents, from its own folder, in a temporary folder.
+    values = {
+        "W": str(tmp_path / "work"),
+        "D": str(tmp_path / "files"),
+        "OUT": str(tmp_path.parent),
+        "TMP": str(tmp_path),
+        "UP": f"{tmp_path}/work/../..",
+    }
+
+    run = run_claude(tmp_path, *[values.get(a, a) for a in args])
+
+    assert run.returncode == 2
+    assert (tmp_path / "files" / "out").read_text() == ""
+    assert "run-claude.sh: " in (tmp_path / "files" / "err").read_text()
+
+
+def test_run_claude_refuses_a_files_folder_outside_tmpdir(tmp_path: Path) -> None:
+    outside = tmp_path.parent / f"{tmp_path.name}-files"
+    outside.mkdir()
+
+    run = run_claude(
+        tmp_path, "reader", str(tmp_path / "work"), str(outside), "30", "1"
+    )
+
+    assert run.returncode == 2
+    assert "run-claude.sh: " in run.stderr
+    assert list(outside.iterdir()) == []
+
+
+def test_run_claude_refuses_a_symlink_out_of_tmpdir(tmp_path: Path) -> None:
+    # A folder's path under $TMPDIR is not enough: a link there could lead the
+    # patcher, which edits, anywhere.
+    outside = tmp_path.parent / f"{tmp_path.name}-home"
+    outside.mkdir()
+    (tmp_path / "link").symlink_to(outside)
+    work, files = str(tmp_path / "work"), str(tmp_path / "files")
+
+    as_folder = run_claude(
+        tmp_path, "patcher", str(tmp_path / "link"), files, "10", "0.5"
+    )
+    claude_ran = (tmp_path / "files" / "out").read_text() != ""
+    for made in ("bin", "work", "files"):
+        shutil.rmtree(tmp_path / made)
+    as_files = run_claude(tmp_path, "reader", work, str(tmp_path / "link"), "30", "1")
+
+    assert (as_folder.returncode, claude_ran) == (2, False)
+    assert (as_files.returncode, list(outside.iterdir())) == (2, [])
+
+
+def test_run_claude_writes_a_missing_prompt_to_the_err_file(tmp_path: Path) -> None:
+    work, files = str(tmp_path / "work"), str(tmp_path / "files")
+
+    run = run_claude(tmp_path, "reader", work, files, "30", "1.0", prompt=False)
+
+    assert run.returncode != 0
+    assert (run.stdout, run.stderr) == ("", "")
+    assert (tmp_path / "files" / "out").read_text() == ""
+    assert "prompt" in (tmp_path / "files" / "err").read_text()
+
+
+def test_run_claude_writes_a_failed_cd_to_the_err_file(tmp_path: Path) -> None:
+    missing, files = str(tmp_path / "missing"), str(tmp_path / "files")
+
+    run = run_claude(tmp_path, "reader", missing, files, "30", "1.0")
+
+    assert run.returncode != 0
+    assert (run.stdout, run.stderr) == ("", "")
+    assert (tmp_path / "files" / "out").read_text() == ""
+    assert "missing" in (tmp_path / "files" / "err").read_text()
+
+
+def test_no_command_combines_cd_with_a_redirection() -> None:
+    # Claude Code's Bash guard refuses `cd` and an output redirection in one
+    # command, so a reader's or the patcher's folder is run-claude.sh's to enter.
+    text = (SKILLS / "graft-check" / "SKILL.md").read_text()
+    blocks = [block.split("```")[0] for block in text.split("```sh\n")[1:]]
+
+    assert [b for b in blocks if re.search(r"(^|[\s(;&])cd\s", b) and ">" in b] == []
+    assert "from the working folder" not in text.lower()
+    assert "from the empty folder" not in text.lower()
+    assert "from `<work>`" not in text.lower()
+
+
+def test_probe_runs_as_every_reader_runs() -> None:
+    text = " ".join((SKILLS / "graft-check" / "SKILL.md").read_text().split())
+    step = text[text.index("## 1. Hardened or not") : text.index("## 2. Throwaway")]
+
+    assert "`mktemp -d` makes an empty folder and its `<files>`" in step
+    assert "It passes when it exits 0 and `<out>` holds `reader-ok`" in step
 
 
 def error_line(tmp_path: Path, err: str, out: str) -> str:
     """What the skill shows of a failed reader or patcher that wrote `err` and `out`:
     step 4 and step 6 show it alike."""
-    reader, patcher = commands("{ cat <err-file>; echo; cat <out-file>; }")
+    reader, patcher = commands("{ cat <err>; echo; cat <out>; }")
     assert reader == patcher
-    command = reader
     (tmp_path / "err").write_text(err)
     (tmp_path / "out").write_text(out)
-    command = command.replace("<err-file>", str(tmp_path / "err"))
     return subprocess.run(
-        command.replace("<out-file>", str(tmp_path / "out")),
+        reader.replace("<err>", str(tmp_path / "err")).replace(
+            "<out>", str(tmp_path / "out")
+        ),
         shell=True,
         capture_output=True,
         text=True,
@@ -545,19 +722,20 @@ def test_filter_cuts_a_value_longer_than_200_characters() -> None:
 
 
 def test_readers_output_goes_to_files() -> None:
-    readers = [c for c in commands("claude -p") if "--add-dir" in c]
+    readers = commands("sh <run-claude.sh> reader <working folder>")
     text = " ".join((SKILLS / "graft-check" / "SKILL.md").read_text().split())
     read, report = text.index("## 4. Read"), text.index("## 5. Report")
     fixes = text.index("## 6. Fixes")
 
     assert [
-        r.endswith("< <prompt file> > <out-file> 2> <err-file>") for r in readers
+        r.startswith("sh <run-claude.sh> reader <working folder> <files> ")
+        for r in readers
     ] == [True]
     assert (
-        "`mktemp` makes `<out-file>` and `<err-file>` too, outside it"
+        "`mktemp -d` makes its files folder, `<files>`, outside it"
         in (text[read:report])
     )
-    assert "Never open `<out-file>` or `<err-file>`" in text[read:report]
+    assert "Never open `<out>` or `<err>`" in text[read:report]
     assert (
         "run as step 4 runs its readers, through the report filter in `uses` mode"
         in (text[report:fixes])
@@ -570,12 +748,9 @@ def test_reader_reply_reaches_the_main_agent_only_through_the_filter() -> None:
     read, report = text.index("## 4. Read"), text.index("## 5. Report")
 
     assert commands("sh <report-filter.sh>") == [
-        "sh <report-filter.sh> <mode> <skill id> <name>… < <out-file> 2> /dev/null"
+        "sh <report-filter.sh> <mode> <skill id> <name>… < <out> 2> /dev/null"
     ]
-    assert (
-        "`<reader.json>`, `<patcher.json>` and `<report-filter.sh>` are those files"
-        in (text)
-    )
+    assert "`<report-filter.sh>` and `<run-claude.sh>` are those files" in (text)
     assert "of each reader what the report filter admits" in quarantine
     assert "nor a reader's output but the probe's" in quarantine
     step = text[read:report]
@@ -601,7 +776,7 @@ def test_skill_runs_the_filter_as_written(tmp_path: Path) -> None:
         ("<mode>", "full"),
         ("<skill id>", "'mp/x'"),
         ("<name>…", "'grill' 'mp/grill'"),
-        ("<out-file>", str(tmp_path / "out")),
+        ("<out>", str(tmp_path / "out")),
     ]:
         command = command.replace(placeholder, value)
 
@@ -626,7 +801,7 @@ def test_failed_reader_shows_its_error_line(tmp_path: Path) -> None:
     text = " ".join((SKILLS / "graft-check" / "SKILL.md").read_text().split())
     read, report = text.index("## 4. Read"), text.index("## 5. Report")
 
-    assert "{ cat <err-file>; echo; cat <out-file>; }" in text[read:report]
+    assert "{ cat <err>; echo; cat <out>; }" in text[read:report]
     assert (
         "A non-zero exit means that **Skill** has no report: show its error line"
         in (text[read:report])

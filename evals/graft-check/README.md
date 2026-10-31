@@ -44,14 +44,14 @@ question"; a relative link into a renamed skill's folder), plus a user patch add
 `HOME`, `XDG_CACHE_HOME` and `TMPDIR` point into the temporary folder, so the real `~/.claude`, `~/.apm` and
 `~/.cache/skill-graft` are never read or written, and no personal setting, hook or deployed skill changes the run.
 `--allowedTools` grants `skill-graft`, `mktemp`, `diff`, what the hardened **Check** runs (`printenv`, `command -v`,
-`claude`, `cd`, `cp`, `mv`, `rm`, `git apply`, `awk`, `sh` on the skill's report filter and on no other script, and
-`cat`, `echo`, `tr`, `grep`, `cut`, `find`, `wc` for error lines and counts), reads, writes, searches, edits in the
-temporary folder, where it corrects its own prompt files, and subagents; headless, any other tool call is denied. Claude
-Code's Bash does not pass the token on to the readers, so `claude` on `PATH` is a wrapper reading it from a file only
-you can read in the temporary folder, deleted on exit. The `unhardened` and `older-claude` scenarios' `claude` wrappers
-pass every other call to that one, the outer session's included, and the scenarios run with
-`--output-format stream-json` to see their tool calls. `--add-dir` grants the whole temporary folder, where the
-throwaway deploys, the cache and the sources lie, outside the project.
+`cd`, `cp`, `mv`, `rm`, `git apply`, `awk`, `sh` on the skill's report filter and `run-claude.sh`, which starts every
+`claude` the **Check** runs, and on no other script, and `cat`, `echo`, `tr`, `grep`, `cut`, `find`, `wc` for error
+lines and counts), reads, writes, searches, edits in the temporary folder, where it corrects its own prompt files, and
+subagents; headless, any other tool call is denied. Claude Code's Bash does not pass the token on to the readers, so
+`claude` on `PATH` is a wrapper reading it from a file only you can read in the temporary folder, deleted on exit. The
+`unhardened` and `older-claude` scenarios' `claude` wrappers pass every other call to that one, the outer session's
+included, and the scenarios run with `--output-format stream-json` to see their tool calls. `--add-dir` grants the whole
+temporary folder, where the throwaway deploys, the cache and the sources lie, outside the project.
 
 The script prints each report, then one `ok` or `FAILED` line per check, and exits non-zero when any check fails or
 `claude` does. A finding counts when one line of the report holds its text and its kind. Read the reports too: the grep

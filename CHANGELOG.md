@@ -72,6 +72,10 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
   each followed by `/`, such as `` `x`/a `` repeated: a long line takes no longer than the same text split into many
 - With `PYTHONUNBUFFERED` set, `help`, `--help` and a command's `--help` into a pipe whose reader has closed it report
   the broken pipe and exit 1, as without it, instead of exiting 0
+- A hardened `/graft-check` starts its probe, readers and patcher through a script shipped with the skill, so Claude
+  Code no longer blocks the command for changing folder and writing its output to files in one go. The script sets their
+  confining flags itself and runs only in a temporary folder, so a permission rule allowing it allows no other `claude`
+  run than a reader of the folders it is given or a patcher in a temporary folder
 
 ## [0.3.0] - 2026-10-30
 
