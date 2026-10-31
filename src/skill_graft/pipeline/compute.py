@@ -1,4 +1,5 @@
-"""Resolves the hull from the config: the step `build`, `resolve` and `update` share."""
+"""Resolves the hull from the config: the step `deploy`, `resolve` and `update`
+share."""
 
 import os
 import tempfile
@@ -66,7 +67,7 @@ def _folders(config: Config, cache: Cache, refs: dict[str, str]) -> dict[str, Pa
 def _folder(config: Config, cache: Cache, alias: str, ref: str | None) -> Path:
     """One source's folder: a git one at `ref`, else its ref.
 
-    Without either, the error names every source without a ref, as `build`'s does.
+    Without either, the error names every source without a ref, as `deploy`'s does.
     """
     source = config.sources[alias]
     if not isinstance(source, GitSource):

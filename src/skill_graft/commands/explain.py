@@ -126,7 +126,7 @@ def tree_lines(hull: Hull, marks: dict[SkillId, str] | None = None) -> list[str]
 
     Each entry expands at the top level; any other skill at its first line. A
     renamed or prefixed skill shows its deployed name, a patched one `(patched)`.
-    A prose edge shows only when the build rewrites it; it pulls nothing in, so
+    A prose edge shows only when vendoring rewrites it; it pulls nothing in, so
     its target expands elsewhere: `(*)`. Given `marks`, each line starts with its
     skill's mark or two spaces.
     """
@@ -166,7 +166,7 @@ def tree_lines(hull: Hull, marks: dict[SkillId, str] | None = None) -> list[str]
 def _shown_edges(hull: Hull) -> dict[SkillId, list[Edge]]:
     """Each skill's edges that get a tree line, in scan order.
 
-    One per target, kind and bind; a prose edge only when the build rewrites it.
+    One per target, kind and bind; a prose edge only when vendoring rewrites it.
     """
     children: dict[SkillId, dict[tuple[SkillId, str, bool], Edge]] = {}
     for edge in hull.edges:
@@ -211,7 +211,7 @@ def suggestions(hull: Hull) -> str:
 
 
 def announce_suggestions(hull: Hull, dry_run: bool = False) -> None:
-    """For `build` and `update`: one line pointing to `resolve`, which lists them.
+    """For `deploy` and `update`: one line pointing to `resolve`, which lists them.
 
     With `dry_run`, refs moved but not yet written: `resolve` still reads the old
     ones, so the hint says to update.

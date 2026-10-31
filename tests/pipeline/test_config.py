@@ -485,7 +485,7 @@ def test_project_scope_refuses_a_source_overlapping_the_user_package(
     scope = paths.Scope(tmp_path / "project")
     text = '[sources.own]\npath = "~/.apm"\n'
 
-    with pytest.raises(SkillGraftError, match="overlaps .*, which build rewrites"):
+    with pytest.raises(SkillGraftError, match="overlaps .*, which vendoring rewrites"):
         config.parse(scope, text)
 
 

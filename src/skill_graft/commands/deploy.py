@@ -79,7 +79,7 @@ def deploy(
 
 
 def _check_into(into: Path) -> None:
-    """Refuses an `--into` folder `build` could not use without harm: anything but an
+    """Refuses an `--into` folder `deploy` could not use without harm: anything but an
     existing, empty folder, or one in a package or in or around the cache."""
     if not into.exists():
         raise SkillGraftError(f"--into {into}: no such folder")
@@ -107,9 +107,9 @@ def _check_into_sources(into: Path, loaded: config.Config) -> None:
 
 
 def _undo_into(into: Path) -> None:
-    """Removes what a failed `build --into` wrote in `into`, and nothing else there.
+    """Removes what a failed `deploy --into` wrote in `into`, and nothing else there.
 
-    Never raises: the build's own error is the one to report.
+    Never raises: the deploy's own error is the one to report.
     """
     folder = into / ".apm"
     for name in (

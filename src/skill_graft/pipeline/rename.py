@@ -149,7 +149,7 @@ def rewrites(hull: Hull) -> dict[SkillId, dict[Path, bytes]]:
                 raise SkillGraftError(f"{file} cannot be rewritten: {error}") from None
             for (start, end), old, new in sorted(spans, reverse=True):  # back to front
                 if text[start:end] != old:  # edited since the scan: offsets are stale
-                    raise SkillGraftError(f"{file} changed while building; run again")
+                    raise SkillGraftError(f"{file} changed while vendoring; run again")
                 text = f"{text[:start]}{new}{text[end:]}"
             if renamed and file == folder / "SKILL.md":
                 text = set_name(text, hull.deployed[skill])

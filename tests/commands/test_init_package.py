@@ -54,8 +54,8 @@ def test_template_shows_graft_check(
     rest = "\n".join(lines[start + len(block) :])
     update = rest.index("skill-graft update skill-graft")
     add = rest.index("skill-graft add skill-graft/graft-check")
-    assert update < add < rest.index("skill-graft build")
-    assert "every `build` fails" in rest
+    assert update < add < rest.index("skill-graft deploy")
+    assert "every `deploy` fails" in rest
 
 
 def test_folder_exists(
@@ -406,7 +406,7 @@ def test_apm_fails_after_registering(
     assert main(["init", "--project"]) == 1
 
     assert (
-        "fix that, then run: skill-graft resolve, then skill-graft build"
+        "fix that, then run: skill-graft resolve, then skill-graft deploy"
         in capsys.readouterr().err
     )
     assert (repo / ".apm" / "skill-graft" / "skill-graft.toml").exists()

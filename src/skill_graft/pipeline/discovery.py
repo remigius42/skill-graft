@@ -24,7 +24,7 @@ def _skill_folders(
     """Every folder under `source` holding a `SKILL.md`, not looking inside one.
 
     Follows symlinked folders, visiting each resolved folder once, and skips `.git`,
-    the package and any other `.apm/skill-graft`, so build never reads its own
+    the package and any other `.apm/skill-graft`, so vendoring never reads its own
     output or another package's vendored copies. When `confined`, as for
     a git source, whose links someone else wrote, only links that stay inside
     `source` are followed.

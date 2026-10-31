@@ -268,7 +268,7 @@ def _source_folder(scope: paths.Scope, alias: str, raw: str, base: Path) -> Path
     for package in scope.packages:
         if paths.overlap(folder, package.resolve()):
             raise SkillGraftError(
-                f"source {alias!r}: {raw} overlaps {package}, which build rewrites"
+                f"source {alias!r}: {raw} overlaps {package}, which vendoring rewrites"
             )
     return folder
 

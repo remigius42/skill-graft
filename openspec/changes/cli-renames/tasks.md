@@ -28,7 +28,7 @@ user's agent skills", the top-level help's "Build your agent skills", `[build-sy
   docstrings too. Tests first: "Former names refused: Old command" (`build` exits 2 naming `build` and listing `deploy`)
   and "Help on every command" listing `deploy`, in `tests/cli/test_cli.py`; verify they fail, then pass, with `pytest`,
   `uv run mypy .` and `lint-imports` green
-- [ ] 2.2 The other messages that name the command or mean vendoring: `init`'s config comment and its APM failure hint
+- [x] 2.2 The other messages that name the command or mean vendoring: `init`'s config comment and its APM failure hint
   (`skill-graft resolve, then skill-graft deploy`), `config.py`'s overlap error and `rename.py`'s "changed while
   building" (vendoring), and the docstrings and comments in `explain.py`, `compute.py`, `discovery.py`, `transaction.py`
   and `deploy.py`. Tests first in `tests/commands/test_init_package.py` and `tests/pipeline/test_config.py` for the

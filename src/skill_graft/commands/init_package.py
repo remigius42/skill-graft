@@ -17,7 +17,7 @@ CONFIG_TEMPLATE = """\
 # [sources.mp]
 # git = "https://example.com/skills.git"   # a URL, user@host:path, or an absolute path
 # branch = "main"            # optional; defaults to the remote's default branch
-# ref = "<sha>"              # the commit build reads; `skill-graft update` sets it
+# ref = "<sha>"              # the commit skill-graft reads; `skill-graft update` sets it
 # subdirectory = "skills"    # optional; read only this folder of the repository
 # prefix = "mp-"             # optional; each skill deploys as mp-<name> unless [rename] says otherwise
 #
@@ -25,8 +25,8 @@ CONFIG_TEMPLATE = """\
 # [sources.skill-graft]
 # git = "https://github.com/remigius42/skill-graft.git"
 # subdirectory = "skills"
-# then run `skill-graft update skill-graft`, `skill-graft add skill-graft/graft-check` and `skill-graft build`.
-# Until that update sets its ref, every `build` fails, not only graft-check's.
+# then run `skill-graft update skill-graft`, `skill-graft add skill-graft/graft-check` and `skill-graft deploy`.
+# Until that update sets its ref, every `deploy` fails, not only graft-check's.
 """
 
 APM_YML = "name: skill-graft\nversion: 0.1.0\n"
@@ -68,7 +68,7 @@ def init(scope: paths.Scope, project: bool = False) -> None:
             raise SkillGraftError(f"{error}\nto retry, run: {retry}") from None
         if _listed(scope):
             raise SkillGraftError(
-                f"{error}\nfix that, then run: skill-graft resolve, then skill-graft build"
+                f"{error}\nfix that, then run: skill-graft resolve, then skill-graft deploy"
             ) from None
         # A package left behind would be found by every command below it.
         try:
