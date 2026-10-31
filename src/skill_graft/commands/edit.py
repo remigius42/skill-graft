@@ -22,6 +22,11 @@ from skill_graft.pipeline import compute, config, lock
 from skill_graft.pipeline.config import SkillId
 from skill_graft.pipeline.hull import Hull, PatchError
 
+# Its header: what an edit's `--diff` compares.
+HEADER = review.header(
+    "the Vendored copies against what the edited config would vendor"
+)
+
 
 def read(scope: paths.Scope) -> tuple[tomlkit.TOMLDocument, config.Config]:
     """The config as `tomlkit` keeps it, comments and formatting included, and as
@@ -54,10 +59,14 @@ def write(scope: paths.Scope, document: tomlkit.TOMLDocument) -> None:
 
 
 def add(
-    scope: paths.Scope, warnings: list[str], skills: list[str], dry_run: bool = False
+    scope: paths.Scope,
+    warnings: list[str],
+    skills: list[str],
+    dry_run: bool = False,
+    diff: Path | None = None,
 ) -> None:
     """Appends each skill ID to `entries`."""
-    with _running(["add", *skills], dry_run) as run:
+    with _running(["add", *skills], dry_run, diff) as run:
         _add(scope, warnings, skills, run)
 
 
@@ -87,10 +96,14 @@ def _add(
 
 
 def remove(
-    scope: paths.Scope, warnings: list[str], skills: list[str], dry_run: bool = False
+    scope: paths.Scope,
+    warnings: list[str],
+    skills: list[str],
+    dry_run: bool = False,
+    diff: Path | None = None,
 ) -> None:
     """Deletes each skill ID from `entries`."""
-    with _running(["remove", *skills], dry_run) as run:
+    with _running(["remove", *skills], dry_run, diff) as run:
         _remove(scope, warnings, skills, run)
 
 
@@ -112,10 +125,15 @@ def _remove(
 
 
 def rename(
-    scope: paths.Scope, warnings: list[str], text: str, name: str, dry_run: bool = False
+    scope: paths.Scope,
+    warnings: list[str],
+    text: str,
+    name: str,
+    dry_run: bool = False,
+    diff: Path | None = None,
 ) -> None:
     """Sets the skill's `[rename]` value to `name`."""
-    with _running(["rename", text, name], dry_run) as run:
+    with _running(["rename", text, name], dry_run, diff) as run:
         _rename(scope, warnings, text, name, run)
 
 
@@ -150,9 +168,10 @@ def bind(
     key: str,
     target: str,
     dry_run: bool = False,
+    diff: Path | None = None,
 ) -> None:
     """Sets `[bind]` key `key` to the skill ID `target`, or to `false`."""
-    with _running(["bind", key, target], dry_run) as run:
+    with _running(["bind", key, target], dry_run, diff) as run:
         _bind(scope, warnings, key, target, run)
 
 
@@ -182,10 +201,14 @@ def _bind(
 
 
 def unbind(
-    scope: paths.Scope, warnings: list[str], key: str, dry_run: bool = False
+    scope: paths.Scope,
+    warnings: list[str],
+    key: str,
+    dry_run: bool = False,
+    diff: Path | None = None,
 ) -> None:
     """Deletes `[bind]` key `key`, leaving the table."""
-    with _running(["unbind", key], dry_run) as run:
+    with _running(["unbind", key], dry_run, diff) as run:
         _unbind(scope, warnings, key, run)
 
 
@@ -236,27 +259,43 @@ def _finish(
     loaded = config.parse(scope, text)
     warnings.extend(loaded.warnings)
     shown = {}
+    text = ""  # the Deployed diff, built before any write
+    target = run.target
     with transaction.resolving(
         scope, loaded, warnings, run.cache, write=not run.dry_run
     ) as resolution:
-        if run.dry_run:  # while the patched copies exist
+        if run.dry_run or target is not None:  # while the patched copies exist
             hull = resolution.hull
             hashes = resolution.hashes = lock.skill_hashes(hull)
             before = review.vendored(scope.skills, lock.load(scope.lock_file))
             shown = review.print_diff(before, hull, hashes)
+            if target is not None:
+                text = review.deployed_diff(
+                    HEADER, loaded, {}, before, hull, hashes, shown, []
+                )
+        if not run.dry_run and target is not None:  # first: undone with the rest
+            resolution.writes.append(
+                (target, lambda: files.atomic_write(target, text.encode()))
+            )
         resolution.writes.append(
             (scope.config_file.resolve(), lambda: write(scope, document))
         )
     run.changed = bool(shown)
     explain.show(resolution.hull)
+    if run.dry_run and target is not None:
+        files.atomic_write(target, text.encode())
     return resolution.hull
 
 
 class _Run:
     """One edit's run: its cache, a dry run's layered over a temporary folder the
-    run removes, and the lines a dry run prints last."""
+    run removes; `--diff`'s file, refused if bad before anything else; and the
+    lines a dry run prints last."""
 
-    def __init__(self, stack: ExitStack, command: list[str], dry_run: bool) -> None:
+    def __init__(
+        self, stack: ExitStack, command: list[str], dry_run: bool, diff: Path | None
+    ) -> None:
+        self.target = None if diff is None else review.check_target(diff)
         self.stack = stack
         self.command = " ".join(shlex.quote(arg) for arg in command)
         self.dry_run = dry_run
@@ -270,8 +309,11 @@ class _Run:
             self.cache = Cache(self.tmp, self.cache)
 
     def edits(self) -> None:
-        """Past the no-op check: a dry run's last lines, the hint first, printed
+        """Past the no-op check: removes an earlier Deployed diff, so a failing run
+        leaves none; registers a dry run's last lines, the hint first, printed
         even on a failure."""
+        if self.target is not None:
+            review.clear(self.target)
         if not self.dry_run:
             return
         self.stack.callback(
@@ -281,16 +323,16 @@ class _Run:
         self.stack.callback(self._hint)
 
     def _hint(self) -> None:
-        if self.changed:
+        if self.changed and self.target is None:
             print(f"review: skill-graft {self.command} --dry-run --diff <file>")
 
 
 @contextmanager
-def _running(command: list[str], dry_run: bool) -> Generator[_Run]:
+def _running(command: list[str], dry_run: bool, diff: Path | None) -> Generator[_Run]:
     """The run of the edit `command` names; a failing patch named, in a dry run,
     with how to keep what it fetched."""
     with ExitStack() as stack:
-        run = _Run(stack, command, dry_run)
+        run = _Run(stack, command, dry_run, diff)
         try:
             yield run
         except PatchError as error:

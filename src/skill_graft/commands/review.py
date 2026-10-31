@@ -243,7 +243,8 @@ def _source_line(
         return f"# source {skill.alias}: a path source\n"
     new = tips.get(skill.alias) or source.ref
     old = None if before is None else before.refs.get(skill.alias)
-    refs = f"{old} -> {new}" if before is not None and old != new else new
+    # Quoted: the lock's, which nothing checks; none recorded, none shown.
+    refs = f"{deployed.quote(old)} -> {new}" if old is not None and old != new else new
     folders = [deployed.quote(before.upstream(skill))] if before is not None else []
     folders.append(
         deployed.quote(

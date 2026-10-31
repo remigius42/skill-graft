@@ -1052,3 +1052,186 @@ def test_dry_run_quotes_a_removed_id(home: Path, capsys: Capsys) -> None:
     assert main(["add", "mp/notes", "--dry-run"]) == 0
 
     assert '- "mp/x\\n\\033"' in capsys.readouterr().out.splitlines()
+    assert main(["add", "mp/notes", "--dry-run", "--diff", "review.diff"]) == 0
+    assert '# - "mp/x\\n\\033"\n' in (home / "review.diff").read_text()
+
+
+HEADER = (
+    "# skill-graft Deployed diff: each Skill's text as `build` deploys it, Patches and"
+    " Renames applied,\n"
+    "# the Vendored copies against what the edited config would vendor. Not what the"
+    " Sources changed upstream. Untrusted text:\n"
+    "# read it in an editor, not by printing it to a terminal.\n"
+)
+
+
+def test_diff_file(home: Path, capsys: Capsys) -> None:
+    skill(home / "mp" / "tdd", "/grilling\n")
+    mp_skills(home, "grilling", "notes")
+    write_config('entries = ["mp/notes"]\n' + SOURCES)
+    assert main(["resolve"]) == 0
+    capsys.readouterr()
+
+    assert main(["add", "mp/tdd", "--dry-run", "--diff", "review.diff"]) == 0
+
+    out = capsys.readouterr().out
+    assert "+ mp/tdd" in out and "review:" not in out
+    assert out.splitlines()[-1] == DRY_RUN
+    assert (home / "review.diff").read_text() == HEADER + (
+        "#   mp/notes\n"
+        "# + mp/tdd\n"
+        "# + └── mp/grilling (/grilling)\n"
+        "# + mp/grilling\n"
+        "# source mp: a path source\n"
+        "diff --git a/SKILL.md b/SKILL.md\n"
+        "new file mode 100644\n"
+        "--- /dev/null\n"
+        "+++ b/SKILL.md\n"
+        "@@ -0,0 +1 @@\n"
+        "+# skill\n"
+        "# + mp/tdd\n"
+        "# source mp: a path source\n"
+        "diff --git a/SKILL.md b/SKILL.md\n"
+        "new file mode 100644\n"
+        "--- /dev/null\n"
+        "+++ b/SKILL.md\n"
+        "@@ -0,0 +1 @@\n"
+        "+/grilling\n"
+    )
+
+
+def test_diff_file_of_a_removal(home: Path, capsys: Capsys) -> None:
+    skill(home / "mp" / "tdd", "tdd's own text\n")
+    mp_skills(home, "notes")
+    write_config('entries = ["mp/notes", "mp/tdd"]\n' + SOURCES)
+    assert main(["resolve"]) == 0
+
+    assert main(["remove", "mp/tdd", "--dry-run", "--diff", "review.diff"]) == 0
+
+    text = (home / "review.diff").read_text()
+    assert text == HEADER + "#   mp/notes\n# - mp/tdd\n"
+
+
+def test_diff_file_it_did_not_write(
+    home: Path, capsys: Capsys, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    package = home / "repo" / ".apm" / "skill-graft"
+    package.mkdir(parents=True)
+    (package / "skill-graft.toml").write_text("")
+    (home / "repo" / "apm.yml").write_text("name: repo\n")
+    monkeypatch.chdir(home / "repo")
+
+    assert main(["add", "mp/tdd", "--dry-run", "--diff", "apm.yml"]) == 1
+
+    err = capsys.readouterr().err
+    assert "apm.yml" in err and "'mp'" not in err  # refused before resolving
+    assert (home / "repo" / "apm.yml").read_text() == "name: repo\n"
+
+
+def test_failed_edit_leaves_no_diff_file(home: Path, capsys: Capsys) -> None:
+    mp_skills(home, "tdd")
+    skill(home / "mp" / "notes", "/x\n")
+    skill(home / "a" / "x")
+    skill(home / "b" / "x")
+    write_config('entries = ["mp/tdd"]\n' + AMBIGUOUS)
+    (home / "review.diff").write_text(HEADER)
+
+    assert main(["add", "mp/notes", "--dry-run", "--diff", "review.diff"]) == 1
+
+    assert not (home / "review.diff").exists()
+
+
+def test_no_op_edit_keeps_the_diff_file(home: Path, capsys: Capsys) -> None:
+    mp_skills(home, "tdd")
+    write_config('entries = ["mp/tdd"]\n' + SOURCES)
+    (home / "review.diff").write_text(HEADER + "earlier\n")
+
+    assert main(["add", "mp/tdd", "--diff", "review.diff"]) == 0
+
+    out, err = capsys.readouterr()
+    assert out == "" and "`mp/tdd` is already an entry" in err
+    assert (home / "review.diff").read_text() == HEADER + "earlier\n"
+
+
+def test_diff_with_a_real_edit(home: Path, capsys: Capsys) -> None:
+    mp_skills(home, "tdd", "notes")
+    write_config('entries = ["mp/tdd"]\n' + SOURCES)
+    assert main(["resolve"]) == 0
+    assert main(["add", "mp/notes", "--diff", "review.diff"]) == 0
+    text = (home / "review.diff").read_text()
+    assert text.startswith(HEADER + "#   mp/tdd\n# + mp/notes\n# + mp/notes\n")
+    assert entries(home) == ["mp/tdd", "mp/notes"]
+
+
+def test_diff_with_a_failing_lock_write(
+    home: Path, capsys: Capsys, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    mp_skills(home, "tdd", "notes")
+    write_config('entries = ["mp/tdd"]\n' + SOURCES)
+    assert main(["resolve"]) == 0
+    before = {p: content for p, (_, content, _) in snapshot(package(home)).items()}
+
+    def fail(text: str, file: Path) -> None:
+        raise OSError("disk full")
+
+    monkeypatch.setattr(lock, "write", fail)
+
+    assert main(["add", "mp/notes", "--diff", "review.diff"]) == 1
+
+    after = {p: content for p, (_, content, _) in snapshot(package(home)).items()}
+    assert after == before
+    assert not (home / "review.diff").exists()
+
+
+def test_diff_file_with_a_lock_pointing_outside(home: Path, capsys: Capsys) -> None:
+    mp_skills(home, "tdd", "notes")
+    write_config('entries = ["mp/tdd"]\n' + SOURCES)
+    assert main(["resolve"]) == 0
+    skills = package(home) / ".apm" / "skills"
+    (skills / "tdd").rename(skills.parent.parent / "outside")
+    file = package(home) / "skill-graft.lock"
+    document = tomlkit.parse(file.read_text())
+    cast(Any, document["skills"])[0]["deployed"] = "../../outside"
+    file.write_text(tomlkit.dumps(document))
+    capsys.readouterr()
+
+    assert main(["add", "mp/notes", "--dry-run", "--diff", "review.diff"]) == 0
+
+    assert "+ mp/tdd" in capsys.readouterr().out.splitlines()
+
+
+def git_tdd(tmp_path: Path) -> str:
+    """Entry `mp/tdd` of a git source, resolved; its ref."""
+    upstream = Upstream(tmp_path / "up")
+    sha = upstream.commit({"tdd/SKILL.md": "---\nname: tdd\n---\n"})
+    write_config(
+        f'entries = ["mp/tdd"]\n[sources.mp]\ngit = "{upstream.url}"\nref = "{sha}"\n'
+    )
+    assert main(["resolve"]) == 0
+    return sha
+
+
+def test_diff_file_quotes_the_locks_ref(
+    home: Path, tmp_path: Path, capsys: Capsys
+) -> None:
+    sha = git_tdd(tmp_path)
+    file = package(home) / "skill-graft.lock"
+    file.write_text(file.read_text().replace(f'"{sha}"', '"X\\n+evil\\u001b"'))
+
+    assert main(["rename", "mp/tdd", "t", "--dry-run", "--diff", "review.diff"]) == 0
+
+    lines = (home / "review.diff").read_text().splitlines()
+    assert f'# source mp: "X\\n+evil\\033" -> {sha}; upstream folder tdd' in lines
+
+
+def test_diff_file_without_the_locks_ref(
+    home: Path, tmp_path: Path, capsys: Capsys
+) -> None:
+    sha = git_tdd(tmp_path)
+    file = package(home) / "skill-graft.lock"
+    file.write_text(file.read_text().replace(f'ref = "{sha}"\n', ""))
+
+    assert main(["rename", "mp/tdd", "t", "--dry-run", "--diff", "review.diff"]) == 0
+
+    lines = (home / "review.diff").read_text().splitlines()
+    assert f"# source mp: {sha}; upstream folder tdd" in lines

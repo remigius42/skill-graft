@@ -395,7 +395,17 @@ def _review_options(parser: argparse.ArgumentParser) -> None:
     parser.add_argument(
         "--dry-run",
         action="store_true",
-        help="resolve and print the hull diff, writing nothing",
+        help="resolve and print the hull diff, writing nothing but --diff's file",
+    )
+    parser.add_argument(
+        "--diff",
+        type=Path,
+        metavar="FILE",
+        help=(
+            "write the Deployed diff, each added or changed skill's text as "
+            "deployed, to FILE, a new file or one it wrote before, named *.diff; "
+            "read it in an editor"
+        ),
     )
 
 
@@ -443,15 +453,19 @@ def _main(argv: list[str] | None) -> int:
                     args.expect,
                 )
             elif args.command == "add":
-                edit.add(current, warnings, args.skills, args.dry_run)
+                edit.add(current, warnings, args.skills, args.dry_run, args.diff)
             elif args.command == "remove":
-                edit.remove(current, warnings, args.skills, args.dry_run)
+                edit.remove(current, warnings, args.skills, args.dry_run, args.diff)
             elif args.command == "rename":
-                edit.rename(current, warnings, args.skill, args.name, args.dry_run)
+                edit.rename(
+                    current, warnings, args.skill, args.name, args.dry_run, args.diff
+                )
             elif args.command == "bind":
-                edit.bind(current, warnings, args.key, args.target, args.dry_run)
+                edit.bind(
+                    current, warnings, args.key, args.target, args.dry_run, args.diff
+                )
             elif args.command == "unbind":
-                edit.unbind(current, warnings, args.key, args.dry_run)
+                edit.unbind(current, warnings, args.key, args.dry_run, args.diff)
             elif args.command == "why":
                 explain.show_why(current, warnings, args.skill)
             elif args.command == "tree":

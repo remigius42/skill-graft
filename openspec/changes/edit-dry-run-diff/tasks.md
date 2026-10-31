@@ -42,7 +42,7 @@ without a whole command; misses the command's wiring, which the CLI seam covers)
   in `cli.py`; a plain edit's output unchanged. Tests at the CLI seam in `tests/commands/test_edit.py` for every
   scenario of "Edit dry run writes nothing" and "Edit reports the hull diff"; verify each fails first, then passes
 
-- [ ] 2.3 `--diff <file>` for the five: `review`'s refusals before anything else; an earlier file removed past the no-op
+- [x] 2.3 `--diff <file>` for the five: `review`'s refusals before anything else; an earlier file removed past the no-op
   check, before resolving; the **Hull diff** printed as with `--dry-run`; the file built inside `resolving`, written
   last in a dry run, else a write before the TOML, undone with it; the header's second line, the marked tree escaped,
   each `+` and `~` **Skill**'s source line with the lock's and the new `ref`, `old -> new` when they differ, old and new
