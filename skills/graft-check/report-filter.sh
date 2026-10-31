@@ -97,6 +97,8 @@ $0 == "findings: none" || $0 == "uses: none" {
   if (at) { key = substr($0, 1, at - 1); value = substr($0, at + 2) }
   else if ($0 ~ /^[a-z]+:$/) { key = substr($0, 1, length($0) - 1); value = "" }
   else refuse()
+  # A use written in its slash form, `/<name>`, is that name.
+  if (key == "use" && value ~ /^\/[^\/]/) value = substr(value, 2)
   if (key in block || !valid(key, value)) refuse()
   if (key ~ /^(file|text|vendored|why)$/ && length(value) > 200)
     value = substr(value, 1, 197) "..."

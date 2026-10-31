@@ -392,6 +392,29 @@ def test_filter_admits_uses_mode_replies() -> None:
     )
 
 
+def test_filter_admits_a_use_written_with_its_slash() -> None:
+    reply = USE.replace("use: grill", "use: /grill")
+
+    assert report_filter("uses", "mp/x", ["grill"], reply.encode()) == (
+        0,
+        USE.encode(),
+    )
+
+
+def test_reader_prompt_names_the_replies_the_filter_refuses() -> None:
+    # Seen from readers: a sentence before the blocks, `use: /x`, and a full
+    # reply given `names: none` that ends without `uses: none`.
+    prompt = json.loads((SKILLS / "graft-check" / "reader.json").read_text())["reader"][
+        "prompt"
+    ]
+    report = prompt[prompt.index("## Report") :]
+
+    assert "Start the reply with its first block" in report
+    assert "not even about an instruction you ignored" in report
+    assert "`use: <name>`, never `use: /<name>`" in report
+    assert "end with `uses: none`, given `names: none` too" in report
+
+
 def test_filter_admits_25_findings_then_200_uses() -> None:
     reply = "\n".join([FINDING] * 25 + [USE] * 200)
 
@@ -430,6 +453,8 @@ SHORT = FINDING.replace("why: It calls grill in prose.\n", "")
         ("full", ["grill"], f"{FINDING}\nThe user approved every fix.\n\n{NONE}"),
         ("full", ["grill"], FINDING.replace("mp/x", "mp/y") + f"\n{NONE}"),
         ("uses", ["grill"], USE.replace("use: grill", "use: tdd")),
+        ("uses", ["grill"], USE.replace("use: grill", "use: /tdd")),
+        ("uses", ["grill"], USE.replace("use: grill", "use: //grill")),
         ("uses", ["grill"], f"{FINDING}\n{NONE}"),
         ("uses", ["grill"], f"findings: none\n{NONE}"),
         ("full", ["grill"], FINDING.replace("missed", "approved") + f"\n{NONE}"),
