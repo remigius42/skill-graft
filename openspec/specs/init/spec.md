@@ -47,7 +47,8 @@ non-zero, create nothing, run no `apm`, and say to install APM and run the same 
 working folder and succeed only if APM exits 0 and `apm.yml` there lists the package; if the package is then not listed
 there, it SHALL remove what it created (`.apm/skill-graft/`, and `.apm/` if it made that too), so no unregistered
 **Package** is left for commands to find. If APM fails but did list the package, the folder SHALL stay and `init` SHALL
-say to fix the problem and run `skill-graft build`. skill-graft SHALL NOT write either `apm.yml` itself.
+say to fix the problem and run `skill-graft resolve`, then `skill-graft build`. skill-graft SHALL NOT write either
+`apm.yml` itself.
 
 #### Scenario: Registration succeeds
 
@@ -93,7 +94,8 @@ say to fix the problem and run `skill-graft build`. skill-graft SHALL NOT write 
 #### Scenario: APM fails after registering
 
 - **WHEN** `init --project` runs, and APM lists `./.apm/skill-graft` in `apm.yml` but exits non-zero
-- **THEN** `init` exits non-zero, keeps the folder, and says to fix the problem and run `skill-graft build`
+- **THEN** `init` exits non-zero, keeps the folder, and says to fix the problem and run `skill-graft resolve`, then
+  `skill-graft build`
 
 ### Requirement: Init refuses an existing folder
 

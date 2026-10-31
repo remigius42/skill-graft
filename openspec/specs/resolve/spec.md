@@ -9,19 +9,31 @@
 
 ### Requirement: Resolve command
 
-`skill-graft resolve` SHALL compute the **Hull** from `skill-graft.toml`, write `skill-graft.lock`, print the tree to
-standard output and the warnings to standard error, and exit 0. It SHALL NOT write `skill-graft.toml`, `.apm/skills/`,
-or run `apm`. Like `build`, it SHALL fail on any git **Source** without `ref`.
+`skill-graft resolve` SHALL compute the **Hull** from `skill-graft.toml`, vendor it into `.apm/skills/` as `build` does,
+write `skill-graft.lock`, print the tree to standard output and the warnings to standard error, and exit 0. The
+**Vendored copies** and the lock SHALL be written together: on any failure, or an interrupt, both keep their bytes. It
+SHALL NOT write `skill-graft.toml` or run `apm`. Like `build`, it SHALL fail on any git **Source** without `ref`.
 
 #### Scenario: Resolve succeeds
 
 - **WHEN** the user runs `skill-graft resolve` and every **Reference** resolves
-- **THEN** it exits 0, `skill-graft.lock` exists, and `.apm/skills/` and `skill-graft.toml` are unchanged
+- **THEN** it exits 0, `skill-graft.lock` exists, `.apm/skills/` holds one folder per **Hull** **Skill**, and
+  `skill-graft.toml` is unchanged
 
 #### Scenario: Resolution error
 
 - **WHEN** a **Reference** matches several other **Sources** and no **Bind**
-- **THEN** `resolve` exits non-zero and leaves any existing `skill-graft.lock` unchanged
+- **THEN** `resolve` exits non-zero and leaves any existing `skill-graft.lock` and `.apm/skills/` unchanged
+
+#### Scenario: Lock write fails
+
+- **WHEN** vendoring succeeded and writing `skill-graft.lock` fails
+- **THEN** `resolve` exits 1 naming the error, and `.apm/skills/` and the lock are byte for byte as before
+
+#### Scenario: First resolve, lock write fails
+
+- **WHEN** the **Package** holds no `.apm/skills/` and no lock, and writing `skill-graft.lock` fails during `resolve`
+- **THEN** `resolve` exits 1, and the **Package** holds no `.apm/skills/`, no lock and no `.gitattributes`
 
 ### Requirement: Never moves a ref
 
@@ -96,15 +108,6 @@ lock SHALL be replaced atomically.
 
 - **WHEN** `resolve` runs twice with nothing changed
 - **THEN** both locks are byte for byte equal
-
-### Requirement: The lock is output only
-
-No command SHALL read `skill-graft.lock` to decide anything: deleting or editing it SHALL change no command's result.
-
-#### Scenario: Lock edited by hand
-
-- **WHEN** the user edits the lock to name another commit and runs `build`
-- **THEN** `build` vendors the skills at the TOML's `ref`, and rewrites the lock
 
 ### Requirement: Tree output
 

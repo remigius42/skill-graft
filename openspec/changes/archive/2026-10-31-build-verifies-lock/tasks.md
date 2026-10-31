@@ -107,7 +107,7 @@ every commit passes `pytest`.
 
 ## 6. Archive prep
 
-- [ ] 6.1 At archive, `CHANGELOG.md` `[Unreleased]`: under Changed, that `build` deploys only what `skill-graft.lock`
+- [x] 6.1 At archive, `CHANGELOG.md` `[Unreleased]`: under Changed, that `build` deploys only what `skill-graft.lock`
   records and refuses otherwise, naming `resolve`; that `resolve`, `update` and the editing commands write the
   **Vendored copies** and `.gitattributes`; that no command overwrites an edited **Vendored copy**, a stray file
   included; that `graft-check` runs `resolve` after a **Patch** fix; and how to recover a **Package** whose lock is

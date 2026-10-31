@@ -25,6 +25,31 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
   the folder; a git one needs a fork
 - A git **Source**'s `subdirectory` takes those characters only: `subdirectory = "my skills"` is a config error
 - The error for a **Skill** whose name is no path segment writes the name and its path with the same octal escapes
+- `build` deploys only what `skill-graft.lock` records. It refuses, writing nothing and naming `skill-graft resolve`, a
+  git **Source**'s **Skill** or a patched one whose hash differs from the lock's (the config or a **Patch** edited by
+  hand, an edited cache export), any change to the **Hull**'s shape, and a missing lock or one of another `version`. The
+  refusal names what differs: each **Skill**, edge (`own/tdd → own/notes (prose) added`), suggestion, deployed name or
+  **Source**. A path **Source**'s **Skill** without **Patches** whose text changed is still deployed, and named:
+  `<skill> changed in its path source since skill-graft.lock: deployed as is`. After editing `skill-graft.toml` or a
+  **Patch** by hand, run `skill-graft resolve`, then `build`
+- `resolve`, `update` and `add`, `remove`, `rename`, `bind`, `unbind` now write the **Vendored copies** in
+  `.apm/skills/` too, together with the lock: on any failure both keep their bytes. Each also writes
+  `.apm/skill-graft/.gitattributes` when the **Package** has none, so git keeps the committed copies' and **Patches**'
+  line endings. `update --dry-run` still writes nothing
+- No command overwrites an edited **Vendored copy**: each that vendors first checks `.apm/skills/` against the lock, and
+  refuses, writing nothing, a copy whose hash differs (a stray file such as `.DS_Store` included), a folder the lock
+  lists no **Skill** under, and a file directly in `.apm/skills/`, saying to move the edit into a **Patch** or delete
+  the folder. A missing copy is vendored again. Without a lock it can read, the copies cannot be checked: the error says
+  to delete `.apm/skills/`, then run `skill-graft resolve`
+- `graft-check` runs `skill-graft resolve` after adding a **Patch** fix, and again after undoing one
+- When APM fails after `init --project` registered the **Package**, `init` says to run `skill-graft resolve`, then
+  `skill-graft build`
+- Upgrading: a **Package** whose lock a `resolve` or an edit wrote after its last `build` holds copies older than its
+  lock, which the first command refuses as edited. Check them, then delete `.apm/skills/` and run `skill-graft resolve`.
+  A clone whose copies git already converted, as with `core.autocrlf`, is refused too: once `.gitattributes` is
+  committed, delete them and check them out again (`git checkout -- .apm/skill-graft/.apm/skills`), or delete them and
+  run `resolve`. A skill-graft upgrade that renders the lock or rewrites differently makes `build` refuse until
+  `skill-graft resolve`
 
 ### Fixed
 
