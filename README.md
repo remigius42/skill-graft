@@ -80,15 +80,15 @@ skill-graft update mp                               # set the source's ref to it
 skill-graft add mp/tdd --dry-run --diff review.diff # write the text it would vendor, nothing else
 skill-graft add mp/tdd                              # ask for the skill; vendors the hull and writes the lock
 skill-graft tree                                    # see the hull: mp/tdd and every skill it calls
-skill-graft build                                   # deploy what skill-graft.lock records through APM
+skill-graft deploy                                  # deploy what skill-graft.lock records through APM
 ```
 
 The dry run writes `mp/tdd` and every skill it calls, as they would deploy, to `review.diff`, and writes nothing else.
 Read it in an editor, never by printing it to a terminal: it is untrusted text. Then run the `add` itself.
 
-After editing `skill-graft.toml` or a patch by hand, run `skill-graft resolve` before `build`, previewing it first with
-`skill-graft resolve --dry-run --diff review.diff`: `build` deploys only what the lock records, and names `resolve` when
-the config or a patch differs from it. An edit to a vendored copy in `.apm/skills/` is refused too; move it into a
+After editing `skill-graft.toml` or a patch by hand, run `skill-graft resolve` before `deploy`, previewing it first with
+`skill-graft resolve --dry-run --diff review.diff`: `deploy` deploys only what the lock records, and names `resolve`
+when the config or a patch differs from it. An edit to a vendored copy in `.apm/skills/` is refused too; move it into a
 patch, or delete the folder to vendor it again.
 
 `tdd` and the skills it calls are now in `~/.claude/skills/`. To share skills through a project instead, see
@@ -108,7 +108,7 @@ source's edit, a patch or a rename since then makes it refuse.
 ## Commands
 
 `resolve`, `update` and the editing commands resolve and stage: they write the lock and `.apm/skills/` together, and
-never deploy. `build` checks the package against the lock and deploys it through APM.
+never deploy. `deploy` checks the package against the lock and deploys it through APM.
 
 Options are taken only spelled in full: `--dry` is a usage error, not `--dry-run`.
 
@@ -138,9 +138,9 @@ in an editor. `update` compares against the hull at the current refs, the other 
 
 ### Deploying
 
-| Command                                | What it does                                                                                                                                                                                                                |
-| -------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `build [--no-install \| --into <dir>]` | Deploy what the lock records through APM, refusing a hull other than the lock's or an edited vendored copy. `--into <dir>` writes the skills and the lock into an empty `<dir>` instead, never touching the package or APM. |
+| Command                                 | What it does                                                                                                                                                                                                                |
+| --------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `deploy [--no-install \| --into <dir>]` | Deploy what the lock records through APM, refusing a hull other than the lock's or an edited vendored copy. `--into <dir>` writes the skills and the lock into an empty `<dir>` instead, never touching the package or APM. |
 
 ### Inspecting
 
@@ -221,7 +221,7 @@ command then acts on the nearest `.apm/skill-graft/` above the working folder, a
 is none.
 
 Commit the whole `.apm/skill-graft/`, vendored skills and its `.gitattributes` included, with `apm.yml` and
-`apm.lock.yaml`; `.gitattributes` keeps git from changing the vendored skills' line endings, which `build` would refuse
+`apm.lock.yaml`; `.gitattributes` keeps git from changing the vendored skills' line endings, which `deploy` would refuse
 as edits. Teammates then need only APM: `apm install` deploys the skills, and only whoever changes them runs
 skill-graft. Keep path sources inside the project (`path = "../../skills"`) and the rest git sources: the lock then
 records them relative to the package and reads the same on every machine; a path outside the project is recorded
@@ -231,7 +231,7 @@ absolute.
 
 skill-graft finds references by their form alone, so it misses "run the grilling skill", takes `/tmp` for a call, and
 can rewrite a word a prefix happens to match. The `graft-check` skill, in this repository's `skills/`, has an agent read
-the built skills for those mistakes. Install it like any other skill, with the lines `init` writes commented out into
+the vendored skills for those mistakes. Install it like any other skill, with the lines `init` writes commented out into
 `skill-graft.toml`:
 
 ```toml
@@ -243,17 +243,17 @@ subdirectory = "skills"
 ```sh
 skill-graft update skill-graft
 skill-graft add skill-graft/graft-check
-skill-graft build
+skill-graft deploy
 ```
 
-Until that `update` sets the source's `ref`, every `build` fails, not only graft-check's.
+Until that `update` sets the source's `ref`, every `deploy` fails, not only graft-check's.
 
 Run it in your harness as `/graft-check`, or `/graft-check mp/tdd` to check only some skills; it runs only when you ask.
-It builds into a temporary folder with `build --into`, and has one reader per skill compare its upstream text with its
+It deploys into a temporary folder with `deploy --into`, and has one reader per skill compare its upstream text with its
 vendored copy. The readers report missed and false references, references resolved to the wrong skill, wrong or missed
 rewrites, and relative links vendoring broke. For each finding it proposes `add`, `bind`, `unbind` or a patch, and
 applies it only once you accept; a patch is written by a confined patcher, and you read its diff before it goes into the
-package. It never deploys: when the package would change, it tells you to run `skill-graft build`. It reads lock
+package. It never runs APM: when the package would change, it tells you to run `skill-graft deploy`. It reads lock
 `version` 1 only; for a newer lock, update the source you installed it from.
 
 ## Cache

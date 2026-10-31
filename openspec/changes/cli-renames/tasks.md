@@ -33,7 +33,7 @@ user's agent skills", the top-level help's "Build your agent skills", `[build-sy
   building" (vendoring), and the docstrings and comments in `explain.py`, `compute.py`, `discovery.py`, `transaction.py`
   and `deploy.py`. Tests first in `tests/commands/test_init_package.py` and `tests/pipeline/test_config.py` for the
   changed messages; verify they fail, then pass
-- [ ] 2.3 Docs for `deploy`: README.md (the Usage flow, the Commands intro sentence and the Deploying table, "A package
+- [x] 2.3 Docs for `deploy`: README.md (the Usage flow, the Commands intro sentence and the Deploying table, "A package
   for one project", "Checking a package"), `docs/design.md`, `docs/security.md`, and `CONTEXT.md`'s **Package** entry
   (`deploy --into`). Verify `pre-commit run --all-files`
 

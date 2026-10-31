@@ -66,17 +66,17 @@ records a hash of and APM deploys. _Avoid_: Build output, deployed copy, vendor 
 Comes from the list skill-graft ships, plus the user's own. _Avoid_: Built-in, blocklist
 
 **Package**: The APM package skill-graft builds: the folder holding the user's `skill-graft.toml`, into which the
-**Hull** is vendored (unless `build --into` names another folder) and from which APM deploys it. Not the **Hull**
+**Hull** is vendored (unless `deploy --into` names another folder) and from which APM deploys it. Not the **Hull**
 itself. One per **Scope**. _Avoid_: Bundle, output
 
 **Scope**: Where a **Package** lives and deploys: user scope (the home folder, for every project) or project scope (one
 project, for everyone working in it). A command acts on the nearest **Package** above the working folder, and on the
 user scope's when there is none. _Avoid_: Level, mode, global/local
 
-**Check**: A review, invoked by the user and done by an agent, of how a built **Package** reads its **Skills**: missed,
-false or misdirected **References**, rewrites that changed the wrong text, and links vendoring broke. It only proposes
-**Binds**, **Entries** and **Patches**; the user accepts each, and resolution stays skill-graft's alone. _Avoid_: Audit,
-verify, validation
+**Check**: A review, invoked by the user and done by an agent, of how a vendored **Package** reads its **Skills**:
+missed, false or misdirected **References**, rewrites that changed the wrong text, and links vendoring broke. It only
+proposes **Binds**, **Entries** and **Patches**; the user accepts each, and resolution stays skill-graft's alone.
+_Avoid_: Audit, verify, validation
 
 **Hidden character**: An invisible character that can carry instructions a reader of the rendered text never sees:
 Unicode tag characters, bidi embeddings, overrides and isolates, supplementary variation selectors. A **Skill** holding
