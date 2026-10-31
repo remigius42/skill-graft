@@ -214,6 +214,13 @@ def _typed_escapes(a: list[str], b: list[str]) -> bool:
     )
 
 
+def escape(lines: list[str]) -> list[str]:
+    """Each line escaped as a line of the diff is, a line feed in it too, each
+    backslash doubled when a typed escape could read as one."""
+    escaped = _escaped(_typed_escapes(lines, []))
+    return [escaped.sub(_escape_char, line) for line in lines]
+
+
 def _mode(executable: bool) -> str:
     return "100755" if executable else "100644"
 

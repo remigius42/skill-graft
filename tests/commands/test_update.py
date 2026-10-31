@@ -1254,7 +1254,9 @@ def test_diff_file(home: Path, upstream: Upstream, capsys: Capsys) -> None:
     code, out, _ = update(capsys, "--diff", "review.diff")
 
     assert code == 0 and ref("mp") == new
-    assert (home / "review.diff").read_text() == HEADER + tdd_diff(old, new)
+    assert (home / "review.diff").read_text() == HEADER + "# ~ mp/tdd\n" + tdd_diff(
+        old, new
+    )
     assert "review:" not in out
 
 
@@ -1271,7 +1273,9 @@ def test_dry_run_with_a_diff_file(
     code, out, _ = update(capsys, "--dry-run", "--diff", "review.diff")
 
     assert code == 0 and "review:" not in out
-    assert (home / "review.diff").read_text() == HEADER + tdd_diff(old, new)
+    assert (home / "review.diff").read_text() == HEADER + "# ~ mp/tdd\n" + tdd_diff(
+        old, new
+    )
     assert file.read_bytes() == before and lock_file().read_bytes() == lock
     assert snapshot(paths.cache()) == cached
 
@@ -1502,6 +1506,7 @@ def test_diff_file_without_a_previous_hull(
     assert (home / "review.diff").read_text() == HEADER + (
         "# no previous hull to compare ('mp' had no ref): every Skill shown as added\n"
         "# + mp/tdd\n"
+        "# + mp/tdd\n"
         f"# source mp: {sha}; upstream folder tdd\n"
         "diff --git a/SKILL.md b/SKILL.md\n"
         "new file mode 100644\n"
@@ -1532,7 +1537,7 @@ def test_diff_file_after_patches_redone_for_the_tip(
     assert code == 0 and apply_line(out)
     assert text.startswith(
         HEADER + "# no previous hull to compare (patches fail at the current refs): "
-        "every Skill shown as added\n# + mp/tdd\n"
+        "every Skill shown as added\n# + mp/tdd (patched)\n# + mp/tdd\n"
     )
     assert "+line five\n" in text and "--- /dev/null\n" in text
 
@@ -1544,7 +1549,9 @@ def test_diff_file_when_nothing_changed(
 
     assert update(capsys, "--diff", "review.diff")[0] == 0
 
-    assert (home / "review.diff").read_text() == HEADER + "# hull unchanged\n"
+    assert (
+        home / "review.diff"
+    ).read_text() == HEADER + "# hull unchanged\n#   mp/tdd\n"
 
 
 def test_patch_applied_on_both_sides(
@@ -2029,7 +2036,7 @@ def test_removed_skill_in_the_diff(
     assert update(capsys, "--dry-run", "--diff", "review.diff")[0] == 0
 
     text = (home / "review.diff").read_text()
-    assert text.startswith(HEADER + "# - mp/grilling\n# ~ mp/tdd\n")
+    assert text.startswith(HEADER + "# ~ mp/tdd\n# - mp/grilling\n# ~ mp/tdd\n")
 
 
 def test_only_removals_in_the_diff(
@@ -2049,7 +2056,9 @@ def test_only_removals_in_the_diff(
     code, out, _ = update(capsys, "--dry-run", "--diff", "review.diff")
 
     assert code == 0 and diff_lines(out)[:2] == [LEGEND, "- mp/grilling"]
-    assert (home / "review.diff").read_text() == HEADER + "# - mp/grilling\n"
+    assert (
+        home / "review.diff"
+    ).read_text() == HEADER + "#   own/notes\n# - mp/grilling\n"
 
 
 def test_diff_file_through_a_link_in_a_skills_folder(
@@ -2065,3 +2074,21 @@ def test_diff_file_through_a_link_in_a_skills_folder(
 
     assert code == 1 and "skills/foo/out/x.diff" in err and "SKILL.md" in err
     assert not paths.cache().exists() and not list((home / "elsewhere").iterdir())
+
+
+def test_marked_hull_in_the_diff(
+    home: Path, upstream: Upstream, capsys: Capsys
+) -> None:
+    old = upstream.commit({"tdd/SKILL.md": "1\n", "grilling/SKILL.md": "g\n"})
+    write_config(
+        'entries = ["mp/tdd"]\n' + git_source("mp", upstream, f'ref = "{old}"\n')
+    )
+    assert resolve_and_build(["build", "--no-install"]) == 0
+    upstream.commit({"tdd/SKILL.md": "/grilling\n"})
+
+    assert update(capsys, "--dry-run", "--diff", "review.diff")[0] == 0
+
+    text = (home / "review.diff").read_text()
+    assert text.startswith(
+        HEADER + "# ~ mp/tdd\n# + └── mp/grilling (/grilling)\n# + mp/grilling\n"
+    )

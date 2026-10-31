@@ -7,6 +7,7 @@ from collections.abc import Callable
 from dataclasses import dataclass
 from pathlib import Path
 
+from skill_graft.commands import explain
 from skill_graft.infra import paths
 from skill_graft.infra.errors import SkillGraftError
 from skill_graft.pipeline import deployed, hidden, rename
@@ -150,9 +151,16 @@ def deployed_diff(
     edited: list[SkillId],
 ) -> str:
     """The Deployed diff of the `shown` skills, or of every skill as added when
-    there is no old side, `before` saying why; a line for each skill removed."""
+    there is no old side, `before` saying why; first the hull, marked, and a line
+    for each skill removed."""
     out = [head]
     removed: set[SkillId] = set()
+    old = {} if isinstance(before, str) else before.hashes
+    marks = {
+        skill: "+" if skill not in old else "~"
+        for skill, digest in hashes.items()
+        if old.get(skill) != digest
+    }
     if isinstance(before, str):
         out.append(
             f"# no previous hull to compare ({hidden.show(before)}): "
@@ -170,11 +178,11 @@ def deployed_diff(
         removed = before.hashes.keys() - hashes.keys()
         if before.hashes == hashes:
             out.append("# hull unchanged\n")
+    # A reference as written is upstream text: escaped as a line of the diff is.
+    out += [f"# {line}\n" for line in deployed.escape(explain.tree_lines(hull, marks))]
+    out += [f"# - {skill}\n" for skill in sorted(removed)]
     budget = deployed.Budget()  # one for the run: a crafted skill costs no more
-    for skill in sorted(shown.keys() | removed):
-        if skill in removed:
-            out.append(f"# - {skill}\n")
-            continue
+    for skill in sorted(shown):
         then, now = shown[skill]
         was = before if not isinstance(before, str) and skill in before.hashes else None
         out.append(f"# {'+' if was is None else '~'} {skill}\n")

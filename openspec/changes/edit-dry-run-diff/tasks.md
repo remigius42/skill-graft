@@ -20,7 +20,7 @@ without a whole command; misses the command's wiring, which the CLI seam covers)
 - [x] 1.2 `explain.tree(hull, marks=None)`: each line prefixed with its target's mark or two spaces when `marks` is
   given, unchanged without. Tests at the `explain.tree` seam in `tests/commands/test_explain.py` (a marked entry, a
   marked child, a `(*)` repeat marked as its skill, no marks unchanged); verify each fails first, then passes
-- [ ] 1.3 The marked tree in every **Deployed diff** file: after the header, the new **Hull**'s tree commented, each
+- [x] 1.3 The marked tree in every **Deployed diff** file: after the header, the new **Hull**'s tree commented, each
   line escaped as a diff line is, and marked from the **Hull diff**, then one `# - <skill id>` per removal. Tests at the
   CLI seam in `tests/commands/test_update.py` for "Marked hull", and "No previous hull" and "Skill removed" updated;
   verify each fails first, then passes

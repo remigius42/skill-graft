@@ -117,6 +117,11 @@ def _outside(hull: Hull, skill: SkillId) -> str:
 
 
 def tree(hull: Hull, marks: dict[SkillId, str] | None = None) -> str:
+    """`tree_lines`, each ending in a line feed."""
+    return "".join(f"{line}\n" for line in tree_lines(hull, marks))
+
+
+def tree_lines(hull: Hull, marks: dict[SkillId, str] | None = None) -> list[str]:
     """The hull as `cargo tree` prints: one line per edge, repeats marked `(*)`.
 
     Each entry expands at the top level; any other skill at its first line. A
@@ -155,7 +160,7 @@ def tree(hull: Hull, marks: dict[SkillId, str] | None = None) -> str:
         expand(entry, "")
     if marks is not None:
         lines = [f"{marks.get(s, ' ')} {line}" for s, line in zip(targets, lines)]
-    return "".join(f"{line}\n" for line in lines)
+    return lines
 
 
 def _shown_edges(hull: Hull) -> dict[SkillId, list[Edge]]:
