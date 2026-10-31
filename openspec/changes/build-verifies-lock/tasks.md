@@ -60,10 +60,10 @@ every commit passes `pytest`.
   "Resolution error", "Lock write fails", "Edit succeeds", "Edit fails to resolve", "Lock write interrupted", "No
   deploy" and "Dry run" now expect `.apm/skills/` written, restored or untouched as the specs say. Verify red, then
   green
-- [ ] 2.3 `commands/update.py`: calls `transaction.check_copies` before listing remotes, and passes `checked=True` to
+- [x] 2.3 `commands/update.py`: calls `transaction.check_copies` before listing remotes, and passes `checked=True` to
   `resolving`. Test in `tests/commands/test_update.py`, `test_edited_copy_refused_before_any_remote` (also with
-  `--dry-run`): exits 1 naming `.apm/skills/tdd`, with no sha line printed and the cache folder unchanged. Verify red,
-  then green
+  `--dry-run`): exits 1 naming `.apm/skills/tdd`, with no sha line printed and the cache folder unchanged; and
+  `test_dry_run_after_a_killed_run`: `.apm/` keeps `skills.old` and `skills.new` as they were. Verify red, then green
 
 ## 3. Build deploys the lock
 

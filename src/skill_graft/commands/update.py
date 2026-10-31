@@ -172,6 +172,7 @@ def _update(
         if source.branch is not None:
             _check_branch(alias, source.branch)
     compute.check_entries(loaded)  # before any remote: compute_hull would be too late
+    transaction.check_copies(scope.skills, lock.load(scope.lock_file))  # so is this
     places: dict[tuple[str, str | None], str] = {}
     tips = {}
     for alias, source in selected.items():
@@ -185,7 +186,7 @@ def _update(
         print(f"{alias} {tips[alias]}{unchanged}")
     # The lock even if no ref moved: a path source may have changed.
     with transaction.resolving(
-        scope, loaded, warnings, git_cache, tips, write=write
+        scope, loaded, warnings, git_cache, tips, write=write, checked=True
     ) as resolution:
         hull = resolution.hull
         hashes = resolution.hashes = lock.skill_hashes(hull)

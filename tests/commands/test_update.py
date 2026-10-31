@@ -475,6 +475,39 @@ def test_dry_run(upstream: Upstream, capsys: Capsys) -> None:
     assert vendored() == {"tdd"} and (skills / "tdd" / "SKILL.md").read_text() == "1\n"
 
 
+@pytest.mark.parametrize("args", [[], ["--dry-run"]])
+def test_edited_copy_refused_before_any_remote(
+    upstream: Upstream,
+    capsys: Capsys,
+    monkeypatch: pytest.MonkeyPatch,
+    args: list[str],
+) -> None:
+    moved_tdd(upstream)
+    skills = paths.Scope(Path.home()).skills
+    (skills / "tdd" / "SKILL.md").write_text("edited\n")
+    cached = snapshot(paths.cache())
+    calls: list[tuple[str, ...]] = []
+    monkeypatch.setattr(git, "run", lambda *a, **k: calls.append(a))
+
+    code, out, err = update(capsys, *args)
+
+    assert code == 1 and str(skills / "tdd") in err
+    assert "mp " not in out and calls == []
+    assert snapshot(paths.cache()) == cached
+
+
+def test_dry_run_after_a_killed_run(upstream: Upstream, capsys: Capsys) -> None:
+    moved_tdd(upstream)
+    skills = paths.Scope(Path.home()).skills
+    shutil.copytree(skills, skills.with_name("skills.old"))
+    (skills.with_name("skills.new") / "half").mkdir(parents=True)
+    before = snapshot(skills.parent)
+
+    code, _, _ = update(capsys, "--dry-run")
+
+    assert code == 0 and snapshot(skills.parent) == before
+
+
 def test_dry_run_remote_refusing_files_by_name(
     upstream: Upstream, capsys: Capsys, monkeypatch: pytest.MonkeyPatch
 ) -> None:
