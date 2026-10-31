@@ -624,12 +624,18 @@ def test_patcher_prompt_says_a_question_mark_may_stand_for_a_character() -> None
     )
 
 
-def lock_check(tmp_path: Path, text: str) -> str:
-    """What the skill's lock check prints for a lock holding `text`, run as the
-    skill gives it, raw: its lines end in `\\`. It must exit 0."""
+def lock_check_command() -> str:
+    """The skill's lock check command, as its `SKILL.md` gives it."""
     skill_md = (SKILLS / "graft-check" / "SKILL.md").read_text()
     blocks = [block.split("```")[0] for block in skill_md.split("```sh\n")[1:]]
     (command,) = [b for b in blocks if b.lstrip().startswith("LC_ALL=C awk")]
+    return command
+
+
+def lock_check(tmp_path: Path, text: str) -> str:
+    """What the skill's lock check prints for a lock holding `text`, run as the
+    skill gives it. It must exit 0."""
+    command = lock_check_command()
     (tmp_path / "check").mkdir()
     (tmp_path / "check" / "skill-graft.lock").write_text(text)
     return subprocess.run(
@@ -640,6 +646,12 @@ def lock_check(tmp_path: Path, text: str) -> str:
         text=True,
         check=True,
     ).stdout
+
+
+def test_lock_check_holds_no_pipe_character() -> None:
+    # Claude Code's Bash guard refuses an awk program holding `|`, even inside a
+    # regex or as `||`, as a command pipe, and refuses `awk -f` outright.
+    assert "|" not in lock_check_command()
 
 
 A = "Run /x.\nSee `notes` and `tdd`.\n"

@@ -95,18 +95,25 @@ lock's version and a count of the lines skill-graft would not write, and nothing
 ```sh
 LC_ALL=C awk '
   BEGIN { n = "[A-Za-z0-9][A-Za-z0-9._-]*"; id = "\"" n "/" n "\""; v = "none"
-          s = "\\.*[A-Za-z0-9_-][A-Za-z0-9._-]*"; p = "\"[^\"\\\\]*\"" }
-  /^\[/ { t = $0
-          if (t !~ /^\[\[(skills|edges|suggestions)\]\]$/ && t !~ "^\\[sources(\\.(" n "|\"" n "\"))?\\]$") {
-            bad++; t = "[[skills]]" }
-          next }
+          s = "\\.*[A-Za-z0-9_-][A-Za-z0-9._-]*"; p = "\"[^\"\\\\]*\""
+          h[1] = "^\\[\\[skills\\]\\]$"; h[2] = "^\\[\\[edges\\]\\]$"; h[3] = "^\\[\\[suggestions\\]\\]$"
+          h[4] = "^\\[sources\\]$"; h[5] = "^\\[sources\\." n "\\]$"; h[6] = "^\\[sources\\.\"" n "\"\\]$"
+          o[1] = "^# Written by skill-graft; update reads its hashes\\. Do not edit\\.$"
+          o[2] = "^# Written by skill-graft, which reads it back\\. Do not edit\\.$"
+          o[3] = "^skills = \\[\\]$"; o[4] = "^edges = \\[\\]$"; o[5] = "^suggestions = \\[\\]$"
+          r[1] = "^id = " id "$"; r[2] = "^from = " id "$"; r[3] = "^to = " id "$"
+          r[4] = "^deployed = \"" n "\"$"; r[5] = "^upstream = \"\\.\"$"; r[6] = "^upstream = \"" s "(/" s ")*\"$"
+          r[7] = "^from = \\[" id "(, " id ")*\\]$"; r[8] = "^patches = \\[(" p "(, " p ")*)?\\]$"
+          r[9] = "^entry = true$"; r[10] = "^entry = false$"; r[11] = "^bind = true$"; r[12] = "^bind = false$"
+          r[13] = "^kind = \"slash\"$"; r[14] = "^kind = \"skill-tool\"$"; r[15] = "^kind = \"prose\"$"
+          r[16] = "^hash = \"sha256:[0-9a-f]+\"$" }
+  /^\[/ { t = $0; for (i in h) if (t ~ h[i]) next
+          bad++; t = "[[skills]]"; next }
   t == "" && /^version = [0-9]+$/ { v = $3; next }
-  /^$/ || t ~ /^\[sources\./ || t == "" && (/^# Written by skill-graft(; update reads its hashes|, which reads it back)\. Do not edit\.$/ \
-    || /^(skills|edges|suggestions) = \[\]$/) { next }
-  t != "" && ($0 ~ "^(id|from|to) = " id "$" || $0 ~ "^deployed = \"" n "\"$" \
-    || $0 ~ "^upstream = \"(\\.|" s "(/" s ")*)\"$" || $0 ~ "^from = \\[" id "(, " id ")*\\]$" \
-    || $0 ~ "^patches = \\[(" p "(, " p ")*)?\\]$" || /^(entry|bind) = (true|false)$/ \
-    || /^kind = "(slash|skill-tool|prose)"$/ || /^hash = "sha256:[0-9a-f]+"$/) { next }
+  /^$/ { next }
+  t ~ /^\[sources\./ { next }
+  t == "" { for (i in o) if ($0 ~ o[i]) next }
+  t != "" { for (i in r) if ($0 ~ r[i]) next }
   { bad++ }
   END { printf "version: %s, bad: %d\n", v, bad }' <lock>
 ```
