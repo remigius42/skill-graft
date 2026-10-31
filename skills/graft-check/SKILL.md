@@ -86,7 +86,8 @@ mktemp -d
 skill-graft deploy --into <folder>
 ```
 
-- The first stderr line, `skill-graft: package: <path>`, names the **Package**.
+- The first stderr line, `skill-graft: package: <package>`, names the **Package**, `<package>` from here on: the folder
+  holding `skill-graft.toml`, not the project above it.
 - A non-zero exit ends the **Check** with the deploy's error.
 
 Before you read the lock, `<lock>`, which is `skill-graft.lock` in `<folder>`, check it with this command. It prints the
@@ -246,7 +247,7 @@ Done when every finding is listed with its fix, or with none.
 Take the fixes one at a time: ask, and apply only on yes. Run only the commands you proposed and the user accepted.
 
 - `add`, `bind` and `unbind` write only a config that resolves. Before a `bind` or `unbind`, note the key's value.
-- A **Patch**, with `<package>` the **Package** path and `<n>` a new patch name. Hardened:
+- A **Patch**, with `<n>` a new patch name. Hardened:
   1. `mktemp -d` makes `<base-dir>`. In it, `cp -rL <upstream folder> base && rm -rf base/.git`, then apply the
      **Skill**'s patch files in order: `(cd base && git apply -p1 <patch file>)`.
 

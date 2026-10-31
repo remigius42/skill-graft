@@ -1023,6 +1023,18 @@ def test_lock_check_prints_a_newer_version(tmp_path: Path, lock: str) -> None:
     assert lock_check(tmp_path, text).startswith("version: 2, ")
 
 
+def test_package_path_named_before_any_step_uses_it() -> None:
+    # Seen from the main agent: with no fix taken, step 7 took the project's
+    # `.apm/skills` for the package's, `<package>` named only in step 6.
+    text = " ".join((SKILLS / "graft-check" / "SKILL.md").read_text().split())
+    step = text[text.index("## 2. Throwaway deploy") : text.index("## 3. Inputs")]
+
+    assert (
+        "`skill-graft: package: <package>`, names the **Package**, `<package>`" in step
+    )
+    assert text.index("<package>") >= text.index("## 2. Throwaway deploy")
+
+
 def test_lock_checked_before_it_is_read() -> None:
     text = " ".join((SKILLS / "graft-check" / "SKILL.md").read_text().split())
     step = text[text.index("## 2. Throwaway deploy") : text.index("## 3. Inputs")]
