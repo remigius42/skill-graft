@@ -81,7 +81,7 @@ every commit passes `pytest`.
   `test_no_notice_into_a_folder`. Verify each new test red first, then the whole suite green
 - [x] 3.2 `cli.py`: `build`'s help says it deploys what `skill-graft.lock` records, and `resolve`'s that it vendors;
   `tests/cli/test_cli.py`'s `test_command_help` checks both. Verify red, then green
-- [ ] 3.3 `commands/init_package.py`: when APM fails after registering, the message says
+- [x] 3.3 `commands/init_package.py`: when APM fails after registering, the message says
   `fix that, then run: skill-graft resolve, then skill-graft build`. Test in `tests/commands/test_init_package.py`, the
   "APM fails after registering" scenario's test asserting it. Verify red, then green
 

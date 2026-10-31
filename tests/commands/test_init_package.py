@@ -405,7 +405,10 @@ def test_apm_fails_after_registering(
 
     assert main(["init", "--project"]) == 1
 
-    assert "fix that, then run: skill-graft build" in capsys.readouterr().err
+    assert (
+        "fix that, then run: skill-graft resolve, then skill-graft build"
+        in capsys.readouterr().err
+    )
     assert (repo / ".apm" / "skill-graft" / "skill-graft.toml").exists()
 
 

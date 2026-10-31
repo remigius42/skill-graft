@@ -68,7 +68,7 @@ def init(scope: paths.Scope, project: bool = False) -> None:
             raise SkillGraftError(f"{error}\nto retry, run: {retry}") from None
         if _listed(scope):
             raise SkillGraftError(
-                f"{error}\nfix that, then run: skill-graft build"
+                f"{error}\nfix that, then run: skill-graft resolve, then skill-graft build"
             ) from None
         # A package left behind would be found by every command below it.
         try:
