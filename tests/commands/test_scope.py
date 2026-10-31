@@ -7,7 +7,7 @@ from contextlib import nullcontext
 from pathlib import Path
 
 import pytest
-from conftest import FakeApm, resolve_and_build, skill
+from conftest import FakeApm, resolve_and_deploy, skill
 
 from skill_graft.cli import main
 from skill_graft.commands import scope
@@ -30,7 +30,7 @@ def test_inside_a_project(home: Path, monkeypatch: pytest.MonkeyPatch) -> None:
     package = project(home / "repo")
     monkeypatch.chdir(home / "repo" / "src")
 
-    assert resolve_and_build(["build", "--no-install"]) == 0
+    assert resolve_and_deploy(["deploy", "--no-install"]) == 0
 
     assert (package / ".apm" / "skills" / "chisel" / "SKILL.md").exists()
     assert (package / "skill-graft.lock").exists()
@@ -54,7 +54,7 @@ def test_nested_projects(home: Path, monkeypatch: pytest.MonkeyPatch) -> None:
     (home / "a" / "b" / "c").mkdir()
     monkeypatch.chdir(home / "a" / "b" / "c")
 
-    assert resolve_and_build(["build", "--no-install"]) == 0
+    assert resolve_and_deploy(["deploy", "--no-install"]) == 0
 
     assert (inner / "skill-graft.lock").exists()
     assert not (outer / "skill-graft.lock").exists()
@@ -80,7 +80,7 @@ def test_working_folder_outside_home(
     package = project(tmp_path / "srv" / "repo")
     monkeypatch.chdir(tmp_path / "srv" / "repo")
 
-    assert resolve_and_build(["build", "--no-install"]) == 0
+    assert resolve_and_deploy(["deploy", "--no-install"]) == 0
 
     assert (package / "skill-graft.lock").exists()
 
@@ -108,7 +108,7 @@ def test_project_package_without_config(
     package.mkdir(parents=True)
     monkeypatch.chdir(home / "repo")
 
-    assert main(["build", "--no-install"]) == 1
+    assert main(["deploy", "--no-install"]) == 1
 
     err = capsys.readouterr().err
     assert f"{package}/skill-graft.toml" in err
@@ -116,13 +116,13 @@ def test_project_package_without_config(
     assert "run `skill-graft init`" not in err
 
 
-def test_project_build_from_a_subfolder(
+def test_project_deploy_from_a_subfolder(
     home: Path, monkeypatch: pytest.MonkeyPatch, fake_apm: FakeApm
 ) -> None:
     project(home / "repo")
     monkeypatch.chdir(home / "repo" / "src")
 
-    assert resolve_and_build(["build"]) == 0
+    assert resolve_and_deploy(["deploy"]) == 0
 
     assert fake_apm.calls == [["install", "./.apm/skill-graft"]]
     assert fake_apm.working_folders == [str(home / "repo")]
@@ -139,7 +139,7 @@ def test_project_package_not_registered(
     monkeypatch.chdir(home / "repo")
     fake_apm.register = False
 
-    assert resolve_and_build(["build"]) == 1
+    assert resolve_and_deploy(["deploy"]) == 1
 
     err = capsys.readouterr().err
     assert f"{home}/repo/apm.yml does not list {home}/repo/.apm/skill-graft" in err
@@ -156,7 +156,7 @@ def test_undecodable_project_manifest(
     monkeypatch.chdir(home / "repo")
     fake_apm.register = False
 
-    assert resolve_and_build(["build"]) == 1
+    assert resolve_and_deploy(["deploy"]) == 1
 
     assert f"skill-graft: {home}/repo/apm.yml:" in capsys.readouterr().err
 
@@ -168,7 +168,7 @@ def test_no_install_reads_no_project_manifest(
     (home / "repo" / "apm.yml").mkdir()  # unreadable as a file
     monkeypatch.chdir(home / "repo")
 
-    assert resolve_and_build(["build", "--no-install"]) == 0
+    assert resolve_and_deploy(["deploy", "--no-install"]) == 0
 
     assert fake_apm.calls == []
 
@@ -224,13 +224,13 @@ def test_project_source_overlapping_a_package_fails(
     assert not (home / "repo" / ".apm" / "skill-graft" / "skill-graft.lock").exists()
 
 
-def test_build_names_the_package(
+def test_deploy_names_the_package(
     home: Path, monkeypatch: pytest.MonkeyPatch, capsys: pytest.CaptureFixture[str]
 ) -> None:
     package = project(home / "repo")
     monkeypatch.chdir(home / "repo" / "src")
 
-    assert resolve_and_build(["build", "--no-install"]) == 0
+    assert resolve_and_deploy(["deploy", "--no-install"]) == 0
 
     assert capsys.readouterr().err.startswith(f"skill-graft: package: {package}\n")
 
@@ -338,7 +338,7 @@ def test_same_lock_on_another_machine(
     assert (other / "repo" / lock).read_bytes() == (home / "repo" / lock).read_bytes()
 
 
-def test_build_into_keeps_project_paths(
+def test_deploy_into_keeps_project_paths(
     home: Path, tmp_path: Path, monkeypatch: pytest.MonkeyPatch
 ) -> None:
     project(home / "repo")
@@ -346,12 +346,12 @@ def test_build_into_keeps_project_paths(
     into = tmp_path / "into"
     into.mkdir()
 
-    assert resolve_and_build(["build", "--into", str(into)]) == 0
+    assert resolve_and_deploy(["deploy", "--into", str(into)]) == 0
 
     assert lock_sources(into) == {"own": {"path": "../../src"}}
 
 
-def test_build_into_names_both(
+def test_deploy_into_names_both(
     home: Path, monkeypatch: pytest.MonkeyPatch, capsys: pytest.CaptureFixture[str]
 ) -> None:
     package = project(home / "repo")
@@ -360,7 +360,7 @@ def test_build_into_names_both(
     assert main(["resolve"]) == 0
     capsys.readouterr()
 
-    assert main(["build", "--into", "into"]) == 0
+    assert main(["deploy", "--into", "into"]) == 0
 
     assert capsys.readouterr().err.startswith(
         f"skill-graft: package: {package}\n"
@@ -401,10 +401,10 @@ def test_tree_takes_the_discovered_package_and_names_none(
     assert "package:" not in capsys.readouterr().err
 
 
-def test_of_build_names_the_package(
+def test_of_deploy_names_the_package(
     home: Path, capsys: pytest.CaptureFixture[str]
 ) -> None:
-    scope.of("build", False)
+    scope.of("deploy", False)
 
     package = home / ".apm" / "skill-graft"
     assert capsys.readouterr().err == f"skill-graft: package: {package}\n"

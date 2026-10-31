@@ -7,7 +7,7 @@ from skill_graft.infra import paths
 from skill_graft.infra.errors import SkillGraftError, notice
 
 # Commands that write: they name the package they act on before anything else.
-WRITERS = ("resolve", "build", "update", "add", "remove", "rename", "bind", "unbind")
+WRITERS = ("resolve", "deploy", "update", "add", "remove", "rename", "bind", "unbind")
 
 
 def of(command: str, project: bool) -> paths.Scope:

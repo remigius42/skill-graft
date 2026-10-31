@@ -49,23 +49,23 @@ def test_debris_warns(home: Path, capsys: Capsys) -> None:
     )
 
 
-def test_build_into_stays_empty(home: Path, tmp_path: Path, capsys: Capsys) -> None:
+def test_deploy_into_stays_empty(home: Path, tmp_path: Path, capsys: Capsys) -> None:
     skill(home / "mp" / "tdd", f"{TAG}\n")
     configure(["mp/tdd"], mp="~/mp")
     into = tmp_path / "into"
     into.mkdir()
 
-    code, _, err = run(capsys, "build", "--into", str(into))
+    code, _, err = run(capsys, "deploy", "--into", str(into))
 
     assert code == 1 and "U+E0041" in err
     assert list(into.iterdir()) == []
 
 
-def test_build_runs_no_apm(home: Path, fake_apm: FakeApm, capsys: Capsys) -> None:
+def test_deploy_runs_no_apm(home: Path, fake_apm: FakeApm, capsys: Capsys) -> None:
     skill(home / "mp" / "tdd", f"{TAG}\n")
     configure(["mp/tdd"], mp="~/mp")
 
-    code, _, err = run(capsys, "build")
+    code, _, err = run(capsys, "deploy")
 
     assert code == 1 and "U+E0041" in err
     assert fake_apm.calls == []

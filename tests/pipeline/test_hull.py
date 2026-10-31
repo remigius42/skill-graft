@@ -1,4 +1,4 @@
-"""The `hull` spec, through `skill-graft build --no-install`."""
+"""The `hull` spec, through `skill-graft deploy --no-install`."""
 
 import os
 import shutil
@@ -9,7 +9,7 @@ from typing import TypeAlias
 import pytest
 from conftest import (
     after_package_line,
-    build,
+    deploy,
     configure,
     skill,
     vendored,
@@ -32,7 +32,7 @@ def test_reference_pulls_in_a_skill(home: Path, capsys: Capsys) -> None:
     skill(home / "mp" / "grilling")
     configure(["mp/tdd"], mp="~/mp")
 
-    assert build(capsys) == (0, "")
+    assert deploy(capsys) == (0, "")
     assert vendored() == {"tdd", "grilling"}
 
 
@@ -50,7 +50,7 @@ def test_own_source_wins(home: Path, capsys: Capsys) -> None:
     skill(home / "own" / "grilling", "own\n")
     two_sources(home, "/grilling\n")
 
-    assert build(capsys) == (0, "")
+    assert deploy(capsys) == (0, "")
     assert (vendored_dir(home) / "grilling" / "SKILL.md").read_text() == "mp\n"
 
 
@@ -58,7 +58,7 @@ def test_one_other_source(home: Path, capsys: Capsys) -> None:
     skill(home / "own" / "notes")
     two_sources(home, "/notes\n")
 
-    assert build(capsys) == (0, "")
+    assert deploy(capsys) == (0, "")
     assert vendored() == {"tdd", "notes"}
 
 
@@ -67,7 +67,7 @@ def test_several_other_sources(home: Path, capsys: Capsys) -> None:
     skill(home / "x" / "notes")
     two_sources(home, "/notes\n", x="~/x")
 
-    code, err = build(capsys)
+    code, err = deploy(capsys)
 
     assert code == 1
     for text in ["mp/tdd", "/notes", "own/notes", "x/notes"]:
@@ -79,7 +79,7 @@ def test_several_other_sources(home: Path, capsys: Capsys) -> None:
 def test_no_such_skill(home: Path, capsys: Capsys) -> None:
     two_sources(home, "/foo and again /foo\n")
 
-    code, err = build(capsys)
+    code, err = deploy(capsys)
 
     assert code == 0 and vendored() == {"tdd"}
     warning = "`mp/tdd` calls `/foo`: no declared source has a skill `foo`"
@@ -90,7 +90,7 @@ def test_no_such_skill(home: Path, capsys: Capsys) -> None:
 def test_skill_tool_form_named(home: Path, capsys: Capsys) -> None:
     two_sources(home, "Skill(foo)\n")
 
-    _, err = build(capsys)
+    _, err = deploy(capsys)
 
     assert "`mp/tdd` calls `Skill(foo)`" in err
 
@@ -99,7 +99,7 @@ def test_different_case(home: Path, capsys: Capsys) -> None:
     skill(home / "own" / "grilling")
     two_sources(home, "/Grilling\n")
 
-    code, err = build(capsys)
+    code, err = deploy(capsys)
 
     assert code == 0 and vendored() == {"tdd"}
     assert "no declared source has a skill `Grilling`" in err
@@ -110,7 +110,7 @@ def test_invalid_name_does_not_count(home: Path, capsys: Capsys) -> None:
     skill(home / "own" / "grilling", "own\n")
     two_sources(home, "/grilling\n")
 
-    assert build(capsys) == (0, "")
+    assert deploy(capsys) == (0, "")
     assert (vendored_dir(home) / "grilling" / "SKILL.md").read_text() == "own\n"
 
 
@@ -119,7 +119,7 @@ def test_two_hops(home: Path, capsys: Capsys) -> None:
     skill(home / "own" / "notes")
     two_sources(home, "/grilling\n")
 
-    assert build(capsys) == (0, "")
+    assert deploy(capsys) == (0, "")
     assert vendored() == {"tdd", "grilling", "notes"}
 
 
@@ -128,14 +128,14 @@ def test_cycle(home: Path, capsys: Capsys) -> None:
     skill(home / "mp" / "b", "/a\n")
     configure(["mp/a"], mp="~/mp")
 
-    assert build(capsys) == (0, "")
+    assert deploy(capsys) == (0, "")
     assert vendored() == {"a", "b"}
 
 
 def test_self_reference(home: Path, capsys: Capsys) -> None:
     two_sources(home, "Run /tdd again.\n")
 
-    assert build(capsys) == (0, "")
+    assert deploy(capsys) == (0, "")
     assert vendored() == {"tdd"}
 
 
@@ -144,7 +144,7 @@ def test_ambiguous_target(home: Path, capsys: Capsys) -> None:
     skill(home / "mp" / "b" / "grilling")
     two_sources(home, "/grilling\n")
 
-    code, err = build(capsys)
+    code, err = deploy(capsys)
 
     assert code == 1
     assert "'mp/tdd' calls /grilling" in err
@@ -158,7 +158,7 @@ def test_clash_through_a_reference(home: Path, capsys: Capsys) -> None:
     skill(home / "own" / "grilling")
     configure(["mp/tdd", "own/grilling"], mp="~/mp", own="~/own")
 
-    code, err = build(capsys)
+    code, err = deploy(capsys)
 
     assert code == 1
     assert "mp/grilling" in err and "own/grilling" in err
@@ -169,7 +169,7 @@ def test_not_utf8_fails(home: Path, capsys: Capsys) -> None:
     two_sources(home, "/grilling\n")
     (home / "mp" / "tdd" / "notes.md").write_bytes(b"\xff")
 
-    code, err = build(capsys)
+    code, err = deploy(capsys)
 
     assert code == 1
     assert f"mp/tdd: {home}/mp/tdd/notes.md: not UTF-8" in err
@@ -183,7 +183,7 @@ def test_hidden_character_fails(home: Path, capsys: Capsys) -> None:
     skill(home / "mp" / "tdd", "a\n" * 6 + f"x{TAG}\n")
     configure(["mp/tdd"], mp="~/mp")
 
-    code, err = build(capsys)
+    code, err = deploy(capsys)
 
     assert code == 1
     assert err == (
@@ -198,18 +198,18 @@ def test_symlink_to_a_device(home: Path, capsys: Capsys) -> None:
     (home / "mp" / "grilling" / "x.md").symlink_to("/dev/zero")
     two_sources(home, "/grilling\n")
 
-    code, err = build(capsys)
+    code, err = deploy(capsys)
 
     assert code == 1 and "x.md" in err and "outside" in err
 
 
-@pytest.mark.parametrize("command", ["resolve", "build"])
+@pytest.mark.parametrize("command", ["resolve", "deploy"])
 def test_fifo_is_an_error(home: Path, capsys: Capsys, command: str) -> None:
     skill(home / "mp" / "grilling")
     os.mkfifo(home / "mp" / "grilling" / "pipe")
     two_sources(home, "/grilling\n")
 
-    assert main([command, "--no-install"] if command == "build" else [command]) == 1
+    assert main([command, "--no-install"] if command == "deploy" else [command]) == 1
 
     err = capsys.readouterr().err
     assert "pipe" in err and "not a regular file" in err
@@ -244,7 +244,7 @@ def test_dangling_link(home: Path, capsys: Capsys) -> None:
     (home / "mp" / "grilling" / "notes.md").symlink_to("gone.md")
     two_sources(home, "/grilling\n")
 
-    code, err = build(capsys)
+    code, err = deploy(capsys)
 
     assert code == 1 and "notes.md" in err and "Traceback" not in err
     assert vendored() == set()
@@ -262,7 +262,7 @@ def test_bind_across_sources(home: Path, capsys: Capsys) -> None:
     two_sources(home, "/grilling\n")
     with_binds('"mp/grilling" = "own/grill"')
 
-    assert build(capsys) == (0, "")
+    assert deploy(capsys) == (0, "")
     assert vendored() == {"tdd", "grill"}
 
 
@@ -272,7 +272,7 @@ def test_bind_settles_ambiguity(home: Path, capsys: Capsys) -> None:
     two_sources(home, "/notes\n", x="~/x")
     with_binds('"mp/notes" = "x/notes"')
 
-    assert build(capsys) == (0, "")
+    assert deploy(capsys) == (0, "")
     assert (vendored_dir(home) / "notes" / "SKILL.md").read_text() == "x\n"
 
 
@@ -280,7 +280,7 @@ def test_bind_to_a_missing_skill(home: Path, capsys: Capsys) -> None:
     two_sources(home, "/grilling\n")
     with_binds('"mp/grilling" = "own/nope"')
 
-    code, err = build(capsys)
+    code, err = deploy(capsys)
 
     assert code == 1 and "mp/grilling" in err and "own/nope" in err
 
@@ -291,7 +291,7 @@ def test_bind_to_an_unusable_skill_path(home: Path, capsys: Capsys) -> None:
     configure(["own/a"], own="~/own")
     with_binds('"own/x" = "own/tdd"')
 
-    code, err = build(capsys)
+    code, err = deploy(capsys)
 
     assert code == 1
     assert r"my\040skills/tdd uses characters" in err
@@ -301,7 +301,7 @@ def test_unused_bind_to_a_missing_skill(home: Path, capsys: Capsys) -> None:
     two_sources(home, "nothing\n")
     with_binds('"mp/grill" = "own/nope"')
 
-    code, err = build(capsys)
+    code, err = deploy(capsys)
 
     assert code == 1 and "mp/grill" in err and "own/nope" in err
     assert vendored() == set()
@@ -311,7 +311,7 @@ def test_prose_bind_to_a_missing_skill(home: Path, capsys: Capsys) -> None:
     two_sources(home, "See `notes`.\n")
     with_binds('"mp/notes" = "own/nope"')
 
-    code, err = build(capsys)
+    code, err = deploy(capsys)
 
     assert code == 1 and '[bind] "mp/notes" = "own/nope"' in err
 
@@ -320,7 +320,7 @@ def test_path_in_a_code_block(home: Path, capsys: Capsys) -> None:
     two_sources(home, "```sh\ncd /tmp\n```\n")
     with_binds('"mp/tmp" = false')
 
-    assert build(capsys) == (0, "")
+    assert deploy(capsys) == (0, "")
 
 
 def test_unwanted_match(home: Path, capsys: Capsys) -> None:
@@ -328,7 +328,7 @@ def test_unwanted_match(home: Path, capsys: Capsys) -> None:
     two_sources(home, "cd /tmp\n")
     with_binds('"mp/tmp" = false')
 
-    assert build(capsys) == (0, "")
+    assert deploy(capsys) == (0, "")
     assert vendored() == {"tdd"}
 
 
@@ -337,7 +337,7 @@ def test_typo_in_a_bind(home: Path, capsys: Capsys) -> None:
     two_sources(home, "nothing\n")
     with_binds('"mp/grill" = "own/grilling"')
 
-    code, err = build(capsys)
+    code, err = deploy(capsys)
 
     assert code == 0 and "mp/grill" in err and "binds no reference" in err
 
@@ -347,7 +347,7 @@ def test_bound_self_reference(home: Path, capsys: Capsys) -> None:
     two_sources(home, "/tdd\n")
     with_binds('"mp/tdd" = "own/tdd"')
 
-    code, err = build(capsys)
+    code, err = deploy(capsys)
 
     assert code == 1 and "mp/tdd" in err and "own/tdd" in err
     assert "deployed name" in err
@@ -358,7 +358,7 @@ def test_prose_never_extends_the_hull(home: Path, capsys: Capsys) -> None:
     two_sources(home, "Then diagnosing-bugs, or `foo`.\n")
 
     # A suggestion, announced; no warning, and not vendored.
-    assert build(capsys) == (
+    assert deploy(capsys) == (
         0,
         "skill-graft: 1 prose suggestion(s): run skill-graft resolve\n",
     )
@@ -476,7 +476,7 @@ def test_skill_tool_sentence_pulls_in_a_skill(home: Path, capsys: Capsys) -> Non
     skill(home / "mp" / "grilling")
     configure(["mp/tdd"], mp="~/mp")
 
-    assert build(capsys) == (0, "")  # no warning for the unresolved "fast"
+    assert deploy(capsys) == (0, "")  # no warning for the unresolved "fast"
     assert vendored() == {"tdd", "grilling"}
 
     assert main(["tree"]) == 0
@@ -496,7 +496,7 @@ def test_skill_tool_sentence_never_fails_on_a_quoted_word(
         '[sources.a]\npath = "~/a"\n[sources.b]\npath = "~/b"\n'
     )
 
-    assert build(capsys) == (0, "")
+    assert deploy(capsys) == (0, "")
     assert vendored() == {"tdd"}
 
 
@@ -513,7 +513,7 @@ def test_skill_tool_sentence_ambiguous_when_another_source_has_two(
         '[sources.a]\npath = "~/a"\n[sources.b]\npath = "~/b"\n'
     )
 
-    assert build(capsys) == (0, "")
+    assert deploy(capsys) == (0, "")
     assert vendored() == {"tdd"}
 
 
@@ -531,7 +531,7 @@ def test_two_skills_in_one_run(home: Path, capsys: Capsys) -> None:
     skill(home / "mp" / "grilling", f"a\n{RLO}\n")
     configure(["mp/tdd"], mp="~/mp")
 
-    code, err = build(capsys)
+    code, err = deploy(capsys)
 
     assert code == 1
     assert hidden_lines(err) == [
@@ -546,7 +546,7 @@ def test_with_markdown_not_utf8(home: Path, capsys: Capsys) -> None:
     skill(home / "mp" / "grilling", f"{RLO}\n")
     configure(["mp/tdd"], mp="~/mp")
 
-    code, err = build(capsys)
+    code, err = deploy(capsys)
 
     assert code == 1
     assert hidden_lines(err) == [
@@ -560,7 +560,7 @@ def test_outside_the_hull(home: Path, capsys: Capsys) -> None:
     skill(home / "mp" / "notes", f"{TAG}\n")
     configure(["mp/tdd"], mp="~/mp")
 
-    assert build(capsys) == (0, "")
+    assert deploy(capsys) == (0, "")
 
 
 def test_unused_key_warnings_left_out(home: Path, capsys: Capsys) -> None:
@@ -570,7 +570,7 @@ def test_unused_key_warnings_left_out(home: Path, capsys: Capsys) -> None:
         'entries = ["mp/tdd"]\n[sources.mp]\npath = "~/mp"\n[bind]\n"mp/y" = "mp/x"\n'
     )
 
-    code, err = build(capsys)
+    code, err = deploy(capsys)
 
     assert code == 1 and "skill-graft: warning" not in err
 
@@ -579,7 +579,7 @@ def test_debris_warns(home: Path, capsys: Capsys) -> None:
     skill(home / "mp" / "tdd", "a\nb\n\N{ZERO WIDTH SPACE}c\N{ZERO WIDTH SPACE}\n")
     configure(["mp/tdd"], mp="~/mp")
 
-    assert build(capsys) == (
+    assert deploy(capsys) == (
         0,
         f"skill-graft: warning: {home}/mp/tdd/SKILL.md:3: 2 invisible characters, "
         "the first U+200B\n",
@@ -594,7 +594,7 @@ def test_unreadable_file(home: Path, capsys: Capsys) -> None:
     (home / "mp" / "tdd" / "secret").chmod(0)
     configure(["mp/tdd"], mp="~/mp")
 
-    code, err = build(capsys)
+    code, err = deploy(capsys)
 
     assert code == 1
     assert f"{home}/mp/tdd/secret cannot be read" in err
@@ -648,7 +648,7 @@ def test_patch_adds_one(home: Path, tmp_path: Path, capsys: Capsys) -> None:
         tmp_path, {"SKILL.md": b"# tdd\n"}, {"SKILL.md": f"# tdd\n{RLO}\n".encode()}
     )
 
-    code, err = build(capsys)
+    code, err = deploy(capsys)
 
     assert code == 1
     assert hidden_lines(err) == ["  mp/tdd: patches/tdd.patch:7: U+202E (bidi control)"]
@@ -660,7 +660,7 @@ def test_patch_moves_one(home: Path, tmp_path: Path, capsys: Capsys) -> None:
         tmp_path, {"SKILL.md": text.encode()}, {"SKILL.md": ("x\n" * 3 + text).encode()}
     )
 
-    code, err = build(capsys)
+    code, err = deploy(capsys)
 
     assert code == 1
     assert hidden_lines(err) == [
@@ -673,7 +673,7 @@ def test_patch_removes_one(home: Path, tmp_path: Path, capsys: Capsys) -> None:
         tmp_path, {"SKILL.md": f"# tdd\n{TAG}\n".encode()}, {"SKILL.md": b"# tdd\n"}
     )
 
-    code, err = build(capsys)
+    code, err = deploy(capsys)
 
     assert code == 1
     assert hidden_lines(err) == [
@@ -692,7 +692,7 @@ def test_patch_creates_a_name(home: Path, tmp_path: Path, capsys: Capsys) -> Non
         in (home / ".apm/skill-graft/patches/tdd.patch").read_bytes()
     )
 
-    code, err = build(capsys)
+    code, err = deploy(capsys)
 
     assert code == 1
     assert hidden_lines(err) == [
@@ -707,7 +707,7 @@ def test_debris_in_a_patch_warns(home: Path, tmp_path: Path, capsys: Capsys) -> 
         {"SKILL.md": "# tdd\n\N{SOFT HYPHEN}\n".encode()},
     )
 
-    code, err = build(capsys)
+    code, err = deploy(capsys)
 
     assert code == 0
     assert err == (
@@ -725,7 +725,7 @@ def test_with_a_failing_patch(home: Path, tmp_path: Path, capsys: Capsys) -> Non
         '[patches]\n"mp/tdd" = ["patches/tdd.patch"]\n'
     )
 
-    code, err = build(capsys)
+    code, err = deploy(capsys)
 
     assert code == 1
     assert err.index("patches do not apply:") < err.index("hidden characters:")
@@ -744,7 +744,7 @@ def test_patch_makes_markdown_not_utf8(
         {"SKILL.md": b"# tdd\n", "notes.md": b"caf\xe9\n"},
     )
 
-    code, err = build(capsys)
+    code, err = deploy(capsys)
 
     assert code == 1
     assert hidden_lines(err) == [
@@ -756,7 +756,7 @@ def test_parent_folder_name_shown_escaped(home: Path, capsys: Capsys) -> None:
     skill(home / f"m{RLO}p" / "tdd", f"{TAG}\n")
     configure(["mp/tdd"], mp=f"~/m{RLO}p")
 
-    code, err = build(capsys)
+    code, err = deploy(capsys)
 
     assert code == 1 and RLO not in err
     assert "m\\u202ep/tdd/SKILL.md:1: U+E0041" in err

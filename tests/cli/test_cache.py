@@ -6,7 +6,7 @@ from pathlib import Path
 from typing import TypeAlias
 
 import pytest
-from conftest import Upstream, build, configure, make_patch, skill, write_config
+from conftest import Upstream, deploy, configure, make_patch, skill, write_config
 
 from skill_graft.cli import main
 from skill_graft.infra import paths
@@ -51,11 +51,11 @@ def test_export_in_use_kept(tmp_path: Path, capsys: Capsys) -> None:
     upstream = Upstream(tmp_path / "up")
     sha = upstream.commit({"tdd/SKILL.md": "# tdd\n"})
     git_config(upstream, sha)
-    assert build(capsys) == (0, "")
+    assert deploy(capsys) == (0, "")
     (tree,) = (paths.cache() / "trees").glob(f"*/{sha}")
     aged(tree, 31)
 
-    assert build(capsys) == (0, "")
+    assert deploy(capsys) == (0, "")
 
     assert (tree / "tdd" / "SKILL.md").exists()
 
@@ -80,7 +80,7 @@ def test_failed_command_prunes_too(tmp_path: Path, capsys: Capsys) -> None:
     git_config(upstream, sha, '[patches]\n"mp/tdd" = ["patches/tdd.patch"]\n')
     stale = export("a" * 40, 31)
 
-    assert build(capsys)[0] == 1
+    assert deploy(capsys)[0] == 1
 
     assert not stale.exists()
 
@@ -99,7 +99,7 @@ def test_dry_run_prunes_nothing(tmp_path: Path, capsys: Capsys) -> None:
     upstream = Upstream(tmp_path / "up")
     sha = upstream.commit({"tdd/SKILL.md": "# tdd\n"})
     git_config(upstream, sha)
-    assert build(capsys) == (0, "")
+    assert deploy(capsys) == (0, "")
     upstream.commit({"tdd/SKILL.md": "# new\n"})
     (tree,) = (paths.cache() / "trees").glob(f"*/{sha}")
     used = aged(tree, 31).stat().st_mtime

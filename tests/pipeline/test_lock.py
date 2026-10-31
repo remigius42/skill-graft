@@ -142,13 +142,13 @@ def test_patch_changes_the_hash(home: Path, tmp_path: Path) -> None:
     assert after["mp/notes"] == before["mp/notes"]
 
 
-def test_resolve_and_build_agree_with_patches(home: Path, tmp_path: Path) -> None:
+def test_resolve_and_deploy_agree_with_patches(home: Path, tmp_path: Path) -> None:
     patched_tdd(home, tmp_path, ["a.patch", "b.patch"])
     lock_file = home / ".apm" / "skill-graft" / "skill-graft.lock"
     assert main(["resolve"]) == 0
     resolved = lock_file.read_bytes()
 
-    assert main(["build", "--no-install"]) == 0
+    assert main(["deploy", "--no-install"]) == 0
 
     assert lock_file.read_bytes() == resolved
 
@@ -249,7 +249,7 @@ def test_rename_changes_the_hash(home: Path) -> None:
     assert before["mp/grilling"] != after["mp/grilling"]
 
 
-def test_resolve_and_build_agree_with_renames(home: Path) -> None:
+def test_resolve_and_deploy_agree_with_renames(home: Path) -> None:
     skill(home / "mp" / "tdd", "/grilling and diagnosing-bugs\n")
     skill(home / "mp" / "grilling")
     skill(home / "mp" / "diagnosing-bugs")
@@ -258,7 +258,7 @@ def test_resolve_and_build_agree_with_renames(home: Path) -> None:
 
     assert main(["resolve"]) == 0
     resolved = lock.read_bytes()
-    assert main(["build", "--no-install"]) == 0
+    assert main(["deploy", "--no-install"]) == 0
 
     assert lock.read_bytes() == resolved
 

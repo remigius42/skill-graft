@@ -15,7 +15,7 @@ from skill_graft.cli import main
 COMMANDS = [
     "init",
     "resolve",
-    "build",
+    "deploy",
     "update",
     "why",
     "tree",
@@ -50,7 +50,7 @@ def test_help_lists_commands() -> None:
     result = run_installed("--help")
     assert result.returncode == 0
     assert "init" in result.stdout
-    assert "build" in result.stdout
+    assert "deploy" in result.stdout
 
 
 def test_top_level_help(capsys: pytest.CaptureFixture[str]) -> None:
@@ -71,7 +71,7 @@ def test_command_help(capsys: pytest.CaptureFixture[str]) -> None:
     assert "branch tip" in out
     assert "--dry-run" in out
     assert "--expect hull-digest" in out and "DIGEST" not in out
-    code, out, _ = run(["build", "--help"], capsys)
+    code, out, _ = run(["deploy", "--help"], capsys)
     assert code == 0 and "what skill-graft.lock records" in " ".join(out.split())
     code, out, _ = run(["resolve", "--help"], capsys)
     assert code == 0 and "vendor" in out
@@ -99,6 +99,15 @@ def test_unknown_command(capsys: pytest.CaptureFixture[str]) -> None:
     assert (code, out) == (2, "")
     assert "explain" in err
     assert all(command in err for command in COMMANDS)
+
+
+def test_old_command(home: Path, capsys: pytest.CaptureFixture[str]) -> None:
+    before = sorted(home.iterdir())
+    code, out, err = run(["build"], capsys)
+    assert (code, out) == (2, "")
+    assert "'build'" in err
+    assert all(command in err for command in COMMANDS)
+    assert sorted(home.iterdir()) == before
 
 
 def test_no_command(capsys: pytest.CaptureFixture[str]) -> None:
@@ -140,21 +149,21 @@ def test_unbind_missing_argument(capsys: pytest.CaptureFixture[str]) -> None:
     assert "alias/name" in err
 
 
-def test_build_help_lists_into(capsys: pytest.CaptureFixture[str]) -> None:
-    code, out, _ = run(["build", "--help"], capsys)
+def test_deploy_help_lists_into(capsys: pytest.CaptureFixture[str]) -> None:
+    code, out, _ = run(["deploy", "--help"], capsys)
     assert code == 0
     assert "[--no-install | --into DIR]" in out
 
 
 def test_into_with_no_install(capsys: pytest.CaptureFixture[str]) -> None:
-    code, out, err = run(["build", "--into", "d", "--no-install"], capsys)
+    code, out, err = run(["deploy", "--into", "d", "--no-install"], capsys)
     assert (code, out) == (2, "")
-    assert err.startswith("usage: skill-graft build")
+    assert err.startswith("usage: skill-graft deploy")
     assert "--into" in err and "--no-install" in err and "package:" not in err
 
 
 def test_into_without_a_value(capsys: pytest.CaptureFixture[str]) -> None:
-    code, out, err = run(["build", "--into"], capsys)
+    code, out, err = run(["deploy", "--into"], capsys)
     assert (code, out) == (2, "")
     assert "--into" in err
 
@@ -163,7 +172,7 @@ def test_into_with_an_empty_value(
     home: Path, capsys: pytest.CaptureFixture[str]
 ) -> None:
     before = sorted(home.iterdir())
-    code, out, err = run(["build", "--into", ""], capsys)
+    code, out, err = run(["deploy", "--into", ""], capsys)
     assert (code, out) == (2, "")
     assert "--into" in err and "package:" not in err
     assert sorted(home.iterdir()) == before

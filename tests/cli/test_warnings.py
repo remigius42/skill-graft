@@ -235,11 +235,11 @@ def test_output_larger_than_the_buffer_into_a_closed_pipe(
     assert discards == [stdout]
 
 
-def test_build(home: Path, tmp_path: Path, fake_apm: FakeApm) -> None:
+def test_deploy(home: Path, tmp_path: Path, fake_apm: FakeApm) -> None:
     calls_foo(home)
     assert main(["resolve"]) == 0
 
-    code, text = run(tmp_path, "build")
+    code, text = run(tmp_path, "deploy")
 
     assert code == 0
     in_order(text, "fake apm: install", FOO)

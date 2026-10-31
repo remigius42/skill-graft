@@ -1,5 +1,5 @@
-"""The `skill-discovery` spec, through `skill-graft build --no-install`, and through
-`discovery` itself where a build cannot show it."""
+"""The `skill-discovery` spec, through `skill-graft deploy --no-install`, and through
+`discovery` itself where a deploy cannot show it."""
 
 import os
 import tomllib
@@ -10,7 +10,7 @@ from typing import TypeAlias
 import pytest
 from conftest import (
     Upstream,
-    build,
+    deploy,
     configure,
     deadline,
     skill,
@@ -30,7 +30,7 @@ def test_nested_layout(home: Path, capsys: Capsys) -> None:
     skill(home / "src" / "x" / "y" / "z" / "b")
     configure(["own/a", "own/b"], own="~/src")
 
-    assert build(capsys) == (0, "")
+    assert deploy(capsys) == (0, "")
     assert vendored() == {"a", "b"}
 
 
@@ -38,7 +38,7 @@ def test_hidden_folders_are_searched(home: Path, capsys: Capsys) -> None:
     skill(home / "src" / ".claude" / "skills" / "a")
     configure(["own/a"], own="~/src")
 
-    assert build(capsys) == (0, "")
+    assert deploy(capsys) == (0, "")
     assert vendored() == {"a"}
 
 
@@ -47,11 +47,11 @@ def test_skill_inside_a_skill_is_part_of_it(home: Path, capsys: Capsys) -> None:
     skill(home / "src" / "a" / "examples" / "c")
     configure(["own/c"], own="~/src")
 
-    code, err = build(capsys)
+    code, err = deploy(capsys)
 
     assert code == 1 and "own/c" in err
     configure(["own/a"], own="~/src")
-    assert build(capsys) == (0, "")
+    assert deploy(capsys) == (0, "")
     skills = home / ".apm" / "skill-graft" / ".apm" / "skills"
     assert (skills / "a" / "examples" / "c" / "SKILL.md").exists()
 
@@ -62,7 +62,7 @@ def test_symlinked_skill_folder(home: Path, capsys: Capsys) -> None:
     (home / "src" / "tdd").symlink_to(target)
     configure(["own/tdd"], own="~/src")
 
-    assert build(capsys) == (0, "")
+    assert deploy(capsys) == (0, "")
     assert vendored() == {"tdd"}
 
 
@@ -71,7 +71,7 @@ def test_symlink_cycle_finds_each_skill_once(home: Path, capsys: Capsys) -> None
     (home / "src" / "loop").symlink_to(home / "src")
     configure(["own/a"], own="~/src")
 
-    assert build(capsys) == (0, "")
+    assert deploy(capsys) == (0, "")
     assert vendored() == {"a"}
 
 
@@ -79,9 +79,9 @@ def test_symlink_into_the_package_is_skipped(home: Path, capsys: Capsys) -> None
     skill(home / "src" / "chisel")
     (home / "src" / "apm").symlink_to(home / ".apm")
     configure(["own/chisel"], own="~/src")
-    build(capsys)
+    deploy(capsys)
 
-    assert build(capsys) == (0, "")
+    assert deploy(capsys) == (0, "")
     assert vendored() == {"chisel"}
 
 
@@ -89,7 +89,7 @@ def test_git_metadata_is_skipped(home: Path, capsys: Capsys) -> None:
     skill(home / "src" / ".git" / "x")
     configure(["own/x"], own="~/src")
 
-    code, err = build(capsys)
+    code, err = deploy(capsys)
 
     assert code == 1 and "own/x" in err
 
@@ -98,7 +98,7 @@ def test_source_that_is_a_skill(home: Path, capsys: Capsys) -> None:
     skill(home / "chisel")
     configure(["own/chisel"], own="~/chisel")
 
-    assert build(capsys) == (0, "")
+    assert deploy(capsys) == (0, "")
     assert vendored() == {"chisel"}
 
 
@@ -106,7 +106,7 @@ def test_front_matter_name(home: Path, capsys: Capsys) -> None:
     skill(home / "src" / "tdd-v2", "---\nname: tdd\ndescription: d\n---\nbody\n")
     configure(["mp/tdd"], mp="~/src")
 
-    assert build(capsys) == (0, "")
+    assert deploy(capsys) == (0, "")
     assert vendored() == {"tdd"}
 
 
@@ -114,7 +114,7 @@ def test_front_matter_name_replaces_the_folder_name(home: Path, capsys: Capsys) 
     skill(home / "src" / "tdd-v2", "---\nname: tdd\n---\n")
     configure(["mp/tdd-v2"], mp="~/src")
 
-    code, err = build(capsys)
+    code, err = deploy(capsys)
 
     assert code == 1 and "mp/tdd-v2" in err
 
@@ -135,7 +135,7 @@ def test_folder_name_without_front_matter_name(
     skill(home / "src" / "grilling", text)
     configure(["own/grilling"], own="~/src")
 
-    assert build(capsys) == (0, "")
+    assert deploy(capsys) == (0, "")
     assert vendored() == {"grilling"}
 
 
@@ -146,7 +146,7 @@ def test_comment_and_quotes(home: Path, capsys: Capsys, line: str) -> None:
     skill(home / "src" / "x", f"﻿--- \n{line}\n---  \n")
     configure(["own/tdd"], own="~/src")
 
-    assert build(capsys) == (0, "")
+    assert deploy(capsys) == (0, "")
     assert vendored() == {"tdd"}
 
 
@@ -157,7 +157,7 @@ def test_unsupported_yaml_form(home: Path, capsys: Capsys, value: str) -> None:
     skill(home / "src" / "x", f"---\nname: {value}\n  tdd\n---\n")
     configure(["own/x"], own="~/src")
 
-    code, err = build(capsys)
+    code, err = deploy(capsys)
 
     assert code == 1 and "x/SKILL.md" in err
 
@@ -172,7 +172,7 @@ def test_duplicate_name(home: Path, capsys: Capsys, first: str, text: str) -> No
     skill(home / "src" / "b" / "tdd")
     configure(["mp/tdd"], mp="~/src")
 
-    code, err = build(capsys)
+    code, err = deploy(capsys)
 
     assert code == 1
     assert "mp/tdd" in err and first in err and "b/tdd" in err
@@ -183,7 +183,7 @@ def test_entry_not_found(home: Path, capsys: Capsys) -> None:
     skill(home / "src" / "tdd")
     configure(["mp/nope"], mp="~/src")
 
-    code, err = build(capsys)
+    code, err = deploy(capsys)
 
     assert code == 1 and "mp/nope" in err
 
@@ -192,7 +192,7 @@ def test_traversal_in_name_writes_nothing(home: Path, capsys: Capsys) -> None:
     skill(home / "src" / "x", "---\nname: ../../x\n---\n")
     configure(["own/x"], own="~/src")
 
-    code, err = build(capsys)
+    code, err = deploy(capsys)
 
     assert code == 1 and "x/SKILL.md" in err
     assert vendored() == set()
@@ -207,7 +207,7 @@ def test_other_skills_problems_do_not_block(home: Path, capsys: Capsys) -> None:
     skill(home / "src" / "odd", "---\nname: |\n  odd\n---\n")
     configure(["own/tdd"], own="~/src")
 
-    assert build(capsys) == (0, "")
+    assert deploy(capsys) == (0, "")
     assert vendored() == {"tdd"}
 
 
@@ -215,7 +215,7 @@ def test_hash_inside_quotes_is_not_a_comment(home: Path, capsys: Capsys) -> None
     skill(home / "src" / "x", '---\nname: "a #b" # comment\n---\n')
     configure(["own/x"], own="~/src")
 
-    code, err = build(capsys)
+    code, err = deploy(capsys)
 
     assert code == 1 and r"name a\040\043b is" in err
 
@@ -227,7 +227,7 @@ def test_name_continued_on_the_next_line(
     skill(home / "src" / "x", "---\nname: foo\n  bar\n---\n")
     configure([entry], own="~/src")
 
-    assert build(capsys)[0] == 1
+    assert deploy(capsys)[0] == 1
     assert vendored() == set()
 
 
@@ -238,7 +238,7 @@ def test_unreadable_skill_with_the_entry_folder_name_is_ambiguous(
     skill(home / "src" / "old" / "tdd", "---\nname: >-\n  tdd\n---\n")
     configure(["mp/tdd"], mp="~/src")
 
-    code, err = build(capsys)
+    code, err = deploy(capsys)
 
     assert code == 1
     assert "ambiguous" in err and "old/tdd/SKILL.md" in err and "tdd-v2" in err
@@ -251,7 +251,7 @@ def test_invalid_name_in_a_folder_with_the_entry_name_does_not_block(
     skill(home / "src" / "other" / "tdd", "---\nname: tdd extra\n---\n")
     configure(["mp/tdd"], mp="~/src")
 
-    assert build(capsys) == (0, "")
+    assert deploy(capsys) == (0, "")
     assert vendored() == {"tdd"}
 
 
@@ -271,7 +271,7 @@ def test_unreadable_skill_elsewhere_does_not_block(
     unreadable_skill(home / "src" / "other", how)
     configure(["own/chisel"], own="~/src")
 
-    assert build(capsys) == (0, "")
+    assert deploy(capsys) == (0, "")
     assert vendored() == {"chisel"}
 
 
@@ -280,7 +280,7 @@ def test_unreadable_named_skill(home: Path, capsys: Capsys, how: str) -> None:
     unreadable_skill(home / "src" / "other", how)
     configure(["own/other"], own="~/src")
 
-    code, err = build(capsys)
+    code, err = deploy(capsys)
 
     assert code == 1 and "other/SKILL.md" in err
 
@@ -297,7 +297,7 @@ def test_another_projects_package_is_skipped(
     skill(apm / "skill-graft" / ".apm" / "skills" / "tdd")
     configure(["own/tdd"], own="~/src")
 
-    code, err = build(capsys)
+    code, err = deploy(capsys)
 
     assert code == 1
     assert "own/tdd" in err
@@ -310,7 +310,7 @@ def test_link_into_another_package_is_skipped(home: Path, capsys: Capsys) -> Non
     (home / "src" / "team").symlink_to(vendored_skills)
     configure(["own/tdd"], own="~/src")
 
-    code, err = build(capsys)
+    code, err = deploy(capsys)
 
     assert code == 1
     assert "own/tdd" in err
@@ -323,7 +323,7 @@ def test_symlinked_package_is_skipped(home: Path, capsys: Capsys) -> None:
     (home / "src" / "repo" / ".apm" / "skill-graft").symlink_to(home / "team-sg")
     configure(["own/tdd"], own="~/src")
 
-    code, err = build(capsys)
+    code, err = deploy(capsys)
 
     assert code == 1
     assert "own/tdd" in err
@@ -361,7 +361,7 @@ def test_skill_md_not_a_regular_file_does_not_block(
     configure(["own/tdd"], own="~/src")
 
     with deadline():
-        assert build(capsys) == (0, "")
+        assert deploy(capsys) == (0, "")
     assert vendored() == {"tdd"}
 
 
@@ -384,7 +384,7 @@ def test_skill_md_not_a_regular_file_is_unreadable(
     configure(["own/x"], own="~/src")
 
     with deadline():
-        code, err = build(capsys)
+        code, err = deploy(capsys)
 
     assert code == 1
     assert f"{home / 'src' / 'x' / 'SKILL.md'}: not a regular file{cause}\n" in err
@@ -434,7 +434,7 @@ def test_link_into_a_project_package_is_skipped(home: Path, tmp_path: Path) -> N
 
 
 def test_regular_file_linked_from_outside_a_path_source(home: Path) -> None:
-    # Discovery reads it; build's symlink check refuses it in a hull skill.
+    # Discovery reads it; vendoring's symlink check refuses it in a hull skill.
     skill(home / "elsewhere", "---\nname: tdd\n---\n")
     (home / "src" / "x").mkdir(parents=True)
     (home / "src" / "x" / "SKILL.md").symlink_to(home / "elsewhere" / "SKILL.md")
@@ -497,7 +497,7 @@ def test_bad_folder_elsewhere_does_not_block(home: Path, capsys: Capsys) -> None
     skill(home / "own" / "tdd")
     configure(["own/tdd"], own="~/own")
 
-    assert build(capsys) == (0, "")
+    assert deploy(capsys) == (0, "")
     assert vendored() == {"tdd"}
 
 
@@ -516,7 +516,7 @@ def test_unusable_skill_path(
     skill(home / "own" / folder, "---\nname: tdd\n---\n")
     configure(["own/tdd"], own="~/own")
 
-    code, err = build(capsys)
+    code, err = deploy(capsys)
 
     assert code == 1
     assert err == (
@@ -533,7 +533,7 @@ def test_shell_syntax_in_a_folder(home: Path, tmp_path: Path, capsys: Capsys) ->
         f'entries = ["mp/tdd"]\n[sources.mp]\ngit = "{upstream.url}"\nref = "{sha}"\n'
     )
 
-    code, err = build(capsys)
+    code, err = deploy(capsys)
 
     assert code == 1
     assert r"skills/\044\050touch\040x\051/tdd uses characters" in err
@@ -556,7 +556,7 @@ def test_bad_path_and_a_symlink_out_of_the_skill(
         f'entries = ["mp/tdd"]\n[sources.mp]\ngit = "{upstream.url}"\nref = "{sha}"\n'
     )
 
-    code, err = build(capsys)
+    code, err = deploy(capsys)
 
     assert code == 1
     assert r"skills/\044\050x\051/tdd uses characters" in err
@@ -569,7 +569,7 @@ def test_unusable_skill_called_by_a_reference(home: Path, capsys: Capsys) -> Non
     skill(home / "mp" / "tdd")
     configure(["own/a"], own="~/own", mp="~/mp")
 
-    code, err = build(capsys)
+    code, err = deploy(capsys)
 
     assert code == 1
     assert r"my\040skills/tdd uses characters" in err
@@ -581,7 +581,7 @@ def test_unusable_skill_in_a_skill_tool_sentence(home: Path, capsys: Capsys) -> 
     skill(home / "own" / "my skills" / "tdd")
     configure(["own/a"], own="~/own")
 
-    assert build(capsys) == (0, "")
+    assert deploy(capsys) == (0, "")
     lock = home / ".apm" / "skill-graft" / "skill-graft.lock"
     assert tomllib.loads(lock.read_text()).get("edges", []) == []
     assert vendored() == {"a"}
@@ -593,7 +593,7 @@ def test_unusable_skill_path_and_a_namesake(home: Path, capsys: Capsys) -> None:
     skill(home / "own" / "my skills" / "tdd")
     configure(["own/tdd"], own="~/own")
 
-    code, err = build(capsys)
+    code, err = deploy(capsys)
 
     assert code == 1
     assert "ambiguous" in err and str(home / "own" / "tdd") in err
@@ -607,7 +607,7 @@ def test_bad_path_and_a_name_that_is_no_segment_does_not_block_a_namesake(
     skill(home / "own" / "my skills" / "tdd", "---\nname: a b\n---\n")
     configure(["own/tdd"], own="~/own")
 
-    assert build(capsys) == (0, "")
+    assert deploy(capsys) == (0, "")
     assert vendored() == {"tdd"}
 
 
@@ -617,7 +617,7 @@ def test_bad_path_and_a_name_that_is_no_segment_explains_a_miss(
     skill(home / "own" / "my skills" / "tdd", "---\nname: a b\n---\n")
     configure(["own/tdd"], own="~/own")
 
-    code, err = build(capsys)
+    code, err = deploy(capsys)
 
     assert code == 1
     assert r"my\040skills/tdd uses characters" in err
@@ -628,7 +628,7 @@ def test_shell_syntax_in_a_name(home: Path, capsys: Capsys) -> None:
     skill(home / "own" / "x", "---\nname: $(curl x)/a\n---\n")
     configure(["own/x"], own="~/own")
 
-    code, err = build(capsys)
+    code, err = deploy(capsys)
 
     assert code == 1
     assert err == (
@@ -653,7 +653,7 @@ def test_bad_path_and_a_skill_md_that_is_a_device(
     monkeypatch.setattr(discovery, "read_name", never_on_it)
 
     with deadline():
-        code, err = build(capsys)
+        code, err = deploy(capsys)
 
     assert code == 1
     assert r"my\040skills/tdd uses characters" in err

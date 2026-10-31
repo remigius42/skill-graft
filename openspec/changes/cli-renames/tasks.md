@@ -18,7 +18,7 @@ user's agent skills", the top-level help's "Build your agent skills", `[build-sy
 
 ## 2. `build` becomes `deploy`
 
-- [ ] 2.1 `git mv` `commands/build.py` → `commands/deploy.py` with `build()` → `deploy()`,
+- [x] 2.1 `git mv` `commands/build.py` → `commands/deploy.py` with `build()` → `deploy()`,
   `tests/commands/test_build.py` → `test_deploy.py`, `tests/cli/test_git_build.py` → `test_git_deploy.py`, and
   `conftest.resolve_and_build` → `resolve_and_deploy` and `conftest.build` → `deploy`, in every test file that imports
   either (`git grep -nE 'resolve_and_build|^\s+build,|import .*\bbuild\b' tests`), and `vendored()`'s "the last build";

@@ -4,14 +4,14 @@ import shutil
 from pathlib import Path
 
 import pytest
-from conftest import Upstream, resolve_and_build, skill
+from conftest import Upstream, resolve_and_deploy, skill
 
 from skill_graft.cli import main
 
 pytestmark = pytest.mark.skipif(shutil.which("apm") is None, reason="no apm on PATH")
 
 
-def test_init_then_build_deploys_the_entry(home: Path) -> None:
+def test_init_then_deploy_deploys_the_entry(home: Path) -> None:
     package = home / ".apm" / "skill-graft"
     skill(home / "src" / "chisel", "---\nname: chisel\ndescription: d\n---\nhi\n")
 
@@ -19,14 +19,14 @@ def test_init_then_build_deploys_the_entry(home: Path) -> None:
     (package / "skill-graft.toml").write_text(
         'entries = ["own/chisel"]\n[sources.own]\npath = "~/src"\n'
     )
-    assert resolve_and_build(["build"]) == 0
+    assert resolve_and_deploy(["deploy"]) == 0
 
     assert f"- {package}" in (home / ".apm" / "apm.yml").read_text()
     # No `targets:` in ~/.apm/apm.yml, so APM 0.33.0 deploys to ~/.agents/skills.
     assert (home / ".agents" / "skills" / "chisel" / "SKILL.md").exists()
 
 
-def test_init_update_build_deploys_a_git_entry(home: Path, tmp_path: Path) -> None:
+def test_init_update_deploy_deploys_a_git_entry(home: Path, tmp_path: Path) -> None:
     upstream = Upstream(tmp_path / "up")
     upstream.commit({"skills/tdd/SKILL.md": "---\nname: tdd\ndescription: d\n---\n"})
 
@@ -35,12 +35,12 @@ def test_init_update_build_deploys_a_git_entry(home: Path, tmp_path: Path) -> No
         f'entries = ["mp/tdd"]\n[sources.mp]\ngit = "{upstream.url}"\n'
     )
     assert main(["update"]) == 0
-    assert main(["build"]) == 0
+    assert main(["deploy"]) == 0
 
     assert (home / ".agents" / "skills" / "tdd" / "SKILL.md").exists()
 
 
-def test_init_project_then_build_deploys_it(
+def test_init_project_then_deploy_deploys_it(
     home: Path, monkeypatch: pytest.MonkeyPatch
 ) -> None:
     repo = home / "repo"
@@ -53,7 +53,7 @@ def test_init_project_then_build_deploys_it(
     )
     monkeypatch.chdir(repo / "src")
 
-    assert resolve_and_build(["build"]) == 0
+    assert resolve_and_deploy(["deploy"]) == 0
 
     assert (repo / ".claude" / "skills" / "chisel" / "SKILL.md").exists()
     assert "- ./.apm/skill-graft" in (repo / "apm.yml").read_text()

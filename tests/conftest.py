@@ -286,24 +286,24 @@ def configure(entries: list[str], **sources: str) -> None:
     write_config(text)
 
 
-def build(capsys: pytest.CaptureFixture[str]) -> tuple[int, str]:
-    """Runs `skill-graft resolve`, then, if it succeeds, `skill-graft build
+def deploy(capsys: pytest.CaptureFixture[str]) -> tuple[int, str]:
+    """Runs `skill-graft resolve`, then, if it succeeds, `skill-graft deploy
     --no-install`; returns the exit code and stderr of the last, without the
     package line (`test_scope.py` checks that)."""
     code = main(["resolve"])
     if code != 0:
         return code, after_package_line(capsys.readouterr().err)
     capsys.readouterr()
-    code = main(["build", "--no-install"])
+    code = main(["deploy", "--no-install"])
     return code, after_package_line(capsys.readouterr().err)
 
 
-def resolve_and_build(
+def resolve_and_deploy(
     args: list[str], capsys: pytest.CaptureFixture[str] | None = None
 ) -> int:
-    """Runs `skill-graft resolve`, then, if it succeeds, the build `args`: a
-    config written by hand is accepted before it is built. Given `capsys`, only
-    the build's output is left to read."""
+    """Runs `skill-graft resolve`, then, if it succeeds, the deploy `args`: a
+    config written by hand is accepted before it is deployed. Given `capsys`, only
+    the deploy's output is left to read."""
     if code := main(["resolve"]):
         return code
     if capsys is not None:
@@ -319,7 +319,7 @@ def after_package_line(err: str) -> str:
 
 
 def vendored() -> set[str]:
-    """The skill folders the last build left in `.apm/skills/`."""
+    """The skill folders the last deploy left in `.apm/skills/`."""
     skills = Path.home() / ".apm" / "skill-graft" / ".apm" / "skills"
     return {p.name for p in skills.iterdir()} if skills.exists() else set()
 

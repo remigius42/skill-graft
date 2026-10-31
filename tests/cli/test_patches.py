@@ -5,7 +5,7 @@ from pathlib import Path
 from typing import TypeAlias
 
 import pytest
-from conftest import build, make_patch, skill, vendored, write_config, write_patch
+from conftest import deploy, make_patch, skill, vendored, write_config, write_patch
 
 from skill_graft.cli import main
 
@@ -30,7 +30,7 @@ def test_patch_adds_a_reference(home: Path, tmp_path: Path, capsys: Capsys) -> N
     )
     configure_patched('"mp/tdd"', '"mp/tdd" = ["patches/tdd.patch"]')
 
-    assert build(capsys) == (0, "")
+    assert deploy(capsys) == (0, "")
 
     assert vendored() == {"tdd", "grilling"}
     skills = home / ".apm" / "skill-graft" / ".apm" / "skills"
@@ -49,7 +49,7 @@ def test_patch_removes_a_reference(home: Path, tmp_path: Path, capsys: Capsys) -
     )
     configure_patched('"mp/tdd"', '"mp/tdd" = ["patches/tdd.patch"]')
 
-    assert build(capsys) == (0, "")
+    assert deploy(capsys) == (0, "")
 
     assert vendored() == {"tdd"}
 
@@ -68,7 +68,7 @@ def test_rename_on_top(home: Path, tmp_path: Path, capsys: Capsys) -> None:
         '"mp/tdd" = ["patches/tdd.patch"]\n[rename]\n"mp/grilling" = "mp-grilling"',
     )
 
-    assert build(capsys) == (0, "")
+    assert deploy(capsys) == (0, "")
 
     skills = home / ".apm" / "skill-graft" / ".apm" / "skills"
     assert (skills / "tdd" / "SKILL.md").read_text() == "# tdd\nRun /mp-grilling.\n"
@@ -89,7 +89,7 @@ def test_upstream_checked_first(home: Path, tmp_path: Path, capsys: Capsys) -> N
     (home / "secret").write_text("secret\n")
     (home / "mp" / "tdd" / "notes.md").symlink_to(home / "secret")
 
-    code, err = build(capsys)
+    code, err = deploy(capsys)
 
     assert code == 1
     assert f"{home / 'mp' / 'tdd' / 'notes.md'} points outside the skill" in err
@@ -102,21 +102,21 @@ def test_not_utf8_named_by_upstream_path(
     tdd_patched(home, tmp_path)
     (home / "mp" / "tdd" / "notes.md").write_bytes(b"\xff\n")
 
-    code, err = build(capsys)
+    code, err = deploy(capsys)
 
     assert code == 1
     assert str(home / "mp" / "tdd" / "notes.md") in err
     assert "skill-graft-" not in err
 
 
-def test_build_writes_nothing(home: Path, tmp_path: Path, capsys: Capsys) -> None:
+def test_deploy_writes_nothing(home: Path, tmp_path: Path, capsys: Capsys) -> None:
     tdd_patched(home, tmp_path)
-    assert build(capsys)[0] == 0
+    assert deploy(capsys)[0] == 0
     package = home / ".apm" / "skill-graft"
     lock_before = (package / "skill-graft.lock").read_bytes()
     (home / "mp" / "tdd" / "SKILL.md").write_text("# changed\n")
 
-    code, err = build(capsys)
+    code, err = deploy(capsys)
 
     assert code == 1
     assert "patches/tdd.patch" in err
@@ -150,7 +150,7 @@ def test_two_skills_fail(home: Path, tmp_path: Path, capsys: Capsys) -> None:
         '"mp/tdd" = ["patches/tdd.patch"]\n"mp/notes" = ["patches/notes.patch"]',
     )
 
-    code, err = build(capsys)
+    code, err = deploy(capsys)
 
     assert code == 1
     assert "patches/tdd.patch: SKILL.md: hunk" in err
@@ -170,7 +170,7 @@ def test_another_error_after_a_patch_failure(
         '[patches]\n"mp/tdd" = ["patches/tdd.patch"]\n'
     )
 
-    code, err = build(capsys)
+    code, err = deploy(capsys)
 
     assert code == 1
     assert err.index("patches/tdd.patch") < err.index("own/x")
@@ -192,7 +192,7 @@ def test_copy_error_after_a_patch_failure(
     )
 
     try:
-        code, err = build(capsys)
+        code, err = deploy(capsys)
     finally:
         secret.chmod(0o644)
 
@@ -214,7 +214,7 @@ def test_reached_only_through_a_failed_skill(
         '"mp/tdd"', '"mp/tdd" = ["patches/tdd.patch"]\n[rename]\n"mp/grilling" = "g"'
     )
 
-    code, err = build(capsys)
+    code, err = deploy(capsys)
 
     assert code == 1
     assert "patches/tdd.patch" in err
@@ -227,7 +227,7 @@ def test_patch_outside_the_hull(home: Path, capsys: Capsys) -> None:
     write_patch("old.patch", b"--- a/SKILL.md\n")
     configure_patched('"mp/tdd"', '"mp/notes" = ["patches/notes.patch"]')
 
-    code, err = build(capsys)
+    code, err = deploy(capsys)
 
     assert code == 0
     assert err == (
@@ -241,7 +241,7 @@ def test_no_git(
     tdd_patched(home, tmp_path)
     monkeypatch.setenv("PATH", str(tmp_path / "empty"))
 
-    code, err = build(capsys)
+    code, err = deploy(capsys)
 
     assert code == 1
     assert "[patches] needs git" in err
@@ -254,4 +254,4 @@ def test_path_sources_without_patches(
     configure_patched('"mp/tdd"', "")
     monkeypatch.setenv("PATH", str(tmp_path / "empty"))
 
-    assert build(capsys) == (0, "")
+    assert deploy(capsys) == (0, "")

@@ -177,8 +177,8 @@ def _parser() -> tuple[_Parser, dict[str, argparse.ArgumentParser]]:
             "patch by hand."
         ),
     )
-    build = commands.add_parser(
-        "build",
+    deploy = commands.add_parser(
+        "deploy",
         help="deploy what skill-graft.lock records through APM",
         description=(
             "Deploy what skill-graft.lock records: resolve, refuse a hull other "
@@ -189,7 +189,7 @@ def _parser() -> tuple[_Parser, dict[str, argparse.ArgumentParser]]:
             "is deployed as is, and named."
         ),
     )
-    install = build.add_mutually_exclusive_group()
+    install = deploy.add_mutually_exclusive_group()
     install.add_argument(
         "--no-install", action="store_true", help="stop before running APM"
     )
@@ -288,7 +288,7 @@ def _parser() -> tuple[_Parser, dict[str, argparse.ArgumentParser]]:
             "Append each skill ID to `entries` in skill-graft.toml, keeping its "
             "comments and formatting. The edited config is resolved first; only if "
             "it resolves are skill-graft.toml and the lock written and the tree "
-            "printed. Never builds."
+            "printed. Never deploys."
         ),
     )
     add.add_argument(
@@ -300,7 +300,7 @@ def _parser() -> tuple[_Parser, dict[str, argparse.ArgumentParser]]:
         description=(
             "Delete each skill ID from `entries` in skill-graft.toml, keeping its "
             "other comments and formatting, as add does. A removed skill another "
-            "entry reaches stays in the hull. Never builds."
+            "entry reaches stays in the hull. Never deploys."
         ),
     )
     remove.add_argument(
@@ -314,7 +314,7 @@ def _parser() -> tuple[_Parser, dict[str, argparse.ArgumentParser]]:
             "comments and formatting, as add does. The new deployed name is carried "
             "into every reference to the skill. Renaming a skill to the name it "
             "deploys as without one (its source's prefix, if any, before its own "
-            "name) undoes its rename. Never builds."
+            "name) undoes its rename. Never deploys."
         ),
     )
     rename.add_argument("skill", metavar="skill-id", help="<source alias>/<name>")
@@ -326,7 +326,7 @@ def _parser() -> tuple[_Parser, dict[str, argparse.ArgumentParser]]:
             "Set `[bind]` key <source alias>/<name> in skill-graft.toml to a skill "
             "ID, so every reference to <name> from that source resolves to it, or "
             "to false, so <name> from that source is no reference. Keeps comments "
-            "and formatting, as add does. Never builds."
+            "and formatting, as add does. Never deploys."
         ),
     )
     bind.add_argument("key", metavar="alias/name", help="<source alias>/<name>")
@@ -339,7 +339,7 @@ def _parser() -> tuple[_Parser, dict[str, argparse.ArgumentParser]]:
         description=(
             "Delete `[bind]` key <source alias>/<name> from skill-graft.toml, so "
             "references to <name> from that source resolve by default again. Keeps "
-            "comments and formatting, as add does. Never builds."
+            "comments and formatting, as add does. Never deploys."
         ),
     )
     unbind.add_argument("key", metavar="alias/name", help="<source alias>/<name>")
@@ -420,7 +420,7 @@ def _main(argv: list[str] | None) -> int:
     # Here, not at load: on native Windows `main` refuses before any command module,
     # which may import a POSIX-only one such as `fcntl`, loads.
     from skill_graft.commands import (
-        build,
+        deploy,
         edit,
         explain,
         housekeeping,
@@ -480,8 +480,8 @@ def _main(argv: list[str] | None) -> int:
                 explain.show_tree(current, warnings, mermaid, args.link)
             elif args.command == "resolve":
                 resolve.resolve(current, warnings, args.dry_run, args.diff)
-            elif args.command == "build":
-                build.build(current, warnings, args.into, args.no_install)
+            elif args.command == "deploy":
+                deploy.deploy(current, warnings, args.into, args.no_install)
         status = 0
     except (SkillGraftError, OSError) as error:
         print(f"skill-graft: {error}", file=sys.stderr)

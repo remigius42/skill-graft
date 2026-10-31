@@ -6,7 +6,7 @@ from pathlib import Path
 from typing import Any, TypeAlias
 
 import pytest
-from conftest import Upstream, build, vendored, write_config
+from conftest import Upstream, deploy, vendored, write_config
 
 from skill_graft.cli import main
 
@@ -21,13 +21,13 @@ def source(upstream: Upstream, ref: str, subdirectory: str, alias: str = "cp") -
 
 
 def refused(capsys: Capsys, value: str) -> str:
-    """`build`'s stderr for a git source with `subdirectory = <value>`, the TOML
+    """`deploy`'s stderr for a git source with `subdirectory = <value>`, the TOML
     value as written; the source's URL names nothing, so git must never run."""
     write_config(
         'entries = ["cp/tdd"]\n'
         f'[sources.cp]\ngit = "/nowhere"\nref = "{"a" * 40}"\nsubdirectory = {value}\n'
     )
-    code, err = build(capsys)
+    code, err = deploy(capsys)
     assert code == 1
     assert not (Path.home() / ".cache").exists()
     return err
@@ -69,7 +69,7 @@ def test_hidden_folder(tmp_path: Path, capsys: Capsys) -> None:
     sha = upstream.commit({".claude/skills/tdd/SKILL.md": "# tdd\n"})
     write_config('entries = ["cp/tdd"]\n' + source(upstream, sha, ".claude/skills"))
 
-    code, err = build(capsys)
+    code, err = deploy(capsys)
 
     assert code == 0, err
     assert vendored() == {"tdd"}
@@ -86,7 +86,7 @@ def test_subdirectory_on_a_path_source(home: Path, capsys: Capsys) -> None:
     (home / "plugins").mkdir()
     write_config('[sources.own]\npath = "~/plugins"\nsubdirectory = "pstack/skills"\n')
 
-    code, err = build(capsys)
+    code, err = deploy(capsys)
 
     assert code == 1
     assert "'sources.own.subdirectory' is unsupported" in err
@@ -112,7 +112,7 @@ def not_at_the_ref(
         'entries = ["cp/tdd"]\n' + source(upstream, sha, subdirectory)
     )
 
-    code = main([command] + (["--no-install"] if command == "build" else []))
+    code = main([command] + (["--no-install"] if command == "deploy" else []))
     err = capsys.readouterr().err
 
     assert code == 1
@@ -122,7 +122,7 @@ def not_at_the_ref(
     return err
 
 
-@pytest.mark.parametrize("command", ["build", "resolve"])
+@pytest.mark.parametrize("command", ["deploy", "resolve"])
 def test_missing_at_ref(tmp_path: Path, capsys: Capsys, command: str) -> None:
     files = {"pstack/tdd/SKILL.md": "x"}
 
@@ -134,7 +134,7 @@ def test_missing_at_ref(tmp_path: Path, capsys: Capsys, command: str) -> None:
 def test_a_file_not_a_folder(tmp_path: Path, capsys: Capsys) -> None:
     files = {"pstack/skills": "a file"}
 
-    err = not_at_the_ref(tmp_path, capsys, "build", files, "pstack/skills")
+    err = not_at_the_ref(tmp_path, capsys, "deploy", files, "pstack/skills")
 
     assert "is not a folder" in err
 
@@ -143,7 +143,7 @@ def test_symlinked_subdirectory(tmp_path: Path, capsys: Capsys) -> None:
     files = {"plugins/pstack/tdd/SKILL.md": "x"}
     link = ("skills", "plugins")
 
-    err = not_at_the_ref(tmp_path, capsys, "build", files, "skills/pstack", link)
+    err = not_at_the_ref(tmp_path, capsys, "deploy", files, "skills/pstack", link)
 
     assert "runs through a symlink" in err
 
@@ -219,7 +219,7 @@ def test_skill_outside_the_subdirectory(tmp_path: Path, capsys: Capsys) -> None:
     )
     write_config('entries = ["x/a"]\n' + source(upstream, sha, "skills", alias="x"))
 
-    code, err = build(capsys)
+    code, err = deploy(capsys)
 
     assert code == 0 and vendored() == {"a"}
     assert "`x/a` calls `/b`: no declared source has a skill `b`" in err
@@ -232,7 +232,7 @@ def test_link_out_of_the_subdirectory(tmp_path: Path, capsys: Capsys) -> None:
     sha = upstream.commit({})
     write_config('entries = ["x/c"]\n' + source(upstream, sha, "skills", alias="x"))
 
-    code, err = build(capsys)
+    code, err = deploy(capsys)
 
     assert code == 1 and "x/c" in err and vendored() == set()
 
@@ -247,13 +247,13 @@ def test_shared_export(home: Path, tmp_path: Path, capsys: Capsys) -> None:
     )
 
     write_config('entries = ["a/one", "b/two"]\n' + both)
-    assert build(capsys) == (0, "")
+    assert deploy(capsys) == (0, "")
     assert vendored() == {"one", "two"}
     exports = (home / ".cache" / "skill-graft" / "trees").glob("*/*")
     assert sorted(top_folders(export) for export in exports) == [["x"], ["y"]]
 
     write_config('entries = ["a/two"]\n' + both)
-    code, err = build(capsys)
+    code, err = deploy(capsys)
     assert code == 1 and "a/two" in err
 
 
@@ -271,7 +271,7 @@ def test_same_subdirectory(home: Path, tmp_path: Path, capsys: Capsys) -> None:
     )
 
     write_config('entries = ["a/one", "b/two"]\n' + both)
-    assert build(capsys) == (0, "")
+    assert deploy(capsys) == (0, "")
     assert vendored() == {"one", "two"}
     assert len(list((home / ".cache" / "skill-graft" / "trees").glob("*/*"))) == 1
 
@@ -301,7 +301,7 @@ def test_one_plugin_of_many(tmp_path: Path, capsys: Capsys) -> None:
         'entries = ["cp/tdd"]\n' + source(upstream, sha, "pstack/skills")
     )
 
-    assert build(capsys) == (0, "")
+    assert deploy(capsys) == (0, "")
 
     assert vendored() == {"tdd"}
     tdd = config.parent / ".apm" / "skills" / "tdd" / "SKILL.md"

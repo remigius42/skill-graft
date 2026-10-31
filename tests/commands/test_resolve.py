@@ -9,7 +9,7 @@ from conftest import (
     Upstream,
     configure,
     make_patch,
-    resolve_and_build,
+    resolve_and_deploy,
     skill,
     write_config,
 )
@@ -153,7 +153,7 @@ def test_suggestion_printed(home: Path, capsys: Capsys) -> None:
     )
 
 
-def test_build_announces_suggestions(home: Path, capsys: Capsys) -> None:
+def test_deploy_announces_suggestions(home: Path, capsys: Capsys) -> None:
     skill(home / "mp" / "tdd", "then diagnosing-bugs and `notes`\n")
     skill(home / "mp" / "diagnosing-bugs")
     skill(home / "mp" / "notes")
@@ -161,19 +161,19 @@ def test_build_announces_suggestions(home: Path, capsys: Capsys) -> None:
     assert main(["resolve"]) == 0
     capsys.readouterr()
 
-    assert main(["build", "--no-install"]) == 0
+    assert main(["deploy", "--no-install"]) == 0
 
     out, err = capsys.readouterr()
     assert "skill-graft: 2 prose suggestion(s): run skill-graft resolve\n" in err
     assert "diagnosing-bugs" not in out + err
 
 
-def test_build_without_suggestions_prints_no_line(home: Path, capsys: Capsys) -> None:
+def test_deploy_without_suggestions_prints_no_line(home: Path, capsys: Capsys) -> None:
     skill(home / "mp" / "tdd", "/notes\n")
     skill(home / "mp" / "notes")
     configure(["mp/tdd"], mp="~/mp")
 
-    assert resolve_and_build(["build", "--no-install"]) == 0
+    assert resolve_and_deploy(["deploy", "--no-install"]) == 0
 
     assert "prose suggestion(s)" not in capsys.readouterr().err
 
@@ -242,12 +242,12 @@ def test_symlinked_config(home: Path, tmp_path: Path) -> None:
     assert [p.name for p in elsewhere.iterdir()] == ["skill-graft.toml"]
 
 
-def test_build_writes_the_lock(home: Path) -> None:
+def test_deploy_writes_the_lock(home: Path) -> None:
     skill(home / "own" / "tdd", "/grilling\n")
     skill(home / "own" / "grilling")
     configure(["own/tdd"], own="~/own")
 
-    assert resolve_and_build(["build", "--no-install"]) == 0
+    assert resolve_and_deploy(["deploy", "--no-install"]) == 0
 
     skills = tomllib.loads(lock_file(home).read_text())["skills"]
     assert [s["id"] for s in skills] == ["own/grilling", "own/tdd"]
@@ -262,11 +262,11 @@ def test_lock_hashes_what_was_vendored(
 
     def copy_then_edit(hull: Hull, skills: Path) -> None:
         copy(hull, skills)
-        (tdd / "SKILL.md").write_text("edited during the build\n")
+        (tdd / "SKILL.md").write_text("edited during the deploy\n")
 
     monkeypatch.setattr(vendor, "stage", copy_then_edit)
 
-    assert resolve_and_build(["build", "--no-install"]) == 0
+    assert resolve_and_deploy(["deploy", "--no-install"]) == 0
 
     vendored = home / ".apm" / "skill-graft" / ".apm" / "skills" / "tdd"
     locked = tomllib.loads(lock_file(home).read_text())["skills"][0]["hash"]
@@ -284,7 +284,7 @@ def test_git_file_is_not_hashed(home: Path) -> None:
 
     assert main(["resolve"]) == 0
     resolved = locked()
-    assert main(["build", "--no-install"]) == 0
+    assert main(["deploy", "--no-install"]) == 0
 
     assert locked() == resolved
 
@@ -310,11 +310,11 @@ def test_lock_write_fails(home: Path, monkeypatch: pytest.MonkeyPatch) -> None:
 def test_vendoring_fails(home: Path) -> None:
     tdd = skill(home / "own" / "tdd")
     configure(["own/tdd"], own="~/own")
-    resolve_and_build(["build", "--no-install"])
+    resolve_and_deploy(["deploy", "--no-install"])
     before = lock_file(home).read_bytes()
     (tdd / "dangling").symlink_to("missing")
 
-    assert resolve_and_build(["build", "--no-install"]) == 1
+    assert resolve_and_deploy(["deploy", "--no-install"]) == 1
 
     assert lock_file(home).read_bytes() == before
 
@@ -333,7 +333,7 @@ def test_lock_edited_by_hand_refused(
     edited = lock_file(home).read_bytes()
     capsys.readouterr()
 
-    assert main(["build", "--no-install"]) == 1
+    assert main(["deploy", "--no-install"]) == 1
 
     assert "skill-graft resolve" in capsys.readouterr().err
     vendored = home / ".apm" / "skill-graft" / ".apm" / "skills" / "tdd" / "SKILL.md"

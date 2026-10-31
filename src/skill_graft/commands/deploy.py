@@ -13,7 +13,7 @@ from skill_graft.infra.errors import SkillGraftError, notice
 from skill_graft.pipeline import config, lock
 
 
-def build(
+def deploy(
     scope: paths.Scope, warnings: list[str], given: Path | None, no_install: bool
 ) -> None:
     """Vendors the hull and writes the lock, then runs APM; `given` (`--into`)
@@ -43,7 +43,7 @@ def build(
             found, refusal = lock.drift(tomllib.loads(text), recorded, path_aliases)
             if refusal is not None:
                 raise SkillGraftError(
-                    f"{refusal}; run `skill-graft resolve` to accept it, then build"
+                    f"{refusal}; run `skill-graft resolve` to accept it, then deploy"
                 )
             changed.extend(found)
 

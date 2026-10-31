@@ -13,7 +13,7 @@ import pytest
 from conftest import (
     Upstream,
     make_patch,
-    resolve_and_build,
+    resolve_and_deploy,
     skill,
     write_config,
     write_patch,
@@ -645,10 +645,10 @@ def lock_check(tmp_path: Path, text: str) -> str:
 A = "Run /x.\nSee `notes` and `tdd`.\n"
 
 
-def built_lock(
+def deployed_lock(
     home: Path, tmp_path: Path, capsys: pytest.CaptureFixture[str], entry: str
 ) -> str:
-    """The lock `build --into` writes for `entry` of source `own`: `own/a` calls
+    """The lock `deploy --into` writes for `entry` of source `own`: `own/a` calls
     `/x`, bound to `own/tdd`, renamed `my-tdd`, mentions `tdd` and `notes`, which
     is no entry, in prose, and has a patch."""
     skill(home / "own" / "a", A)
@@ -664,7 +664,7 @@ def built_lock(
     )
     into = tmp_path / "into"
     into.mkdir()
-    assert resolve_and_build(["build", "--into", str(into)]) == 0, (
+    assert resolve_and_deploy(["deploy", "--into", str(into)]) == 0, (
         capsys.readouterr().err
     )
     return (into / "skill-graft.lock").read_text()
@@ -672,7 +672,7 @@ def built_lock(
 
 @pytest.fixture
 def lock(home: Path, tmp_path: Path, capsys: pytest.CaptureFixture[str]) -> str:
-    text = built_lock(home, tmp_path, capsys, "own/a")
+    text = deployed_lock(home, tmp_path, capsys, "own/a")
     for line in [
         'deployed = "my-tdd"',
         'patches = ["patches/a.patch"]',
@@ -684,7 +684,7 @@ def lock(home: Path, tmp_path: Path, capsys: pytest.CaptureFixture[str]) -> str:
     return text
 
 
-def test_lock_check_passes_a_built_lock(tmp_path: Path, lock: str) -> None:
+def test_lock_check_passes_a_deployed_lock(tmp_path: Path, lock: str) -> None:
     assert lock_check(tmp_path, lock) == "version: 1, bad: 0\n"
 
 
@@ -713,18 +713,18 @@ def test_lock_check_passes_a_hidden_folder_and_a_skill_at_the_root(
 def test_lock_check_passes_no_edges_and_no_suggestions(
     home: Path, tmp_path: Path, capsys: pytest.CaptureFixture[str]
 ) -> None:
-    text = built_lock(home, tmp_path, capsys, "own/notes")
+    text = deployed_lock(home, tmp_path, capsys, "own/notes")
     assert "\nedges = []\n" in text and "\nsuggestions = []\n" in text
 
     assert lock_check(tmp_path, text) == "version: 1, bad: 0\n"
 
 
-def built(tmp_path: Path, capsys: pytest.CaptureFixture[str], config: str) -> str:
-    """The lock `build --into` writes for `config`."""
+def deployed(tmp_path: Path, capsys: pytest.CaptureFixture[str], config: str) -> str:
+    """The lock `deploy --into` writes for `config`."""
     write_config(config)
     into = tmp_path / "into"
     into.mkdir()
-    assert resolve_and_build(["build", "--into", str(into)]) == 0, (
+    assert resolve_and_deploy(["deploy", "--into", str(into)]) == 0, (
         capsys.readouterr().err
     )
     return (into / "skill-graft.lock").read_text()
@@ -734,7 +734,7 @@ def test_lock_check_passes_an_alias_holding_a_dot(
     home: Path, tmp_path: Path, capsys: pytest.CaptureFixture[str]
 ) -> None:
     skill(home / "own" / "tdd")
-    text = built(
+    text = deployed(
         tmp_path,
         capsys,
         'entries = ["my.src/tdd"]\n[sources."my.src"]\npath = "~/own"\n',
@@ -747,7 +747,7 @@ def test_lock_check_passes_an_alias_holding_a_dot(
 def test_lock_check_passes_no_sources(
     tmp_path: Path, capsys: pytest.CaptureFixture[str]
 ) -> None:
-    text = built(tmp_path, capsys, "entries = []\n")
+    text = deployed(tmp_path, capsys, "entries = []\n")
     assert "\n[sources]\n" in text
 
     assert lock_check(tmp_path, text) == "version: 1, bad: 0\n"

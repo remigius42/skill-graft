@@ -1,10 +1,10 @@
-"""The `config` spec, through `skill-graft build --no-install`."""
+"""The `config` spec, through `skill-graft deploy --no-install`."""
 
 from pathlib import Path
 from typing import TypeAlias
 
 import pytest
-from conftest import build, configure, skill, vendored, write_config
+from conftest import deploy, configure, skill, vendored, write_config
 
 from skill_graft.infra import paths
 from skill_graft.infra.errors import SkillGraftError
@@ -17,7 +17,7 @@ def test_home_relative_path(home: Path, capsys: Capsys) -> None:
     skill(home / "skills" / "chisel")
     configure(["own/chisel"], own="~/skills")
 
-    assert build(capsys) == (0, "")
+    assert deploy(capsys) == (0, "")
     assert vendored() == {"chisel"}
 
 
@@ -27,27 +27,27 @@ def test_relative_path_is_taken_from_the_config_folder(
     skill(home / "mine" / "chisel")
     configure(["own/chisel"], own="../../mine")
 
-    assert build(capsys) == (0, "")
+    assert deploy(capsys) == (0, "")
     assert vendored() == {"chisel"}
 
 
-def test_empty_config_builds_nothing(capsys: Capsys) -> None:
+def test_empty_config_deploys_nothing(capsys: Capsys) -> None:
     write_config("")
 
-    assert build(capsys) == (0, "")
+    assert deploy(capsys) == (0, "")
     assert vendored() == set()
 
 
 def test_config_not_utf8(capsys: Capsys) -> None:
     write_config("").write_bytes(b'entries = ["\xff"]\n')
 
-    code, err = build(capsys)
+    code, err = deploy(capsys)
 
     assert code == 1 and "skill-graft.toml" in err
 
 
 def test_not_initialized(capsys: Capsys) -> None:
-    code, err = build(capsys)
+    code, err = deploy(capsys)
 
     assert code == 1
     assert "skill-graft.toml" in err and "skill-graft init" in err
@@ -111,10 +111,10 @@ def test_config_error_writes_nothing(
 ) -> None:
     skill(home / "src" / "chisel")
     configure(["own/chisel"], own="~/src")
-    build(capsys)
+    deploy(capsys)
     write_config(toml)
 
-    code, err = build(capsys)
+    code, err = deploy(capsys)
 
     assert code == 1
     for text in expected:
@@ -123,7 +123,7 @@ def test_config_error_writes_nothing(
 
 
 @pytest.mark.parametrize(
-    ("path", "deploy"),
+    ("path", "target"),
     [
         ("~/.agents/skills", ".agents/skills"),
         ("~/.claude", ".claude/skills"),
@@ -131,16 +131,16 @@ def test_config_error_writes_nothing(
     ],
 )
 def test_source_overlapping_a_deploy_folder_warns(
-    home: Path, capsys: Capsys, path: str, deploy: str
+    home: Path, capsys: Capsys, path: str, target: str
 ) -> None:
     skill(Path(path.replace("~", str(home))) / "chisel")
     configure(["own/chisel"], own=path)
 
-    code, err = build(capsys)
+    code, err = deploy(capsys)
 
     assert code == 0
     assert err.count("warning:") == 1
-    assert "'own'" in err and str(home / deploy) in err
+    assert "'own'" in err and str(home / target) in err
     assert vendored() == {"chisel"}
 
 
@@ -182,7 +182,7 @@ def test_git_source_with_branch_and_ref_loads(scope: paths.Scope) -> None:
 def test_uppercase_ref_is_rejected(capsys: Capsys) -> None:
     write_config(f'[sources.mp]\ngit = "/srv/s"\nref = "{SHA1.upper()}"\n')
 
-    code, err = build(capsys)
+    code, err = deploy(capsys)
 
     assert code == 1 and "'sources.mp.ref'" in err
 
@@ -221,7 +221,7 @@ def test_bad_bind(home: Path, capsys: Capsys, bind: str, expected: list[str]) ->
         f'[sources.mp]\npath = "~/a"\n[sources.own]\npath = "~/b"\n[bind]\n{bind}\n'
     )
 
-    code, err = build(capsys)
+    code, err = deploy(capsys)
 
     assert code == 1
     for text in expected:
@@ -255,7 +255,7 @@ def test_bad_rename(
     (home / "a").mkdir()
     write_config(f'[sources.mp]\npath = "~/a"\n[rename]\n{rename}\n')
 
-    code, err = build(capsys)
+    code, err = deploy(capsys)
 
     assert code == 1
     for text in expected:
@@ -325,7 +325,7 @@ def test_bad_patches(
     (folder / "only-in.patch").write_bytes(ONLY_IN)
     write_config(f'[sources.mp]\npath = "~/a"\n[patches]\n{patches}\n')
 
-    code, err = build(capsys)
+    code, err = deploy(capsys)
 
     assert code == 1
     for text in expected:
@@ -348,7 +348,7 @@ def test_shared_patch_loads(scope: paths.Scope, home: Path) -> None:
 def test_patches_not_a_table(capsys: Capsys) -> None:
     write_config('patches = "x"\n')
 
-    code, err = build(capsys)
+    code, err = deploy(capsys)
 
     assert code == 1 and "'patches'" in err
 
@@ -363,7 +363,7 @@ def test_valid_reserved_list_loads(scope: paths.Scope) -> None:
 def test_reserved_not_a_list_of_names(capsys: Capsys, value: str) -> None:
     write_config(f"reserved = {value}\n")
 
-    code, err = build(capsys)
+    code, err = deploy(capsys)
 
     assert code == 1 and "'reserved'" in err
 
@@ -371,7 +371,7 @@ def test_reserved_not_a_list_of_names(capsys: Capsys, value: str) -> None:
 def test_rename_not_a_table(capsys: Capsys) -> None:
     write_config('rename = "x"\n')
 
-    code, err = build(capsys)
+    code, err = deploy(capsys)
 
     assert code == 1 and "'rename'" in err
 
@@ -379,7 +379,7 @@ def test_rename_not_a_table(capsys: Capsys) -> None:
 def test_bind_not_a_table(capsys: Capsys) -> None:
     write_config('bind = "x"\n')
 
-    code, err = build(capsys)
+    code, err = deploy(capsys)
 
     assert code == 1 and "'bind'" in err
 
@@ -400,7 +400,7 @@ def test_prefix_not_a_name(home: Path, capsys: Capsys, prefix: str) -> None:
     (home / "a").mkdir()
     write_config(f'[sources.mp]\npath = "~/a"\nprefix = {prefix}\n')
 
-    code, err = build(capsys)
+    code, err = deploy(capsys)
 
     assert code == 1 and "'sources.mp.prefix'" in err
 
@@ -408,17 +408,17 @@ def test_prefix_not_a_name(home: Path, capsys: Capsys, prefix: str) -> None:
 def test_prefix_without_a_kind(capsys: Capsys) -> None:
     write_config('[sources.mp]\nprefix = "mp-"\n')
 
-    code, err = build(capsys)
+    code, err = deploy(capsys)
 
     assert code == 1 and "'sources.mp' needs 'path' or 'git'" in err
 
 
-def test_check_limits_build(capsys: Capsys) -> None:
+def test_check_limits_deploy(capsys: Capsys) -> None:
     write_config(
         "[check]\nreader-turns = 50\npatcher-budget-usd = 2\nreader-budget-usd = 0.25\n"
     )
 
-    assert build(capsys) == (0, "")
+    assert deploy(capsys) == (0, "")
 
 
 @pytest.mark.parametrize(
@@ -430,7 +430,7 @@ def test_check_count_not_a_positive_integer(
 ) -> None:
     write_config(f"[check]\n{key} = {value}\n")
 
-    code, err = build(capsys)
+    code, err = deploy(capsys)
 
     assert code == 1 and f"'check.{key}'" in err and "positive integer" in err
 
@@ -444,7 +444,7 @@ def test_check_budget_not_a_positive_number(
 ) -> None:
     write_config(f"[check]\n{key} = {value}\n")
 
-    code, err = build(capsys)
+    code, err = deploy(capsys)
 
     assert code == 1 and f"'check.{key}'" in err and "positive number" in err
 
@@ -452,7 +452,7 @@ def test_check_budget_not_a_positive_number(
 def test_check_not_a_table(capsys: Capsys) -> None:
     write_config("check = 4\n")
 
-    code, err = build(capsys)
+    code, err = deploy(capsys)
 
     assert code == 1 and "'check' must be a table" in err
 
@@ -460,22 +460,22 @@ def test_check_not_a_table(capsys: Capsys) -> None:
 def test_check_unknown_key(capsys: Capsys) -> None:
     write_config("[check]\nreader-turns = 30\nmax-readers = 8\n")
 
-    code, err = build(capsys)
+    code, err = deploy(capsys)
 
     assert code == 1 and "'check.max-readers' is unsupported" in err
     assert "reader-turns" not in err
 
 
-def test_check_dotted_keys_build(capsys: Capsys) -> None:
+def test_check_dotted_keys_deploy(capsys: Capsys) -> None:
     write_config("check.reader-turns = 30\ncheck.reader-budget-usd = 1.0\n")
 
-    assert build(capsys) == (0, "")
+    assert deploy(capsys) == (0, "")
 
 
-def test_check_budget_too_small_for_a_float_builds(capsys: Capsys) -> None:
+def test_check_budget_too_small_for_a_float_deploys(capsys: Capsys) -> None:
     write_config(f"[check]\nreader-budget-usd = 0.{'0' * 400}1\n")
 
-    assert build(capsys) == (0, "")
+    assert deploy(capsys) == (0, "")
 
 
 def test_project_scope_refuses_a_source_overlapping_the_user_package(
