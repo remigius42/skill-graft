@@ -115,6 +115,7 @@ words:
   - relatime
   - Remigius
   - repr
+  - rglob
   - rmtree
   - samefile
   - sandboxed
@@ -127,6 +128,8 @@ words:
   - signum
   - SIGPIPE
   - socat
+  - splitlines
+  - startswith
   - statusline
   - stdlib
   - steganography
@@ -151,6 +154,7 @@ words:
   - unstatable
   - unvetted
   - uploadpack
+  - urandom
   - urlsplit
   - usefixtures
   - utime
