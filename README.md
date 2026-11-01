@@ -33,10 +33,10 @@ and exits 1.
 skill-graft needs Python 3.11 or later. It is not on PyPI; install a release from the repository with any of:
 
 ```sh
-uv tool install git+https://github.com/remigius42/skill-graft@v0.3.0
-pipx install --python python3.11 git+https://github.com/remigius42/skill-graft@v0.3.0
-pip install git+https://github.com/remigius42/skill-graft@v0.3.0      # into the active environment
-pipenv install "skill-graft @ git+https://github.com/remigius42/skill-graft@v0.3.0"
+uv tool install git+https://github.com/remigius42/skill-graft@v0.4.0
+pipx install --python python3.11 git+https://github.com/remigius42/skill-graft@v0.4.0
+pip install git+https://github.com/remigius42/skill-graft@v0.4.0      # into the active environment
+pipenv install "skill-graft @ git+https://github.com/remigius42/skill-graft@v0.4.0"
 ```
 
 uv picks a suitable Python itself; pipx and pip use theirs, so point them at 3.11 or later. pipenv installs into that
@@ -48,7 +48,7 @@ later.
 
 These install the latest release; the others are listed under
 [releases](https://github.com/remigius42/skill-graft/releases), and each tag's README describes its release. To install
-the unreleased `main` instead, drop `@v0.3.0` from the URL. `skill-graft --version` names what is installed: the
+the unreleased `main` instead, drop `@v0.4.0` from the URL. `skill-graft --version` names what is installed: the
 version, the tag or branch the URL names and the commit, `skill-graft <version> (v<version> @ <commit>)`, or only the
 commit for a URL naming neither.
 
