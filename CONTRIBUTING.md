@@ -49,13 +49,17 @@ uv run pre-commit install-hooks
 uv run pre-commit run --all-files
 ```
 
-Without `--freeze`, `autoupdate` writes tags back. Some versions move in pairs, so bump the other with it:
+Without `--freeze`, `autoupdate` writes tags back. Dependabot opens the bumps for `.github/commitlint/`, the actions and
+`uv.lock` ([.github/dependabot.yml](.github/dependabot.yml)), weekly. Some versions move in pairs, so bump the other
+with it, on a Dependabot branch too:
 
 - the mypy hook's version and `mypy` in the dev group of `pyproject.toml`, then `uv lock`
 - the mypy hook's `pytest` and `tomlkit` and the versions in `uv.lock`
 - the commitlint hook's `@commitlint/config-conventional` and `.github/commitlint/`:
   `npm install --prefix .github/commitlint --package-lock-only --ignore-scripts --save-exact @commitlint/cli@<version> @commitlint/config-conventional@<version>`
 - `node` under `default_language_version` and `node-version` in the commitlint job of `.github/workflows/ci.yml`
+
+Nothing bumps node or the digest of the `test-root` job's container image: update them by hand, now and then.
 
 Run `install-hooks` before the next commit: a `commit-msg` hook's environment, commitlint's, is otherwise installed
 during that commit, which has overwritten the index of a worktree with the hook's own files.

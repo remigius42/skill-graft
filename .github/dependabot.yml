@@ -1,0 +1,35 @@
+# Some versions move in pairs (CONTRIBUTING.md, Tooling): a bump here needs the other side by hand.
+# The pre-commit hooks are not covered: `pre-commit autoupdate --freeze` bumps them.
+version: 2
+updates:
+  # commitlint for CI; the commitlint hook pins the same config-conventional.
+  - package-ecosystem: npm
+    directory: /.github/commitlint
+    schedule:
+      interval: weekly
+    # The cli and its config in one PR. A major waits for the commitlint hook, whose range holds its cli.
+    groups:
+      commitlint:
+        patterns: ["@commitlint/*"]
+    ignore:
+      - dependency-name: "@commitlint/*"
+        update-types: ["version-update:semver-major"]
+    # A release younger than a week is skipped: time for a bad one to be pulled.
+    cooldown:
+      default-days: 7
+
+  # The actions, pinned by SHA.
+  - package-ecosystem: github-actions
+    directory: /
+    schedule:
+      interval: weekly
+    cooldown:
+      default-days: 7
+
+  # uv.lock and the dev group; the mypy hook pins the same mypy, pytest and tomlkit.
+  - package-ecosystem: uv
+    directory: /
+    schedule:
+      interval: weekly
+    cooldown:
+      default-days: 7
