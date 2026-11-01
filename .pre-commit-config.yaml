@@ -4,10 +4,15 @@
 # `.claude/` holds the OpenSpec skills and commands that `openspec init` generates.
 # They are regenerated rather than edited, so no hook rewrites or lints them.
 default_stages: [pre-commit]
+# The node the node hooks install from nodejs.org, the same everywhere: else pre-commit takes a system node
+# if there is one, outside the home folder, and the newest nodejs.org lists if not, which may be a
+# pre-release that fails to install.
+default_language_version:
+  node: 24.22.2
 exclude: ^\.claude/
 repos:
   - repo: https://github.com/pre-commit/pre-commit-hooks
-    rev: v6.0.0
+    rev: 3e8a8703264a2f4a69428a0aa4dcb512790b2c8c  # frozen: v6.0.0
     hooks:
       - id: trailing-whitespace
       - id: end-of-file-fixer
@@ -22,45 +27,45 @@ repos:
         args: [--branch, main]
 
   - repo: https://github.com/hukkin/mdformat
-    rev: 1.0.0
+    rev: 2d496dbc18e31b83a1596685347ffe0b6041daf0  # frozen: 1.0.0
     hooks:
       - id: mdformat
         # Wraps at markdownlint's MD013 limit, so a long line is fixed rather than refused.
         args: [--wrap=120]
         additional_dependencies:
-          - mdformat-gfm
+          - mdformat-gfm==1.0.0
           # Skill files open with YAML front matter. Without this, mdformat rewrites the
           # `---` fences into a horizontal rule and the skill stops parsing.
-          - mdformat-frontmatter
+          - mdformat-frontmatter==2.2.0
 
   - repo: https://github.com/igorshubovych/markdownlint-cli
-    rev: v0.47.0
+    rev: cbcdc463be5464e25e3e955a511599a67b9b987f  # frozen: v0.50.0
     hooks:
       - id: markdownlint
 
   - repo: https://github.com/streetsidesoftware/cspell-cli
-    rev: v9.6.0
+    rev: f6467e1f1ebecf5020560405c7b26e01786a43c8  # frozen: v10.4.0
     hooks:
       - id: cspell
 
   - repo: https://github.com/astral-sh/ruff-pre-commit
-    rev: v0.14.5
+    rev: 488940d9de1b658fac229e34c521d75a6ea476f2  # frozen: v0.14.5
     hooks:
       - id: ruff-check
         args: [--fix]
       - id: ruff-format
 
   - repo: https://github.com/pre-commit/mirrors-mypy
-    rev: v2.4.0
+    rev: ad26ebfa797fcb9b8f83275937c1c1d6e126719c  # frozen: v2.4.1
     hooks:
       - id: mypy
         # The hook's default args turn off checks; the strictness lives in pyproject.toml.
         args: []
         # The hook's environment lacks the project's dependencies: tomlkit for the code, pytest for
-        # the tests.
+        # the tests, at the versions uv.lock holds.
         additional_dependencies:
-          - pytest
-          - tomlkit
+          - pytest==9.1.1
+          - tomlkit==0.15.2
 
   - repo: local
     hooks:
@@ -87,14 +92,14 @@ repos:
         types: [python]
 
   - repo: https://github.com/gitleaks/gitleaks
-    rev: v8.30.0
+    rev: 2ca41cc1372d1e939a6a879f18cdc19fc1cac1ce  # frozen: v8.30.0
     hooks:
       - id: gitleaks
 
   - repo: https://github.com/alessandrojcm/commitlint-pre-commit-hook
-    rev: v9.24.0
+    rev: 1f1ac45c93d1c2ce36b71330252c489a5f4f2724  # frozen: v9.27.0
     hooks:
       - id: commitlint
         stages: [commit-msg]
         additional_dependencies:
-          - "@commitlint/config-conventional"
+          - "@commitlint/config-conventional@21.2.4"
