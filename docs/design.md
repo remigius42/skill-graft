@@ -397,6 +397,14 @@ APM 0.35.0, `apm install -g -t claude`, with `HOME` pointed at a scratch directo
   an absolute path, never with `~`. Repeating it changes nothing and redeploys; 0.33.0 also printed "updated ref in
   apm.yml". A package of just the two-line `apm.yml`, with no skills yet, registers too.
 - Without `-t` and without `targets:` in `~/.apm/apm.yml`, skills deploy to `~/.agents/skills/`.
+- With each of the 21 values of `-t`, 18 targets and the aliases `agy` (of `antigravity`), `agents` and `vscode` (of
+  `copilot`): `claude` deploys to `~/.claude/skills/`, `grok-build` to `~/.grok/skills/`, `kiro` to `~/.kiro/skills/`,
+  `opencode` to `~/.config/opencode/skills/`, `antigravity` to `~/.gemini/antigravity-cli/skills/`, `hermes` to
+  `~/.hermes/skills/`, `grok-bot`, new in 0.35.0, to `~/agent-data/workflows/`, and `agent-skills`, `codex`, `copilot`,
+  `cursor`, `gemini` and `windsurf` to `~/.agents/skills/`. `intellij`, `openclaw` without an existing `~/.openclaw`,
+  and the experimental `copilot-app`, `copilot-cowork` and `grok-cloud` deploy no skill and exit 0. `-t all` leaves out
+  the explicit-only `agent-skills`, `antigravity`, `grok-bot`, `hermes` and `intellij` and the experimental targets, and
+  deploys to the `.agents`, `.claude`, `.config/opencode`, `.grok` and `.kiro` folders.
 
 APM 0.35.0 at project scope, `apm install ./.apm/skill-graft` in a scratch repository, `HOME` a scratch directory:
 
@@ -406,8 +414,12 @@ APM 0.35.0 at project scope, `apm install ./.apm/skill-graft` in a scratch repos
 - It takes the working directory as the project root: run in a subfolder, it fails.
 - Without a harness marker (`.claude/`, `.cursor/`, `.github/copilot-instructions.md`, …) and without `targets:`, it
   exits 2 with "No harness detected" and removes the `apm.yml` it had created. With markers of two harnesses it exits 2
-  with "Multiple harnesses detected", as 0.33.0 did.
-- It deploys only to the detected harness; with every target, skills land in `.agents/skills`, `.claude/skills`,
+  with "Multiple harnesses detected".
+- It deploys only to the detected harness; with `-t all`, skills land in `.agents/skills`, `.claude/skills`,
   `.grok/skills` and `.kiro/skills` under the project root.
+- With each of the 21 values of `-t`: `claude` deploys to `.claude/skills`, `grok-build` to `.grok/skills`, `kiro` to
+  `.kiro/skills`, `grok-bot`, new in 0.35.0, to `agent-data/workflows`, and every other target that deploys skills to
+  `.agents/skills`, under the project root. `openclaw` and the experimental `copilot-app`, `copilot-cowork` and
+  `grok-cloud` deploy no skill and exit 0.
 - Removing a skill from the package and reinstalling prunes it. 0.35.0 also warns "Historical dependency claims
   retained", and prunes all the same.

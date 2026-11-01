@@ -11,7 +11,7 @@ Apply with the `mp-tdd` skill: each task red-green-refactor where it changes cod
   such; the **Hidden character** classes line (`content_scanner.py`, byte-identical) says 0.35.0 too. Verify: each
   bullet of the section was run and holds as written. If a behavior skill-graft relies on changed, stop: the proposal,
   specs and tasks gain it before 2.1
-- [ ] 1.2 Re-run the per-target deploy measurement for all 21 targets at both scopes with 0.35.0, and record in
+- [x] 1.2 Re-run the per-target deploy measurement for all 21 targets at both scopes with 0.35.0, and record in
   `docs/design.md`'s section where each group of targets deploys, the explicit-only targets apart from `--target all`.
   Verify: the folders are `DEPLOY_FOLDERS` and `PROJECT_DEPLOY_FOLDERS` plus `agent-data/workflows`, which only
   `grok-bot` (explicit-only, not in `--target all`) deploys to; `openclaw` deploys nothing without `~/.openclaw`; the
