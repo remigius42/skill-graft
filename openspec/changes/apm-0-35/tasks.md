@@ -24,7 +24,7 @@ Apply with the `mp-tdd` skill: each task red-green-refactor where it changes cod
   `.pre-commit-config.yaml` gains `README.md`; CONTRIBUTING's Tooling list names the pair. Tests in
   `tests/test_check_pins.py`: the synthetic repository gains a README, and a README version that differs fails naming
   both. Verify red, then green; `check-pins` passes on the repository at 0.33.0
-- [ ] 2.2 `apm-cli==0.35.0` in the dev group of `pyproject.toml`, then `uv lock`; the README's requirement and install
+- [x] 2.2 `apm-cli==0.35.0` in the dev group of `pyproject.toml`, then `uv lock`; the README's requirement and install
   line, `docs/security.md`, ADR 0003, and the comments in `infra/paths.py`, `pipeline/hidden.py`, `tests/conftest.py`
   and `tests/cli/test_integration.py` say 0.35.0. Verify: `git grep -n "0\.33" -- ':!CHANGELOG.md' ':!openspec/changes'`
   finds nothing but `docs/design.md`'s notes, of 1.1, of a behavior that differs from 0.33.0; `pytest` passes with the 3

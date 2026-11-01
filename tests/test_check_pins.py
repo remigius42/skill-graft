@@ -29,16 +29,16 @@ repos:
 PYPROJECT = """\
 [dependency-groups]
 dev = [
-  "apm-cli==0.33.0",
+  "apm-cli==0.35.0",
   "mypy==2.4.1",
   "pytest",
 ]
 """
 
 README = """\
-skill-graft runs APM, so `apm` must be on `PATH`, in version 0.33.0: the folders were
-measured on it. Install it with `uv tool install apm-cli==0.33.0` or
-`pipx install apm-cli==0.33.0`.
+skill-graft runs APM, so `apm` must be on `PATH`, in version 0.35.0: the folders were
+measured on it. Install it with `uv tool install apm-cli==0.35.0` or
+`pipx install apm-cli==0.35.0`.
 """
 
 UV_LOCK = """\
@@ -152,29 +152,29 @@ def test_matching_pins_pass(tmp_path: Path) -> None:
         ),
         (
             "README.md",
-            "in version 0.33.0",
             "in version 0.35.0",
+            "in version 0.36.0",
             (
-                "apm-cli: 0.35.0, 0.33.0, 0.33.0 in README.md,"
-                " 0.33.0 in pyproject.toml's dev group"
+                "apm-cli: 0.36.0, 0.35.0, 0.35.0 in README.md,"
+                " 0.35.0 in pyproject.toml's dev group"
             ),
         ),
         (
             "README.md",
-            "pipx install apm-cli==0.33.0",
             "pipx install apm-cli==0.35.0",
+            "pipx install apm-cli==0.36.0",
             (
-                "apm-cli: 0.33.0, 0.33.0, 0.35.0 in README.md,"
-                " 0.33.0 in pyproject.toml's dev group"
+                "apm-cli: 0.35.0, 0.35.0, 0.36.0 in README.md,"
+                " 0.35.0 in pyproject.toml's dev group"
             ),
         ),
         (
             "pyproject.toml",
-            '"apm-cli==0.33.0"',
             '"apm-cli==0.35.0"',
+            '"apm-cli==0.36.0"',
             (
-                "apm-cli: 0.33.0, 0.33.0, 0.33.0 in README.md,"
-                " 0.35.0 in pyproject.toml's dev group"
+                "apm-cli: 0.35.0, 0.35.0, 0.35.0 in README.md,"
+                " 0.36.0 in pyproject.toml's dev group"
             ),
         ),
     ],

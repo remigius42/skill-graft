@@ -7,7 +7,7 @@ from pathlib import Path
 from skill_graft.infra import files
 from skill_graft.infra.errors import SkillGraftError
 
-# The critical and warning sets of APM 0.33.0's install check
+# The critical and warning sets of APM 0.35.0's install check
 # (`apm_cli/security/content_scanner.py`), copied as `apm_cli` is no API. Lone
 # surrogates are left out: strict decoding refuses them, lenient replaces them.
 # Each critical class: its code points, first and last, and what it is called.
