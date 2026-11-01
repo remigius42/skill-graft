@@ -98,7 +98,7 @@ def cache() -> Path:
     return root / "skill-graft"
 
 
-# Where APM 0.33.0 deploys skills at user scope, one folder per group of targets.
+# Where APM 0.35.0 deploys skills at user scope, one folder per group of targets.
 DEPLOY_FOLDERS = (
     ".agents/skills",
     ".claude/skills",
@@ -111,7 +111,7 @@ DEPLOY_FOLDERS = (
 )
 
 
-# Where APM 0.33.0 deploys skills at project scope, under the project root.
+# Where APM 0.35.0 deploys skills at project scope, under the project root.
 PROJECT_DEPLOY_FOLDERS = (
     ".agents/skills",
     ".claude/skills",

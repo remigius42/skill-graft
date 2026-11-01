@@ -17,7 +17,7 @@ from skill_graft.infra import errors, paths
 from skill_graft.infra.cache import Cache
 
 # Stands in for `apm`: logs its argv and working folder, and for `install -g <path>`
-# adds the path to ~/.apm/apm.yml the way APM 0.33.0 does, or for `install <path>`
+# adds the path to ~/.apm/apm.yml the way APM 0.35.0 does, or for `install <path>`
 # to ./apm.yml, unless told not to.
 FAKE_APM = """\
 import json, sys

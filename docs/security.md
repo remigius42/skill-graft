@@ -11,7 +11,7 @@ command. A hijacked **Check** could send files away, or write a **Patch** that t
 
 ## What APM's install blocks
 
-APM 0.33.0 refuses to install a skill holding a critical **Hidden character**: Unicode tag characters, bidi embeddings,
+APM 0.35.0 refuses to install a skill holding a critical **Hidden character**: Unicode tag characters, bidi embeddings,
 overrides and isolates, and supplementary variation selectors (`apm_cli/security/content_scanner.py`). It warns on
 invisible characters common as copy-paste debris. `deploy` runs APM; `deploy --into`, which the **Check** uses, never
 does.

@@ -22,7 +22,7 @@ def test_init_then_deploy_deploys_the_entry(home: Path) -> None:
     assert resolve_and_deploy(["deploy"]) == 0
 
     assert f"- {package}" in (home / ".apm" / "apm.yml").read_text()
-    # No `targets:` in ~/.apm/apm.yml, so APM 0.33.0 deploys to ~/.agents/skills.
+    # No `targets:` in ~/.apm/apm.yml, so APM 0.35.0 deploys to ~/.agents/skills.
     assert (home / ".agents" / "skills" / "chisel" / "SKILL.md").exists()
 
 
