@@ -90,6 +90,20 @@ repos:
         language: system
         pass_filenames: false
         types: [python]
+      # Refuses a version pinned in two places that differs between them (CONTRIBUTING.md,
+      # Tooling), as a bump of one side leaves it.
+      - id: check-pins
+        name: check pins
+        entry: uv run python scripts/check_pins.py
+        language: system
+        pass_filenames: false
+        files: ^(\.pre-commit-config\.yaml|pyproject\.toml|uv\.lock|\.github/commitlint/package-lock\.json|\.github/workflows/ci\.yml|scripts/check_pins\.py)$
+
+  # Dependabot reads its config only on main, so nothing else checks it before the merge.
+  - repo: https://github.com/python-jsonschema/check-jsonschema
+    rev: a76b92851fc9eede9f9bc4073eb55202f34eb0df  # frozen: 0.39.0
+    hooks:
+      - id: check-dependabot
 
   - repo: https://github.com/gitleaks/gitleaks
     rev: 2ca41cc1372d1e939a6a879f18cdc19fc1cac1ce  # frozen: v8.30.0
