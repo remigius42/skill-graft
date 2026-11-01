@@ -128,6 +128,7 @@ def test_config_error_writes_nothing(
         ("~/.agents/skills", ".agents/skills"),
         ("~/.claude", ".claude/skills"),
         ("~/.config/opencode/skills/x", ".config/opencode/skills"),
+        ("~/agent-data/workflows", "agent-data/workflows"),
     ],
 )
 def test_source_overlapping_a_deploy_folder_warns(
@@ -489,14 +490,35 @@ def test_project_scope_refuses_a_source_overlapping_the_user_package(
         config.parse(scope, text)
 
 
+@pytest.mark.parametrize(
+    ("source", "folder"),
+    [
+        (".claude", ".claude/skills"),
+        ("agent-data/workflows", "agent-data/workflows"),
+    ],
+)
 def test_project_scope_warns_of_a_source_overlapping_its_deploy_folder(
+    tmp_path: Path, source: str, folder: str
+) -> None:
+    project = tmp_path / "project"
+    (project / folder).mkdir(parents=True)
+    scope = paths.Scope(project)
+    text = f'[sources.own]\npath = "{project / source}"\n'
+
+    assert config.parse(scope, text).warnings == [
+        f"source 'own' overlaps {project / folder}, where APM deploys skills"
+    ]
+
+
+def test_a_project_source_relative_to_the_package_warns_of_its_deploy_folder(
     tmp_path: Path,
 ) -> None:
     project = tmp_path / "project"
-    (project / ".claude" / "skills").mkdir(parents=True)
+    folder = project / "agent-data" / "workflows"
+    folder.mkdir(parents=True)
     scope = paths.Scope(project)
-    text = f'[sources.own]\npath = "{project / ".claude"}"\n'
+    text = '[sources.own]\npath = "../../agent-data/workflows"\n'
 
     assert config.parse(scope, text).warnings == [
-        f"source 'own' overlaps {project / '.claude/skills'}, where APM deploys skills"
+        f"source 'own' overlaps {folder}, where APM deploys skills"
     ]
