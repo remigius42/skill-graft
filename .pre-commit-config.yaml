@@ -102,4 +102,6 @@ repos:
       - id: commitlint
         stages: [commit-msg]
         additional_dependencies:
+          # The version .github/commitlint/package-lock.json holds. The hook's own cli follows the range
+          # its package.json sets, whatever its lockfile holds.
           - "@commitlint/config-conventional@21.2.4"

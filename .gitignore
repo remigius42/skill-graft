@@ -1,6 +1,10 @@
 # Personal scratchpad
 /TODO.md
 
+# CI installs commitlint here, and links it into the root
+/.github/commitlint/node_modules/
+/node_modules
+
 ### Linux ###
 *~
 .fuse_hidden*
