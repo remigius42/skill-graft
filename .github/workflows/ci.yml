@@ -22,9 +22,12 @@ jobs:
 
       - name: Run pre-commit
         # A push to main checks out main, which no-commit-to-branch would refuse.
+        # Not as root, where the tests relying on permissions skip: test-root covers root.
         env:
           SKIP: no-commit-to-branch
-        run: uv run pre-commit run --all-files --show-diff-on-failure
+        run: |
+          test "$(id -u)" -ne 0 || { echo "runs as root, where the tests relying on permissions skip" >&2; exit 1; }
+          uv run pre-commit run --all-files --show-diff-on-failure
 
   # The suite once more, on macOS: the README states it as supported. Python 3.11 only, as the
   # pytest-py311 hook runs it; the pre-commit job already covers the newest Python on Linux.
@@ -38,7 +41,10 @@ jobs:
       - uses: astral-sh/setup-uv@c18668ad3cf93ea998bef934396af7bb5c839dc7 # v10.2.0
 
       - name: Run the tests
-        run: uv run --isolated --python 3.11 --group dev pytest -q -p no:cacheprovider
+        # Not as root, where the tests relying on permissions skip.
+        run: |
+          test "$(id -u)" -ne 0 || { echo "runs as root, where the tests relying on permissions skip" >&2; exit 1; }
+          uv run --isolated --python 3.11 --group dev pytest -q -p no:cacheprovider
 
   # The suite once more, as root, which ignores permissions: a test relying on them must skip there.
   # A container job runs as root. Debian trixie's git is 2.47, new enough for the no_lazy_fetch tests.
