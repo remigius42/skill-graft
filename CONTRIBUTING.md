@@ -50,8 +50,9 @@ uv run pre-commit run --all-files
 ```
 
 Without `--freeze`, `autoupdate` writes tags back. Dependabot opens the bumps for `.github/commitlint/`, the actions and
-`uv.lock` ([.github/dependabot.yml](.github/dependabot.yml)), weekly. Some versions move in pairs, so bump the other
-with it, on a Dependabot branch too:
+`uv.lock` ([.github/dependabot.yml](.github/dependabot.yml)), weekly; the `check-dependabot` hook checks that file
+against its schema. Some versions move in pairs, so bump the other with it, on a Dependabot branch too. The `check-pins`
+hook ([scripts/check_pins.py](scripts/check_pins.py)) fails, naming both sides, while a pair differs:
 
 - the mypy hook's version and `mypy` in the dev group of `pyproject.toml`, then `uv lock`
 - the mypy hook's `pytest` and `tomlkit` and the versions in `uv.lock`
