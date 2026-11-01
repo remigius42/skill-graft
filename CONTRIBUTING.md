@@ -100,6 +100,8 @@ Only a commit CI passed is tagged, and `main` never names a version before CI ha
      URLs under `https://github.com/remigius42/skill-graft/`. mdformat then writes the labels in lower case and sorts
      them; leave them so.
    - Set `version` in `pyproject.toml`, then run `uv lock`.
+   - In `README.md`'s Installation, replace each `@v<previous version>`, in the install commands and the paragraph
+     naming the releases, with `@v<version>`. "The release tags after `v0.3.0`" keeps its version.
 
 1. Push the branch, which runs CI, and wait for the run to pass:
 
@@ -111,12 +113,20 @@ Only a commit CI passed is tagged, and `main` never names a version before CI ha
    If CI fails, fix it on the branch and push again. If `main` moved meanwhile, rebase the branch onto it, set the
    changelog date to today, and push with `--force-with-lease`.
 
-1. Fast-forward `main` to the release commit, push it, then tag that commit and push the tag:
+1. Fast-forward `main` to the release commit and tag it, signed with the SSH key the README names. Only once the
+   signature checks, push `main` and the tag in one atomic push, so `main`'s README never names a tag that is not there:
 
    ```sh
-   git switch main && git merge --ff-only "release/v$v" && git push origin main
-   git tag -a "v$v" -m "skill-graft $v" && git push origin "v$v"
+   git switch main && git merge --ff-only "release/v$v"
+   git tag -s "v$v" -m "skill-graft $v" && git verify-tag "v$v" && git push --atomic origin main "v$v"
    ```
+
+   If `git verify-tag` fails, delete the tag with `git tag -d "v$v"`, fix the configuration below and tag again.
+
+   Signing needs `gpg.format ssh` and `user.signingkey` set to that key in the repository's `git config`, not
+   `--global`, and `git verify-tag` needs `gpg.ssh.allowedSignersFile` naming a file with the README's line. GitHub
+   shows the tag as **Verified** only while the key is a signing key on GitHub and the tagger's email, the README's, is
+   verified there.
 
 1. Publish the GitHub release, with that version's changelog section as its notes:
 

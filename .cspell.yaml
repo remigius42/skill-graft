@@ -126,6 +126,7 @@ words:
   - shlex
   - shutil
   - SIGALRM
+  - signingkey
   - signum
   - SIGPIPE
   - socat
