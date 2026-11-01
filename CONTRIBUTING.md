@@ -37,6 +37,29 @@ The hooks are listed in [.pre-commit-config.yaml](.pre-commit-config.yaml).
 The tests point `HOME` at a temporary directory. The APM integration test runs the `apm` from the dev group and is
 skipped when `apm` is not on `PATH`.
 
+## Tooling
+
+The tools run at pinned versions: the hooks at a commit SHA, their `additional_dependencies` and node at a version, the
+actions at a SHA, commitlint for CI in `.github/commitlint/package-lock.json`. Only what a hook itself depends on floats
+within its range, such as the commitlint hook's `@commitlint/cli`. To update the hooks:
+
+```sh
+uv run pre-commit autoupdate --freeze
+uv run pre-commit install-hooks
+uv run pre-commit run --all-files
+```
+
+Without `--freeze`, `autoupdate` writes tags back. Some versions move in pairs, so bump the other with it:
+
+- the mypy hook's version and `mypy` in the dev group of `pyproject.toml`, then `uv lock`
+- the mypy hook's `pytest` and `tomlkit` and the versions in `uv.lock`
+- the commitlint hook's `@commitlint/config-conventional` and `.github/commitlint/`:
+  `npm install --prefix .github/commitlint --package-lock-only --ignore-scripts --save-exact @commitlint/cli@<version> @commitlint/config-conventional@<version>`
+- `node` under `default_language_version` and `node-version` in the commitlint job of `.github/workflows/ci.yml`
+
+Run `install-hooks` before the next commit: a `commit-msg` hook's environment, commitlint's, is otherwise installed
+during that commit, which has overwritten the index of a worktree with the hook's own files.
+
 ## Evals
 
 `evals/graft-check/run.sh [scenario…]` runs the working copy of the `graft-check` skill headless with `claude -p` on
