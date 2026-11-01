@@ -306,6 +306,15 @@ def test_no_command_combines_cd_with_a_redirection() -> None:
     assert "from `<work>`" not in text.lower()
 
 
+def test_no_inline_command_runs_in_a_folder_with_a_redirection() -> None:
+    # Prose like "In `<base-dir>`, `diff ... > change.patch`" makes the agent
+    # write `cd <base-dir> && diff ... > change.patch`, which the guard refuses.
+    text = " ".join((SKILLS / "graft-check" / "SKILL.md").read_text().split())
+
+    assert re.findall(r"[Ii]n `<[a-z-]+>`, `[^`]* >", text) == []
+    assert text.count("first `cd <base-dir>` as a Bash call of its own") == 2
+
+
 def test_skill_asks_for_no_shell_of_the_agents_own() -> None:
     # Seen from the main agent: `U=...; V=...; sh ... "$U"`, refused until it
     # wrote each command out.

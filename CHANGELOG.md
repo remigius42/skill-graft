@@ -74,6 +74,8 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
   the broken pipe and exit 1, as without it, instead of exiting 0
 - `/graft-check` names the **Package**'s folder from the throwaway deploy's first line, so its closing advice compares
   the **Vendored copies** there, not a project folder above it, and no longer advises `skill-graft deploy` for nothing
+- `/graft-check` writes a **Patch**'s diff after changing into its folder in a call of its own, which Claude Code no
+  longer blocks as it blocked both in one command
 - A hardened `/graft-check` starts its probe, readers and patcher through a script shipped with the skill, so Claude
   Code no longer blocks the command for changing folder and writing its output to files in one go. The script sets their
   confining flags itself and runs only in a temporary folder, so a permission rule allowing it allows no other `claude`
