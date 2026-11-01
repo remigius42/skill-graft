@@ -3,9 +3,9 @@
 import copy
 import os
 import shutil
-from dataclasses import replace
 import stat
 import tomllib
+from dataclasses import replace
 from pathlib import Path
 from typing import Any
 
@@ -637,8 +637,10 @@ def test_edge_change_refused(home: Path) -> None:
 
     assert lock.drift(parsed(), old, {"own"}) == (
         [],
-        "the hull differs from skill-graft.lock:"
-        " own/tdd → own/notes (slash) added, own/tdd → own/notes (prose) removed",
+        (
+            "the hull differs from skill-graft.lock:"
+            " own/tdd → own/notes (slash) added, own/tdd → own/notes (prose) removed"
+        ),
     )
 
 

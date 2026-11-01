@@ -9,8 +9,8 @@ from typing import TypeAlias
 import pytest
 from conftest import (
     after_package_line,
-    deploy,
     configure,
+    deploy,
     skill,
     vendored,
     write_config,
@@ -583,8 +583,10 @@ def test_debris_warns(home: Path, capsys: Capsys) -> None:
 
     assert deploy(capsys) == (
         0,
-        f"skill-graft: warning: {home}/mp/tdd/SKILL.md:3: 2 invisible characters, "
-        "the first U+200B\n",
+        (
+            f"skill-graft: warning: {home}/mp/tdd/SKILL.md:3: 2 invisible characters, "
+            "the first U+200B\n"
+        ),
     )
     assert vendored() == {"tdd"}
 

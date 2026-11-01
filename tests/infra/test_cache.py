@@ -246,6 +246,7 @@ def test_ref_gone_upstream_served_by_name(tmp_path: Path) -> None:
         ["git", "--git-dir", str(git_cache.repository(upstream.url))]
         + ["cat-file", "-e", orphan],
         env=os.environ | {"GIT_NO_LAZY_FETCH": "1"},
+        check=False,
     )
     assert lookup.returncode != 0
 
@@ -781,6 +782,7 @@ def recorded_filter(repo: Path) -> str:
         ["git", "--git-dir", str(repo), "config", "remote.origin.partialclonefilter"],
         capture_output=True,
         text=True,
+        check=False,
     ).stdout.strip()
 
 
@@ -810,7 +812,9 @@ def test_refusal_recognized_in_any_language(
 ) -> None:
     monkeypatch.setenv("LC_ALL", "de_CH.UTF-8")
     monkeypatch.setenv("LANGUAGE", "de")
-    probe = subprocess.run(["git", "no-such-command"], capture_output=True, text=True)
+    probe = subprocess.run(
+        ["git", "no-such-command"], capture_output=True, text=True, check=False
+    )
     if "is not a git command" in probe.stderr:
         pytest.skip("git has no German messages here")
     protocol_v0(monkeypatch)
@@ -886,6 +890,7 @@ def pinned(repo: Path, sha: str) -> bool:
             ["git", "--git-dir", str(repo), "rev-parse", "--verify", "-q"]
             + [f"refs/skill-graft/{sha}"],
             capture_output=True,
+            check=False,
         ).returncode
         == 0
     )

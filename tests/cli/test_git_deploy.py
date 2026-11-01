@@ -8,9 +8,9 @@ from typing import TypeAlias
 import pytest
 from conftest import (
     Upstream,
-    deploy,
     configure,
     deadline,
+    deploy,
     resolve_and_deploy,
     seed,
     skill,

@@ -209,7 +209,9 @@ class Upstream:
 
 def git_version() -> tuple[int, ...]:
     """The installed git's version, as `(2, 44)` for `git version 2.44.0`."""
-    out = subprocess.run(["git", "--version"], capture_output=True, text=True).stdout
+    out = subprocess.run(
+        ["git", "--version"], capture_output=True, text=True, check=False
+    ).stdout
     return tuple(int(part) for part in out.split()[2].split(".")[:2])
 
 
@@ -266,6 +268,7 @@ def make_patch(tmp_path: Path, before: dict[str, str], after: dict[str, str]) ->
         ["diff", "-ruN", "base/", "edited/"],
         cwd=tmp_path / "diff",
         capture_output=True,
+        check=False,
     )
     assert result.returncode == 1, result.stderr
     return result.stdout

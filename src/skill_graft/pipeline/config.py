@@ -2,9 +2,9 @@
 limits."""
 
 import re
-from decimal import Decimal
 import tomllib
 from dataclasses import dataclass
+from decimal import Decimal
 from pathlib import Path
 from typing import NamedTuple
 

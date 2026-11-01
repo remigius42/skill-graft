@@ -32,7 +32,12 @@ def stage(hull: Hull, skills: Path) -> None:
     for skill, folder in hull.skills.items():
         written = rewrites.get(skill, {})  # by path relative to `folder`
 
-        def copy(source: str, target: str) -> str:
+        def copy(
+            source: str,
+            target: str,
+            folder: Path = folder,
+            written: dict[Path, bytes] = written,
+        ) -> str:
             """Copies a file, or writes its rewritten bytes; then its mode and times.
 
             Written as the copy is made, before `copytree` sets the folders' modes,

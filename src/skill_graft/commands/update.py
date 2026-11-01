@@ -25,7 +25,6 @@ from skill_graft.pipeline import (
 from skill_graft.pipeline.config import Config, GitSource, SkillId
 from skill_graft.pipeline.hull import PatchError
 
-
 # Its header: what `update --diff-file` compares.
 HEADER = review.header("at the current refs against the new ones")
 

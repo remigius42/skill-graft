@@ -73,6 +73,7 @@ def _call(
             input=input,
             cwd=cwd,
             env=base | (env or {}),
+            check=False,
         )
     except FileNotFoundError:
         raise SkillGraftError(missing) from None

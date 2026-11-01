@@ -6,7 +6,7 @@ from pathlib import Path
 from typing import TypeAlias
 
 import pytest
-from conftest import Upstream, deploy, configure, make_patch, skill, write_config
+from conftest import Upstream, configure, deploy, make_patch, skill, write_config
 
 from skill_graft.cli import main
 from skill_graft.infra import paths

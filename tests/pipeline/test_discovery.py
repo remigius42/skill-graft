@@ -10,9 +10,9 @@ from typing import TypeAlias
 import pytest
 from conftest import (
     Upstream,
-    deploy,
     configure,
     deadline,
+    deploy,
     skill,
     vendored,
     write_config,

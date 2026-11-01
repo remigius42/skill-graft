@@ -17,9 +17,8 @@ def test_closed_stdout_after_success_warns_then_fails(
     capsys: pytest.CaptureFixture[str],
 ) -> None:
     stdout = closed_stdout(monkeypatch)
-    with pytest.raises(BrokenPipeError):
-        with errors.warnings_last() as warnings:
-            warnings.append("`own/tdd` calls `/foo`")
+    with pytest.raises(BrokenPipeError), errors.warnings_last() as warnings:
+        warnings.append("`own/tdd` calls `/foo`")
     assert capsys.readouterr().err == WARNING
     assert discards == [stdout]
 
@@ -30,10 +29,12 @@ def test_closed_stdout_keeps_the_commands_own_error(
     capsys: pytest.CaptureFixture[str],
 ) -> None:
     stdout = closed_stdout(monkeypatch)
-    with pytest.raises(SkillGraftError, match="hidden characters"):
-        with errors.warnings_last() as warnings:
-            warnings.append("`own/tdd` calls `/foo`")
-            raise SkillGraftError("hidden characters")
+    with (
+        pytest.raises(SkillGraftError, match="hidden characters"),
+        errors.warnings_last() as warnings,
+    ):
+        warnings.append("`own/tdd` calls `/foo`")
+        raise SkillGraftError("hidden characters")
     assert capsys.readouterr().err == WARNING
     assert discards == [stdout]
 
@@ -55,9 +56,8 @@ def test_closed_stdout_reported_when_it_cannot_be_discarded(
 
     monkeypatch.setattr(errors, "_discard", fail)
     closed_stdout(monkeypatch)
-    with pytest.raises(BrokenPipeError):
-        with errors.warnings_last() as warnings:
-            warnings.append("`own/tdd` calls `/foo`")
+    with pytest.raises(BrokenPipeError), errors.warnings_last() as warnings:
+        warnings.append("`own/tdd` calls `/foo`")
     assert capsys.readouterr().err == WARNING
 
 
@@ -83,7 +83,6 @@ def test_closed_stdout_without_a_descriptor_leaks_none(
 ) -> None:
     closed_stdout(monkeypatch)  # a StringIO: fileno() fails
     free = lowest_free_descriptor()
-    with pytest.raises(BrokenPipeError):
-        with errors.warnings_last():
-            pass
+    with pytest.raises(BrokenPipeError), errors.warnings_last():
+        pass
     assert lowest_free_descriptor() == free

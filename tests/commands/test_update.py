@@ -8,7 +8,6 @@ from typing import Any, TypeAlias
 
 import pytest
 from conftest import (
-    snapshot,
     FakeApm,
     Upstream,
     deadline,
@@ -17,6 +16,7 @@ from conftest import (
     resolve_and_deploy,
     seed,
     skill,
+    snapshot,
     vendored,
     write_config,
 )
@@ -773,8 +773,10 @@ def test_warnings_once(upstream: Upstream, capsys: Capsys) -> None:
         ([], "skill-graft: 1 prose suggestion(s): run skill-graft resolve\n"),
         (
             ["--dry-run"],
-            "skill-graft: 1 prose suggestion(s) at the new tips: "
-            "update, then run skill-graft resolve\n",
+            (
+                "skill-graft: 1 prose suggestion(s) at the new tips: "
+                "update, then run skill-graft resolve\n"
+            ),
         ),
     ],
 )
@@ -1880,7 +1882,7 @@ def test_path_source_edited_after_vetting(
     )
     assert update(capsys)[0] == 0
     upstream.commit({"tdd/SKILL.md": "2\n"})
-    code, out, _ = update(capsys, "mp", "--dry-run", "--diff-file", "review.diff")
+    _, out, _ = update(capsys, "mp", "--dry-run", "--diff-file", "review.diff")
     file = paths.Scope(Path.home()).package / "skill-graft.toml"
     toml, lock = file.read_bytes(), lock_file().read_bytes()
     (home / "own" / "notes" / "SKILL.md").write_text("changed\n")
@@ -1903,7 +1905,7 @@ def test_patch_edited_after_vetting(
     )
     assert resolve_and_deploy(["deploy", "--no-apm-install"]) == 0
     upstream.commit({"tdd/SKILL.md": LINES.replace("line 9\n", "line 9 upstream\n")})
-    code, out, _ = update(capsys, "mp", "--dry-run", "--diff-file", "review.diff")
+    _, out, _ = update(capsys, "mp", "--dry-run", "--diff-file", "review.diff")
     toml, lock = file.read_bytes(), lock_file().read_bytes()
     patched_source(
         upstream,
