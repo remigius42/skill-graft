@@ -108,6 +108,7 @@ DEPLOY_FOLDERS = (
     ".hermes/skills",
     ".kiro/skills",
     ".openclaw/skills",
+    "agent-data/workflows",  # grok-bot's
 )
 
 
@@ -117,6 +118,7 @@ PROJECT_DEPLOY_FOLDERS = (
     ".claude/skills",
     ".grok/skills",
     ".kiro/skills",
+    "agent-data/workflows",  # grok-bot's
 )
 
 

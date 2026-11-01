@@ -57,6 +57,7 @@ def test_project_deploy_folders_include_the_user_scopes(
         project / ".claude/skills",
         project / ".grok/skills",
         project / ".kiro/skills",
+        project / "agent-data/workflows",
     ]
 
 

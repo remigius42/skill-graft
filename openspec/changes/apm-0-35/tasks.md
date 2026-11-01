@@ -32,7 +32,7 @@ Apply with the `mp-tdd` skill: each task red-green-refactor where it changes cod
 
 ## 3. Grok Bot's deploy folder
 
-- [ ] 3.1 `infra/paths.py`: `agent-data/workflows` last in `DEPLOY_FOLDERS` and `PROJECT_DEPLOY_FOLDERS`, its comment
+- [x] 3.1 `infra/paths.py`: `agent-data/workflows` last in `DEPLOY_FOLDERS` and `PROJECT_DEPLOY_FOLDERS`, its comment
   naming `grok-bot`. Tests: `("~/agent-data/workflows", "agent-data/workflows")` joins
   `test_source_overlapping_a_deploy_folder_warns` in `tests/pipeline/test_config.py`;
   `test_project_scope_warns_of_a_source_overlapping_its_deploy_folder` is parametrized over the source folder and the

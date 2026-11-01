@@ -185,6 +185,7 @@ def project_source(home: Path, monkeypatch: pytest.MonkeyPatch, path: str) -> No
     [
         ("../../.claude/skills", "repo/.claude/skills"),
         ("~/.claude/skills", ".claude/skills"),
+        ("~/agent-data/workflows", "agent-data/workflows"),
     ],
 )
 def test_project_source_overlapping_a_deploy_folder_warns(
