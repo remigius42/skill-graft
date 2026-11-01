@@ -11,11 +11,11 @@ Apply with the `mp-tdd` skill: each task red-green-refactor where it changes cod
   such; the **Hidden character** classes line (`content_scanner.py`, byte-identical) says 0.35.0 too. Verify: each
   bullet of the section was run and holds as written. If a behavior skill-graft relies on changed, stop: the proposal,
   specs and tasks gain it before 2.1
-- [x] 1.2 Re-run the per-target deploy measurement for all 21 targets at both scopes with 0.35.0, and record in
-  `docs/design.md`'s section where each group of targets deploys, the explicit-only targets apart from `--target all`.
-  Verify: the folders are `DEPLOY_FOLDERS` and `PROJECT_DEPLOY_FOLDERS` plus `agent-data/workflows`, which only
-  `grok-bot` (explicit-only, not in `--target all`) deploys to; `openclaw` deploys nothing without `~/.openclaw`; the
-  bullet on every target says which set of targets it means
+- [x] 1.2 Re-run the per-target deploy measurement for all 21 values of `-t` (18 targets, 3 aliases) at both scopes with
+  0.35.0, and record in `docs/design.md`'s section where each group of targets deploys, the explicit-only targets apart
+  from `--target all`. Verify: the folders are `DEPLOY_FOLDERS` and `PROJECT_DEPLOY_FOLDERS` plus
+  `agent-data/workflows`, which only `grok-bot` (explicit-only, not in `--target all`) deploys to; `openclaw` deploys
+  nothing without `~/.openclaw`; the bullet on every target says which set of targets it means
 
 ## 2. Require APM 0.35.0
 
@@ -38,5 +38,7 @@ Apply with the `mp-tdd` skill: each task red-green-refactor where it changes cod
   `test_project_scope_warns_of_a_source_overlapping_its_deploy_folder` is parametrized over the source folder and the
   deploy folder it overlaps (`.claude` and `.claude/skills`, `agent-data/workflows` for both), the folder it creates and
   the warning it expects taken from them; a project-scope source `path = "../../agent-data/workflows"`, relative to the
-  **Package**, warns naming `<project>/agent-data/workflows`; `test_project_deploy_folders_include_the_user_scopes` in
-  `tests/infra/test_paths.py` lists `project / "agent-data/workflows"`. Verify red, then green
+  **Package**, warns naming `<project>/agent-data/workflows`; `("~/agent-data/workflows", "agent-data/workflows")` joins
+  `test_project_source_overlapping_a_deploy_folder_warns` in `tests/commands/test_scope.py`;
+  `test_project_deploy_folders_include_the_user_scopes` in `tests/infra/test_paths.py` lists
+  `project / "agent-data/workflows"`. Verify red, then green

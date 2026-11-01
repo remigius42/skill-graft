@@ -7,10 +7,11 @@ target deploys skills (`infra/paths.py`), the **Hidden character** classes of it
 and the behavior `docs/design.md` lists under "Measured APM behavior", which the code and ADR 0003 rely on. Nothing
 checks the installed APM's version at run time; the README states the one supported.
 
-Compared from the PyPI wheels and by deploying a synthetic skill for all 21 targets at both scopes (see proposal.md):
-`apm_cli/security/content_scanner.py` is byte-identical, every target of 0.33.0 deploys where it did, and `grok-bot`,
-new and explicit-only (not in `--target all`), deploys to `agent-data/workflows/<skill>/` under the home folder or the
-project root. The deploy folders are read for one thing only: the warning when a path **Source** overlaps one.
+Compared from the PyPI wheels and by deploying a synthetic skill for all 21 values of `-t` (18 targets, 3 aliases) at
+both scopes (see proposal.md): `apm_cli/security/content_scanner.py` is byte-identical, every target of 0.33.0 deploys
+where it did, and `grok-bot`, new and explicit-only (not in `--target all`), deploys to `agent-data/workflows/<skill>/`
+under the home folder or the project root. The deploy folders are read for one thing only: the warning when a path
+**Source** overlaps one.
 
 ## Goals / Non-Goals
 
