@@ -303,7 +303,7 @@ def repository(url: str) -> str | None:
         if parts.scheme.lower() not in {"https", "http", "ssh", "git"}:
             return None
         try:
-            parts.port  # a port that is not a number raises
+            _ = parts.port  # a port that is not a number raises
         except ValueError:
             return None
         host, path = parts.hostname or "", parts.path.removeprefix("/")

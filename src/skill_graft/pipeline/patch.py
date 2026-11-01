@@ -112,8 +112,10 @@ def _check_name(path: str, copy: Path, name: str) -> list[str]:
         return [f"{path}: makes SKILL.md a link"]
     if not (copy / "SKILL.md").is_file():
         return [
-            f"{path}: deletes SKILL.md: a skill needs one; give it a new name with "
-            "[rename], never by deleting it"
+            (
+                f"{path}: deletes SKILL.md: a skill needs one; give it a new name with "
+                "[rename], never by deleting it"
+            )
         ]
     try:
         patched = discovery.read_name(copy)
@@ -121,8 +123,10 @@ def _check_name(path: str, copy: Path, name: str) -> list[str]:
         return [f"{path}: {_relative(error, copy)}"]
     if patched != name:
         return [
-            f"{path}: changes the skill's name to {patched!r}: "
-            f"give it a new deployed name with [rename] instead"
+            (
+                f"{path}: changes the skill's name to {patched!r}: "
+                f"give it a new deployed name with [rename] instead"
+            )
         ]
     return []
 

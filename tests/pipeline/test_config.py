@@ -4,7 +4,7 @@ from pathlib import Path
 from typing import TypeAlias
 
 import pytest
-from conftest import deploy, configure, skill, vendored, write_config
+from conftest import configure, deploy, skill, vendored, write_config
 
 from skill_graft.infra import paths
 from skill_graft.infra.errors import SkillGraftError

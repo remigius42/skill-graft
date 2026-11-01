@@ -144,8 +144,10 @@ def test_skill_md_emptied_says_so(tmp_path: Path) -> None:
         patch.apply(TDD, upstream, [PatchFile("p.patch", data)], work_in(tmp_path))
 
     assert failed.value.lines == [
-        "p.patch: deletes SKILL.md: a skill needs one; give it a new name with "
-        "[rename], never by deleting it"
+        (
+            "p.patch: deletes SKILL.md: a skill needs one; give it a new name with "
+            "[rename], never by deleting it"
+        )
     ]
 
 
@@ -403,8 +405,10 @@ def test_skill_md_deleted_says_so(tmp_path: Path) -> None:
         patch.apply(TDD, upstream, [PatchFile("p.patch", data)], work_in(tmp_path))
 
     assert failed.value.lines == [
-        "p.patch: deletes SKILL.md: a skill needs one; give it a new name with "
-        "[rename], never by deleting it"
+        (
+            "p.patch: deletes SKILL.md: a skill needs one; give it a new name with "
+            "[rename], never by deleting it"
+        )
     ]
 
 

@@ -6,8 +6,8 @@ import os
 import re
 import stat
 import unicodedata
-from collections.abc import Iterator
 from array import array
+from collections.abc import Iterator
 from pathlib import Path
 
 from skill_graft.infra import files

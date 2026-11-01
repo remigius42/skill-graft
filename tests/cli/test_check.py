@@ -332,7 +332,7 @@ def test_no_command_opens_a_brace_group() -> None:
     text = (SKILLS / "graft-check" / "SKILL.md").read_text()
     blocks = [block.split("```")[0] for block in text.split("```sh\n")[1:]]
 
-    assert [b for b in blocks if re.search(r"(^|[|;&]\s*)\{\s", b, re.M)] == []
+    assert [b for b in blocks if re.search(r"(^|[|;&]\s*)\{\s", b, re.MULTILINE)] == []
 
 
 def test_probe_runs_as_every_reader_runs() -> None:
@@ -519,7 +519,7 @@ def test_patcher_error_skips_a_line_of_only_control_characters(tmp_path: Path) -
 
 
 def test_patcher_error_shown_in_printable_ascii_only(tmp_path: Path) -> None:
-    err = "ok ‮evil\u009b2J " + "·" * 300 + "\n"
+    err = "ok \u202e" + "evil\u009b2J " + "·" * 300 + "\n"
 
     shown = error_line(tmp_path, err, "")
 
@@ -570,11 +570,13 @@ def test_filter_admits_a_well_formed_report() -> None:
 
     assert (code, out.decode()) == (
         0,
-        f"{FINDING}\n"
-        "skill: mp/x\nfile: SKILL.md\ntext: see ../grill/x.md\n"
-        "vendored: see ../grill/x.md\nkind: link\nwhy: The link breaks.\n\n"
-        f"{USE}\n"
-        "use: mp/grill\nfile: SKILL.md\nline: 3\ntext: /grill\nmeans: mp/grill\n",
+        (
+            f"{FINDING}\n"
+            "skill: mp/x\nfile: SKILL.md\ntext: see ../grill/x.md\n"
+            "vendored: see ../grill/x.md\nkind: link\nwhy: The link breaks.\n\n"
+            f"{USE}\n"
+            "use: mp/grill\nfile: SKILL.md\nline: 3\ntext: /grill\nmeans: mp/grill\n"
+        ),
     )
 
 
@@ -721,7 +723,7 @@ def test_filter_given_an_unknown_mode_fails() -> None:
 def test_filter_shows_quoted_values_in_printable_ascii() -> None:
     reply = (
         "skill: mp/x\nfile: déjà.md\n"
-        "text: Hand off to grill‮ — then stop\n"
+        "text: Hand off to grill\u202e — then stop\n"
         "vendored: a\tb\x1bc\x00d#e\nkind: rewrite\nwhy: \U0001f600 changed\n\n"
     ).encode()
     reply = reply.replace(b"#", b"\x80")  # a stray UTF-8 continuation byte

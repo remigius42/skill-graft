@@ -136,6 +136,7 @@ def test_lookup_never_fetches(tmp_path: Path) -> None:
     lookup = subprocess.run(
         ["git", "--git-dir", str(repo), "cat-file", "-e", later],
         env=os.environ | {"GIT_NO_LAZY_FETCH": "1"},
+        check=False,
     )
     assert lookup.returncode != 0
 

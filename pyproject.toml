@@ -38,6 +38,8 @@ target-version = "py311"
 # A global hides a dependency the import contracts cannot see (ADR 0008).
 # W505: `ruff format` wraps code at 88 but never a docstring or comment.
 extend-select = ["PLW0603", "W505"]
+# A list of words or arguments reads best as one string, split.
+ignore = ["SIM905"]
 
 [tool.ruff.lint.pycodestyle]
 max-doc-length = 88

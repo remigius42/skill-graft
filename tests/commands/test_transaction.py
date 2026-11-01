@@ -58,12 +58,14 @@ def test_nothing_written_when_the_block_raises(
     monkeypatch.setattr(lock, "render", recording(rendered))
     file = tmp_path / "file"
 
-    with pytest.raises(RuntimeError):
-        with transaction.resolving(
+    with (
+        pytest.raises(RuntimeError),
+        transaction.resolving(
             scope, config.load(scope), [], Cache.default()
-        ) as resolution:
-            resolution.writes.append(writing(file, b"new"))
-            raise RuntimeError
+        ) as resolution,
+    ):
+        resolution.writes.append(writing(file, b"new"))
+        raise RuntimeError
 
     assert rendered == [] and not file.exists() and not scope.lock_file.exists()
 
@@ -74,11 +76,13 @@ def test_render_failing_runs_no_write(
     monkeypatch.setattr(lock, "render", failing(OSError("render")))
     file = tmp_path / "file"
 
-    with pytest.raises(OSError, match="render"):
-        with transaction.resolving(
+    with (
+        pytest.raises(OSError, match="render"),
+        transaction.resolving(
             scope, config.load(scope), [], Cache.default()
-        ) as resolution:
-            resolution.writes.append(writing(file, b"new"))
+        ) as resolution,
+    ):
+        resolution.writes.append(writing(file, b"new"))
 
     assert not file.exists()
 
@@ -90,12 +94,14 @@ def test_failing_lock_write_restores_the_writes(
     kept.write_bytes(b"old")
     monkeypatch.setattr(lock, "write", failing(OSError("disk full")))
 
-    with pytest.raises(OSError, match="disk full"):
-        with transaction.resolving(
+    with (
+        pytest.raises(OSError, match="disk full"),
+        transaction.resolving(
             scope, config.load(scope), [], Cache.default()
-        ) as resolution:
-            resolution.writes.append(writing(kept, b"new"))
-            resolution.writes.append(writing(missing, b"new"))
+        ) as resolution,
+    ):
+        resolution.writes.append(writing(kept, b"new"))
+        resolution.writes.append(writing(missing, b"new"))
 
     assert kept.read_bytes() == b"old" and not missing.exists()
 
@@ -110,12 +116,14 @@ def test_restores_in_reverse_order(
     monkeypatch.setattr(files, "atomic_write", lambda f, d: restored.append(f))
     monkeypatch.setattr(lock, "write", failing(OSError("disk full")))
 
-    with pytest.raises(OSError):
-        with transaction.resolving(
+    with (
+        pytest.raises(OSError),
+        transaction.resolving(
             scope, config.load(scope), [], Cache.default()
-        ) as resolution:
-            resolution.writes.append(writing(first, b"new"))
-            resolution.writes.append(writing(second, b"new"))
+        ) as resolution,
+    ):
+        resolution.writes.append(writing(first, b"new"))
+        resolution.writes.append(writing(second, b"new"))
 
     assert [f for f in restored if f in (first, second)] == [second, first]
 
@@ -131,12 +139,14 @@ def test_interrupted_write_restores_itself_and_the_earlier(
         second.write_bytes(b"new")
         raise KeyboardInterrupt
 
-    with pytest.raises(KeyboardInterrupt):
-        with transaction.resolving(
+    with (
+        pytest.raises(KeyboardInterrupt),
+        transaction.resolving(
             scope, config.load(scope), [], Cache.default()
-        ) as resolution:
-            resolution.writes.append(writing(first, b"new"))
-            resolution.writes.append((second, replace_then_interrupt))
+        ) as resolution,
+    ):
+        resolution.writes.append(writing(first, b"new"))
+        resolution.writes.append((second, replace_then_interrupt))
 
     assert (first.read_bytes(), second.read_bytes()) == (b"1", b"2")
     assert not scope.lock_file.exists()
@@ -149,12 +159,14 @@ def test_restores_the_bytes_found_right_before_the_write(
     file.write_bytes(b"at entry")
     monkeypatch.setattr(lock, "write", failing(OSError("disk full")))
 
-    with pytest.raises(OSError):
-        with transaction.resolving(
+    with (
+        pytest.raises(OSError),
+        transaction.resolving(
             scope, config.load(scope), [], Cache.default()
-        ) as resolution:
-            file.write_bytes(b"saved meanwhile")
-            resolution.writes.append(writing(file, b"new"))
+        ) as resolution,
+    ):
+        file.write_bytes(b"saved meanwhile")
+        resolution.writes.append(writing(file, b"new"))
 
     assert file.read_bytes() == b"saved meanwhile"
 
@@ -178,12 +190,14 @@ def test_failed_restore_is_a_notice_and_the_next_still_runs(
     monkeypatch.setattr(files, "atomic_write", refusing_second)
     monkeypatch.setattr(lock, "write", failing(OSError("disk full")))
 
-    with pytest.raises(OSError, match="disk full"):
-        with transaction.resolving(
+    with (
+        pytest.raises(OSError, match="disk full"),
+        transaction.resolving(
             scope, config.load(scope), [], Cache.default()
-        ) as resolution:
-            resolution.writes.append(writing(first, b"new"))
-            resolution.writes.append(writing(second, b"new"))
+        ) as resolution,
+    ):
+        resolution.writes.append(writing(first, b"new"))
+        resolution.writes.append(writing(second, b"new"))
 
     assert first.read_bytes() == b"1"
     err = capsys.readouterr().err
@@ -252,11 +266,11 @@ def test_hull_warnings_kept_though_the_lock_write_fails(
     monkeypatch.setattr(lock, "write", failing(OSError("disk full")))
     warnings: list[str] = []
 
-    with pytest.raises(OSError):
-        with transaction.resolving(
-            scope, config.load(scope), warnings, Cache.default()
-        ):
-            pass
+    with (
+        pytest.raises(OSError),
+        transaction.resolving(scope, config.load(scope), warnings, Cache.default()),
+    ):
+        pass
 
     assert any("`own/tdd` calls `/foo`" in warning for warning in warnings)
 
@@ -343,11 +357,13 @@ def test_swap_back_failure_still_restores_the_toml(
     monkeypatch.setattr(lock, "write", failing(OSError("disk full")))
     monkeypatch.setattr(vendor, "swap_back", failing(OSError("busy")))
 
-    with pytest.raises(OSError, match="disk full"):
-        with transaction.resolving(
+    with (
+        pytest.raises(OSError, match="disk full"),
+        transaction.resolving(
             scope, config.load(scope), [], Cache.default()
-        ) as resolution:
-            resolution.writes.append(writing(scope.config_file, b"edited"))
+        ) as resolution,
+    ):
+        resolution.writes.append(writing(scope.config_file, b"edited"))
 
     assert scope.config_file.read_bytes() == toml
     err = capsys.readouterr().err
@@ -398,11 +414,13 @@ def test_edited_copy_refused_before_any_write(
     before = snapshot(scope.package)
     file = tmp_path / "file"
 
-    with pytest.raises(SkillGraftError) as raised:
-        with transaction.resolving(
+    with (
+        pytest.raises(SkillGraftError) as raised,
+        transaction.resolving(
             scope, config.load(scope), [], Cache.default()
-        ) as resolution:
-            resolution.writes.append(writing(file, b"new"))
+        ) as resolution,
+    ):
+        resolution.writes.append(writing(file, b"new"))
 
     message = str(raised.value)
     assert str(scope.skills / "tdd") in message
@@ -475,11 +493,13 @@ def test_verify_refusal_touches_nothing(scope: paths.Scope, home: Path) -> None:
         seen.append(text)
         raise SkillGraftError("refused")
 
-    with pytest.raises(SkillGraftError, match="refused"):
-        with transaction.resolving(
+    with (
+        pytest.raises(SkillGraftError, match="refused"),
+        transaction.resolving(
             scope, config.load(scope), [], Cache.default()
-        ) as resolution:
-            resolution.verify = refuse
+        ) as resolution,
+    ):
+        resolution.verify = refuse
 
     assert len(seen) == 1 and "changed" not in seen[0] and "own/tdd" in seen[0]
     assert snapshot(scope.skills.parent) == before

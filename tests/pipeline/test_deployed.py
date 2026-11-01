@@ -66,6 +66,7 @@ def test_quote_as_git_does(tmp_path: Path, name: str) -> None:
         cwd=tmp_path,
         capture_output=True,
         env=env,
+        check=False,
     )
     # git ends a `+++` name holding a space with a tab; quoted, it needs none.
     headers = [line.rstrip("\t") for line in result.stdout.decode().split("\n")]
@@ -176,6 +177,7 @@ def git_diff(
         cwd=folder,
         capture_output=True,
         env=git_env(folder),
+        check=False,
     )
     return result.stdout.decode().split("\n")
 
