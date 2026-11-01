@@ -64,7 +64,8 @@ jobs:
           uv run --isolated --python 3.11 --group dev pytest -q -p no:cacheprovider
 
   # The commitlint pre-commit hook lints only .git/COMMIT_EDITMSG, so this job calls commitlint on the
-  # pushed or proposed commits instead, at the versions that hook installs.
+  # pushed or proposed commits instead, locked in .github/commitlint/: config-conventional at the hook's
+  # version, the cli at the one the hook's range resolved to when locked.
   commitlint:
     runs-on: ubuntu-latest
     steps:
@@ -72,6 +73,19 @@ jobs:
         with:
           fetch-depth: 0
           persist-credentials: false
+
+      # The node the hooks pin in .pre-commit-config.yaml; commitlint 21 needs 22.12 or later.
+      - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
+        with:
+          node-version: 24.22.2
+
+      # The lockfile's integrity hashes, then the registry's signatures and attestations; no install scripts.
+      - name: Install commitlint
+        run: |
+          npm ci --prefix .github/commitlint --ignore-scripts --no-audit --no-fund
+          npm audit signatures --prefix .github/commitlint
+          # commitlint.config.js looks for config-conventional in the root's node_modules.
+          ln -s .github/commitlint/node_modules node_modules
 
       - name: Lint commit messages
         env:
@@ -82,5 +96,4 @@ jobs:
           if ! git cat-file -e "$FROM^{commit}" 2>/dev/null; then
             FROM=$(git merge-base origin/main "$TO")
           fi
-          npx --yes -p @commitlint/cli@20.5.0 -p @commitlint/config-conventional@20.5.0 -- \
-            commitlint --from "$FROM" --to "$TO" --verbose
+          .github/commitlint/node_modules/.bin/commitlint --from "$FROM" --to "$TO" --verbose
