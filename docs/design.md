@@ -241,7 +241,7 @@ path = "~/Documents/sync/2_areas/software/chisel_skill"
   lines do not show. A patch file's bytes that are not UTF-8 count as no character.
 - The upstream folder is scanned too, not only the patched copy: the **Check** reads it, so a patch that removes a
   hidden character does not clear it. Skills outside the hull, and `skill-graft.toml`, are not scanned.
-- The classes are APM 0.33.0's (`apm_cli/security/content_scanner.py`), copied as ranges since `apm_cli` is no API: its
+- The classes are APM 0.35.0's (`apm_cli/security/content_scanner.py`), copied as ranges since `apm_cli` is no API: its
   critical set (tag characters, bidi embeddings, overrides and isolates, supplementary variation selectors) fails
   resolution, naming each file, line, code point and class; its warning set (zero-width characters, word joiner, soft
   hyphen, BMP variation selectors but the emoji one, bidi marks, invisible operators, annotation markers, deprecated
@@ -382,27 +382,32 @@ the user to accept. It takes no part in resolution.
 
 ## Measured APM behavior
 
-APM 0.33.0, `apm install -g -t claude`, with `HOME` pointed at a scratch directory:
+APM 0.35.0, `apm install -g -t claude`, with `HOME` pointed at a scratch directory:
 
-- A local package without `apm.yml` is rejected, for both `skills/<name>/` and `.apm/skills/<name>/`:
-  `not a valid APM package (no apm.yml, SKILL.md, or plugin.json)`. With a two-line `apm.yml`, every
-  `.apm/skills/<name>/` deploys to `~/.claude/skills/`, sibling files included.
-- `path: ./skill-graft` in `~/.apm/apm.yml` fails whatever the working directory, with exit code 1. Without `-v` the
-  output still ends in "No changes -- install state already up to date". `~/.apm/skill-graft` and absolute paths work.
-- Removing a skill and reinstalling prunes it from `~/.claude/skills/` ("3 stale files cleaned").
+- A local package without `apm.yml` is rejected with exit code 1, for both `skills/<name>/` and `.apm/skills/<name>/`:
+  `not a valid APM package (no apm.yml, SKILL.md, or plugin.json)`; 0.33.0 said
+  `no apm.yml, SKILL.md, or plugin.json found`. With a two-line `apm.yml`, every `.apm/skills/<name>/` deploys to
+  `~/.claude/skills/`, sibling files included.
+- `path: ./skill-graft` in `~/.apm/apm.yml`, once `~/.apm/apm.lock.yaml` exists, fails whatever the working directory,
+  with exit code 1; without the lock file it exits 0, ending in "No changes -- install state already up to date", and
+  deploys nothing. `~/.apm/skill-graft` and absolute paths work.
+- Removing a skill and reinstalling prunes it from `~/.claude/skills/` ("3 stale files cleaned"). 0.35.0 also warns
+  "Historical dependency claims retained", with `-v` naming the removed skill's files, and prunes all the same.
 - `apm install -g <absolute path>` creates `~/.apm/apm.yml` if missing and lists the package under `dependencies.apm` as
-  an absolute path, never with `~`. Repeating it changes nothing ("updated ref in apm.yml") and redeploys. A package of
-  just the two-line `apm.yml`, with no skills yet, registers too.
+  an absolute path, never with `~`. Repeating it changes nothing and redeploys; 0.33.0 also printed "updated ref in
+  apm.yml". A package of just the two-line `apm.yml`, with no skills yet, registers too.
 - Without `-t` and without `targets:` in `~/.apm/apm.yml`, skills deploy to `~/.agents/skills/`.
 
-APM 0.33.0 at project scope, `apm install ./.apm/skill-graft` in a scratch repository, `HOME` a scratch directory:
+APM 0.35.0 at project scope, `apm install ./.apm/skill-graft` in a scratch repository, `HOME` a scratch directory:
 
 - In the project root it creates `apm.yml` if missing and lists `./.apm/skill-graft` under `dependencies.apm`, relative;
   repeating it adds no second line. It also writes `apm.lock.yaml` and `apm_modules/`, adds `apm_modules/` to
   `.gitignore`, and creates `~/.apm` for its own state.
 - It takes the working directory as the project root: run in a subfolder, it fails.
 - Without a harness marker (`.claude/`, `.cursor/`, `.github/copilot-instructions.md`, …) and without `targets:`, it
-  exits 2 with "No harness detected" and removes the `apm.yml` it had created.
-- It deploys only to the detected harnesses; with every target, skills land in `.agents/skills`, `.claude/skills`,
+  exits 2 with "No harness detected" and removes the `apm.yml` it had created. With markers of two harnesses it exits 2
+  with "Multiple harnesses detected", as 0.33.0 did.
+- It deploys only to the detected harness; with every target, skills land in `.agents/skills`, `.claude/skills`,
   `.grok/skills` and `.kiro/skills` under the project root.
-- Removing a skill from the package and reinstalling prunes it.
+- Removing a skill from the package and reinstalling prunes it. 0.35.0 also warns "Historical dependency claims
+  retained", and prunes all the same.
