@@ -5,7 +5,7 @@ Apply with the `mp-tdd` skill: each task red-green-refactor where it changes cod
 
 ## 1. Measure APM 0.35.0
 
-- [ ] 1.1 Re-run every behavior `docs/design.md` lists under "Measured APM behavior" with APM 0.35.0, at user scope
+- [x] 1.1 Re-run every behavior `docs/design.md` lists under "Measured APM behavior" with APM 0.35.0, at user scope
   (`apm install -g -t claude`) and project scope (`apm install ./.apm/skill-graft`), `HOME` a scratch directory, by a
   script kept out of the repository. Rewrite the section for 0.35.0, naming each behavior that differs from 0.33.0 as
   such; the **Hidden character** classes line (`content_scanner.py`, byte-identical) says 0.35.0 too. Verify: each
