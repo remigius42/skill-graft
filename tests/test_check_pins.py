@@ -29,9 +29,16 @@ repos:
 PYPROJECT = """\
 [dependency-groups]
 dev = [
+  "apm-cli==0.33.0",
   "mypy==2.4.1",
   "pytest",
 ]
+"""
+
+README = """\
+skill-graft runs APM, so `apm` must be on `PATH`, in version 0.33.0: the folders were
+measured on it. Install it with `uv tool install apm-cli==0.33.0` or
+`pipx install apm-cli==0.33.0`.
 """
 
 UV_LOCK = """\
@@ -73,6 +80,7 @@ def repository(root: Path) -> Path:
     (root / ".github" / "workflows").mkdir()
     (root / ".pre-commit-config.yaml").write_text(HOOKS)
     (root / "pyproject.toml").write_text(PYPROJECT)
+    (root / "README.md").write_text(README)
     (root / "uv.lock").write_text(UV_LOCK)
     (root / ".github" / "workflows" / "ci.yml").write_text(CI)
     lock = root / ".github" / "commitlint" / "package-lock.json"
@@ -142,6 +150,33 @@ def test_matching_pins_pass(tmp_path: Path) -> None:
             "rev: v2.5.0",
             "mypy: 2.5.0 in the mypy hook's rev, 2.4.1 in pyproject.toml's dev group",
         ),
+        (
+            "README.md",
+            "in version 0.33.0",
+            "in version 0.35.0",
+            (
+                "apm-cli: 0.35.0, 0.33.0, 0.33.0 in README.md,"
+                " 0.33.0 in pyproject.toml's dev group"
+            ),
+        ),
+        (
+            "README.md",
+            "pipx install apm-cli==0.33.0",
+            "pipx install apm-cli==0.35.0",
+            (
+                "apm-cli: 0.33.0, 0.33.0, 0.35.0 in README.md,"
+                " 0.33.0 in pyproject.toml's dev group"
+            ),
+        ),
+        (
+            "pyproject.toml",
+            '"apm-cli==0.33.0"',
+            '"apm-cli==0.35.0"',
+            (
+                "apm-cli: 0.33.0, 0.33.0, 0.33.0 in README.md,"
+                " 0.35.0 in pyproject.toml's dev group"
+            ),
+        ),
     ],
 )
 def test_a_pin_that_differs_fails_naming_both(
@@ -206,6 +241,24 @@ def test_quotes_comments_and_other_keys_are_read_past(tmp_path: Path) -> None:
     ci = root / ".github/workflows/ci.yml"
     edit(ci, "node-version: 24.22.2", "node-version: '24.22.2' # the hooks'")
     edit(root / "pyproject.toml", "dev = [\n", 'dev = [\n  {include-group = "lint"},\n')
+
+    assert check(root) == (0, "")
+
+
+def test_a_readme_requirement_wrapped_onto_two_lines_is_compared(
+    tmp_path: Path,
+) -> None:
+    root = repository(tmp_path)
+    edit(root / "README.md", "`PATH`, in version ", "`PATH`,\nin version 9.")
+
+    code, out = check(root)
+
+    assert code == 1 and out.startswith("apm-cli: 9.")
+
+
+def test_a_period_after_the_readme_version_is_not_part_of_it(tmp_path: Path) -> None:
+    root = repository(tmp_path)
+    edit(root / "README.md", "`.\n", ".\n")
 
     assert check(root) == (0, "")
 

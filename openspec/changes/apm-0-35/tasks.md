@@ -19,7 +19,7 @@ Apply with the `mp-tdd` skill: each task red-green-refactor where it changes cod
 
 ## 2. Require APM 0.35.0
 
-- [ ] 2.1 `scripts/check_pins.py`: the README's APM version, in its requirement and each `apm-cli==` of its install
+- [x] 2.1 `scripts/check_pins.py`: the README's APM version, in its requirement and each `apm-cli==` of its install
   line, pairs with `apm-cli==` in the dev group of `pyproject.toml`; the `check-pins` hook's `files:` in
   `.pre-commit-config.yaml` gains `README.md`; CONTRIBUTING's Tooling list names the pair. Tests in
   `tests/test_check_pins.py`: the synthetic repository gains a README, and a README version that differs fails naming

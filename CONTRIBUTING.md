@@ -56,6 +56,8 @@ hook ([scripts/check_pins.py](scripts/check_pins.py)) fails, naming both sides, 
 
 - the mypy hook's version and `mypy` in the dev group of `pyproject.toml`, then `uv lock`
 - the mypy hook's `pytest` and `tomlkit` and the versions in `uv.lock`
+- the APM version `README.md` requires, in its text and each `apm-cli==` of its install line, and `apm-cli` in the dev
+  group of `pyproject.toml`, then `uv lock`
 - the commitlint hook's `@commitlint/config-conventional` and `.github/commitlint/`:
   `npm install --prefix .github/commitlint --package-lock-only --ignore-scripts --save-exact @commitlint/cli@<version> @commitlint/config-conventional@<version>`
 - `node` under `default_language_version` and `node-version` in the commitlint job of `.github/workflows/ci.yml`

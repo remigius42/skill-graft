@@ -53,6 +53,7 @@ def mismatches(root: Path) -> list[str]:
     for package in tomllib.loads((root / "uv.lock").read_text())["package"]:
         locked.setdefault(package["name"], []).append(package["version"])
     npm = json.loads((root / LOCK).read_text())["packages"]
+    readme = (root / "README.md").read_text()
     # A frozen rev names its tag in a comment; any other rev is the tag.
     rev = found(r"^\s+rev: \S+\s+# frozen: v?(\S+)", mypy) or found(
         r"^\s+rev: v?(\S+)", mypy
@@ -68,6 +69,27 @@ def mismatches(root: Path) -> list[str]:
                     d.removeprefix("mypy==")
                     for d in dev["dev"]
                     if isinstance(d, str) and d.startswith("mypy==")
+                ],
+            ),
+        ),
+        (
+            "apm-cli",
+            (
+                "README.md",
+                # The requirement, wrapped or not, then each install line.
+                re.findall(
+                    r"`apm`\s+must\s+be\s+on\s+`PATH`.*?,\s+in\s+version\s+([\w.]+):",
+                    readme,
+                    re.DOTALL,
+                )
+                + re.findall(r"apm-cli==([\w.]*\w)", readme),
+            ),
+            (
+                "pyproject.toml's dev group",
+                [
+                    d.removeprefix("apm-cli==")
+                    for d in dev["dev"]
+                    if isinstance(d, str) and d.startswith("apm-cli==")
                 ],
             ),
         ),
