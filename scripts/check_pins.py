@@ -48,7 +48,9 @@ def mismatches(root: Path) -> list[str]:
     commitlint = block(hooks, r"\s*- repo: .*/commitlint-pre-commit-hook$")
     languages = block(hooks, r"default_language_version:")
     job = block((root / CI).read_text(), r"\s*commitlint:")
-    dev = tomllib.loads((root / "pyproject.toml").read_text())["dependency-groups"]
+    pyproject = tomllib.loads((root / "pyproject.toml").read_text())
+    dev = pyproject["dependency-groups"]
+    version = pyproject["project"].get("version")
     locked: dict[str, list[str]] = {}
     for package in tomllib.loads((root / "uv.lock").read_text())["package"]:
         locked.setdefault(package["name"], []).append(package["version"])
@@ -92,6 +94,12 @@ def mismatches(root: Path) -> list[str]:
                     if isinstance(d, str) and d.startswith("apm-cli==")
                 ],
             ),
+        ),
+        (
+            "skill-graft",
+            # Each install line's `skill-graft@v<version>`, the prose's `@v<version>`.
+            ("README.md", re.findall(r"(?:skill-graft|`)@v(\d[\w.]*\w)", readme)),
+            ("pyproject.toml's version", [version] if version else []),
         ),
         *(
             (
