@@ -27,6 +27,7 @@ words:
   - copymode
   - copystat
   - copytree
+  - cowork
   - dataclass
   - dataviz
   - delenv
