@@ -376,7 +376,8 @@ for scenario in "${selected[@]}"; do
       check "false: GET /review" found false "GET /review"
       check "wrong target: format" found "wrong target" "format"
       check "rewrite: follow-up question" found rewrite "follow-up question"
-      check "link: checklist" found link "checklist"
+      # The broken path itself: a row may say "same line" for the text it quotes.
+      check "link: ../code-style" found link "../code-style"
       check "patched line not a rewrite" eval '! report | grep -i changelog | grep -i rewrite | grep -viE "intended|patch" > /dev/null'
       check "package unchanged" unchanged
       ;;
