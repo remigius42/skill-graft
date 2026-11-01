@@ -57,6 +57,9 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 - `graft-check` runs `skill-graft resolve` after adding a **Patch** fix, and again after undoing one
 - When APM fails after `init --project` registered the **Package**, `init` says to run `skill-graft resolve`, then
   `skill-graft deploy`
+- skill-graft requires APM 0.35.0: install it with `uv tool install apm-cli==0.35.0`. A path **Source** inside or
+  containing `~/agent-data/workflows`, or in project scope `agent-data/workflows` under the project root, where APM
+  0.35.0's `grok-bot` target deploys skills, now gets the warning that it overlaps a folder where APM deploys skills
 - Upgrading: a **Package** whose lock a `resolve` or an edit wrote after its last `build` holds copies older than its
   lock, which the first command refuses as edited. Check them, then delete `.apm/skills/` and run `skill-graft resolve`.
   A clone whose copies git already converted, as with `core.autocrlf`, is refused too: once `.gitattributes` is
