@@ -97,7 +97,7 @@ repos:
         entry: uv run python scripts/check_pins.py
         language: system
         pass_filenames: false
-        files: ^(\.pre-commit-config\.yaml|pyproject\.toml|uv\.lock|\.github/commitlint/package-lock\.json|\.github/workflows/ci\.yml|scripts/check_pins\.py)$
+        files: ^(\.pre-commit-config\.yaml|README\.md|pyproject\.toml|uv\.lock|\.github/commitlint/package-lock\.json|\.github/workflows/ci\.yml|scripts/check_pins\.py)$
 
   # Dependabot reads its config only on main, so nothing else checks it before the merge.
   - repo: https://github.com/python-jsonschema/check-jsonschema
