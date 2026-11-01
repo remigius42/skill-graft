@@ -18,6 +18,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 
 ### Changed
 
+- The README installs the latest release instead of `main`
 - **BREAKING**: `build` is now `deploy`, its `--no-install` is `--no-apm-install`, and `update --diff <file>` is
   `update --diff-file <file>`; the old names exit 2. `deploy --into <dir>` is what `build --into <dir>` was. Options are
   no longer accepted abbreviated: `--dry` for `--dry-run` exits 2. Upgrade skill-graft first, then update its **Source**
@@ -83,6 +84,11 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
   Code no longer blocks the command for changing folder and writing its output to files in one go. The script sets their
   confining flags itself and runs only in a temporary folder, so a permission rule allowing it allows no other `claude`
   run than a reader of the folders it is given or a patcher in a temporary folder
+
+### Security
+
+- The release tags are signed from this release on, with the SSH key the README names, and GitHub shows them as
+  **Verified**. The README says how to check a tag and install the commit it names
 
 ## [0.3.0] - 2026-10-30
 

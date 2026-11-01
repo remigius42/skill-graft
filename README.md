@@ -30,13 +30,13 @@ skill-graft runs on Linux and macOS, and on Windows through [WSL](https://learn.
 Windows is unsupported: there every command prints `skill-graft: native Windows is unsupported: run skill-graft in WSL`
 and exits 1.
 
-skill-graft needs Python 3.11 or later. It is not on PyPI; install it from the repository with any of:
+skill-graft needs Python 3.11 or later. It is not on PyPI; install a release from the repository with any of:
 
 ```sh
-uv tool install git+https://github.com/remigius42/skill-graft
-pipx install --python python3.11 git+https://github.com/remigius42/skill-graft
-pip install git+https://github.com/remigius42/skill-graft      # into the active environment
-pipenv install "skill-graft @ git+https://github.com/remigius42/skill-graft"
+uv tool install git+https://github.com/remigius42/skill-graft@v0.3.0
+pipx install --python python3.11 git+https://github.com/remigius42/skill-graft@v0.3.0
+pip install git+https://github.com/remigius42/skill-graft@v0.3.0      # into the active environment
+pipenv install "skill-graft @ git+https://github.com/remigius42/skill-graft@v0.3.0"
 ```
 
 uv picks a suitable Python itself; pipx and pip use theirs, so point them at 3.11 or later. pipenv installs into that
@@ -46,10 +46,23 @@ skill-graft also runs `git`. With git 2.44 or later, looking up what the [cache]
 remote; the git macOS ships is older, Homebrew's is not. A remote that refuses files asked by name needs git 2.36 or
 later.
 
-These install the latest `main`. To install a release instead, append its tag to the URL,
-`git+https://github.com/remigius42/skill-graft@v<version>`; the tags are listed under
-[releases](https://github.com/remigius42/skill-graft/releases). `skill-graft --version` names what is installed: the
-version, and for these installs the commit, `skill-graft 0.2.0 (e294a0e)`, with the tag or branch if you named one.
+These install the latest release; the others are listed under
+[releases](https://github.com/remigius42/skill-graft/releases), and each tag's README describes its release. To install
+the unreleased `main` instead, drop `@v0.3.0` from the URL. `skill-graft --version` names what is installed: the
+version, the tag or branch the URL names and the commit, `skill-graft <version> (v<version> @ <commit>)`, or only the
+commit for a URL naming neither.
+
+The release tags after `v0.3.0` are signed with this SSH key, fingerprint
+`SHA256:U5FNzbtnPR2kPX/Edlg1+p7rJmlBIx88HBKkzBVmOWE`:
+
+```text
+remigius42-github.dcds7@aleeas.com namespaces="git" ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIHKYDmxyNPjrRUXm2mr6s8UiL/yT89vmPC0gPB1pZc2L
+```
+
+GitHub shows such a tag as **Verified**. To check one yourself, save that line as `~/allowed_signers`, then in a clone
+run `git -c gpg.ssh.allowedSignersFile="$HOME/allowed_signers" verify-tag v<version>`; git reads a relative path from
+the clone's top folder. A tag can be moved, a commit cannot: to install exactly what you checked, put the commit
+`git rev-parse "v<version>^{commit}"` prints in the URL in place of the tag.
 
 skill-graft runs APM as a command, so `apm` must be on `PATH` as well, in version 0.35.0: the folders APM deploys to
 were measured on it, and another version may deploy elsewhere. Install it the same way, e.g.
