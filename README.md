@@ -19,7 +19,8 @@ computes that hull, the skills you ask for plus every skill they call, and deplo
 it: a skill named like a harness built-in (`code-review`) shadows it or is shadowed by it, and renaming one skill by
 hand misses the other skills that call it by name.
 
-If you already know every skill you need, APM alone can install just those: `apm install <owner>/<repo> --skill <name>`
+If you already know every skill you need, APM alone can install just those:\
+`apm install <owner>/<repo> --skill <name>`
 ([docs](https://microsoft.github.io/apm/reference/cli/install/#skill-subset)). skill-graft also finds the skills they
 reference, lets you rename skills whose names clash, shows who calls what (`tree`, `why`), and applies your patches,
 checking on `update` that they still apply.
@@ -52,7 +53,7 @@ the unreleased `main` instead, drop `@v0.4.0` from the URL. `skill-graft --versi
 version, the tag or branch the URL names and the commit, `skill-graft <version> (v<version> @ <commit>)`, or only the
 commit for a URL naming neither.
 
-The release tags after `v0.3.0` are signed with this SSH key, fingerprint
+The release tags after `v0.3.0` are signed with this SSH key, fingerprint\
 `SHA256:U5FNzbtnPR2kPX/Edlg1+p7rJmlBIx88HBKkzBVmOWE`:
 
 ```text
@@ -60,12 +61,13 @@ remigius42-github.dcds7@aleeas.com namespaces="git" ssh-ed25519 AAAAC3NzaC1lZDI1
 ```
 
 GitHub shows such a tag as **Verified**. To check one yourself, save that line as `~/allowed_signers`, then in a clone
-run `git -c gpg.ssh.allowedSignersFile="$HOME/allowed_signers" verify-tag v<version>`; git reads a relative path from
-the clone's top folder. A tag can be moved, a commit cannot: to install exactly what you checked, put the commit
-`git rev-parse "v<version>^{commit}"` prints in the URL in place of the tag.
+run\
+`git -c gpg.ssh.allowedSignersFile="$HOME/allowed_signers" verify-tag v<version>`;\
+git reads a relative path from the clone's top folder. A tag can be moved, a commit cannot: to install exactly what you
+checked, put the commit `git rev-parse "v<version>^{commit}"` prints in the URL in place of the tag.
 
 skill-graft runs APM as a command, so `apm` must be on `PATH` as well, in version 0.35.0: the folders APM deploys to
-were measured on it, and another version may deploy elsewhere. Install it the same way, e.g.
+were measured on it, and another version may deploy elsewhere. Install it the same way, e.g.\
 `uv tool install apm-cli==0.35.0`, `pipx install apm-cli==0.35.0` or `pip install apm-cli==0.35.0`.
 
 ## Usage
