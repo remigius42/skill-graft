@@ -7,6 +7,16 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 
 ## [Unreleased]
 
+### Added
+
+- skill-graft is on PyPI, from 0.4.0 on: `uv tool install skill-graft==<version>`, or with pipx, pip or pipenv. Each
+  file there is built from the signed release tag, and carries an attestation naming this repository's publish workflow
+
+### Changed
+
+- The README installs from PyPI first; installing from the repository at a signed tag stays, below it. Its links to
+  other files of the repository are absolute, so they work on the PyPI project page too
+
 ## [0.4.0] - 2026-11-01
 
 ### Added
