@@ -317,3 +317,72 @@ def test_no_op_edit_prints_only_its_notice(home: Path, tmp_path: Path) -> None:
         f"skill-graft: package: {package}\n"
         "skill-graft: `own/chisel` is already an entry\n"
     )
+
+
+MACHINE = "absolute, so other machines need it at the same place"
+
+
+@pytest.fixture
+def machine_specific(
+    home: Path, tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """A project at `tmp_path/repo`, resolved, whose path source `own` is
+    `tmp_path/opt`, outside both the project and home, and git source `mp` at
+    its tip."""
+    skill(tmp_path / "opt" / "chisel")
+    skill(tmp_path / "opt" / "notes")
+    upstream = Upstream(tmp_path / "up")
+    tip = upstream.commit({"tdd/SKILL.md": "1\n"})
+    package = tmp_path / "repo" / ".apm" / "skill-graft"
+    package.mkdir(parents=True)
+    (package / "skill-graft.toml").write_text(
+        'entries = ["own/chisel"]\n'
+        f'[sources.own]\npath = "{tmp_path / "opt"}"\n'
+        f'[sources.mp]\ngit = "{upstream.url}"\nref = "{tip}"\n'
+    )
+    monkeypatch.chdir(tmp_path / "repo")
+    assert main(["resolve"]) == 0
+
+
+@pytest.mark.parametrize(
+    "args",
+    [
+        ["resolve"],
+        ["resolve", "--dry-run"],
+        ["deploy", "--no-apm-install"],
+        ["add", "own/notes"],
+        ["update", "--dry-run"],
+    ],
+)
+@pytest.mark.usefixtures("machine_specific")
+def test_machine_specific_path_warns(
+    capsys: pytest.CaptureFixture[str], args: list[str]
+) -> None:
+    capsys.readouterr()
+
+    code = main(args)
+
+    assert code == 0 and MACHINE in capsys.readouterr().err
+
+
+@pytest.mark.usefixtures("machine_specific")
+def test_machine_specific_path_not_warned_by_deploy_into(
+    tmp_path: Path, capsys: pytest.CaptureFixture[str]
+) -> None:
+    (tmp_path / "into").mkdir()
+    capsys.readouterr()
+
+    code = main(["deploy", "--into", str(tmp_path / "into")])
+
+    assert code == 0 and MACHINE not in capsys.readouterr().err
+
+
+@pytest.mark.usefixtures("machine_specific")
+def test_machine_specific_path_not_warned_by_tree(
+    capsys: pytest.CaptureFixture[str],
+) -> None:
+    capsys.readouterr()
+
+    code = main(["tree"])
+
+    assert code == 0 and MACHINE not in capsys.readouterr().err
