@@ -2,7 +2,7 @@
 
 ## 1. Escaping moves to infra
 
-- [ ] 1.1 Move `CRITICAL`, `CRITICAL_CHARS` and `show` from `pipeline/hidden.py` to a new `infra/text.py`, `hidden.py`
+- [x] 1.1 Move `CRITICAL`, `CRITICAL_CHARS` and `show` from `pipeline/hidden.py` to a new `infra/text.py`, `hidden.py`
   importing them; verify `tests/pipeline/test_hidden.py` and `lint-imports` pass unchanged (refactor, no new test)
 
 ## 2. Errors keep their lines

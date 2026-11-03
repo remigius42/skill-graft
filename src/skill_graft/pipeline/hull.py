@@ -4,7 +4,7 @@ from collections import deque
 from dataclasses import dataclass, replace
 from pathlib import Path
 
-from skill_graft.infra import files
+from skill_graft.infra import files, text
 from skill_graft.infra.errors import SkillGraftError
 from skill_graft.pipeline import discovery, hidden, patch, references
 from skill_graft.pipeline.config import Config, PatchFile, SkillId, deployed
@@ -220,11 +220,11 @@ def _hidden(
     """The hidden characters of `skill`'s upstream `folder` and of the lines its
     patches add, then warnings: a patch that removes one does not clear it."""
     found, warnings = hidden.scan(folder)
-    shown = hidden.show(str(folder))  # its parents' names are no one's to check
+    shown = text.show(str(folder))  # its parents' names are no one's to check
     found = [f"{shown}/{line}" for line in found]
     warnings = [f"{shown}/{line}" for line in warnings]
     for file in patches.get(skill, []):
-        in_patch, debris = hidden.scan_patch(hidden.show(file.path), file.data)
+        in_patch, debris = hidden.scan_patch(text.show(file.path), file.data)
         found += in_patch
         warnings += debris
     return found, warnings

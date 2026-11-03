@@ -10,7 +10,7 @@ from array import array
 from collections.abc import Iterator
 from pathlib import Path
 
-from skill_graft.infra import files
+from skill_graft.infra import files, text
 from skill_graft.pipeline import hidden
 
 # Each file of a skill as deployed, by path relative to it: its bytes, executable bit.
@@ -147,8 +147,8 @@ def _escaped(doubled: bool) -> re.Pattern[str]:
         for run in [list(group)]
     ]
     pattern = (
-        "[" + "".join(f"{chr(a)}-{chr(b)}" for a, b in ranges) + "]|"
-        f"{hidden.CRITICAL_CHARS.pattern}|{hidden.WARNING_CHARS.pattern}"
+        f"{text.ranges(ranges).pattern}|"
+        f"{text.CRITICAL_CHARS.pattern}|{hidden.WARNING_CHARS.pattern}"
     )
     return re.compile((r"\\|" + pattern) if doubled else pattern)
 

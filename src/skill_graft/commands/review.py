@@ -12,10 +12,10 @@ from pathlib import Path
 from typing import Any
 
 from skill_graft.commands import explain, transaction
-from skill_graft.infra import files, paths
+from skill_graft.infra import files, paths, text
 from skill_graft.infra.cache import Cache
 from skill_graft.infra.errors import SkillGraftError
-from skill_graft.pipeline import deployed, hidden, lock, rename
+from skill_graft.pipeline import deployed, lock, rename
 from skill_graft.pipeline.config import Config, GitSource, SkillId
 from skill_graft.pipeline.hull import Hull, PatchError
 
@@ -206,7 +206,7 @@ def deployed_diff(
     }
     if isinstance(before, str):
         out.append(
-            f"# no previous hull to compare ({hidden.show(before)}): "
+            f"# no previous hull to compare ({text.show(before)}): "
             "every Skill shown as added\n"
         )
         rewrites = rename.rewrites(hull)

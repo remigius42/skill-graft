@@ -1,23 +1,14 @@
 """Finds hidden characters, which a reader of the rendered text never sees, in a
 skill."""
 
-import re
 from pathlib import Path
 
 from skill_graft.infra import files
 from skill_graft.infra.errors import SkillGraftError
+from skill_graft.infra.text import CRITICAL, CRITICAL_CHARS, ranges, show
 
-# The critical and warning sets of APM 0.35.0's install check
-# (`apm_cli/security/content_scanner.py`), copied as `apm_cli` is no API. Lone
-# surrogates are left out: strict decoding refuses them, lenient replaces them.
-# Each critical class: its code points, first and last, and what it is called.
-CRITICAL = [
-    (0xE0001, 0xE007F, "tag character"),
-    (0x202A, 0x202E, "bidi control"),  # embeddings, overrides and their pop
-    (0x2066, 0x2069, "bidi control"),  # isolates
-    (0xE0100, 0xE01EF, "variation selector"),  # supplementary
-]
-
+# The warning set of APM 0.35.0's install check, beside its critical set in
+# `infra/text.py`.
 # Copy-paste debris, though it can hide text too: zero-width characters, the word
 # joiner, the soft hyphen, BMP variation selectors but the emoji one, bidi marks,
 # invisible operators, annotation markers and deprecated formatting characters.
@@ -33,12 +24,7 @@ WARNING = [
 ]
 
 
-def _ranges(ranges: list[tuple[int, int]]) -> re.Pattern[str]:
-    return re.compile("[" + "".join(f"{chr(a)}-{chr(b)}" for a, b in ranges) + "]")
-
-
-CRITICAL_CHARS = _ranges([(a, b) for a, b, _ in CRITICAL])
-WARNING_CHARS = _ranges(WARNING)
+WARNING_CHARS = ranges(WARNING)
 
 
 # The encoding `decode_as` names for UTF-8 read with an `errors` handler.
@@ -157,17 +143,6 @@ def characters(text: str) -> tuple[list[tuple[int, str]], list[tuple[int, str]]]
         critical += [(number, char) for char in CRITICAL_CHARS.findall(line)]
         debris += [(number, char) for char in WARNING_CHARS.findall(line)]
     return critical, debris
-
-
-def show(text: str) -> str:
-    """`text` with each hidden or unprintable character escaped, as Python would,
-    so printing it reorders or hides nothing."""
-    return "".join(
-        char.encode("unicode_escape").decode()
-        if CRITICAL_CHARS.match(char) or not char.isprintable()
-        else char
-        for char in text
-    )
 
 
 def _describe(char: str) -> str:
