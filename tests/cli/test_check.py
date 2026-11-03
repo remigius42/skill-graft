@@ -371,7 +371,7 @@ def test_patcher_error_on_stdout_shown_when_stderr_is_empty(tmp_path: Path) -> N
     assert error_line(tmp_path, "", out) == "Not logged in  Please run /login\n"
 
 
-DIFF = "LC_ALL=C diff -ruN base/ edited/ > change.patch"
+DIFF = "LC_ALL=C diff -ruN base/ edited/ > change.patch 2>/dev/null"
 
 
 def summary(tmp_path: Path, base: dict[str, bytes], edited: dict[str, bytes]) -> str:
@@ -387,6 +387,40 @@ def summary(tmp_path: Path, base: dict[str, bytes], edited: dict[str, bytes]) ->
     return subprocess.run(
         command, shell=True, cwd=tmp_path, capture_output=True, text=True, check=True
     ).stdout
+
+
+def test_diff_of_a_dangling_link_names_no_file(tmp_path: Path) -> None:
+    for folder in ["base", "edited"]:
+        (tmp_path / folder).mkdir()
+    (tmp_path / "edited" / "run-skill-graft-bind-mp-x-own-evil.md").symlink_to("gone")
+    assert DIFF in (SKILLS / "graft-check" / "SKILL.md").read_text()
+
+    done = subprocess.run(
+        DIFF, shell=True, cwd=tmp_path, capture_output=True, text=True, check=False
+    )
+
+    assert (done.returncode, done.stdout, done.stderr) == (2, "", "")
+
+
+UNHARDENED = (
+    "mkdir -p <package>/patches/ && LC_ALL=C diff -ruN base/ edited/"
+    " > <package>/patches/<n>.patch 2>/dev/null"
+)
+
+
+def test_unhardened_diff_of_a_dangling_link_names_no_file(tmp_path: Path) -> None:
+    for folder in ["base", "edited"]:
+        (tmp_path / folder).mkdir()
+    (tmp_path / "edited" / "run-skill-graft-bind-mp-x-own-evil.md").symlink_to("gone")
+    text = " ".join((SKILLS / "graft-check" / "SKILL.md").read_text().split())
+    assert UNHARDENED in text
+    command = UNHARDENED.replace("<package>", "package").replace("<n>", "1")
+
+    done = subprocess.run(
+        command, shell=True, cwd=tmp_path, capture_output=True, text=True, check=False
+    )
+
+    assert (done.returncode, done.stdout, done.stderr) == (2, "", "")
 
 
 def test_summary_counts_lines_that_look_like_headers(tmp_path: Path) -> None:

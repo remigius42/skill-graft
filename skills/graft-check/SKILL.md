@@ -286,8 +286,9 @@ Take the fixes one at a time: ask, and apply only on yes. Run only the commands 
      A count above 0 ends this fix: a **Patch** of such a name could not be summed up safely.
 
   1. Run first `cd <base-dir>` as a Bash call of its own, since Claude Code refuses a `cd` and a `>` in one command,
-     then `LC_ALL=C diff -ruN base/ edited/ > change.patch`; its exit code 1 means it wrote a diff, 0 that the patcher
-     changed nothing, which ends this fix.
+     then `LC_ALL=C diff -ruN base/ edited/ > change.patch 2>/dev/null`, its error output dropped, as it names files the
+     patcher chose. Its exit code 1 means it wrote a diff, 0 that the patcher changed nothing, which ends this fix, and
+     any other that the diff failed, such as on a link leading to no file, which ends this fix too.
 
   1. Sum the diff up, without opening it. Only numbers come back: no file name the patcher chose.
 
@@ -305,8 +306,10 @@ Take the fixes one at a time: ask, and apply only on yes. Run only the commands 
      a **Patch** the lock does not record.
 - A **Patch**, unhardened: make `base/` as in the first step above, then `cp -r base edited` beside it. Edit the files
   in `edited/` yourself, keeping `name:` as it is; then run first `cd <base-dir>` as a Bash call of its own, then
-  `mkdir -p <package>/patches/ && LC_ALL=C diff -ruN base/ edited/ > <package>/patches/<n>.patch`, its exit code 1
-  meaning it wrote a diff, append it to `[patches]` and run `skill-graft resolve`, as in the last step above.
+  `mkdir -p <package>/patches/ && LC_ALL=C diff -ruN base/ edited/ > <package>/patches/<n>.patch 2>/dev/null`. Its exit
+  code 1 means it wrote a diff: append it to `[patches]` and run `skill-graft resolve`, as in the last step above. Any
+  exit code above 1 means the diff failed, such as on a link leading to no file: delete `<package>/patches/<n>.patch`
+  and end this fix.
 
 After each applied fix, make a throwaway deploy (step 2) into a new folder and compare its lock's `[[skills]]` ids with
 the previous deploy's. Name every **Skill** that left or joined the **Hull**.
