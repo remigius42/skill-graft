@@ -5,8 +5,8 @@
 `skill-graft.lock`, a TOML file at `~/.apm/skill-graft/skill-graft.lock` even when `skill-graft.toml` is a symlink,
 SHALL record: each declared **Source**'s alias with its URL, `ref` and `subdirectory` when set, or its resolved folder
 (in project scope relative to the **Package** when inside the project root, else its `path` without empty or `.`
-segments when that is `~` or starts with `~/` and has no `..` segment, else absolute); each **Hull** **Skill**'s **Skill
-ID**, whether it is an **Entry**, and a SHA-256 hash of its folder as vendored; and each edge: from, to, kind (`slash`,
+segments when that starts with `~/` and has no `..` segment, else absolute); each **Hull** **Skill**'s **Skill ID**,
+whether it is an **Entry**, and a SHA-256 hash of its folder as vendored; and each edge: from, to, kind (`slash`,
 `skill-tool` or `prose`), and `bind = true` when a **Bind** decided it. One edge per from, to, kind and `bind`.
 
 #### Scenario: Edges with kinds

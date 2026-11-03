@@ -3,11 +3,11 @@
 ## Context
 
 `config._source_folder` resolves a path **Source**'s `path` (`~` expanded, relative to the config's folder, symlinks
-followed) into `PathSource.folder`, and keeps nothing else. `lock._source_path` writes that folder: relative to the
-**Package** when, in project scope, it is inside the project root, else absolute. Nothing reads the lock's `path` back:
-`lock.drift` drops it. `update`'s nothing-to-apply check compares whole parsed locks, `path` included. Every command
-that writes the lock (`resolve`, `deploy`, `update`, and the edit commands through `edit._finish`) goes through
-`transaction.resolving`; `deploy --into` passes its own `lock_file`, and dry runs pass `write=False`.
+followed) into `PathSource.folder`, and keeps nothing else. `lock.render` wrote that folder: relative to the **Package**
+when, in project scope, it is inside the project root, else absolute. Nothing reads the lock's `path` back: `lock.drift`
+drops it. `update`'s nothing-to-apply check compares whole parsed locks, `path` included. Every command that writes the
+lock (`resolve`, `deploy`, `update`, and the edit commands through `edit._finish`) goes through `transaction.resolving`;
+`deploy --into` passes its own `lock_file`, and dry runs pass `write=False`.
 
 ## Goals / Non-Goals
 
@@ -25,11 +25,11 @@ that writes the lock (`resolve`, `deploy`, `update`, and the edit commands throu
 
 ## Decisions
 
-- **Record the `path` as written when it is `~` or starts with `~/`, not the resolved folder made home-relative.**
-  `PathSource` gains the string as written. Deriving `~/<rest>` from the resolved folder fails for `~/skills` symlinked
-  outside the home folder (it resolves elsewhere), and for a home that is itself a symlink; the written form is what the
-  user meant to share. The written string is the user's own (path **Sources** are trusted, see build-verifies-lock's
-  design), and the lock's `path` is provenance only, never read back, so it opens no path a hostile upstream controls.
+- **Record the `path` as written when it starts with `~/`, not the resolved folder made home-relative.** `PathSource`
+  gains the string as written. Deriving `~/<rest>` from the resolved folder fails for `~/skills` symlinked outside the
+  home folder (it resolves elsewhere), and for a home that is itself a symlink; the written form is what the user meant
+  to share. The written string is the user's own (path **Sources** are trusted, see build-verifies-lock's design), and
+  the lock's `path` is provenance only, never read back, so it opens no path a hostile upstream controls.
 - **Normalized by segment, never across `..`.** The part after `~/` is split on `/`, empty and `.` segments dropped, so
   `~/skills/`, `~//skills` and `~/./skills` record `~/skills`. A path with any `..` segment is recorded absolute and
   warned of: `~/x/../skills` names another folder when `~/x` is a symlink, as the folder is resolved with symlinks
@@ -44,8 +44,8 @@ that writes the lock (`resolve`, `deploy`, `update`, and the edit commands throu
 - **Inside the project wins.** The check for inside the project root still runs first on the resolved folder, so
   `~/repo/skills` in a project at `~/repo` stays `../../skills`, as today.
 - **One function decides portability.** `lock.portable_path(scope, source)` returns the recorded form for a path
-  **Source** inside the project or under `~/` in project scope, else `None`. `_source_path` writes its result or the
-  absolute folder; the warning fires exactly when it is `None` in project scope. Alternative rejected: the warning
+  **Source** inside the project or under `~/` in project scope, else `None`. `render` writes its result or the absolute
+  folder; the warning fires exactly when it is `None` in project scope. Alternative rejected: the warning
   re-implementing the check, where a fix to one copy would leave the two disagreeing.
 - **The warning sits in `transaction.resolving`, when the lock is the package's.** Every command that writes the
   package's lock goes through it, so `add`, `rename` or `update` committing an absolute path warns as `resolve` does; a
@@ -58,9 +58,10 @@ that writes the lock (`resolve`, `deploy`, `update`, and the edit commands throu
   records the same hull"; a recorded folder is not part of the hull, as `drift` holds. Without this, an older lock's
   absolute folder, or any lock written on another machine with an absolute `path`, makes `update --dry-run` ask to apply
   a change that only rewrites provenance. `lock.without_paths(data, path_aliases)`, taken out of `drift`'s `shape`,
-  drops them for both; `update` calls it only on a lock `_well_formed` accepts, and a malformed one is a difference, as
-  the plain `==` makes it today. Alternative rejected: a second copy in `update.py` of which fields a path **Source**
-  may change.
+  drops them for both, and leaves a lock whose `sources` are not a table of tables (the check `_well_formed` shares) as
+  it is, so a malformed one is a difference, as the plain `==` makes it today. `config.path_aliases` gives `update` and
+  `deploy` the same aliases. Alternative rejected: a second copy in `update.py` of which fields a path **Source** may
+  change.
 
 ## Risks / Trade-offs
 
@@ -69,6 +70,9 @@ that writes the lock (`resolve`, `deploy`, `update`, and the edit commands throu
 - \[A lock committed before this change records `~/`-sourced folders absolute\] → the next command that writes the lock
   rewrites that line once; `deploy` treats the folder as no difference, so it does not refuse, and `update --dry-run`
   ignores it.
+- \[`~/skills` is a symlink into the project on one machine only\] → that machine records the folder relative to the
+  **Package**, the others `~/skills`, and each rewrites the line: "inside the project wins" is decided on the resolved
+  folder. Rare; rejecting symlinked path **Sources** would break the common `~/skills` symlinked into a dotfiles folder.
 
 ## Migration Plan
 

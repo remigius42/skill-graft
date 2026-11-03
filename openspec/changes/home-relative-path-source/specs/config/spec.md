@@ -47,7 +47,7 @@ the same place, and continue. `deploy --into`, commands that write no lock, and 
 #### Scenario: Dry run
 
 - **WHEN** in project scope `[sources.own]` has `path = "/opt/skills"`, and the user runs `resolve --dry-run`
-- **THEN** the command prints the warning naming `own`
+- **THEN** the command prints the warning naming `own`, saying the lock would record it absolute
 
 #### Scenario: Relative path outside the project
 

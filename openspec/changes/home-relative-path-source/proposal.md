@@ -9,9 +9,9 @@ says the same thing on every machine with `~`; the lock should too.
 
 ## What Changes
 
-- In project scope, the lock records a path **Source** whose `path` is `~` or starts with `~/` as written, normalized
-  (`~/skills/` and `~//skills` both record `~/skills`), unless its folder is inside the project root, which stays
-  relative to the **Package**. The folder is still resolved as today; only what the lock records changes.
+- In project scope, the lock records a path **Source** whose `path` starts with `~/` as written, normalized (`~/skills/`
+  and `~//skills` both record `~/skills`), unless its folder is inside the project root, which stays relative to the
+  **Package**. The folder is still resolved as today; only what the lock records changes.
 - Every other path **Source** outside the project root stays recorded absolute: `/opt/skills`, `../shared-skills`, the
   home folder written out, `~alice/skills` (one named user's home), and a `~/` path with a `..` segment (`~/../shared`,
   or `~/x/../skills`, which a symlinked `~/x` sends elsewhere). In project scope, each command that writes the package's
