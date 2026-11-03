@@ -61,10 +61,12 @@ def test_gits_message_holds_no_escape(
 
 
 def test_lines_of_one_message_kept(home: Path, tmp_path: Path, capsys: Capsys) -> None:
-    lines = [f"line {n}\n" for n in range(1, 21)]
-    before = "".join(lines)
-    after = before.replace("line 2\n", "line 2b\n").replace("line 19\n", "line 19b\n")
-    skill(home / "mp" / "tdd", before.replace("line 1\n", "x\n").replace("20", "y"))
+    before = "".join(f"line {n}\n" for n in range(1, 41))
+    after = before
+    for n in (2, 20, 38):  # three hunks, far enough apart not to merge
+        after = after.replace(f"line {n}\n", f"line {n}b\n")
+    upstream = before.replace("line 1\n", "x\n").replace("line 40\n", "y\n")
+    skill(home / "mp" / "tdd", upstream)  # the first and last hunks' context gone
     write_patch(
         "tdd.patch",
         make_patch(tmp_path, {"SKILL.md": before}, {"SKILL.md": after}),
@@ -76,8 +78,11 @@ def test_lines_of_one_message_kept(home: Path, tmp_path: Path, capsys: Capsys) -
     assert code == 1
     shown = err.splitlines()
     assert shown[0] == "skill-graft: patches do not apply:"
-    hunks = [line for line in shown if line.startswith("  mp/tdd: patches/tdd.patch")]
-    assert len(hunks) == 2 and all("hunk @@" in line for line in hunks)
+    hunks = [line for line in shown if "hunk @@" in line]
+    assert [line.split("@@")[1] for line in hunks] == [" -1,5 +1,5 ", " -35,6 +35,6 "]
+    assert all(
+        line.startswith("  mp/tdd: patches/tdd.patch: SKILL.md:") for line in hunks
+    )
 
 
 def test_safe_names_unchanged(home: Path, capsys: Capsys) -> None:
