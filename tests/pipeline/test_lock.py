@@ -764,3 +764,56 @@ def test_comment_is_no_drift(home: Path) -> None:
     old = tomllib.loads("# reviewed\r\n" + render().replace("\n", "\r\n"))
 
     assert lock.drift(parsed(), old, {"own"}) == ([], None)
+
+
+def portable(written: str, folder: Path, root: Path) -> str | None:
+    return lock.portable_path(paths.Scope(root), config.PathSource(folder, written))
+
+
+def test_portable_inside_the_project(tmp_path: Path) -> None:
+    assert portable("../../src", tmp_path / "src", tmp_path) == "../../src"
+
+
+def test_portable_home_path(home: Path, tmp_path: Path) -> None:
+    assert portable("~/skills", home / "skills", tmp_path / "repo") == "~/skills"
+
+
+@pytest.mark.parametrize(
+    "written", ["~/skills/", "~//skills", "~///skills", "~/./skills"]
+)
+def test_portable_home_path_normalized(
+    home: Path, tmp_path: Path, written: str
+) -> None:
+    assert portable(written, home / "skills", tmp_path / "repo") == "~/skills"
+
+
+@pytest.mark.parametrize("written", ["~/x/../skills", "~/../shared"])
+def test_dot_dot_segment_not_portable(home: Path, tmp_path: Path, written: str) -> None:
+    assert portable(written, home / "skills", tmp_path / "repo") is None
+
+
+def test_dot_dot_prefixed_name_portable(home: Path, tmp_path: Path) -> None:
+    folder = home / "..skills"
+
+    assert portable("~/..skills", folder, tmp_path / "repo") == "~/..skills"
+
+
+def test_named_user_home_not_portable(home: Path, tmp_path: Path) -> None:
+    assert portable("~alice/skills", home / "skills", tmp_path / "repo") is None
+
+
+@pytest.mark.parametrize("written", ["/opt/skills", "../../../shared"])
+def test_absolute_and_relative_outside_not_portable(
+    tmp_path: Path, written: str
+) -> None:
+    assert portable(written, Path("/opt/skills"), tmp_path / "repo") is None
+
+
+def test_home_folder_written_out_not_portable(home: Path, tmp_path: Path) -> None:
+    folder = home / "skills"
+
+    assert portable(str(folder), folder, tmp_path / "repo") is None
+
+
+def test_user_scope_not_portable(home: Path) -> None:
+    assert portable("~/skills", home / "skills", home) is None

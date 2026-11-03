@@ -319,7 +319,33 @@ def test_project_source_outside_the_project(
 
     assert main(["resolve"]) == 0
 
-    assert lock_sources(package) == {"own": {"path": str((home / "skills").resolve())}}
+    assert lock_sources(package) == {"own": {"path": "~/skills"}}
+
+
+def test_project_source_under_a_symlinked_home_folder(
+    home: Path, tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    package = project(home / "repo", "[]")
+    (tmp_path / "elsewhere").mkdir()
+    (home / "skills").symlink_to(tmp_path / "elsewhere")
+    (package / "skill-graft.toml").write_text('[sources.own]\npath = "~/skills"\n')
+    monkeypatch.chdir(home / "repo")
+
+    assert main(["resolve"]) == 0
+
+    assert lock_sources(package) == {"own": {"path": "~/skills"}}
+
+
+def test_project_source_inside_the_project_written_with_home(
+    home: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    package = project(home / "repo", "[]")
+    (package / "skill-graft.toml").write_text('[sources.own]\npath = "~/repo/src"\n')
+    monkeypatch.chdir(home / "repo")
+
+    assert main(["resolve"]) == 0
+
+    assert lock_sources(package) == {"own": {"path": "../../src"}}
 
 
 def test_same_lock_on_another_machine(

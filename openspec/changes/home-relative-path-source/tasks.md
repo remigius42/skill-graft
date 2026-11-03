@@ -9,7 +9,7 @@ every commit passes `pytest`.
   `path` and `[patches]` files, turning `expanduser`'s `RuntimeError` into a `SkillGraftError` naming the path (and the
   alias for a source). Tests in `tests/pipeline/test_config.py`: `test_path_kept_as_written`,
   `test_unknown_user_home_is_an_error`, `test_unknown_user_home_in_a_patch_is_an_error`. Verify red, then green
-- [ ] 1.2 `pipeline/lock.py`: `portable_path(scope, source)` returns, in project scope, the path relative to the
+- [x] 1.2 `pipeline/lock.py`: `portable_path(scope, source)` returns, in project scope, the path relative to the
   **Package** when the folder is inside the project root, else for a `path` of `~` or `~/<rest>` with no `..` segment
   that path with empty and `.` segments of `<rest>` dropped, else `None`; `None` in user scope. `_source_path` writes
   its result or the absolute folder. Tests in `tests/pipeline/test_lock.py`: `test_portable_inside_the_project`,

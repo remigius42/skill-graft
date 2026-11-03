@@ -11,7 +11,7 @@ import tomlkit
 
 from skill_graft.infra import files, paths
 from skill_graft.pipeline import deployed, rename
-from skill_graft.pipeline.config import Config, GitSource, SkillId
+from skill_graft.pipeline.config import Config, GitSource, PathSource, SkillId
 from skill_graft.pipeline.hull import Hull
 
 
@@ -40,7 +40,7 @@ def render(
             if source.subdirectory:
                 table["subdirectory"] = source.subdirectory
         else:
-            table["path"] = _source_path(scope, source.folder)
+            table["path"] = portable_path(scope, source) or str(source.folder)
         sources[alias] = table
     document["sources"] = sources
     skills = tomlkit.aot()
@@ -74,13 +74,22 @@ def render(
     return header + tomlkit.dumps(document)
 
 
-def _source_path(scope: paths.Scope, folder: Path) -> str:
-    """A path source's folder; in project scope, relative to the package when it
-    is inside the project, so a committed lock reads the same on every machine."""
+def portable_path(scope: paths.Scope, source: PathSource) -> str | None:
+    """What the lock records for `source` so it reads the same on every machine:
+    in project scope, its folder relative to the package when inside the project,
+    else its `~/` path with empty and `.` segments dropped, unless one is `..`
+    (a symlink, or the home folder's parent, makes that differ). `None`: none."""
+    if scope.user:
+        return None
     # In project scope the root is already resolved: `discover` or the working folder.
-    if not scope.user and folder.is_relative_to(scope.root):
-        return Path(os.path.relpath(folder, scope.package)).as_posix()
-    return str(folder)
+    if source.folder.is_relative_to(scope.root):
+        return Path(os.path.relpath(source.folder, scope.package)).as_posix()
+    if not source.path.startswith("~/"):  # `~` itself holds the package: refused
+        return None
+    segments = [s for s in source.path[2:].split("/") if s not in ("", ".")]
+    if ".." in segments:
+        return None
+    return "/".join(["~", *segments])
 
 
 def skill_hashes(hull: Hull) -> dict[SkillId, str]:

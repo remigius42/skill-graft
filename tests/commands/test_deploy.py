@@ -1101,24 +1101,23 @@ def test_no_notice_when_the_lock_write_fails(
 def test_path_source_elsewhere_on_another_machine(
     home: Path, tmp_path: Path, monkeypatch: pytest.MonkeyPatch
 ) -> None:
-    skill(home / "skills" / "chisel")
+    skills = tmp_path / "opt" / "skills"  # outside both the project and home
+    skill(skills / "chisel")
     project = tmp_path / "repo"
     config_file = project / ".apm" / "skill-graft" / "skill-graft.toml"
     config_file.parent.mkdir(parents=True)
     config_file.write_text(
-        'entries = ["own/chisel"]\n[sources.own]\npath = "~/skills"\n'
+        f'entries = ["own/chisel"]\n[sources.own]\npath = "{skills}"\n'
     )
     monkeypatch.chdir(project)
     assert main(["resolve"]) == 0
     lock_file = config_file.with_name("skill-graft.lock")
-    lock_file.write_text(
-        lock_file.read_text().replace(str(home / "skills"), "/home/other/skills")
-    )
+    lock_file.write_text(lock_file.read_text().replace(str(skills), "/other/skills"))
 
     assert main(["deploy", "--no-apm-install"]) == 0
 
     locked = lock.load(lock_file) or {}
-    assert locked["sources"] == {"own": {"path": str(home / "skills")}}
+    assert locked["sources"] == {"own": {"path": str(skills)}}
 
 
 def test_patched_own_skill(home: Path, tmp_path: Path, capsys: Capsys) -> None:
