@@ -105,6 +105,8 @@ words:
   - pstack
   - pycache
   - pycodestyle
+  - pypa
+  - pypi
   - pyproject
   - pytest
   - pytestmark
@@ -121,6 +123,7 @@ words:
   - samefile
   - sandboxed
   - scandir
+  - sdist
   - setattr
   - shellcheck
   - shlex
