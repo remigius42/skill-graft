@@ -522,3 +522,32 @@ def test_a_project_source_relative_to_the_package_warns_of_its_deploy_folder(
     assert config.parse(scope, text).warnings == [
         f"source 'own' overlaps {folder}, where APM deploys skills"
     ]
+
+
+def test_path_kept_as_written(home: Path) -> None:
+    (home / "skills").mkdir()
+    scope = paths.Scope(home)
+
+    source = config.parse(scope, '[sources.own]\npath = "~/skills/"\n').sources["own"]
+
+    assert source == config.PathSource((home / "skills").resolve(), "~/skills/")
+
+
+def test_unknown_user_home_is_an_error(home: Path) -> None:
+    scope = paths.Scope(home)
+    text = '[sources.own]\npath = "~ghost-no-such-user/skills"\n'
+
+    with pytest.raises(SkillGraftError, match="'own'.*~ghost-no-such-user/skills"):
+        config.parse(scope, text)
+
+
+def test_unknown_user_home_in_a_patch_is_an_error(home: Path) -> None:
+    (home / "skills" / "tdd").mkdir(parents=True)
+    scope = paths.Scope(home)
+    text = (
+        '[sources.own]\npath = "~/skills"\n'
+        '[patches]\n"own/tdd" = ["~ghost-no-such-user/tdd.patch"]\n'
+    )
+
+    with pytest.raises(SkillGraftError, match="~ghost-no-such-user/tdd.patch"):
+        config.parse(scope, text)

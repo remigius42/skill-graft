@@ -5,7 +5,7 @@ every commit passes `pytest`.
 
 ## 1. Lock records a home path as written
 
-- [ ] 1.1 `pipeline/config.py`: `PathSource` keeps the `path` as written beside `folder`; one helper expands `~` for
+- [x] 1.1 `pipeline/config.py`: `PathSource` keeps the `path` as written beside `folder`; one helper expands `~` for
   `path` and `[patches]` files, turning `expanduser`'s `RuntimeError` into a `SkillGraftError` naming the path (and the
   alias for a source). Tests in `tests/pipeline/test_config.py`: `test_path_kept_as_written`,
   `test_unknown_user_home_is_an_error`, `test_unknown_user_home_in_a_patch_is_an_error`. Verify red, then green

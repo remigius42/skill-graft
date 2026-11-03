@@ -31,6 +31,7 @@ class SkillId(NamedTuple):
 @dataclass(frozen=True)
 class PathSource:
     folder: Path
+    path: str  # as written in the TOML
 
 
 @dataclass(frozen=True)
@@ -188,8 +189,8 @@ def _sources(
             raise SkillGraftError(f"'sources.{alias}' has both 'path' and 'git'")
         if "path" in table:
             _check_keys(alias, table, {"path", "prefix"})
-            folder = _source_folder(scope, alias, _string(alias, table, "path"), base)
-            sources[alias] = PathSource(folder)
+            raw = _string(alias, table, "path")
+            sources[alias] = PathSource(_source_folder(scope, alias, raw, base), raw)
         elif "git" in table:
             _check_keys(
                 alias, table, {"git", "branch", "ref", "prefix", "subdirectory"}
@@ -261,8 +262,16 @@ def _relative_folder(path: str) -> bool:
     ) and not paths.in_package(Path(path))
 
 
+def _expanded(where: str, raw: str) -> Path:
+    """`raw` with `~` expanded; a `~user` naming no user is an error."""
+    try:
+        return Path(raw).expanduser()
+    except RuntimeError:
+        raise SkillGraftError(f"{where}: {raw} names no user's home") from None
+
+
 def _source_folder(scope: paths.Scope, alias: str, raw: str, base: Path) -> Path:
-    folder = (base / Path(raw).expanduser()).resolve()
+    folder = (base / _expanded(f"source {alias!r}", raw)).resolve()
     if not folder.is_dir():
         raise SkillGraftError(f"source {alias!r}: {raw} is not a folder")
     for package in scope.packages:
@@ -351,7 +360,7 @@ def _patches(
         seen: set[Path] = set()
         patches[skill_id] = []
         for path in value:
-            file = (base / Path(path).expanduser()).resolve()
+            file = (base / _expanded(where, path)).resolve()
             if file in seen:
                 raise SkillGraftError(f"{where} lists {path} twice")
             seen.add(file)
