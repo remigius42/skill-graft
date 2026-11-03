@@ -249,9 +249,10 @@ is none.
 Commit the whole `.apm/skill-graft/`, vendored skills and its `.gitattributes` included, with `apm.yml` and
 `apm.lock.yaml`; `.gitattributes` keeps git from changing the vendored skills' line endings, which `deploy` would refuse
 as edits. Teammates then need only APM: `apm install` deploys the skills, and only whoever changes them runs
-skill-graft. Keep path sources inside the project (`path = "../../skills"`) and the rest git sources: the lock then
-records them relative to the package and reads the same on every machine; a path outside the project is recorded
-absolute.
+skill-graft. Keep path sources inside the project (`path = "../../skills"`) or under your home folder
+(`path = "~/skills"`), and the rest git sources: the lock then records them relative to the package, or as written, and
+reads the same on every machine. Any other path, such as `/opt/skills`, `../shared` or `~/x/../skills`, is recorded
+absolute, and every command that writes the project's own lock warns of it.
 
 ## Checking a package
 

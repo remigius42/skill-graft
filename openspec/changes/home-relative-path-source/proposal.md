@@ -16,7 +16,7 @@ says the same thing on every machine with `~`; the lock should too.
   home folder written out, `~alice/skills` (one named user's home), and a `~/` path with a `..` segment (`~/../shared`,
   or `~/x/../skills`, which a symlinked `~/x` sends elsewhere). In project scope, each command that writes the package's
   lock, or would in its dry run, warns of each, naming the alias and the folder: other machines need that folder at the
-  same place. `explain`, and `deploy --into`, which leaves the package's lock alone, do not.
+  same place. `tree`, `why`, and `deploy --into`, which leaves the package's lock alone, do not.
 - `~alice/…` naming a user that does not exist, in a `path` or a `[patches]` file, is an error naming the path, not a
   traceback.
 - `update --dry-run` ignores path **Sources**' `path` lines when deciding there is nothing to apply, as `deploy` already

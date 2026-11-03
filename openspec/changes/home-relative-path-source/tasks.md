@@ -31,7 +31,7 @@ every commit passes `pytest`.
   (the lock records `own` at another absolute folder; `update --dry-run` prints `nothing to apply`),
   `test_malformed_lock_without_sources_applies` (no crash, an `apply:` line). `drift`'s tests stay green. Verify red,
   then green
-- [ ] 1.5 `README.md`: the paragraph on committing a project **Package** names `~/` paths as recorded as written, so a
+- [x] 1.5 `README.md`: the paragraph on committing a project **Package** names `~/` paths as recorded as written, so a
   path outside both the project and `~/` is recorded absolute and warned of; `docs/design.md` likewise wherever it
   describes the lock's `path`. Verify: `pre-commit run` on the changed files
 
@@ -45,4 +45,4 @@ every commit passes `pytest`.
   `test_user_scope_does_not_warn`, `test_own_lock_file_does_not_warn`. Verify red, then green
 - [x] 2.2 Tests in `tests/cli/test_warnings.py`, with `path = "/opt/skills"`-like folder outside project and home:
   `resolve`, `resolve --dry-run`, `deploy`, `add` and `update --dry-run` print the warning on standard error and exit 0;
-  `deploy --into` and `explain` print none. Verify they pass with 2.1's code; red first only if one fails
+  `deploy --into` and `tree` print none. Verify they pass with 2.1's code; red first only if one fails

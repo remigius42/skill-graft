@@ -74,7 +74,7 @@ the same place, and continue. `deploy --into`, commands that write no lock, and 
 
 #### Scenario: Commands leaving the package's lock alone
 
-- **WHEN** in project scope `[sources.own]` has `path = "/opt/skills"`, and the user runs `explain` or
+- **WHEN** in project scope `[sources.own]` has `path = "/opt/skills"`, and the user runs `tree` or
   `deploy --into <dir>`
 - **THEN** the command prints no warning naming `own`
 

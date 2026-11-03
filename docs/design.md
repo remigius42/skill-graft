@@ -154,9 +154,9 @@ path = "~/Documents/sync/2_areas/software/chisel_skill"
   then each skill whose old side differs from the lock's hash, as edited since the lock was written. `--dry-run` does
   all of it without writing the TOML, the lock, `.apm/skills/` or the cache, and ends with a `review:` hint, or, its
   diff file written and nothing edited since the lock, an `apply:` line; `nothing to apply` instead when no `ref` moves
-  and the lock it would write parses to what the lock file parses to. Its prose-suggestion line says to update, then run
-  `resolve`, only when a `ref` moves; else it is `update`'s, `resolve` already seeing those tips. A tip without a
-  source's `subdirectory` fails resolution, so `ref` stays.
+  and the lock it would write parses to what the lock file parses to, wherever each path source is recorded. Its
+  prose-suggestion line says to update, then run `resolve`, only when a `ref` moves; else it is `update`'s, `resolve`
+  already seeing those tips. A tip without a source's `subdirectory` fails resolution, so `ref` stays.
 - `update --diff-file <file>`: writes the Deployed diff, a unified diff in git's format of each `+` and `~` skill as
   deployed, built by `pipeline/deployed.py`, no git: a Myers diff on one step budget for the run, a file past it or over
   1 MB shown whole; every file as text, each control, format or separator character (by Unicode category) and each
@@ -344,12 +344,14 @@ drift.
 
 The lock (TOML, sorted except `patches`, read back by `deploy`, which deploys only what it records, by every command
 that vendors, to check the copies, and for `update`'s hashes, the same on every machine for a project package whose path
-sources lie inside the project) records each source's `ref` and `subdirectory`, or folder (in project scope relative to
-the package when inside the project), each hull skill with a SHA-256 of its folder as vendored (patches and rewrites
-applied), its `upstream` folder (relative to its source's root: the cache export, `subdirectory` included, or the path
-source's folder; `why` prints it absolute), its `deployed` name when renamed or prefixed and its `patches` in apply
-order when patched, each edge with its kind (`slash`, `skill-tool`, `prose`) plus `bind = true` when a bind decided it,
-and each prose suggestion with the skills mentioning it, so the explanation is a view of it:
+sources lie inside the project or under `~/`) records each source's `ref` and `subdirectory`, or folder (in project
+scope relative to the package when inside the project, else its `path` as written when that starts with `~/`, empty and
+`.` segments dropped and no `..` among them; else absolute, which each command writing a project's own lock warns of),
+each hull skill with a SHA-256 of its folder as vendored (patches and rewrites applied), its `upstream` folder (relative
+to its source's root: the cache export, `subdirectory` included, or the path source's folder; `why` prints it absolute),
+its `deployed` name when renamed or prefixed and its `patches` in apply order when patched, each edge with its kind
+(`slash`, `skill-tool`, `prose`) plus `bind = true` when a bind decided it, and each prose suggestion with the skills
+mentioning it, so the explanation is a view of it:
 
 - `resolve` prints a tree in the style of `cargo tree`: one line per edge naming the reference as written upstream, each
   skill expanded once and later lines marked `(*)`, a renamed or prefixed skill as `<id> as <deployed name>`, a patched

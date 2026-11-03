@@ -50,8 +50,8 @@ that writes the lock (`resolve`, `deploy`, `update`, and the edit commands throu
 - **The warning sits in `transaction.resolving`, when the lock is the package's.** Every command that writes the
   package's lock goes through it, so `add`, `rename` or `update` committing an absolute path warns as `resolve` does; a
   dry run warns too, since applying it would write that lock. `deploy --into` passes its own `lock_file` and leaves the
-  package's lock alone, so it does not warn; `explain` never calls `resolving`. Alternatives rejected: `resolve` and
-  `deploy` only, which commits the path silently through every other writer; `config.parse`, which reaches every
+  package's lock alone, so it does not warn; `tree` and `why` never call `resolving`. Alternatives rejected: `resolve`
+  and `deploy` only, which commits the path silently through every other writer; `config.parse`, which reaches every
   command. It fires on every such run: the config itself is what is machine-specific, so no state could make it once.
   Wording: see task 2.1.
 - **`update`'s nothing-to-apply check drops path Sources' `path`, through `drift`'s rule.** It already means "the lock
