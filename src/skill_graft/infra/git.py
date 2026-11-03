@@ -43,7 +43,11 @@ def run(
         | ({"GIT_NO_LAZY_FETCH": "1"} if repo else {}),
     )
     if result.returncode != 0:
-        stderr = result.stderr.decode(errors="replace").strip()
+        stderr = "; ".join(
+            line
+            for line in result.stderr.decode(errors="replace").splitlines()
+            if line.strip()
+        )
         raise SkillGraftError(f"{context}: `git {_subcommand(args)}` failed: {stderr}")
     return result.stdout
 

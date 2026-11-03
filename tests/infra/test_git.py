@@ -153,3 +153,12 @@ def assert_whitespace_strict(tmp_path: Path) -> None:
     shutil.rmtree(tmp_path / "work")
     folder = folder_with(tmp_path, {"SKILL.md": LINES.replace("line 4\n", "line  4\n")})
     assert not git.apply(folder, patch, home_in(tmp_path))[0]
+
+
+def test_failure_of_several_lines_is_one(tmp_path: Path) -> None:
+    with pytest.raises(SkillGraftError) as failed:
+        git.run("ls-remote", str(tmp_path / "missing"), context="mp")
+
+    assert failed.value.lines == [str(failed.value)]
+    assert "\n" not in str(failed.value)
+    assert "fatal: " in str(failed.value) and "; " in str(failed.value)
