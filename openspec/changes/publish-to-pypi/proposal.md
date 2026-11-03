@@ -14,9 +14,9 @@ publishing the real releases.
   release tag and uploads them by trusted publishing (OIDC, no stored token), with the attestations PyPI shows for them.
   The workflow refuses a tag whose signature does not check against the README's key, or whose version is not
   `pyproject.toml`'s.
-- The workflow runs when a `v*` tag is pushed, and can be started by hand for an existing tag: that is how 0.4.0 goes up
-  once this change is on main. Either way, the upload waits for the maintainer to approve it on GitHub, so a pushed tag
-  alone publishes nothing.
+- The workflow runs when a release tag `v<major>.<minor>.<patch>` is pushed, and can be started by hand for an existing
+  tag: that is how 0.4.0 goes up once this change is on main. Either way, the upload waits for the maintainer to approve
+  it on GitHub, so a pushed tag alone publishes nothing.
 - The README's Installation leads with PyPI (`uv tool install skill-graft==<version>`, pipx, pip, pipenv). Installing
   from the repository at a signed tag stays, as the way to check what you install against the tag's signature, and to
   install the unreleased `main`. Its links to other files become absolute, as the README is also the PyPI project page.
