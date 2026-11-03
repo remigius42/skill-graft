@@ -19,7 +19,7 @@
   bidi override; then add the printer to `errors.py` and print through it in `cli.py`'s three places; verify it passes
 - [x] 3.2 Test `warn` and `notice` on text holding a line feed and an escape: each prints one line, escaped; then escape
   them; verify it passes
-- [ ] 3.3 Add end-to-end tests in `tests/cli/` for the spec's scenarios: a link named `a\n\x1b[31mok` leading outside
+- [x] 3.3 Add end-to-end tests in `tests/cli/` for the spec's scenarios: a link named `a\n\x1b[31mok` leading outside
   the skill, an unreadable file named `a\nskill-graft: done`, a **Patch** git refuses whole on a file whose name holds
   an escape, two failing hunks on lines of their own, and a path **Source** under `My Skills`; verify they pass
 
