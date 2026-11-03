@@ -162,11 +162,22 @@ def _update(
     if target is None and (shown or isinstance(previous, str)):
         print(f"review: {rerun}")
     elif not edited:  # all the text of what it would deploy was shown
-        # Parsed, not text: an editor may have reformatted the lock.
-        if not moved and tomllib.loads(resolution.lock_text) == locked:
+        # Parsed, not text: an editor may have reformatted the lock. Where a path
+        # source is recorded is no difference, as for `deploy`.
+        if not moved and locked is not None and _same_hull(loaded, resolution, locked):
             print("nothing to apply")
         else:
             print(f"apply: skill-graft update {given}--expect {digest}")
+
+
+def _same_hull(
+    loaded: Config, resolution: transaction.Resolution, locked: dict[str, Any]
+) -> bool:
+    """Whether the lock `resolution` would write records what `locked` does,
+    wherever each path source is recorded."""
+    aliases = config.path_aliases(loaded)
+    new = tomllib.loads(resolution.lock_text)
+    return lock.without_paths(new, aliases) == lock.without_paths(locked, aliases)
 
 
 @contextmanager

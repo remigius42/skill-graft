@@ -5,7 +5,7 @@ import json
 import os
 import tomllib
 from pathlib import Path
-from typing import Any
+from typing import Any, TypeGuard
 
 import tomlkit
 
@@ -173,17 +173,11 @@ def drift(
 
     def shape(data: dict[str, Any]) -> dict[str, Any]:
         """`data` without what a path source may change."""
-        sources = {
-            alias: {k: v for k, v in source.items() if k != "path"}
-            if alias in path_aliases
-            else source
-            for alias, source in data["sources"].items()
-        }
         skills = [
             {k: v for k, v in s.items() if not (k == "hash" and trusted(s["id"]))}
             for s in data["skills"]
         ]
-        return data | {"sources": sources, "skills": skills}
+        return without_paths(data, path_aliases) | {"skills": skills}
 
     differ = sorted(
         (s for s, digest in new_hashes.items() if old_hashes.get(s, digest) != digest),
@@ -221,14 +215,37 @@ def drift(
     return changed, f"the hull differs from skill-graft.lock: {', '.join(parts)}"
 
 
+def without_paths(data: dict[str, Any], path_aliases: set[str]) -> dict[str, Any]:
+    """The loaded lock `data` without the `path` each of the path sources
+    `path_aliases` is recorded at, which differs between machines; `data` itself
+    when its `sources` are not a table of tables."""
+    sources = data.get("sources")
+    if not _tables(sources):
+        return data
+    return data | {
+        "sources": {
+            alias: {k: v for k, v in source.items() if k != "path"}
+            if alias in path_aliases
+            else source
+            for alias, source in sources.items()
+        }
+    }
+
+
+def _tables(sources: object) -> TypeGuard[dict[str, Any]]:
+    """Whether a loaded lock's `sources` are a table of tables."""
+    return isinstance(sources, dict) and all(
+        isinstance(source, dict) for source in sources.values()
+    )
+
+
 def _well_formed(data: dict[str, Any]) -> bool:
     """Whether the loaded lock `data` has the tables `drift` reads, of their types:
     one written by hand may not."""
     sources, edges = data.get("sources"), data.get("edges", [])
     suggestions = data.get("suggestions", [])
     return (
-        isinstance(sources, dict)
-        and all(isinstance(source, dict) for source in sources.values())
+        _tables(sources)
         and isinstance(edges, list)
         and all(isinstance(edge, dict) for edge in edges)
         and isinstance(suggestions, list)

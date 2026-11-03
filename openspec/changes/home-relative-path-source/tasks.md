@@ -25,7 +25,7 @@ every commit passes `pytest`.
   `path` outside the project and home; new `test_home_path_source_on_another_machine` (lock written under one `HOME`,
   `deploy` under another leaves it byte-equal) and `test_lock_from_before_home_paths` (a lock recording the absolute
   folder is rewritten to `~/skills`). Verify they pass with 1.2's code; red first only if one fails
-- [ ] 1.4 `pipeline/lock.py`: `without_paths(data, path_aliases)`, taken out of `drift`'s `shape`, which calls it;
+- [x] 1.4 `pipeline/lock.py`: `without_paths(data, path_aliases)`, taken out of `drift`'s `shape`, which calls it;
   `commands/update.py`: the nothing-to-apply comparison applies it to both locks when the current one is well-formed,
   else compares as today. Tests in `tests/commands/test_update.py`: `test_nothing_to_apply_with_another_path_recorded`
   (the lock records `own` at another absolute folder; `update --dry-run` prints `nothing to apply`),

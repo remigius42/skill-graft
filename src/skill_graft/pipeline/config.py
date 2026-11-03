@@ -77,6 +77,15 @@ class Config:
     patches: dict[SkillId, list[PatchFile]]
 
 
+def path_aliases(config: Config) -> set[str]:
+    """The aliases of `config`'s path sources."""
+    return {
+        alias
+        for alias, source in config.sources.items()
+        if isinstance(source, PathSource)
+    }
+
+
 def deployed(config: Config, skill: SkillId) -> str:
     """The name `skill` deploys as: its rename, else its default name."""
     return config.renames.get(skill, default_name(config, skill))

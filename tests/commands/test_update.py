@@ -7,6 +7,7 @@ from pathlib import Path
 from typing import Any, TypeAlias
 
 import pytest
+import tomlkit
 from conftest import (
     FakeApm,
     Upstream,
@@ -1728,6 +1729,39 @@ def test_nothing_to_apply(upstream: Upstream, capsys: Capsys) -> None:
         "dry run: skill-graft.toml and skill-graft.lock not written",
     ]
     assert apply_line(out) == []
+
+
+def test_nothing_to_apply_with_another_path_recorded(
+    upstream: Upstream, home: Path, capsys: Capsys
+) -> None:
+    tip = upstream.commit({"tdd/SKILL.md": "1\n"})
+    skill(home / "own" / "notes")
+    write_config(
+        'entries = ["mp/tdd", "own/notes"]\n'
+        + git_source("mp", upstream, f'ref = "{tip}"\n')
+        + '[sources.own]\npath = "~/own"\n'
+    )
+    assert resolve_and_deploy(["deploy", "--no-apm-install"]) == 0
+    text = lock_file().read_text()
+    lock_file().write_text(text.replace(f'"{home / "own"}"', '"/other/own"'))
+    assert lock_file().read_text() != text
+
+    code, out, _ = update(capsys, "mp", "--dry-run")
+
+    assert code == 0 and "nothing to apply" in out.splitlines()
+
+
+def test_malformed_lock_without_sources_applies(
+    upstream: Upstream, capsys: Capsys
+) -> None:
+    deployed_at_tip(upstream)
+    locked = tomlkit.parse(lock_file().read_text())
+    del locked["sources"]
+    lock_file().write_text(tomlkit.dumps(locked))
+
+    code, out, _ = update(capsys, "mp", "--dry-run")
+
+    assert code == 0 and apply_line(out) and "nothing to apply" not in out
 
 
 def test_unrelated_push_still_applies(upstream: Upstream, capsys: Capsys) -> None:

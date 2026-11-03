@@ -32,11 +32,7 @@ def deploy(
         if given is not None:
             _check_into_sources(given, loaded)
         recorded = lock.load(scope.lock_file)  # the package's, for `--into` too
-        path_aliases = {
-            alias
-            for alias, source in loaded.sources.items()
-            if isinstance(source, config.PathSource)
-        }
+        path_aliases = config.path_aliases(loaded)
 
         def verify(text: str) -> None:
             """Refuses a hull other than the one the package's lock records."""
