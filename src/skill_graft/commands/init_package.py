@@ -53,9 +53,7 @@ def init(scope: paths.Scope, project: bool = False) -> None:
         apm.require()
     except SkillGraftError as error:
         retry = "skill-graft init --project" if project else "skill-graft init"
-        raise SkillGraftError(
-            *lines_of(error), f"install APM, then run: {retry}"
-        ) from None
+        raise SkillGraftError(*error.lines, f"install APM, then run: {retry}") from None
     try:
         package.mkdir(parents=True)
     except FileExistsError:
