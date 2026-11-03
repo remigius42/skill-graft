@@ -10,7 +10,7 @@ from typing import Any
 
 from skill_graft.infra import files, paths
 from skill_graft.infra.cache import Cache
-from skill_graft.infra.errors import SkillGraftError, notice
+from skill_graft.infra.errors import SkillGraftError, lines_of, notice
 from skill_graft.pipeline import compute, config, lock, vendor
 from skill_graft.pipeline.config import SkillId
 from skill_graft.pipeline.hull import Hull
@@ -168,7 +168,8 @@ def resolving(
     try:  # once the lock is written, nothing undoes it; the next run recovers
         vendor.clear_old(skills)
     except (SkillGraftError, OSError) as error:
-        notice(str(error))
+        for line in lines_of(error):
+            notice(line)
 
 
 def _restore(file: Path, data: bytes | None) -> None:

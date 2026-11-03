@@ -383,6 +383,23 @@ def test_clear_old_failure_keeps_lock_and_copies(
     assert lock.copy_problems(scope.skills, lock.load(scope.lock_file) or {}) == []
 
 
+def test_clear_old_failure_notices_each_line(
+    scope: paths.Scope,
+    monkeypatch: pytest.MonkeyPatch,
+    capsys: pytest.CaptureFixture[str],
+) -> None:
+    resolve(scope)
+    capsys.readouterr()
+    error = SkillGraftError("cannot clear the previous copies", "try again")
+    monkeypatch.setattr(vendor, "clear_old", failing(error))
+
+    resolve(scope)
+
+    err = capsys.readouterr().err
+    assert "skill-graft: cannot clear the previous copies\n" in err
+    assert "skill-graft: try again\n" in err
+
+
 def test_previous_copies_left_behind_never_replace_an_edit(
     scope: paths.Scope, monkeypatch: pytest.MonkeyPatch
 ) -> None:
