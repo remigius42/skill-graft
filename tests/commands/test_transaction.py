@@ -598,3 +598,68 @@ def test_checked_skips_the_check(scope: paths.Scope) -> None:
     copy_of(scope).write_text("edited\n")
 
     resolve(scope, write=False, checked=True)
+
+
+def project_warnings(
+    tmp_path: Path, path: str, lock_file: Path | None = None, write: bool = True
+) -> list[str]:
+    """The warnings `resolving` gives a project at `tmp_path/repo` whose path
+    source `own` has `path`."""
+    scope = paths.Scope(tmp_path / "repo")
+    scope.package.mkdir(parents=True)
+    scope.config_file.write_text(f'[sources.own]\npath = "{path}"\n')
+    warnings: list[str] = []
+    with transaction.resolving(
+        scope,
+        config.load(scope),
+        warnings,
+        Cache.default(),
+        lock_file=lock_file,
+        write=write,
+    ):
+        pass
+    return warnings
+
+
+def test_absolute_project_path_warns(home: Path, tmp_path: Path) -> None:
+    (tmp_path / "opt").mkdir()
+
+    expected = (
+        f"source 'own': skill-graft.lock records {tmp_path / 'opt'} absolute, so other"
+        " machines need it at the same place; a path inside the project, or ~/"
+        " without .., reads the same on every machine"
+    )
+
+    assert project_warnings(tmp_path, str(tmp_path / "opt")) == [expected]
+
+
+def test_dry_run_warns_of_what_it_would_record(home: Path, tmp_path: Path) -> None:
+    (tmp_path / "opt").mkdir()
+
+    [warning] = project_warnings(tmp_path, str(tmp_path / "opt"), write=False)
+
+    assert warning.startswith(
+        f"source 'own': skill-graft.lock would record {tmp_path / 'opt'} absolute,"
+    )
+
+
+def test_portable_project_path_does_not_warn(home: Path, tmp_path: Path) -> None:
+    (home / "skills").mkdir()
+
+    assert project_warnings(tmp_path, "~/skills") == []
+
+
+def test_user_scope_does_not_warn(scope: paths.Scope) -> None:
+    warnings: list[str] = []
+    with transaction.resolving(scope, config.load(scope), warnings, Cache.default()):
+        pass
+
+    assert not [w for w in warnings if w.startswith("source 'own'")]
+
+
+def test_own_lock_file_does_not_warn(home: Path, tmp_path: Path) -> None:
+    (tmp_path / "opt").mkdir()
+    (tmp_path / "into").mkdir()
+    into_lock = tmp_path / "into" / "skill-graft.lock"
+
+    assert project_warnings(tmp_path, str(tmp_path / "opt"), into_lock) == []

@@ -81,6 +81,24 @@ def check_copies(skills: Path, locked: dict[str, Any] | None) -> None:
         )
 
 
+def _machine_specific(
+    scope: paths.Scope, loaded: config.Config, write: bool
+) -> list[str]:
+    """A warning per path source a project's lock records absolute; for a dry
+    run, would record."""
+    if scope.user:
+        return []
+    records = "records" if write else "would record"
+    return [
+        f"source {alias!r}: skill-graft.lock {records} {source.folder} absolute, so other"
+        " machines need it at the same place; a path inside the project, or ~/"
+        " without .., reads the same on every machine"
+        for alias, source in loaded.sources.items()
+        if isinstance(source, config.PathSource)
+        and lock.portable_path(scope, source) is None
+    ]
+
+
 @contextmanager
 def resolving(
     scope: paths.Scope,
@@ -101,8 +119,11 @@ def resolving(
     written restored, in reverse, to its bytes right before its write.
 
     First checks the copies in `skills` against the lock, unless `checked`.
-    Adds the hull's warnings to `warnings` at once, so a later failure keeps them.
+    Adds the hull's warnings to `warnings` at once, so a later failure keeps them,
+    and, for the package's own lock, one per path source it records absolute.
     """
+    if lock_file is None:  # the lock a project commits; `deploy --into` gives its own
+        warnings.extend(_machine_specific(scope, loaded, write))
     skills = skills or scope.skills
     lock_file = lock_file or scope.lock_file
     locked = lock.load(lock_file)

@@ -37,7 +37,7 @@ every commit passes `pytest`.
 
 ## 2. Warn of a machine-specific project path source
 
-- [ ] 2.1 `commands/transaction.py`: `resolving`, when no `lock_file` is given (the package's own lock), adds a warning
+- [x] 2.1 `commands/transaction.py`: `resolving`, when no `lock_file` is given (the package's own lock), adds a warning
   per path **Source** whose `lock.portable_path` is `None` in project scope:
   `source '<alias>': skill-graft.lock records <folder> absolute, so other machines need it at the same place;`
   `a path inside the project, or ~/ without .., reads the same on every machine`. Tests in
