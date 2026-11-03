@@ -696,8 +696,8 @@ when it printed no `review:` hint, named no **Skill** as edited since the lock w
 With no previous **Hull**, the lock check SHALL be skipped: the **Deployed diff** shows every **Skill** in full.
 
 A dry run has nothing to apply when no `ref` moves and the lock it would write records, as TOML, what the current lock
-records, whatever its line endings or formatting. It SHALL then print `nothing to apply` in place of its `apply:` line,
-before its `dry run:` line.
+records, whatever its line endings or formatting, and whatever path each path **Source** is recorded at. It SHALL then
+print `nothing to apply` in place of its `apply:` line, before its `dry run:` line.
 
 #### Scenario: Nothing to apply
 
@@ -710,6 +710,12 @@ before its `dry run:` line.
 
 - **WHEN** nothing changed since `deploy`, an editor added a comment to the lock and turned its line endings into CRLF,
   and the user runs `update --dry-run`
+- **THEN** it prints `nothing to apply`
+
+#### Scenario: Path source recorded elsewhere
+
+- **WHEN** nothing changed since the lock was written, except that it records path **Source** `own` at another machine's
+  folder, and the user runs `update --dry-run`
 - **THEN** it prints `nothing to apply`
 
 #### Scenario: Unrelated push still applies

@@ -174,7 +174,7 @@ SHALL exit 1 writing nothing and running no `apm`, naming each **Skill** that di
 ### Requirement: Changed path Source deployed
 
 When the only differences from the lock are the text of **Skills** of path **Sources** that have no **Patches** and the
-folders path **Sources** are recorded at, `deploy` SHALL vendor and deploy them, write the new hashes and folders into
+paths path **Sources** are recorded at, `deploy` SHALL vendor and deploy them, write the new hashes and paths into
 `skill-graft.lock`, and once it is written print a notice naming each such **Skill**. Any change to the **Hull**'s shape
 SHALL be refused as "Deploy what the lock records" says, whatever **Source** caused it, and so SHALL a changed path
 **Source** **Skill** with **Patches**.
@@ -193,9 +193,21 @@ SHALL be refused as "Deploy what the lock records" says, whatever **Source** cau
 
 #### Scenario: Path source elsewhere on another machine
 
-- **WHEN** in project scope `[sources.own]` has `path = "~/skills"`, the committed lock records another machine's folder
-  for `own`, and the user runs `deploy`
+- **WHEN** in project scope `[sources.own]` has `path = "/opt/skills"`, the committed lock records another machine's
+  folder for `own`, and the user runs `deploy`
 - **THEN** `deploy` exits 0, and the lock records this machine's folder for `own`
+
+#### Scenario: Home path source on another machine
+
+- **WHEN** in project scope `[sources.own]` has `path = "~/skills"`, the committed lock was written by a user with
+  another home folder, and the user runs `deploy` with the same skills in their `~/skills`
+- **THEN** `deploy` exits 0, and the lock is byte for byte as committed
+
+#### Scenario: Lock from before home paths
+
+- **WHEN** in project scope `[sources.own]` has `path = "~/skills"`, the committed lock records `own` as an absolute
+  folder, and the user runs `deploy`
+- **THEN** `deploy` exits 0, and the lock records `own`'s path as `~/skills`
 
 #### Scenario: Patched own skill
 

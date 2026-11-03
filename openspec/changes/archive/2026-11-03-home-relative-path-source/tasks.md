@@ -41,7 +41,8 @@ every commit passes `pytest`.
   per path **Source** whose `lock.portable_path` is `None` in project scope:
   `source '<alias>': skill-graft.lock records <folder> absolute, so other machines need it at the same place;`
   (`would record` in a dry run) `a path inside the project, or ~/ without .., reads the same on every machine`. Tests in
-  `tests/commands/test_transaction.py`: `test_absolute_project_path_warns`, `test_portable_project_path_does_not_warn`,
+  `tests/commands/test_transaction.py`: `test_absolute_project_path_warns`,
+  `test_dry_run_warns_of_what_it_would_record`, `test_portable_project_path_does_not_warn`,
   `test_user_scope_does_not_warn`, `test_own_lock_file_does_not_warn`. Verify red, then green
 - [x] 2.2 Tests in `tests/cli/test_warnings.py`, with `path = "/opt/skills"`-like folder outside project and home:
   `resolve`, `resolve --dry-run`, `deploy`, `add` and `update --dry-run` print the warning on standard error and exit 0;

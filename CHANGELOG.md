@@ -11,11 +11,24 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 
 - skill-graft is on PyPI, from 0.4.0 on: `uv tool install skill-graft==<version>`, or with pipx, pip or pipenv. Each
   file there is built from the signed release tag, and carries an attestation naming this repository's publish workflow
+- In a project **Package**, every command that writes its `skill-graft.lock`, or would in its dry run, warns of each
+  path **Source** the lock records as an absolute folder: one outside the project not written as `~/…`, or with a `..`
+  in it. Other machines need that folder at the same place
 
 ### Changed
 
 - The README installs from PyPI first; installing from the repository at a signed tag stays, below it. Its links to
   other files of the repository are absolute, so they work on the PyPI project page too
+- In a project **Package**, `skill-graft.lock` records a path **Source** written as `~/…` (`path = "~/skills"`) as
+  written, empty and `.` segments dropped, so a committed lock reads the same on every machine. It recorded the absolute
+  folder, which each teammate's `resolve` or `deploy` rewrote; a lock written before is rewritten once
+
+### Fixed
+
+- A `~user` path naming no user, in a path **Source** or in `[patches]`, ends with an error naming the path, not a
+  traceback
+- `update --dry-run` prints `nothing to apply` when the lock differs only in the folder a path **Source** is recorded
+  at, not an `apply:` line
 
 ## [0.4.0] - 2026-11-01
 

@@ -49,10 +49,10 @@ from the cache.
 
 `skill-graft.lock`, a TOML file at `~/.apm/skill-graft/skill-graft.lock` even when `skill-graft.toml` is a symlink,
 SHALL record: each declared **Source**'s alias with its URL, `ref` and `subdirectory` when set, or its resolved folder
-(in project scope relative to the **Package** when inside the project root, else absolute); each **Hull** **Skill**'s
-**Skill ID**, whether it is an **Entry**, and a SHA-256 hash of its folder as vendored; and each edge: from, to, kind
-(`slash`, `skill-tool` or `prose`), and `bind = true` when a **Bind** decided it. One edge per from, to, kind and
-`bind`.
+(in project scope relative to the **Package** when inside the project root, else its `path` without empty or `.`
+segments when that starts with `~/` and has no `..` segment, else absolute); each **Hull** **Skill**'s **Skill ID**,
+whether it is an **Entry**, and a SHA-256 hash of its folder as vendored; and each edge: from, to, kind (`slash`,
+`skill-tool` or `prose`), and `bind = true` when a **Bind** decided it. One edge per from, to, kind and `bind`.
 
 #### Scenario: Edges with kinds
 
@@ -88,6 +88,33 @@ SHALL record: each declared **Source**'s alias with its URL, `ref` and `subdirec
 #### Scenario: Project source outside the project
 
 - **WHEN** in project scope `[sources.own]` has `path = "~/skills"`
+- **THEN** the lock records `own`'s path as `~/skills`
+
+#### Scenario: Home path normalized
+
+- **WHEN** in project scope `[sources.own]` has `path = "~/skills/"`, `path = "~//skills"` or `path = "~/./skills"`
+- **THEN** the lock records `own`'s path as `~/skills`
+
+#### Scenario: Project source under a symlinked home folder
+
+- **WHEN** in project scope `[sources.own]` has `path = "~/skills"`, and `~/skills` is a symlink to a folder outside the
+  home folder
+- **THEN** the lock records `own`'s path as `~/skills`
+
+#### Scenario: Project source inside the project written with home
+
+- **WHEN** in project scope the project root is `~/repo` and `[sources.own]` has `path = "~/repo/skills"`
+- **THEN** the lock records `own`'s path as `../../skills`
+
+#### Scenario: Project source outside the project and home
+
+- **WHEN** in project scope `[sources.own]` has `path = "/opt/skills"`, a relative path leading outside the project
+  root, the home folder's `skills` folder written out absolute, `~alice/skills`, `~/../shared`, or `~/x/../skills`
+- **THEN** the lock records `own`'s path as the absolute folder
+
+#### Scenario: User source under home
+
+- **WHEN** in user scope `[sources.own]` has `path = "~/skills"`
 - **THEN** the lock records `own`'s path as the absolute folder
 
 #### Scenario: Subdirectory recorded
@@ -100,9 +127,9 @@ SHALL record: each declared **Source**'s alias with its URL, `ref` and `subdirec
 ### Requirement: Lock is deterministic
 
 The same TOML, **Source** contents and **Source** folders SHALL give a byte-identical lock, whenever it is written: no
-timestamps, everything sorted except a **Skill**'s `patches`, which keep their apply order. A path **Source**'s resolved
-folder and the cache's location are part of the input, so the lock differs across machines whose folders differ. The
-lock SHALL be replaced atomically.
+timestamps, everything sorted except a **Skill**'s `patches`, which keep their apply order. A path **Source**'s folder
+recorded absolute and the cache's location are part of the input, so the lock differs across machines whose folders
+differ. The lock SHALL be replaced atomically.
 
 #### Scenario: Same input
 
@@ -279,7 +306,8 @@ applied, so `resolve` and `deploy` write the same lock for the same input.
 #### Scenario: Same lock on another machine
 
 - **WHEN** two users with different home folders run `resolve` on the same project **Package**, whose **Sources** are
-  git **Sources** and path **Sources** inside the project
+  git **Sources**, path **Sources** inside the project, and a path **Source** with `path = "~/skills"`, each user's
+  holding the same skills
 - **THEN** both locks are byte for byte equal
 
 #### Scenario: Patches recorded
