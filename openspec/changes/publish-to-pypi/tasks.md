@@ -7,7 +7,7 @@ Apply with the `mp-tdd` skill: each task red-green-refactor where it changes cod
 
 The README change comes first: the `skill-graft==` pair of 1.2 fails on a README without a `==` line.
 
-- [ ] 1.1 `README.md` Installation: drop "It is not on PyPI"; lead with the four `skill-graft==<version>` lines of
+- [x] 1.1 `README.md` Installation: drop "It is not on PyPI"; lead with the four `skill-graft==<version>` lines of
   design.md; below them the repository URL lines, each `@v<version>`, with the signed-tag check, as the way to install
   exactly the signed commit, and the `main` install as the sentence it is now, not a URL line. Every relative link
   outside the README (`docs/security.md`, `SECURITY.md`, `CONTRIBUTING.md`, `LICENSE`, the badge's `pyproject.toml`)

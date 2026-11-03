@@ -1,7 +1,7 @@
 # [skill-graft](https://github.com/remigius42/skill-graft)
 
-[![Version](https://img.shields.io/badge/dynamic/toml?url=https%3A%2F%2Fraw.githubusercontent.com%2Fremigius42%2Fskill-graft%2Fmain%2Fpyproject.toml&query=%24.project.version&label=version)](pyproject.toml)
-[![License](https://img.shields.io/badge/license-MIT-blue.svg)](LICENSE)
+[![Version](https://img.shields.io/badge/dynamic/toml?url=https%3A%2F%2Fraw.githubusercontent.com%2Fremigius42%2Fskill-graft%2Fmain%2Fpyproject.toml&query=%24.project.version&label=version)](https://github.com/remigius42/skill-graft/blob/main/pyproject.toml)
+[![License](https://img.shields.io/badge/license-MIT-blue.svg)](https://github.com/remigius42/skill-graft/blob/main/LICENSE)
 [![CI](https://github.com/remigius42/skill-graft/actions/workflows/ci.yml/badge.svg)](https://github.com/remigius42/skill-graft/actions/workflows/ci.yml)
 
 Copyright 2026 [Andreas Remigius Schmidt](https://github.com/remigius42)
@@ -31,7 +31,20 @@ skill-graft runs on Linux and macOS, and on Windows through [WSL](https://learn.
 Windows is unsupported: there every command prints `skill-graft: native Windows is unsupported: run skill-graft in WSL`
 and exits 1.
 
-skill-graft needs Python 3.11 or later. It is not on PyPI; install a release from the repository with any of:
+skill-graft needs Python 3.11 or later. Install the latest release from PyPI with any of:
+
+```sh
+uv tool install skill-graft==0.4.0
+pipx install --python python3.11 skill-graft==0.4.0
+pip install skill-graft==0.4.0      # into the active environment
+pipenv install skill-graft==0.4.0
+```
+
+uv picks a suitable Python itself; pipx and pip use theirs, so point them at 3.11 or later. pipenv installs into that
+project's environment: run it as `pipenv run skill-graft`. Each file on PyPI carries an attestation that this
+repository's publish workflow built and uploaded it.
+
+To install from the signed release tag instead (see below), install from the repository:
 
 ```sh
 uv tool install git+https://github.com/remigius42/skill-graft@v0.4.0
@@ -40,18 +53,15 @@ pip install git+https://github.com/remigius42/skill-graft@v0.4.0      # into the
 pipenv install "skill-graft @ git+https://github.com/remigius42/skill-graft@v0.4.0"
 ```
 
-uv picks a suitable Python itself; pipx and pip use theirs, so point them at 3.11 or later. pipenv installs into that
-project's environment: run it as `pipenv run skill-graft`.
-
 skill-graft also runs `git`. With git 2.44 or later, looking up what the [cache](#cache) holds never contacts the
 remote; the git macOS ships is older, Homebrew's is not. A remote that refuses files asked by name needs git 2.36 or
 later.
 
 These install the latest release; the others are listed under
 [releases](https://github.com/remigius42/skill-graft/releases), and each tag's README describes its release. To install
-the unreleased `main` instead, drop `@v0.4.0` from the URL. `skill-graft --version` names what is installed: the
-version, the tag or branch the URL names and the commit, `skill-graft <version> (v<version> @ <commit>)`, or only the
-commit for a URL naming neither.
+the unreleased `main` instead, drop `@v0.4.0` from a repository URL. `skill-graft --version` names what is installed:
+the version, `skill-graft <version>`, and for a repository install also the tag or branch the URL names and the commit,
+`skill-graft <version> (v<version> @ <commit>)`, or only the commit for a URL naming neither.
 
 The release tags after `v0.3.0` are signed with this SSH key, fingerprint\
 `SHA256:U5FNzbtnPR2kPX/Edlg1+p7rJmlBIx88HBKkzBVmOWE`:
@@ -224,7 +234,8 @@ readers-at-once = 4
   [Writing a patch](#writing-a-patch)).
 - `reserved`: deployed names to refuse, on top of the harness built-ins skill-graft warns about.
 - `[check]`: how far graft-check's readers and patcher may go: turns and spend in USD each, and how many readers run at
-  once. Each value is written in plain decimal digits; [docs/security.md](docs/security.md#limits) says what reaching a
+  once. Each value is written in plain decimal digits;
+  [docs/security.md](https://github.com/remigius42/skill-graft/blob/main/docs/security.md#limits) says what reaching a
   limit does.
 
 ## A package for one project
@@ -285,8 +296,8 @@ holding commits and trees and only the files read, and one export per commit and
 
 ## Security
 
-Skill text comes from other people's repositories and may carry prompt injection. [docs/security.md](docs/security.md)
-has the details.
+Skill text comes from other people's repositories and may carry prompt injection.
+[docs/security.md](https://github.com/remigius42/skill-graft/blob/main/docs/security.md) has the details.
 
 - skill-graft fails resolution on a skill holding a hidden character (tag characters, bidi controls, supplementary
   variation selectors), as APM's install does, so none reaches any agent through the hull.
@@ -297,14 +308,16 @@ has the details.
   only as far as your harness's model follows them. Otherwise it says it is unhardened and why, and reads only on your
   yes; an unhardened check is likely not secure.
 - In a hardened check, each reader and the patcher stop at a cap on their turns and their spend, and at most 4 readers
-  run at once, all settable in `[check]` ([Limits](docs/security.md#limits)). The patcher's reply never reaches the main
-  agent, and its diff reaches it only as counts.
+  run at once, all settable in `[check]`
+  ([Limits](https://github.com/remigius42/skill-graft/blob/main/docs/security.md#limits)). The patcher's reply never
+  reaches the main agent, and its diff reaches it only as counts.
 - A reader's reply reaches the main agent only as a report filter admits it, held to the report shape and bound in code,
   or, when the reader fails, as one bounded error line.
 - Run it outside auto mode; in Claude Code's sandbox, allow the API's domain. Fix arguments and how many readers run at
   once are checked at the prompt level only.
 
-Report a vulnerability privately, as [SECURITY.md](SECURITY.md) says, not in a public issue.
+Report a vulnerability privately, as [SECURITY.md](https://github.com/remigius42/skill-graft/blob/main/SECURITY.md)
+says, not in a public issue.
 
 ## Writing a patch
 
@@ -342,7 +355,8 @@ the new commit: redo the patch against it, then run `update` again.
 ## Contributing
 
 Report bugs and suggest ideas in [GitHub issues](https://github.com/remigius42/skill-graft/issues), and vulnerabilities
-as [SECURITY.md](SECURITY.md) says. To change the code, see [CONTRIBUTING.md](CONTRIBUTING.md).
+as [SECURITY.md](https://github.com/remigius42/skill-graft/blob/main/SECURITY.md) says. To change the code, see
+[CONTRIBUTING.md](https://github.com/remigius42/skill-graft/blob/main/CONTRIBUTING.md).
 
 This is a personal exploration project with best-effort maintenance. Responses to issues or pull requests may be slow,
 and changes that don't align with the project's direction are unlikely to merge.
