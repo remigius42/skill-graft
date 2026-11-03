@@ -9,7 +9,12 @@ from importlib import metadata
 from pathlib import Path
 from typing import TYPE_CHECKING, Any, NoReturn, TypeGuard
 
-from skill_graft.infra.errors import SkillGraftError, flush_stdout, warnings_last
+from skill_graft.infra.errors import (
+    SkillGraftError,
+    flush_stdout,
+    print_error,
+    warnings_last,
+)
 
 if TYPE_CHECKING:
     from _typeshed import SupportsWrite
@@ -368,7 +373,7 @@ def main(argv: list[str] | None = None) -> int:
             raise SystemExit(1) from None
         raise
     except OSError as error:  # a print outside any command, `--version`'s or help's
-        print(f"skill-graft: {error}", file=sys.stderr)
+        print_error(error)
         _fails_on_flush(True)  # discards the rest, silently
         return 1
     return 1 if _fails_on_flush(status != 0) else status
@@ -381,7 +386,7 @@ def _fails_on_flush(failed: bool) -> bool:
         flush_stdout()
     except OSError as error:
         if not failed:
-            print(f"skill-graft: {error}", file=sys.stderr)
+            print_error(error)
             return True
     return False
 
@@ -494,7 +499,7 @@ def _main(argv: list[str] | None) -> int:
                 deploy.deploy(current, warnings, args.into, args.no_apm_install)
         status = 0
     except (SkillGraftError, OSError) as error:
-        print(f"skill-graft: {error}", file=sys.stderr)
+        print_error(error)
         status = 1
     # The one place that sees every command end: `init` reads no source, and a
     # dry run writes no cache.

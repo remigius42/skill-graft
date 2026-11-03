@@ -4,6 +4,8 @@ import sys
 from collections.abc import Generator
 from typing import TextIO
 
+from skill_graft.infra import text
+
 
 class SkillGraftError(Exception):
     """A failure the user can act on; the CLI prints its message and exits 1.
@@ -19,6 +21,13 @@ class SkillGraftError(Exception):
 def lines_of(error: BaseException) -> list[str]:
     """The lines of `error`'s message: a `SkillGraftError`'s own, else one."""
     return error.lines if isinstance(error, SkillGraftError) else [str(error)]
+
+
+def print_error(error: BaseException) -> None:
+    """Prints `error`'s error line on stderr, each of its lines with its hidden
+    and unprintable characters escaped: a line break in a line is not its own."""
+    shown = "\n".join(text.show(line) for line in lines_of(error))
+    print(f"skill-graft: {shown}", file=sys.stderr)
 
 
 def warn(warnings: list[str]) -> None:

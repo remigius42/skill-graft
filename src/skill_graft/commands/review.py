@@ -158,7 +158,7 @@ def print_diff(
     """`+`, `-` or `~` per skill added, removed or changed, by skill ID; under each
     `+` and `~`, its files that differ. Those skills, as deployed then and now."""
     if isinstance(before, str):
-        print(f"no previous hull to compare ({before})")
+        print(f"no previous hull to compare ({text.show(before)})")
         return {}
     old = before.hashes
     lines = []

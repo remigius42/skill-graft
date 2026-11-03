@@ -100,3 +100,21 @@ def test_error_of_one_message_is_one_line() -> None:
 
     assert error.lines == ["own/tdd: gone"]
     assert str(error) == "own/tdd: gone"
+
+
+def test_error_printed_with_hidden_characters_escaped(
+    capsys: pytest.CaptureFixture[str],
+) -> None:
+    errors.print_error(SkillGraftError("own/tdd: a\n\x1b[31mok points outside", "hint"))
+
+    assert capsys.readouterr().err == (
+        "skill-graft: own/tdd: a\\n\\x1b[31mok points outside\nhint\n"
+    )
+
+
+def test_os_error_printed_as_one_escaped_line(
+    capsys: pytest.CaptureFixture[str],
+) -> None:
+    errors.print_error(OSError("cannot read x\u202e\n.md"))
+
+    assert capsys.readouterr().err == "skill-graft: cannot read x\\u202e\\n.md\n"

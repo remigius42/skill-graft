@@ -894,6 +894,25 @@ def test_broken_old_ref_only_skips_the_diff(upstream: Upstream, capsys: Capsys) 
     assert "data.txt" in out
 
 
+def test_reason_for_no_diff_shown_escaped(upstream: Upstream, capsys: Capsys) -> None:
+    upstream.commit({"tdd/SKILL.md": "1\n"})
+    (upstream.path / "tdd" / "a\n\x1b[31mok").symlink_to("gone.txt")
+    old = upstream.commit({})
+    (upstream.path / "tdd" / "a\n\x1b[31mok").unlink()
+    upstream.commit({})
+    write_config(
+        'entries = ["mp/tdd"]\n' + git_source("mp", upstream, f'ref = "{old}"\n')
+    )
+    assert main(["deploy", "--no-apm-install"]) == 1  # the link is broken
+    capsys.readouterr()
+
+    code, out, _ = update(capsys)
+
+    assert code == 0
+    (line,) = [line for line in out.splitlines() if "no previous hull" in line]
+    assert "a\\n\\x1b[31mok" in line and "\x1b" not in out
+
+
 LINES = "".join(f"line {i}\n" for i in range(1, 11))
 
 

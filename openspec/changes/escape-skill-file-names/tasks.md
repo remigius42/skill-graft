@@ -14,7 +14,7 @@
 
 ## 3. Error output shows no hidden characters
 
-- [ ] 3.1 In `tests/infra/test_errors.py`, test the error printer on a `SkillGraftError("a\n\x1b[31mok", "hint")`:
+- [x] 3.1 In `tests/infra/test_errors.py`, test the error printer on a `SkillGraftError("a\n\x1b[31mok", "hint")`:
   stderr reads `skill-graft: a\n\x1b[31mok` escaped on one line, then `hint`; and on an `OSError` whose message holds a
   bidi override; then add the printer to `errors.py` and print through it in `cli.py`'s three places; verify it passes
 - [ ] 3.2 Test `warn` and `notice` on text holding a line feed and an escape: each prints one line, escaped; then escape

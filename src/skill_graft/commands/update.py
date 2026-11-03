@@ -14,7 +14,7 @@ import tomlkit
 from skill_graft.commands import edit, explain, review, transaction
 from skill_graft.infra import files, git, paths
 from skill_graft.infra.cache import Cache
-from skill_graft.infra.errors import SkillGraftError
+from skill_graft.infra.errors import SkillGraftError, lines_of
 from skill_graft.pipeline import (
     compute,
     config,
@@ -212,12 +212,13 @@ def _previous(
                 if found
             )
             if error.other:  # an error that is no patch's: that one matters
-                other = "\n".join(error.other)
+                other = "; ".join(error.other)
                 reason = f"the current refs do not resolve: {failed} there; {other}"
             else:
                 reason = f"{failed} at the current refs"
         except (SkillGraftError, OSError) as error:  # the update itself is still fine
-            reason = f"the current refs do not resolve: {error}"
+            shown = "; ".join(lines_of(error))
+            reason = f"the current refs do not resolve: {shown}"
     if reason is not None:
         yield reason
         return
