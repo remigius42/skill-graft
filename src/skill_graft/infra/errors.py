@@ -33,12 +33,12 @@ def print_error(error: BaseException) -> None:
 def warn(warnings: list[str]) -> None:
     """Prints each warning to stderr; the command goes on."""
     for warning in warnings:
-        print(f"skill-graft: warning: {warning}", file=sys.stderr)
+        print(f"skill-graft: warning: {text.show(warning)}", file=sys.stderr)
 
 
-def notice(text: str) -> None:
+def notice(message: str) -> None:
     """Prints a notice to stderr, beside the warnings; the command goes on."""
-    print(f"skill-graft: {text}", file=sys.stderr)
+    print(f"skill-graft: {text.show(message)}", file=sys.stderr)
 
 
 @contextlib.contextmanager

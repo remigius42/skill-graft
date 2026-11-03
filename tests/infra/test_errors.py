@@ -118,3 +118,21 @@ def test_os_error_printed_as_one_escaped_line(
     errors.print_error(OSError("cannot read x\u202e\n.md"))
 
     assert capsys.readouterr().err == "skill-graft: cannot read x\\u202e\\n.md\n"
+
+
+def test_warning_printed_on_one_escaped_line(
+    capsys: pytest.CaptureFixture[str],
+) -> None:
+    errors.warn(["`own/a\nskill-graft: done` calls `/\x1b[2J foo`"])
+
+    assert capsys.readouterr().err == (
+        "skill-graft: warning: `own/a\\nskill-graft: done` calls `/\\x1b[2J foo`\n"
+    )
+
+
+def test_notice_printed_on_one_escaped_line(
+    capsys: pytest.CaptureFixture[str],
+) -> None:
+    errors.notice("package: /tmp/a\n\x1b[31mb")
+
+    assert capsys.readouterr().err == "skill-graft: package: /tmp/a\\n\\x1b[31mb\n"
