@@ -20,8 +20,7 @@ class PatchFailed(SkillGraftError):
     """A skill's patches did not apply; `lines` says what failed, one per line."""
 
     def __init__(self, lines: list[str]) -> None:
-        super().__init__("\n".join(lines))
-        self.lines = lines
+        super().__init__(*lines)
 
 
 def unused(config: Config, skills: dict[SkillId, Path]) -> list[str]:

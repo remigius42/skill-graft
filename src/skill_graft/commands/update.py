@@ -212,9 +212,8 @@ def _previous(
                 if found
             )
             if error.other:  # an error that is no patch's: that one matters
-                reason = (
-                    f"the current refs do not resolve: {failed} there; {error.other}"
-                )
+                other = "\n".join(error.other)
+                reason = f"the current refs do not resolve: {failed} there; {other}"
             else:
                 reason = f"{failed} at the current refs"
         except (SkillGraftError, OSError) as error:  # the update itself is still fine

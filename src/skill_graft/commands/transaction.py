@@ -74,10 +74,10 @@ def check_copies(skills: Path, locked: dict[str, Any] | None) -> None:
             )
         return
     if problems := lock.copy_problems(folder, locked):
-        lines = "".join(f"\n  {problem}" for problem in problems)
         raise SkillGraftError(
-            f"vendored copies not as skill-graft.lock records them:{lines}\n"
-            "move an edit into a patch, or delete the folder to vendor it again"
+            "vendored copies not as skill-graft.lock records them:",
+            *(f"  {problem}" for problem in problems),
+            "move an edit into a patch, or delete the folder to vendor it again",
         )
 
 

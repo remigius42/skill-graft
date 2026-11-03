@@ -5,7 +5,7 @@ from dataclasses import dataclass, replace
 from pathlib import Path
 
 from skill_graft.infra import files, text
-from skill_graft.infra.errors import SkillGraftError
+from skill_graft.infra.errors import SkillGraftError, lines_of
 from skill_graft.pipeline import discovery, hidden, patch, references
 from skill_graft.pipeline.config import Config, PatchFile, SkillId, deployed
 
@@ -53,13 +53,14 @@ class PatchError(SkillGraftError):
     def __init__(
         self,
         failures: list[tuple[SkillId, Path, list[str]]],
-        other: str = "",
+        other: list[str] | None = None,
         hints: dict[SkillId, str] | None = None,
         hidden: list[tuple[SkillId, str]] | None = None,
         hull: Hull | None = None,
     ) -> None:
         """`hints` replaces, per skill, the hint to redo it against its upstream."""
         hints = hints or {}
+        other = other or []
         hidden = hidden or []
         lines = ["patches do not apply:"] if failures else []
         for skill, upstream, failed in failures:
@@ -69,7 +70,7 @@ class PatchError(SkillGraftError):
             )
         if hidden:
             lines += ["hidden characters:", *(f"  {s}: {line}" for s, line in hidden)]
-        super().__init__("\n".join(lines + ([other] if other else [])))
+        super().__init__(*lines, *other)
         self.failures = failures
         self.other = other
         self.hidden = hidden
@@ -174,7 +175,7 @@ def walk(
     except (SkillGraftError, OSError) as error:
         if not failed and not found_hidden:
             raise
-        raise PatchError(failed, str(error), hidden=found_hidden) from None
+        raise PatchError(failed, lines_of(error), hidden=found_hidden) from None
     if failed:  # the hull is incomplete: no warning about it would be right
         raise PatchError(failed, hidden=found_hidden)
     suggestions: dict[SkillId, set[SkillId]] = {}

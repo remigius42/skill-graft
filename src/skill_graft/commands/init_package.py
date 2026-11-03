@@ -4,7 +4,7 @@ APM."""
 import shutil
 
 from skill_graft.infra import apm, paths
-from skill_graft.infra.errors import SkillGraftError, notice
+from skill_graft.infra.errors import SkillGraftError, lines_of, notice
 
 CONFIG_TEMPLATE = """\
 # skill-graft.toml: the skills you want and where they come from.
@@ -53,7 +53,9 @@ def init(scope: paths.Scope, project: bool = False) -> None:
         apm.require()
     except SkillGraftError as error:
         retry = "skill-graft init --project" if project else "skill-graft init"
-        raise SkillGraftError(f"{error}\ninstall APM, then run: {retry}") from None
+        raise SkillGraftError(
+            *lines_of(error), f"install APM, then run: {retry}"
+        ) from None
     try:
         package.mkdir(parents=True)
     except FileExistsError:
@@ -65,31 +67,34 @@ def init(scope: paths.Scope, project: bool = False) -> None:
     except (SkillGraftError, OSError) as error:
         if not project:
             retry = apm.command_line(scope)
-            raise SkillGraftError(f"{error}\nto retry, run: {retry}") from None
+            raise SkillGraftError(*lines_of(error), f"to retry, run: {retry}") from None
         if _listed(scope):
             raise SkillGraftError(
-                f"{error}\nfix that, then run: skill-graft resolve, then skill-graft deploy"
+                *lines_of(error),
+                "fix that, then run: skill-graft resolve, then skill-graft deploy",
             ) from None
         # A package left behind would be found by every command below it.
         try:
             shutil.rmtree(made)
         except OSError as failure:
             error = SkillGraftError(
-                f"{error}\ncannot remove {made}: {failure.strerror}"
+                *lines_of(error), f"cannot remove {made}: {failure.strerror}"
             )
         retry = "skill-graft init --project"
-        raise SkillGraftError(f"{error}\nfix that, then run: {retry}") from None
+        raise SkillGraftError(
+            *lines_of(error), f"fix that, then run: {retry}"
+        ) from None
 
 
 def _exists(scope: paths.Scope) -> SkillGraftError:
     """The refusal of an existing folder, with the command that registers it when APM
     does not list it and it holds the `apm.yml` APM needs."""
     package = scope.package
-    message = f"{package} already exists; init does nothing"
+    lines = [f"{package} already exists; init does nothing"]
     if (package / "apm.yml").exists() and not _listed(scope):
         where = f" in {scope.root}" if not scope.user else ""
-        message += f"\nto register it, run{where}: {apm.command_line(scope)}"
-    return SkillGraftError(message)
+        lines.append(f"to register it, run{where}: {apm.command_line(scope)}")
+    return SkillGraftError(*lines)
 
 
 def _listed(scope: paths.Scope) -> bool:

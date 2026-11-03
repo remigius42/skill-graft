@@ -74,7 +74,7 @@ def _explain(
         try:
             view(loaded, error.hull)
         except SkillGraftError as shown:  # both matter: the hidden characters too
-            raise SkillGraftError(f"{shown}\n{error}") from None
+            raise SkillGraftError(*shown.lines, *error.lines) from None
         raise
 
 

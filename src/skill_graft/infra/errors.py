@@ -16,6 +16,11 @@ class SkillGraftError(Exception):
         self.lines = list(lines)
 
 
+def lines_of(error: BaseException) -> list[str]:
+    """The lines of `error`'s message: a `SkillGraftError`'s own, else one."""
+    return error.lines if isinstance(error, SkillGraftError) else [str(error)]
+
+
 def warn(warnings: list[str]) -> None:
     """Prints each warning to stderr; the command goes on."""
     for warning in warnings:
