@@ -142,8 +142,16 @@ GitHub release. Only a commit CI passed is tagged, and `main` never names a vers
    gh run view "$run" --web && gh run watch --exit-status "$run"
    ```
 
-   If it fails, fix the workflow on `main`, start it again by hand for the tag, and approve that run the same way. A run
+   If it fails for a reason outside the workflow, such as an outage, re-run its failed jobs and approve again. A run
    skips the files PyPI already holds, so it also completes an upload that stopped halfway:
+
+   ```sh
+   gh run rerun --failed "$run"
+   ```
+
+   If the workflow itself must change, a re-run would run the tag's copy of it again. Fix it on `main`, add the branch
+   rule `main` to the `pypi` environment (below), start the run by hand for the tag, approve it, and remove the rule
+   once it has passed:
 
    ```sh
    gh workflow run publish.yml -f tag="v$v"
@@ -175,6 +183,6 @@ project**, so that installers skip it unless it is pinned.
 The upload needs a setup done once, on PyPI and on GitHub. On pypi.org, under **Publishing**, a trusted publisher for
 the project `skill-graft`: owner `remigius42`, repository `skill-graft`, workflow `publish.yml`, environment `pypi` (a
 pending publisher until the first upload; it does not reserve the name). In the repository's **Settings**,
-**Environments**, the environment `pypi`: deployments limited to the tags `v*.*.*` and the branch `main`, from which a
-run started by hand runs; required reviewer the maintainer, with **Prevent self-review** off, or the only maintainer
-could never approve.
+**Environments**, the environment `pypi`: deployments limited to the tags `v*.*.*`, so a run started by hand, which
+starts from `main`, is refused until `main` is added for it; required reviewer the maintainer, with **Prevent
+self-review** off, or the only maintainer could never approve.
