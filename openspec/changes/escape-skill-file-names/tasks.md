@@ -7,7 +7,7 @@
 
 ## 2. Errors keep their lines
 
-- [ ] 2.1 In `tests/infra/test_errors.py`, test that `SkillGraftError("a", "b")` has `lines == ["a", "b"]` and
+- [x] 2.1 In `tests/infra/test_errors.py`, test that `SkillGraftError("a", "b")` has `lines == ["a", "b"]` and
   `str() == "a\nb"`, and one argument keeps its message; then give `SkillGraftError` `*lines`; verify it passes
 - [ ] 2.2 Pass lines instead of joining them in `PatchFailed`, `PatchError`, `init_package`, `transaction` and `explain`
   (`*error.lines` where one wraps another); verify the full suite passes unchanged (refactor)

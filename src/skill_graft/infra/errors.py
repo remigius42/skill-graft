@@ -6,7 +6,14 @@ from typing import TextIO
 
 
 class SkillGraftError(Exception):
-    """A failure the user can act on; the CLI prints its message and exits 1."""
+    """A failure the user can act on; the CLI prints its message and exits 1.
+
+    Its message is its `lines`, each printed on a line of its own.
+    """
+
+    def __init__(self, *lines: str) -> None:
+        super().__init__("\n".join(lines))
+        self.lines = list(lines)
 
 
 def warn(warnings: list[str]) -> None:

@@ -86,3 +86,17 @@ def test_closed_stdout_without_a_descriptor_leaks_none(
     with pytest.raises(BrokenPipeError), errors.warnings_last():
         pass
     assert lowest_free_descriptor() == free
+
+
+def test_error_keeps_its_lines() -> None:
+    error = SkillGraftError("patches do not apply:", "  own/tdd: p.patch failed")
+
+    assert error.lines == ["patches do not apply:", "  own/tdd: p.patch failed"]
+    assert str(error) == "patches do not apply:\n  own/tdd: p.patch failed"
+
+
+def test_error_of_one_message_is_one_line() -> None:
+    error = SkillGraftError("own/tdd: gone")
+
+    assert error.lines == ["own/tdd: gone"]
+    assert str(error) == "own/tdd: gone"
