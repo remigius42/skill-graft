@@ -1120,6 +1120,49 @@ def test_path_source_elsewhere_on_another_machine(
     assert locked["sources"] == {"own": {"path": str(skills)}}
 
 
+def home_project(home: Path, monkeypatch: pytest.MonkeyPatch) -> Path:
+    """A project at `~/repo` whose path source `own` is `~/skills`, holding
+    `chisel`; its lock file, once `resolve` wrote it."""
+    skill(home / "skills" / "chisel")
+    config_file = home / "repo" / ".apm" / "skill-graft" / "skill-graft.toml"
+    config_file.parent.mkdir(parents=True)
+    config_file.write_text(
+        'entries = ["own/chisel"]\n[sources.own]\npath = "~/skills"\n'
+    )
+    monkeypatch.chdir(home / "repo")
+    assert main(["resolve"]) == 0
+    return config_file.with_name("skill-graft.lock")
+
+
+def test_home_path_source_on_another_machine(
+    home: Path, tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    committed = home_project(home, monkeypatch).read_bytes()
+    other = tmp_path / "other-home"
+    shutil.copytree(home, other)
+    monkeypatch.setenv("HOME", str(other))
+    monkeypatch.chdir(other / "repo")
+
+    assert main(["deploy", "--no-apm-install"]) == 0
+
+    lock_file = other / "repo" / ".apm" / "skill-graft" / "skill-graft.lock"
+    assert lock_file.read_bytes() == committed
+
+
+def test_lock_from_before_home_paths(
+    home: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    lock_file = home_project(home, monkeypatch)
+    lock_file.write_text(
+        lock_file.read_text().replace('"~/skills"', f'"{home / "skills"}"')
+    )
+
+    assert main(["deploy", "--no-apm-install"]) == 0
+
+    locked = lock.load(lock_file) or {}
+    assert locked["sources"] == {"own": {"path": "~/skills"}}
+
+
 def test_patched_own_skill(home: Path, tmp_path: Path, capsys: Capsys) -> None:
     patches = package() / "patches"
     patches.mkdir(parents=True)

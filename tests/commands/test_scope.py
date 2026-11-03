@@ -351,11 +351,15 @@ def test_project_source_inside_the_project_written_with_home(
 def test_same_lock_on_another_machine(
     home: Path, tmp_path: Path, monkeypatch: pytest.MonkeyPatch
 ) -> None:
-    project(home / "repo")
+    package = project(home / "repo", '["own/chisel", "mine/notes"]')
+    with (package / "skill-graft.toml").open("a") as toml:
+        toml.write('[sources.mine]\npath = "~/skills"\n')
+    skill(home / "skills" / "notes")
     monkeypatch.chdir(home / "repo")
     assert main(["resolve"]) == 0
     other = tmp_path / "other-home"
     shutil.copytree(home / "repo", other / "repo")
+    shutil.copytree(home / "skills", other / "skills")
     monkeypatch.setenv("HOME", str(other))
     monkeypatch.chdir(other / "repo")
 

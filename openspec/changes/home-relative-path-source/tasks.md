@@ -20,7 +20,7 @@ every commit passes `pytest`.
   `test_user_scope_not_portable`. In `tests/commands/test_scope.py`: `test_project_source_outside_the_project` now
   expects `~/skills`; new `test_project_source_under_a_symlinked_home_folder`,
   `test_project_source_inside_the_project_written_with_home`. Verify red, then green
-- [ ] 1.3 `tests/commands/test_scope.py`: `test_same_lock_on_another_machine` adds a path **Source** `path = "~/skills"`
+- [x] 1.3 `tests/commands/test_scope.py`: `test_same_lock_on_another_machine` adds a path **Source** `path = "~/skills"`
   under each `HOME`; `tests/commands/test_deploy.py`: `test_path_source_elsewhere_on_another_machine` uses an absolute
   `path` outside the project and home; new `test_home_path_source_on_another_machine` (lock written under one `HOME`,
   `deploy` under another leaves it byte-equal) and `test_lock_from_before_home_paths` (a lock recording the absolute
