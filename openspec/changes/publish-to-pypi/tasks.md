@@ -14,7 +14,7 @@ The README change comes first: the `skill-graft==` pair of 1.2 fails on a README
   becomes its `https://github.com/remigius42/skill-graft/blob/main/…` URL. Verify: `check-pins` passes; mdformat and
   markdownlint pass; `grep -nP '\]\((?!https?://|#)' README.md` finds nothing; each PyPI line resolves, by
   `uv pip install --dry-run skill-graft==0.4.0` once 0.4.0 is on PyPI (after 4.1), else by reading
-- [ ] 1.2 `scripts/check_pins.py`: a pair of its own, `skill-graft==`, each README `skill-graft==<version>` against
+- [x] 1.2 `scripts/check_pins.py`: a pair of its own, `skill-graft==`, each README `skill-graft==<version>` against
   `pyproject.toml`'s version, beside the `@v` pair, renamed `skill-graft@v`. Tests in `tests/test_check_pins.py`: the
   synthetic README gains a `uv tool install skill-graft==0.3.0` line; a README whose `==` version differs from
   `pyproject.toml`'s fails naming `skill-graft==` and both versions, while its `@v` URLs still match; a README with no

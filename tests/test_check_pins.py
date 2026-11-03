@@ -39,7 +39,8 @@ dev = [
 """
 
 README = """\
-Install it with `uv tool install git+https://github.com/remigius42/skill-graft@v0.3.0`.
+Install it with `uv tool install skill-graft==0.3.0`, or from the repository with
+`uv tool install git+https://github.com/remigius42/skill-graft@v0.3.0`.
 For `main`, drop `@v0.3.0`. The release tags after `v0.2.0` are signed.
 skill-graft runs APM, so `apm` must be on `PATH`, in version 0.35.0: the folders were
 measured on it. Install it with `uv tool install apm-cli==0.35.0` or
@@ -186,13 +187,23 @@ def test_matching_pins_pass(tmp_path: Path) -> None:
             "README.md",
             "skill-graft@v0.3.0",
             "skill-graft@v0.4.0",
-            "skill-graft: 0.4.0, 0.3.0 in README.md, 0.3.0 in pyproject.toml's version",
+            "skill-graft@v: 0.4.0, 0.3.0 in README.md, 0.3.0 in pyproject.toml's version",
+        ),
+        (
+            "README.md",
+            "skill-graft==0.3.0",
+            "skill-graft==0.4.0",
+            "skill-graft==: 0.4.0 in README.md, 0.3.0 in pyproject.toml's version",
         ),
         (
             "pyproject.toml",
             'version = "0.3.0"',
             'version = "0.4.0"',
-            "skill-graft: 0.3.0, 0.3.0 in README.md, 0.4.0 in pyproject.toml's version",
+            (
+                "skill-graft@v: 0.3.0, 0.3.0 in README.md, 0.4.0 in pyproject.toml's"
+                " version\nskill-graft==: 0.3.0 in README.md, 0.4.0 in pyproject.toml's"
+                " version"
+            ),
         ),
     ],
 )
@@ -296,7 +307,14 @@ def test_a_readme_without_a_skill_graft_tag_fails(tmp_path: Path) -> None:
     edit(root / "README.md", "skill-graft@v0.3.0", "skill-graft")
     edit(root / "README.md", "drop `@v0.3.0`", "drop the tag")
 
-    assert check(root) == (1, "skill-graft: not found in README.md\n")
+    assert check(root) == (1, "skill-graft@v: not found in README.md\n")
+
+
+def test_a_readme_without_a_pinned_pypi_install_fails(tmp_path: Path) -> None:
+    root = repository(tmp_path)
+    edit(root / "README.md", "skill-graft==0.3.0", "skill-graft")
+
+    assert check(root) == (1, "skill-graft==: not found in README.md\n")
 
 
 def test_every_version_uv_lock_holds_is_compared(tmp_path: Path) -> None:

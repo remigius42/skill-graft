@@ -60,6 +60,7 @@ def mismatches(root: Path) -> list[str]:
     rev = found(r"^\s+rev: \S+\s+# frozen: v?(\S+)", mypy) or found(
         r"^\s+rev: v?(\S+)", mypy
     )
+    released = ("pyproject.toml's version", [version] if version else [])
     # Each pair: what is pinned, then each side as (where, its versions).
     pairs = [
         (
@@ -96,10 +97,16 @@ def mismatches(root: Path) -> list[str]:
             ),
         ),
         (
-            "skill-graft",
+            "skill-graft@v",
             # Each install line's `skill-graft@v<version>`, the prose's `@v<version>`.
             ("README.md", re.findall(r"(?:skill-graft|`)@v(\d[\w.]*\w)", readme)),
-            ("pyproject.toml's version", [version] if version else []),
+            released,
+        ),
+        (
+            "skill-graft==",
+            # Each PyPI install line's `skill-graft==<version>`.
+            ("README.md", re.findall(r"skill-graft==(\d[\w.]*\w)", readme)),
+            released,
         ),
         *(
             (
