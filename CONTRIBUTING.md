@@ -79,8 +79,8 @@ checks: [evals/graft-check/README.md](evals/graft-check/README.md).
 
 ## Releasing
 
-A release turns `CHANGELOG.md`'s `[Unreleased]` into a version, tagged `v<version>` and published as a GitHub release.
-Only a commit CI passed is tagged, and `main` never names a version before CI has passed it.
+A release turns `CHANGELOG.md`'s `[Unreleased]` into a version, tagged `v<version>`, uploaded to PyPI and published as a
+GitHub release. Only a commit CI passed is tagged, and `main` never names a version before CI has passed it.
 
 1. Pick the version from the sections under `[Unreleased]`, by [Semantic Versioning](https://semver.org/). An entry is
    breaking when it sits under `### Removed`, or under `### Changed` and a config, command or lock users already have
@@ -103,8 +103,9 @@ Only a commit CI passed is tagged, and `main` never names a version before CI ha
      URLs under `https://github.com/remigius42/skill-graft/`. mdformat then writes the labels in lower case and sorts
      them; leave them so.
    - Set `version` in `pyproject.toml`, then run `uv lock`.
-   - In `README.md`'s Installation, replace each `@v<previous version>`, in the install commands and the paragraph
-     naming the releases, with `@v<version>`. "The release tags after `v0.3.0`" keeps its version.
+   - In `README.md`'s Installation, replace each `skill-graft==<previous version>` with `skill-graft==<version>`, and
+     each `@v<previous version>`, in the install commands and the paragraph naming the releases, with `@v<version>`.
+     "The release tags after `v0.3.0`" keeps its version.
 
 1. Push the branch, which runs CI, and wait for the run to pass:
 
@@ -131,6 +132,23 @@ Only a commit CI passed is tagged, and `main` never names a version before CI ha
    shows the tag as **Verified** only while the key is a signing key on GitHub and the tagger's email, the README's, is
    verified there.
 
+1. The tag's push starts `publish.yml`, which builds the release from the tag and waits for you before uploading it to
+   PyPI. Once its `build` job has passed, approve the `publish` job (**Review deployments**, `pypi`, **Approve and
+   deploy**) and wait for it. The loop waits until GitHub has created the run for the tag's commit:
+
+   ```sh
+   until run="$(gh run list --workflow publish.yml --commit "$(git rev-parse "v$v^{commit}")" --limit 1 \
+     --json databaseId --jq '.[0].databaseId // empty')" && [ -n "$run" ]; do sleep 5; done
+   gh run view "$run" --web && gh run watch --exit-status "$run"
+   ```
+
+   If it fails, fix the workflow on `main`, start it again by hand for the tag, and approve that run the same way. A run
+   skips the files PyPI already holds, so it also completes an upload that stopped halfway:
+
+   ```sh
+   gh workflow run publish.yml -f tag="v$v"
+   ```
+
 1. Publish the GitHub release, with that version's changelog section as its notes:
 
    ```sh
@@ -141,5 +159,22 @@ Only a commit CI passed is tagged, and `main` never names a version before CI ha
 
 1. Delete the branch: `git branch -d "release/v$v" && git push origin --delete "release/v$v"`.
 
-A wrong tag nobody has installed yet is removed, with its release, by `gh release delete "v$v" --cleanup-tag --yes`.
-Once someone may have installed it, leave it and release a fixed patch version instead.
+A wrong tag not yet on PyPI and nobody has installed is removed by first cancelling its publish run, which may wait for
+approval with a build of the wrong commit, then the release, if there is one yet, and the tag:
+
+```sh
+gh run list --workflow publish.yml --commit "$(git rev-parse "v$v^{commit}")" --json databaseId,status \
+  --jq '.[] | select(.status != "completed") | .databaseId' | xargs -r -n1 gh run cancel
+gh release delete "v$v" --cleanup-tag --yes || { git push origin --delete "v$v"; }; git tag -d "v$v"
+```
+
+Once it is on PyPI or someone may have installed it, leave it and release a fixed patch version instead. PyPI never
+takes a version twice, not even after it is deleted: yank the wrong one instead, on its release page under **Manage
+project**, so that installers skip it unless it is pinned.
+
+The upload needs a setup done once, on PyPI and on GitHub. On pypi.org, under **Publishing**, a trusted publisher for
+the project `skill-graft`: owner `remigius42`, repository `skill-graft`, workflow `publish.yml`, environment `pypi` (a
+pending publisher until the first upload; it does not reserve the name). In the repository's **Settings**,
+**Environments**, the environment `pypi`: deployments limited to the tags `v*.*.*` and the branch `main`, from which a
+run started by hand runs; required reviewer the maintainer, with **Prevent self-review** off, or the only maintainer
+could never approve.

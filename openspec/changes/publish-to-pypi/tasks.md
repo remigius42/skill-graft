@@ -45,7 +45,7 @@ The README change comes first: the `skill-graft==` pair of 1.2 fails on a README
 
 ## 3. Releasing
 
-- [ ] 3.1 `CONTRIBUTING.md` Releasing: the README step also replaces each `==<previous version>`; after the atomic push,
+- [x] 3.1 `CONTRIBUTING.md` Releasing: the README step also replaces each `==<previous version>`; after the atomic push,
   approve the `publish` job of the `publish.yml` run for the tag once its `build` job passed, and watch it; if it fails,
   fix on main and, once PyPI shows the version is not there, start it by hand for that tag; the "wrong tag" paragraph
   says a version on PyPI cannot be removed and reused, only yanked, followed by a patch release. A one-time setup
