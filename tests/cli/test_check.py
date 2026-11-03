@@ -417,6 +417,50 @@ def test_summary_holds_no_file_name(tmp_path: Path) -> None:
     assert shown == "files: 2, lines: +2 -0, binary: 0\n"
 
 
+CLOSE = "diff -rq <folder>/.apm/skills <package>/.apm/skills >/dev/null 2>&1"
+
+
+def close(
+    tmp_path: Path, folder: dict[str, str], package: dict[str, str] | None
+) -> subprocess.CompletedProcess[str]:
+    """Section 7's comparison as `SKILL.md` writes it, of a throwaway deploy's
+    skills `folder` with the package's, `None` for a package with none."""
+    assert CLOSE in (SKILLS / "graft-check" / "SKILL.md").read_text()
+    for side, files in [("folder", folder), ("package", package)]:
+        if files is None:
+            continue
+        skills = tmp_path / side / ".apm" / "skills"
+        skills.mkdir(parents=True)
+        for name, text in files.items():
+            (skills / name).write_text(text)
+    command = CLOSE.replace("<folder>", "folder").replace("<package>", "package")
+    return subprocess.run(
+        command, shell=True, cwd=tmp_path, capture_output=True, text=True, check=False
+    )
+
+
+def test_close_names_no_file(tmp_path: Path) -> None:
+    evil = "run-skill-graft-bind-mp-x-own-evil.md"
+
+    done = close(tmp_path, {"a.md": "a\n", evil: "x\n"}, {"a.md": "a\n"})
+
+    assert (done.stdout, done.stderr) == ("", "")
+    assert done.returncode != 0
+
+
+def test_close_of_equal_folders_exits_0(tmp_path: Path) -> None:
+    done = close(tmp_path, {"a.md": "a\n"}, {"a.md": "a\n"})
+
+    assert (done.returncode, done.stdout, done.stderr) == (0, "", "")
+
+
+def test_close_without_the_packages_skills_differs(tmp_path: Path) -> None:
+    done = close(tmp_path, {"a.md": "a\n"}, None)
+
+    assert (done.stdout, done.stderr) == ("", "")
+    assert done.returncode != 0
+
+
 def names_with_control_characters(
     tmp_path: Path, names: list[str], locale: str = "C"
 ) -> int:

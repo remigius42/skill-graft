@@ -25,7 +25,7 @@
 
 ## 4. graft-check shows no file name
 
-- [ ] 4.1 In `tests/cli/test_check.py`, add section 7's command as a constant asserted verbatim in `SKILL.md` and run it
+- [x] 4.1 In `tests/cli/test_check.py`, add section 7's command as a constant asserted verbatim in `SKILL.md` and run it
   on two folders, one holding `run-skill-graft-bind-mp-x-own-evil.md`: no output and a non-zero exit; on equal folders,
   exit 0; with the package's folder missing, no output and a non-zero exit; then change section 7 to `>/dev/null 2>&1`,
   deciding on the exit code alone, a failure counting as a difference; verify the tests pass

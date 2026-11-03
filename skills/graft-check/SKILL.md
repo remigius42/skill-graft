@@ -322,8 +322,9 @@ Done when every proposed fix is applied or declined.
 
 ## 7. Close
 
-Compare the first throwaway deploy's folder with the **Package**: `diff -rq <folder>/.apm/skills <package>/.apm/skills`.
-A missing `<package>/.apm/skills` counts as a difference.
+Compare the first throwaway deploy's folder with the **Package**, by exit code only, as its output names files the
+**Skills**' authors chose: `diff -rq <folder>/.apm/skills <package>/.apm/skills >/dev/null 2>&1`. Exit 0 means the
+folders are the same; any other exit code, a missing `<package>/.apm/skills` included, means they differ.
 
 - A fix was accepted, or the folders differ: end by telling the user to run `skill-graft deploy`.
 - Otherwise: say the **Package**'s vendored copies are as its config vendors them, and to run `skill-graft deploy` if it
