@@ -24,7 +24,7 @@ The README change comes first: the `skill-graft==` pair of 1.2 fails on a README
 
 ## 2. Publish workflow
 
-- [ ] 2.1 `check-github-workflows` hook from the `check-jsonschema` repo in `.pre-commit-config.yaml`; then
+- [x] 2.1 `check-github-workflows` hook from the `check-jsonschema` repo in `.pre-commit-config.yaml`; then
   `pre-commit run --all-files`, as a hook's config changed. Verify: it passes on `ci.yml`, and fails on a scratch copy
   of `ci.yml` with `runs-on` removed
 - [ ] 2.2 `.github/workflows/publish.yml` as design.md describes: triggers `push` of tags `v*` and `workflow_dispatch`

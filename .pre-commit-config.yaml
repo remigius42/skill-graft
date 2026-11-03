@@ -104,6 +104,8 @@ repos:
     rev: a76b92851fc9eede9f9bc4073eb55202f34eb0df  # frozen: 0.39.0
     hooks:
       - id: check-dependabot
+      # A workflow that only runs at release, publish.yml, is otherwise first checked by GitHub then.
+      - id: check-github-workflows
 
   - repo: https://github.com/gitleaks/gitleaks
     rev: 2ca41cc1372d1e939a6a879f18cdc19fc1cac1ce  # frozen: v8.30.0
