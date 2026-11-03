@@ -47,16 +47,16 @@ The README change comes first: the `skill-graft==` pair of 1.2 fails on a README
 
 - [x] 3.1 `CONTRIBUTING.md` Releasing: the README step also replaces each `==<previous version>`; after the atomic push,
   approve the `publish` job of the `publish.yml` run for the tag once its `build` job passed, and watch it; if it fails,
-  fix on main and, once PyPI shows the version is not there, start it by hand for that tag; the "wrong tag" paragraph
-  says a version on PyPI cannot be removed and reused, only yanked, followed by a patch release. A one-time setup
-  paragraph: the pending publisher and the `pypi` environment, limited to tags `v*.*.*` and the branch `main`, the
-  maintainer its required reviewer, "Prevent self-review" off. Verify: each command in the section runs as written in a
-  scratch clone where it does not push, and mdformat passes
+  re-run the failed jobs, or, after a fix to the workflow on main, allow `main` for the environment, start it by hand
+  for that tag and remove the rule after; the "wrong tag" paragraph says a version on PyPI cannot be removed and reused,
+  only yanked, followed by a patch release. A one-time setup paragraph: the pending publisher and the `pypi`
+  environment, limited to tags `v*.*.*`, the maintainer its required reviewer, "Prevent self-review" off. Verify: each
+  command in the section runs as written in a scratch clone where it does not push, and mdformat passes
 
 ## 4. Claim the name
 
-- [ ] 4.1 After the merge to main, and with the user doing the pypi.org and GitHub settings of design.md's Migration
+- [x] 4.1 After the merge to main, and with the user doing the pypi.org and GitHub settings of design.md's Migration
   Plan, and right after them, as a pending publisher does not reserve the name: start `publish.yml` with `tag: v0.4.0`.
   Verify: its `publish` job waits for approval and uploads nothing before; once the user approves, the run passes; PyPI
   lists `skill-graft` 0.4.0 with an attestation for each file; `uv tool install skill-graft==0.4.0` with `HOME` a
-  scratch directory installs, and `skill-graft --version` prints `skill-graft 0.4.0`
+  scratch directory installs, and `skill-graft --version` prints `skill-graft 0.4.0`; the branch rule `main` is removed

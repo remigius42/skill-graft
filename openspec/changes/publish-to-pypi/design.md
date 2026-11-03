@@ -48,15 +48,17 @@ no `vcs_info`, which covers a PyPI install, so the CLI does not change.
   README avoids a second copy of it to keep in step. The alternative, a committed `.github/allowed_signers` paired with
   the README by `check-pins`, adds a file and a pair to protect against something the environment's tag rule already
   covers (see Risks).
-- **The `pypi` environment allows tags `v*.*.*` and the branch `main` only, and requires the maintainer's approval.**
-  GitHub checks the rule against the ref the run starts from: a push run's is the tag, a manual run's is `main`, where
-  `publish.yml` lives (it does not exist at `v0.4.0`). With tags alone, every manual run, the backfill included, would
-  be refused. The pending publisher on pypi.org names the repository, `publish.yml` and `pypi`. An upload then needs a
-  run of this workflow from a `v*.*.*` tag or `main` in this repository, building a signed release tag, and a click on
-  "Approve and deploy" by the environment's one required reviewer, the maintainer. "Prevent self-review" stays off, or
-  the only maintainer could never approve. A pushed tag alone, by mistake or by a leaked token, publishes nothing; the
-  run waits, and expires after 30 days. The cost is one approval per release, which CONTRIBUTING's Releasing names as a
-  step.
+- **The `pypi` environment allows tags `v*.*.*` only, and requires the maintainer's approval.** GitHub checks the rule
+  against the ref the run starts from: a push run's is the tag, and so is a re-run's, but a manual run's is `main`,
+  where `publish.yml` lives (it does not exist at `v0.4.0`). So the branch rule `main` is added only while a manual run
+  needs it, the backfill and a fix to the workflow itself, and removed after. The alternative, `main` allowed for good,
+  would let any manual run reach the approval step; the signature check and the approval would still hold, but nothing
+  needs it between releases. The pending publisher on pypi.org names the repository, `publish.yml` and `pypi`. An upload
+  then needs a run of this workflow from a `v*.*.*` tag in this repository, or from `main` while it is allowed, building
+  a signed release tag, and a click on "Approve and deploy" by the environment's one required reviewer, the maintainer.
+  "Prevent self-review" stays off, or the only maintainer could never approve. A pushed tag alone, by mistake or by a
+  leaked token, publishes nothing; the run waits, and expires after 30 days. The cost is one approval per release, which
+  CONTRIBUTING's Releasing names as a step.
 - **README: PyPI first.** The four install lines become `uv tool install skill-graft==<version>`,
   `pipx install --python python3.11 skill-graft==<version>`, `pip install skill-graft==<version>` and
   `pipenv install skill-graft==<version>`. The repository URL lines move below them, together with the signed-tag check,
@@ -92,8 +94,9 @@ no `vcs_info`, which covers a PyPI install, so the CLI does not change.
 - [The 0.4.0 upload carries 0.4.0's README, which says "It is not on PyPI", on its PyPI page] → It is accurate about
   0.4.0 and is replaced on the page by the next release. So are its relative links, which go nowhere on that page until
   then. Releasing 0.4.1 straight after this change instead would leave the name open until then.
-- [The publish run fails after the tag is pushed and the GitHub release exists] → The tag is fine; fix the workflow on
-  main and start it by hand for that tag.
+- [The publish run fails after the tag is pushed and the GitHub release exists] → The tag is fine. After an outage,
+  re-run the failed jobs. After a fix to the workflow, which a re-run would not pick up, allow `main` for a moment and
+  start it by hand for that tag.
 - \[A pending publisher does not reserve the name: someone else can upload `skill-graft` before 0.4.0 goes up, and the
   pending publisher is then void\] → Migration steps 2 and 3 are done back to back, in one sitting; the window is
   minutes. Should the name be taken anyway, PEP 541 is the recourse, and the README keeps the git install.
@@ -108,9 +111,10 @@ no `vcs_info`, which covers a PyPI install, so the CLI does not change.
 1. Merge this change into main.
 1. On pypi.org: add a pending publisher for project `skill-graft`: owner `remigius42`, repository `skill-graft`,
    workflow `publish.yml`, environment `pypi`. In GitHub's repository settings: create the `pypi` environment,
-   deployment limited to tags `v*.*.*` and the branch `main`, required reviewer the maintainer, "Prevent self-review"
-   off.
+   deployment limited to tags `v*.*.*` and, for the backfill only, the branch `main`, required reviewer the maintainer,
+   "Prevent self-review" off.
 1. Right after step 2, start `publish.yml` by hand with `tag: v0.4.0` and approve its `publish` job; check that PyPI
-   shows 0.4.0 with attestations, and that `uv tool install skill-graft==0.4.0` in a scratch `HOME` installs it.
+   shows 0.4.0 with attestations, and that `uv tool install skill-graft==0.4.0` in a scratch `HOME` installs it. Then
+   remove the branch rule `main`.
 
 Rollback: delete `publish.yml`. Releases already uploaded stay on PyPI and keep the name claimed.
