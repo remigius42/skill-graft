@@ -23,7 +23,7 @@ If you already know every skill you need, APM alone can install just those:\
 `apm install <owner>/<repo> --skill <name>`
 ([docs](https://microsoft.github.io/apm/reference/cli/install/#skill-subset)). skill-graft also finds the skills they
 reference, lets you rename skills whose names clash, shows who calls what (`tree`, `why`), and applies your patches,
-checking on `update` that they still apply.
+checking on `update` that they still apply. A patch changes what an upstream skill says without forking its repository.
 
 ## Installation
 
@@ -111,24 +111,10 @@ skill-graft deploy                                       # deploy what skill-gra
 The dry run writes `mp/tdd` and every skill it calls, as they would deploy, to `review.diff`, and writes nothing else.
 Read it in an editor, never by printing it to a terminal: it is untrusted text. Then run the `add` itself.
 
-After editing `skill-graft.toml` or a patch by hand, run `skill-graft resolve` before `deploy`, previewing it first with
-`skill-graft resolve --dry-run --diff-file review.diff`: `deploy` deploys only what the lock records, and names
-`resolve` when the config or a patch differs from it. An edit to a vendored copy in `.apm/skills/` is refused too; move
-it into a patch, or delete the folder to vendor it again.
-
-`tdd` and the skills it calls are now in `~/.claude/skills/`. To share skills through a project instead, see
-[A package for one project](#a-package-for-one-project); to deploy them under other names, `[rename]` and `prefix` in
-[Config](#config); to change what a skill says, [Writing a patch](#writing-a-patch).
-
-Later, to move `mp` to its new tip, review what would change first:
-
-```sh
-skill-graft update mp --dry-run --diff-file review.diff # write each changed skill's text as deployed
-skill-graft update mp --expect <hull-digest>            # the `apply:` line the dry run printed
-```
-
-Read `review.diff` in an editor, as before. The `apply:` line updates to exactly the hull you read; a push, a path
-source's edit, a patch or a rename since then makes it refuse.
+`tdd` and the skills it calls are now in `~/.claude/skills/`. To deploy them under other names, see `[rename]` and
+`prefix` in [Config](#config). [docs/howto.md](https://github.com/remigius42/skill-graft/blob/main/docs/howto.md) covers
+the next steps: editing the config by hand, updating a source, writing a patch, sharing skills through a project, and
+checking a package with graft-check.
 
 ## Commands
 
@@ -231,57 +217,12 @@ readers-at-once = 4
 - `[bind]`: settles which skill a reference means when several sources have one of that name, or with `false` makes it
   no reference at all.
 - `[patches]`: unified diffs, applied before renames, so a patch can change what a skill calls (see
-  [Writing a patch](#writing-a-patch)).
+  [Write a patch](https://github.com/remigius42/skill-graft/blob/main/docs/howto.md#write-a-patch)).
 - `reserved`: deployed names to refuse, on top of the harness built-ins skill-graft warns about.
 - `[check]`: how far graft-check's readers and patcher may go: turns and spend in USD each, and how many readers run at
   once. Each value is written in plain decimal digits;
   [docs/security.md](https://github.com/remigius42/skill-graft/blob/main/docs/security.md#limits) says what reaching a
   limit does.
-
-## A package for one project
-
-`skill-graft init` creates your package, `~/.apm/skill-graft/`, deployed for you in every project. For skills a team
-shares through one repository, run `skill-graft init --project` in its root (which needs a harness folder such as
-`.claude/`, or APM refuses): it creates `.apm/skill-graft/` there and registers it in the project's `apm.yml`. Every
-command then acts on the nearest `.apm/skill-graft/` above the working folder, and on `~/.apm/skill-graft/` when there
-is none.
-
-Commit the whole `.apm/skill-graft/`, vendored skills and its `.gitattributes` included, with `apm.yml` and
-`apm.lock.yaml`; `.gitattributes` keeps git from changing the vendored skills' line endings, which `deploy` would refuse
-as edits. Teammates then need only APM: `apm install` deploys the skills, and only whoever changes them runs
-skill-graft. Keep path sources inside the project (`path = "../../skills"`) or under your home folder
-(`path = "~/skills"`), and the rest git sources: the lock then records them relative to the package, or as written, and
-reads the same on every machine. Any other path, such as `/opt/skills`, `../shared` or `~/x/../skills`, is recorded
-absolute, and every command that writes the project's own lock warns of it.
-
-## Checking a package
-
-skill-graft finds references by their form alone, so it misses "run the grilling skill", takes `/tmp` for a call, and
-can rewrite a word a prefix happens to match. The `graft-check` skill, in this repository's `skills/`, has an agent read
-the vendored skills for those mistakes. Install it like any other skill, with the lines `init` writes commented out into
-`skill-graft.toml`:
-
-```toml
-[sources.skill-graft]
-git = "https://github.com/remigius42/skill-graft.git"
-subdirectory = "skills"
-```
-
-```sh
-skill-graft update skill-graft
-skill-graft add skill-graft/graft-check
-skill-graft deploy
-```
-
-Until that `update` sets the source's `ref`, every `deploy` fails, not only graft-check's.
-
-Run it in your harness as `/graft-check`, or `/graft-check mp/tdd` to check only some skills; it runs only when you ask.
-It deploys into a temporary folder with `deploy --into`, and has one reader per skill compare its upstream text with its
-vendored copy. The readers report missed and false references, references resolved to the wrong skill, wrong or missed
-rewrites, and relative links vendoring broke. For each finding it proposes `add`, `bind`, `unbind` or a patch, and
-applies it only once you accept; a patch is written by a confined patcher, and you read its diff before it goes into the
-package. It never runs APM: when the package would change, it tells you to run `skill-graft deploy`. It reads lock
-`version` 1 only; for a newer lock, update the source you installed it from.
 
 ## Cache
 
@@ -320,38 +261,13 @@ Skill text comes from other people's repositories and may carry prompt injection
 Report a vulnerability privately, as [SECURITY.md](https://github.com/remigius42/skill-graft/blob/main/SECURITY.md)
 says, not in a public issue.
 
-## Writing a patch
+## Documentation
 
-A patch is a unified diff against the skill's upstream folder, which `skill-graft why <skill>` prints on its last line.
-No command writes one; in a shell (a project package keeps its patches in its own `.apm/skill-graft/`):
-
-```sh
-upstream="$(skill-graft why mp/implement | sed -n 's/^upstream: //p')"
-cd "$(mktemp -d)"
-cp -rL "$upstream" base && rm -rf base/.git
-# Only for a skill that already has patches: apply them first, in order.
-(cd base && git apply -p1 ~/.apm/skill-graft/patches/first.patch)
-cp -r base edited
-"$EDITOR" edited/SKILL.md
-LC_ALL=C diff -ruN base/ edited/ > ~/.apm/skill-graft/patches/second.patch
-```
-
-Then list it, after the skill's earlier patches:
-
-```toml
-[patches]
-"mp/implement" = ["patches/first.patch", "patches/second.patch"]
-```
-
-`skill-graft resolve --dry-run --diff-file review.diff` writes the patched skill as it would deploy to `review.diff`;
-read it in an editor, then run `skill-graft resolve`.
-
-`diff` needs `-N`, or added and deleted files are lost; skill-graft refuses such a patch, and binary changes, by the
-lines `diff` writes for them in English: hence `LC_ALL=C`. A file such a patch leaves empty is deleted, with any folder
-that leaves empty, as `-N` writes a deleted file as one emptied; so any `diff`, GNU or the BSD one of macOS, deletes
-alike. A `git diff` patch applies as git applies it. A patch must not change the skill's `name:`: use `[rename]`. When
-`update` finds that a patch no longer applies at a new commit, it keeps the old `ref` and names the upstream folder at
-the new commit: redo the patch against it, then run `update` again.
+- [docs/howto.md](https://github.com/remigius42/skill-graft/blob/main/docs/howto.md): common tasks, from adding a source
+  to writing a patch.
+- [CONTEXT.md](https://github.com/remigius42/skill-graft/blob/main/CONTEXT.md): the terms these docs use.
+- [docs/](https://github.com/remigius42/skill-graft/blob/main/docs/README.md): security, architecture, decisions and the
+  specs.
 
 ## Contributing
 
