@@ -24,11 +24,12 @@ Each should pass at once: the code already behaves so. One that fails is a bug, 
   endings, and `deploy` exits 0 (deploy, "Lock reformatted by an editor"); verify it passes
 - [x] 2.2 `tests/cli/test_hidden_characters.py`: a U+202E in a `skill-graft.toml` comment, and `resolve` exits 0
   (hidden-characters, "In the config"); verify it passes
+- [x] 2.3 `tests/commands/test_review.py`: after a killed run leaves `.apm/skills.old/` holding the lock's copies,
+  `resolve --dry-run` compares against those, through the command (edit, "After a killed run"); verify it passes
 
 The other scenarios are pinned already: the notice text by `tests/commands/test_deploy.py`, the link's `mermaid` field
 and unpadded fragment by `test_mermaid_link_decodes_to_the_diagram` in `tests/commands/test_explain.py`, the headers'
-order by `tests/pipeline/test_hull.py`, `.apm/skills.old/` by `test_killed_run_reads_skills_old` in
-`tests/commands/test_review.py`.
+order by `tests/pipeline/test_hull.py`.
 
 ## 3. Versioned docs links
 

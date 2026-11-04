@@ -132,3 +132,19 @@ def test_killed_run_reads_skills_old(home: Path, capsys: Capsys) -> None:
     skill(home / "mp" / "tdd", "22\n")
 
     assert hull_diff(capsys)[1:] == ["~ mp/tdd", "  SKILL.md (changed, 2 -> 3 bytes)"]
+
+
+def test_resolve_dry_run_after_a_killed_run(home: Path, capsys: Capsys) -> None:
+    skill(home / "mp" / "tdd", "1\n")
+    configure(["mp/tdd"], mp="~/mp")
+    assert main(["resolve"]) == 0
+    skills = paths.Scope(Path.home()).skills
+    shutil.copytree(skills, skills.with_name("skills.old"))
+    (skills / "tdd" / "SKILL.md").write_text("longer\n")
+    skill(home / "mp" / "tdd", "22\n")
+    capsys.readouterr()
+
+    assert main(["resolve", "--dry-run"]) == 0
+
+    out = capsys.readouterr().out.splitlines()
+    assert "  SKILL.md (changed, 2 -> 3 bytes)" in out  # not 7, the copy in skills/
