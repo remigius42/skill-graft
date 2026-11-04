@@ -43,4 +43,4 @@ order by `tests/pipeline/test_hull.py`, `.apm/skills.old/` by `test_killed_run_r
 
 ## 4. Check
 
-- [ ] 4.1 Run `uv run pytest` and `openspec validate retire-design-doc --strict`; verify both pass
+- [x] 4.1 Run `uv run pytest` and `openspec validate retire-design-doc --strict`; verify both pass
