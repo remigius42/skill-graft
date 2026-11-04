@@ -958,6 +958,23 @@ def test_nothing_changed(home: Path, tmp_path: Path) -> None:
     assert (package() / "skill-graft.lock").read_bytes() == before
 
 
+def test_lock_reformatted_by_an_editor(
+    home: Path, tmp_path: Path, capsys: Capsys
+) -> None:
+    git_and_own(home, tmp_path)
+    lock_file = package() / "skill-graft.lock"
+    written = lock_file.read_bytes()
+    text = "# reviewed\n" + written.decode()
+    lock_file.write_bytes(text.replace("\n", "\r\n").encode())
+    capsys.readouterr()
+
+    assert main(["deploy", "--no-apm-install"]) == 0
+
+    err = capsys.readouterr().err
+    assert "skill-graft.lock" not in err and "warning" not in err
+    assert lock_file.read_bytes() == written  # rewritten as skill-graft writes it
+
+
 def test_config_edited_by_hand(
     home: Path, tmp_path: Path, fake_apm: FakeApm, capsys: Capsys
 ) -> None:

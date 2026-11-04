@@ -20,7 +20,7 @@ All three were committed before this proposal, which the branch rebases under th
 
 Each should pass at once: the code already behaves so. One that fails is a bug, reported before any fix.
 
-- [ ] 2.1 `tests/commands/test_deploy.py`: after `resolve`, a comment line added to `skill-graft.lock` and CRLF line
+- [x] 2.1 `tests/commands/test_deploy.py`: after `resolve`, a comment line added to `skill-graft.lock` and CRLF line
   endings, and `deploy` exits 0 (deploy, "Lock reformatted by an editor"); verify it passes
 - [ ] 2.2 `tests/commands/test_explain.py`: `test_mermaid_labels_quoted` asserts the Skill tool arrow's label is
   `"Skill(skill=#quot;grilling#quot;)"` (explain, "Double quote in a label"); verify it passes
