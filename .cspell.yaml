@@ -65,6 +65,8 @@ words:
   - iterdir
   - keepends
   - kiro
+  - linecap
+  - linejoin
   - mattpocock
   - mawk
   - metavar

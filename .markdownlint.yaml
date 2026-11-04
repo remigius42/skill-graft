@@ -18,5 +18,6 @@ MD033:  # Inline HTML
     - details
     - summary
     - br
+    - img  # the README's logo: Markdown can neither size nor float an image
 
 MD041: false  # First line in file should be a top level heading - disable for flexibility
