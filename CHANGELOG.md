@@ -29,6 +29,12 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
   traceback
 - `update --dry-run` prints `nothing to apply` when the lock differs only in the folder a path **Source** is recorded
   at, not an `apply:` line
+- Errors, warnings and notices write each unprintable character and **Hidden character** escaped (`\n`, `\x1b`), so a
+  file name a **Skill**'s author chose, such as one holding a line break or a terminal escape, can neither forge an
+  output line nor recolor the terminal; so does `update`'s `no previous hull to compare (…)`. git's error of several
+  lines prints on one
+- graft-check shows its agent no file name when it compares the throwaway deploy with the **Package**, nor in a
+  **Patch** diff's error output; a diff that fails ends that fix, and the unhardened one deletes its patch file
 
 ## [0.4.0] - 2026-11-01
 
