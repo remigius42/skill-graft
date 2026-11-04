@@ -22,7 +22,7 @@ Each should pass at once: the code already behaves so. One that fails is a bug, 
 
 - [x] 2.1 `tests/commands/test_deploy.py`: after `resolve`, a comment line added to `skill-graft.lock` and CRLF line
   endings, and `deploy` exits 0 (deploy, "Lock reformatted by an editor"); verify it passes
-- [ ] 2.2 `tests/cli/test_hidden_characters.py`: a U+202E in a `skill-graft.toml` comment, and `resolve` exits 0
+- [x] 2.2 `tests/cli/test_hidden_characters.py`: a U+202E in a `skill-graft.toml` comment, and `resolve` exits 0
   (hidden-characters, "In the config"); verify it passes
 
 The other scenarios are pinned already: the notice text by `tests/commands/test_deploy.py`, the link's `mermaid` field

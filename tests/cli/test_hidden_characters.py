@@ -14,6 +14,7 @@ Capsys: TypeAlias = pytest.CaptureFixture[str]
 
 TAG = "\U000e0041"
 LRI = "\N{LEFT-TO-RIGHT ISOLATE}"
+RLO = "\N{RIGHT-TO-LEFT OVERRIDE}"
 
 
 def run(capsys: Capsys, *args: str) -> tuple[int, str, str]:
@@ -47,6 +48,17 @@ def test_debris_warns(home: Path, capsys: Capsys) -> None:
         f"skill-graft: warning: {home}/mp/tdd/SKILL.md:3: 2 invisible characters, "
         "the first U+200B\n"
     )
+
+
+def test_config_is_not_scanned(home: Path, capsys: Capsys) -> None:
+    skill(home / "mp" / "tdd")
+    write_config(
+        f'# reviewed {RLO}\nentries = ["mp/tdd"]\n[sources.mp]\npath = "~/mp"\n'
+    )
+
+    code, _, err = run(capsys, "resolve")
+
+    assert code == 0 and "U+202E" not in err
 
 
 def test_deploy_into_stays_empty(home: Path, tmp_path: Path, capsys: Capsys) -> None:
