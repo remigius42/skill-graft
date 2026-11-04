@@ -3,7 +3,8 @@
 skill-graft builds a user's agent skills from other people's repositories: it computes the transitive hull of the skills
 they ask for, vendors and patches them (renames included), and hands the result to
 [APM](https://github.com/microsoft/apm) to deploy. Read `CONTEXT.md` (glossary; use its terms) and `docs/adr/` before
-changing behavior. Until OpenSpec specs cover it, `docs/design.md` holds how it works.
+changing behavior. `openspec/specs/` says what it does, `docs/architecture.md` how and why; `docs/README.md` maps the
+rest.
 
 ## Git
 

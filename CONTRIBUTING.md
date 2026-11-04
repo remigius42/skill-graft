@@ -60,7 +60,10 @@ hook ([scripts/check_pins.py](scripts/check_pins.py)) fails, naming both sides, 
   together; and, a pair of its own, so that neither form can go missing, each `skill-graft==<version>` there and that
   same `version`
 - the APM version `README.md` requires, in its text and each `apm-cli==` of its install line, and `apm-cli` in the dev
-  group of `pyproject.toml`, then `uv lock`
+  group of `pyproject.toml`, then `uv lock`; no hook checks the rest, so measure again what
+  [docs/apm-behavior.md](docs/apm-behavior.md) records, copy the hidden character classes in
+  `src/skill_graft/infra/text.py` again from APM's `apm_cli/security/content_scanner.py`, and update every other mention
+  of the old version (`grep -rnF '<old version>' docs src tests`)
 - the commitlint hook's `@commitlint/config-conventional` and `.github/commitlint/`:
   `npm install --prefix .github/commitlint --package-lock-only --ignore-scripts --save-exact @commitlint/cli@<version> @commitlint/config-conventional@<version>`
 - `node` under `default_language_version` and `node-version` in the commitlint job of `.github/workflows/ci.yml`
