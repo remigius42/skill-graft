@@ -503,8 +503,8 @@ new empty folder, exits 0 with the expected answer. The skill SHALL run the prob
 unless `claude` is not on `PATH` or the user declined their Claude Code account. Otherwise the skill SHALL say the
 **Check** is unhardened and why, naming the probe's error, before reading any **Skill** text, and only after the user
 says yes read and patch the **Skills** in its own session, where the hardened requirements do not bind it; on anything
-else it SHALL end the **Check**. An unhardened **Patch**'s diff that fails, exiting neither 0 nor 1, SHALL end that fix
-with its patch file deleted, its error output not shown.
+else it SHALL end the **Check**. An unhardened **Patch**'s diff that does not exit 1 SHALL end that fix with its patch
+file deleted, its error output not shown.
 
 #### Scenario: No claude
 
@@ -537,7 +537,8 @@ with its patch file deleted, its error output not shown.
 #### Scenario: Unhardened diff fails
 
 - **WHEN** in an unhardened **Check**, the working copy of a **Patch** holds a symlink leading to no file
-- **THEN** the diff exits 2, that fix ends with no patch file in the **Package**, and its error output is not shown
+- **THEN** the diff exits other than 1 (GNU diff 2, macOS's 0), that fix ends with no patch file in the **Package**, and
+  its error output is not shown
 
 ### Requirement: Another harness's readers only on the user's yes
 

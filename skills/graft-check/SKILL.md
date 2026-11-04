@@ -308,8 +308,8 @@ Take the fixes one at a time: ask, and apply only on yes. Run only the commands 
   in `edited/` yourself, keeping `name:` as it is; then run first `cd <base-dir>` as a Bash call of its own, then
   `mkdir -p <package>/patches/ && LC_ALL=C diff -ruN base/ edited/ > <package>/patches/<n>.patch 2>/dev/null`. Its exit
   code 1 means it wrote a diff: append it to `[patches]` and run `skill-graft resolve`, as in the last step above. Any
-  exit code above 1 means the diff failed, such as on a link leading to no file: delete `<package>/patches/<n>.patch`
-  and end this fix.
+  other exit code means no diff to keep, 0 that nothing changed, above 1 that the diff failed, such as on a link leading
+  to no file: delete `<package>/patches/<n>.patch` and end this fix.
 
 After each applied fix, make a throwaway deploy (step 2) into a new folder and compare its lock's `[[skills]]` ids with
 the previous deploy's. Name every **Skill** that left or joined the **Hull**.

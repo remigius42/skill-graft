@@ -399,7 +399,9 @@ def test_diff_of_a_dangling_link_names_no_file(tmp_path: Path) -> None:
         DIFF, shell=True, cwd=tmp_path, capture_output=True, text=True, check=False
     )
 
-    assert (done.returncode, done.stdout, done.stderr) == (2, "", "")
+    # GNU diff exits 2 and names the link on stderr; macOS's skips it, exit 0.
+    assert (done.stdout, done.stderr) == ("", "")
+    assert done.returncode in (0, 2)
 
 
 UNHARDENED = (
@@ -420,7 +422,9 @@ def test_unhardened_diff_of_a_dangling_link_names_no_file(tmp_path: Path) -> Non
         command, shell=True, cwd=tmp_path, capture_output=True, text=True, check=False
     )
 
-    assert (done.returncode, done.stdout, done.stderr) == (2, "", "")
+    # GNU diff exits 2 and names the link on stderr; macOS's skips it, exit 0.
+    assert (done.stdout, done.stderr) == ("", "")
+    assert done.returncode in (0, 2)
 
 
 def test_summary_counts_lines_that_look_like_headers(tmp_path: Path) -> None:
