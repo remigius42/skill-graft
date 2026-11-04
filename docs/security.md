@@ -1,7 +1,8 @@
 # Security
 
 Skills come from other people's repositories and are written to steer agents, so their text can carry prompt injection,
-some of it invisible. This page says what stops it, where, and what does not (ADR 0007).
+some of it invisible. This page says what stops it, where, and what does not
+([ADR 0007](adr/0007-upstream-text-is-untrusted.md)).
 
 ## The threat
 

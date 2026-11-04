@@ -7,6 +7,6 @@ never writes `~/.apm/apm.yml`: it is the user's file, shared with other packages
 library and `tomlkit`) include no YAML writer. `init` and `build` register the package through that `apm install -g`
 instead.
 
-In project scope (ADR 0004) the same holds for the project's `apm.yml`: skill-graft runs
-`apm install ./.apm/skill-graft` from the project root, where APM 0.35.0 accepts and records the relative path, and
+In project scope ([ADR 0004](0004-user-scope-is-the-default.md)) the same holds for the project's `apm.yml`: skill-graft
+runs `apm install ./.apm/skill-graft` from the project root, where APM 0.35.0 accepts and records the relative path, and
 checks that `apm.yml` there lists it.

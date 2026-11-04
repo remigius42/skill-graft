@@ -1,7 +1,8 @@
 # Contributing
 
 The rules for commits, code and tests are in [AGENTS.md](AGENTS.md), and the project's terms in
-[CONTEXT.md](CONTEXT.md); both hold for people as for agents.
+[CONTEXT.md](CONTEXT.md); both hold for people as for agents. How it works, and why, is mapped in
+[docs/README.md](docs/README.md).
 
 ## Setup
 

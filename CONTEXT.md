@@ -1,7 +1,8 @@
 # skill-graft
 
 skill-graft builds a user's agent skills from other people's repositories: the skills they ask for, every skill those
-reach, renamed and patched as the user declares.
+reach, renamed and patched as the user declares. The reasons behind its less obvious choices are in
+[docs/adr/](docs/adr/); every other doc is listed in [docs/README.md](docs/README.md).
 
 ## Language
 
