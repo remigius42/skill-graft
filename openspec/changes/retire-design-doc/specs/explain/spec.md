@@ -7,8 +7,8 @@ a **Hull** **Skill**, holding one node per such **Skill** labelled as on its tre
 `(patched)`), the **Entries** in a class `entry` drawn amber with a thicker border, and one arrow per pair of
 **Skills**, kind and **Bind** that has a tree line, labelled with the **Reference** as written (`, bind` when a **Bind**
 decided it). Prose arrows SHALL be dotted. The output SHALL be deterministic. Every label SHALL stand in double quotes,
-so parentheses do not break the diagram, each double quote in it SHALL be written `#quot;`, so it does not end the
-label, and each backtick `#96;`, so Mermaid does not read it as a Markdown string.
+so parentheses do not break the diagram, and each backtick in it SHALL be written `#96;`, so Mermaid does not read it as
+a Markdown string.
 
 #### Scenario: Diagram
 
@@ -32,11 +32,6 @@ label, and each backtick `#96;`, so Mermaid does not read it as a Markdown strin
 
 - **WHEN** a **Reference** is written `Skill(grilling)` or `` `grilling` ``
 - **THEN** every node and arrow label in the diagram stands in double quotes, and no label holds a backtick
-
-#### Scenario: Double quote in a label
-
-- **WHEN** `mp/tdd` calls the Skill tool as `Skill(skill="grilling")`
-- **THEN** that arrow's label is `"Skill(skill=#quot;grilling#quot;)"`
 
 #### Scenario: No source links
 

@@ -22,15 +22,12 @@ Each should pass at once: the code already behaves so. One that fails is a bug, 
 
 - [x] 2.1 `tests/commands/test_deploy.py`: after `resolve`, a comment line added to `skill-graft.lock` and CRLF line
   endings, and `deploy` exits 0 (deploy, "Lock reformatted by an editor"); verify it passes
-- [ ] 2.2 `tests/commands/test_explain.py`: `test_mermaid_labels_quoted` asserts the Skill tool arrow's label is
-  `"Skill(skill=#quot;grilling#quot;)"` (explain, "Double quote in a label"); verify it passes
-- [ ] 2.3 `tests/commands/test_explain.py`: the link test asserts its fragment holds no `=` (explain, "Link decodes to
-  the diagram"); verify it passes
-- [ ] 2.4 `tests/cli/test_hidden_characters.py`: a U+202E in a `skill-graft.toml` comment, and `resolve` exits 0
+- [ ] 2.2 `tests/cli/test_hidden_characters.py`: a U+202E in a `skill-graft.toml` comment, and `resolve` exits 0
   (hidden-characters, "In the config"); verify it passes
 
-The other scenarios are pinned already: the notice text by `tests/commands/test_deploy.py`, the headers' order by
-`tests/pipeline/test_hull.py`, `.apm/skills.old/` by `test_killed_run_reads_skills_old` in
+The other scenarios are pinned already: the notice text by `tests/commands/test_deploy.py`, the link's `mermaid` field
+and unpadded fragment by `test_mermaid_link_decodes_to_the_diagram` in `tests/commands/test_explain.py`, the headers'
+order by `tests/pipeline/test_hull.py`, `.apm/skills.old/` by `test_killed_run_reads_skills_old` in
 `tests/commands/test_review.py`.
 
 ## 3. Versioned docs links

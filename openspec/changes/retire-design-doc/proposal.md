@@ -4,8 +4,8 @@
 
 `docs/design.md` was the design written before the first OpenSpec change, meant to give way to the specs as they landed.
 It never did: every change kept it in step, so it became a second prose spec beside `openspec/specs/`, and the README
-grew task guides that crowd out its reference. A check of `design.md` against the specs found no contradiction, but
-seven behaviors that only `design.md` states; deleting it without them leaves them specified nowhere.
+grew task guides that crowd out its reference. A check of `design.md` against the specs found no contradiction, but six
+behaviors a user sees that only `design.md` states; deleting it without them leaves them specified nowhere.
 
 ## What Changes
 
@@ -22,11 +22,10 @@ seven behaviors that only `design.md` states; deleting it without them leaves th
   README on PyPI and on each tag then leads to that release's guides, not main's. `check-pins` holds them to
   `pyproject.toml`'s version, and the release commit raises them with the other pins. Until then they name the last
   release, which lacks `docs/howto.md` and `docs/README.md`, so the branch merges right before a release.
-- The seven behaviors only `design.md` states become requirements and scenarios, each pinned by a test:
+- The six behaviors only `design.md` states become requirements and scenarios, each pinned by a test:
   - `deploy` compares the lock parsed: a comment or line endings an editor added are no difference.
   - The notice for a changed path **Source** **Skill** is
     `<skill id> changed in its path source since skill-graft.lock: deployed as is`.
-  - A Mermaid label writes `"` as `#quot;`.
   - The mermaid.live link's state holds `"mermaid": "{\"theme\": \"default\"}"`, its fragment unpadded.
   - `skill-graft.toml` is not scanned for **Hidden characters**.
   - A failing resolution lists failing **Patches** under `patches do not apply:`, then **Hidden characters** under
@@ -46,8 +45,7 @@ None.
 
 - `deploy`: "Deploy what the lock records" compares the lock parsed; "Changed path Source deployed" gives the notice's
   text.
-- `explain`: "Tree as Mermaid" escapes `"`; "Tree as a mermaid.live link" gives the state's `mermaid` field and the
-  unpadded fragment.
+- `explain`: "Tree as a mermaid.live link" gives the state's `mermaid` field and the unpadded fragment.
 - `hidden-characters`: "Hidden characters fail resolution" scans no `skill-graft.toml`; "One run reports every hidden
   character" gives the headers and their order.
 - `edit`: "Edit reports the hull diff" reads a killed run's `.apm/skills.old/`.
@@ -59,7 +57,7 @@ None.
   `docs/assets/skill-graft-small.svg`; `docs/design.md` removed. `.markdownlint.yaml` allows `<img>`, which alone can
   size and float the logo.
 - Tests for the behaviors no test pins yet: `tests/commands/test_deploy.py` (a reformatted lock),
-  `tests/commands/test_explain.py` (`#quot;`, the unpadded fragment), `tests/cli/test_hidden_characters.py` (the config
-  not scanned). No change to `src/`, unless one of those tests finds the code differs.
+  `tests/cli/test_hidden_characters.py` (the config not scanned). No change to `src/`, unless one of those tests finds
+  the code differs.
 - Tooling: `scripts/check_pins.py` and `tests/test_check_pins.py` pin the README's `blob/v<version>/` links;
   CONTRIBUTING.md's release steps raise them.

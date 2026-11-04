@@ -27,9 +27,11 @@ PyPI shows for each release.
   `docs/`. Alternative: archive the version from before the first OpenSpec change; rejected, as it would be stale on
   arrival.
 
-- **What only `design.md` stated is sorted by whether a user sees it.** Seven behaviors become spec deltas; mechanism
-  (the transaction, the cache's pins, the patch environment) and rationale (the scan's classes, the link hosts) go to
+- **What only `design.md` stated is sorted by whether a user sees it.** Six behaviors become spec deltas; mechanism (the
+  transaction, the cache's pins, the patch environment) and rationale (the scan's classes, the link hosts) go to
   `docs/architecture.md`. The lone-surrogate rule follows from the decoding the spec already states, so it is rationale.
+  So is writing `"` as `#quot;` in a Mermaid label: names, aliases and prefixes cannot hold a `"`, and a Skill tool
+  reference is shown normalized, so no user can see it.
 
 - **A synthetic config in the README, not the maintainer's.** A real config would name the repositories and refs one
   person trusts, and would not use every key the reference explains.
