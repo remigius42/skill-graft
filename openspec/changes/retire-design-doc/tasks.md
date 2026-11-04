@@ -26,6 +26,9 @@ Each should pass at once: the code already behaves so. One that fails is a bug, 
   (hidden-characters, "In the config"); verify it passes
 - [x] 2.3 `tests/commands/test_review.py`: after a killed run leaves `.apm/skills.old/` holding the lock's copies,
   `resolve --dry-run` compares against those, through the command (edit, "After a killed run"); verify it passes
+- [x] 2.4 `tests/pipeline/test_hull.py`: an entry holding a tag character calls `/notes`, which two other sources have,
+  so the walk stops, and `hidden characters:` comes before that error (hidden-characters, "One run reports every hidden
+  character"); verify it passes
 
 The other scenarios are pinned already: the notice text by `tests/commands/test_deploy.py`, the link's `mermaid` field
 and unpadded fragment by `test_mermaid_link_decodes_to_the_diagram` in `tests/commands/test_explain.py`, the headers'

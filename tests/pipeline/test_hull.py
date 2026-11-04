@@ -739,6 +739,18 @@ def test_with_a_failing_patch(home: Path, tmp_path: Path, capsys: Capsys) -> Non
     ]
 
 
+def test_the_error_that_stops_the_walk_comes_last(home: Path, capsys: Capsys) -> None:
+    skill(home / "own" / "notes")
+    skill(home / "x" / "notes")
+    two_sources(home, f"{TAG}\n/notes\n", x="~/x")
+
+    code, err = deploy(capsys)
+
+    assert code == 1
+    assert hidden_lines(err)[0].startswith("  mp/tdd: ")
+    assert err.index("hidden characters:") < err.index("skill-graft bind mp/notes")
+
+
 def test_patch_makes_markdown_not_utf8(
     home: Path, tmp_path: Path, capsys: Capsys
 ) -> None:
