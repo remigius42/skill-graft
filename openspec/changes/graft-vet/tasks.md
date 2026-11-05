@@ -38,7 +38,7 @@ Test-first: each task's test fails before its code, then passes. One commit per 
 ## 3. `SKILL.md`
 
 - [x] 3.1 Front matter and no other **Skill** named; verify "Front matter" and "Alone in its hull"
-- [ ] 3.2 Steps: the probe as graft-check's, then the scan (`vet --into` hardened, plain `vet` not, its standard error
+- [x] 3.2 Steps: the probe as graft-check's, then the scan (`vet --into` hardened, plain `vet` not, its standard error
   unopened but for its first line naming the **Package**, a failure showing its exit code only), a fresh working folder
   per reader, unhardened going to the scan alone with no yes, readers per folder with `[check]`'s caps and batches, a
   failed reader's exit code and first error line, never its output, the filter, the quarantine; verify tests on its key
