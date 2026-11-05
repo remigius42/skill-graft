@@ -98,7 +98,7 @@ ask() {
     "Bash(grep:*)" "Bash(cut:*)" "Bash(LC_ALL=C tr:*)" \
     "Bash(sh '$skill/report-filter.sh':*)" "Bash(sh $skill/report-filter.sh:*)" \
     "Bash(sh '$skill/run-claude.sh':*)" "Bash(sh $skill/run-claude.sh:*)" \
-    "Write(/$dir/tmp/**)" "Read(/$dir/project/.apm/skill-graft/skill-graft.toml)") \
+    "Edit(/$dir/tmp/**)" "Read(/$dir/project/.apm/skill-graft/skill-graft.toml)") \
     > "$dir/transcript" || code=$?
   echo "=== $dir/transcript" >&2
   if [[ "$code" != 0 ]]; then

@@ -28,8 +28,9 @@ source `up` committed with `GIT_AUTHOR_*` and `GIT_COMMITTER_*` set.
 the real `~/.claude`, `~/.apm` and `~/.cache/skill-graft` are never read or written, and the report file is found as the
 one `report` under it. `--allowedTools` grants `skill-graft vet`, what the hardened **Vet** runs (`mktemp`, `printenv`,
 `command -v`, `sed`, `ls`, `sh` on the skill's report filter and `run-claude.sh`, which starts every `claude` the
-**Vet** runs, and on no other script, and `cat`, `tr`, `grep`, `cut` for the probe and error lines), writes in its
-temporary folder, for prompt files, and reading `skill-graft.toml`; headless, any other tool call is denied. Claude
+**Vet** runs, and on no other script, and `cat`, `tr`, `grep`, `cut` for the probe and error lines), `Edit` on its
+temporary folder, which covers the prompt files the Write tool writes and the files `vet`'s output is redirected to,
+which Claude Code otherwise asks before, and reading `skill-graft.toml`; headless, any other tool call is denied. Claude
 Code's Bash does not pass the token on to the readers, so `claude` on `PATH` is a wrapper reading it from a file only
 you can read in the temporary folder, deleted on exit. The session runs with `--output-format stream-json`, so the
 transcript holds every tool call and result.
