@@ -31,7 +31,7 @@ Test-first: each task's test fails before its code, then passes. One commit per 
   `tests/commands/test_vet.py` "No lock", "A Patch removes a line", "A Patch adds a line", "A script", "Matched text is
   never printed", "A file name with a space", "Flags found", "Nothing flagged", and that the lock, config and
   `.apm/skills/` bytes are unchanged
-- [ ] 3.2 With **Skill IDs**: those in the **Hull** alone, one outside it with what its `add` brings in, unknown and
+- [x] 3.2 With **Skill IDs**: those in the **Hull** alone, one outside it with what its `add` brings in, unknown and
   repeated IDs; verify "A Hull Skill", "A Skill not yet added", "Unknown Skill", and `skill-graft.toml` unchanged
 - [ ] 3.3 Errors as `resolve`'s: a **Hidden character**, a failing **Patch**, a `[vet]` table; verify "Hidden character"
   and "An unknown key" exit 1 with no **Flag** on standard output

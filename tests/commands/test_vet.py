@@ -156,3 +156,73 @@ def test_a_file_name_with_a_space(home: Path, capsys: Capsys) -> None:
         "mp/tdd caf?.sh:1 privilege ASI03 privilege.sudo\n"
         "mp/tdd my?script.sh:2 privilege ASI03 privilege.sudo\n"
     )
+
+
+def hull_and_review(home: Path) -> None:
+    """Entry `mp/tdd` calling `/grilling`; `mp/review`, in no hull, calling
+    `/diagnose` and `/grilling`. Each flags its line 2."""
+    skill(home / "mp" / "tdd", "# tdd\nsudo /grilling\n")
+    skill(home / "mp" / "grilling", "# grilling\nsudo it\n")
+    skill(home / "mp" / "review", "# review\nsudo /diagnose, /grilling\n")
+    skill(home / "mp" / "diagnose", "# diagnose\nsudo it\n")
+    configure(["mp/tdd"], mp="~/mp")
+
+
+def test_a_hull_skill(home: Path, capsys: Capsys) -> None:
+    hull_and_review(home)
+
+    assert main(["vet", "mp/tdd"]) == 0
+
+    out, err = capsys.readouterr()
+    assert out == "mp/tdd SKILL.md:2 privilege ASI03 privilege.sudo\n"
+    assert "1 flag in 1 skill" in err
+
+
+def test_a_skill_not_yet_added(home: Path, capsys: Capsys) -> None:
+    hull_and_review(home)
+    config = (package(home) / "skill-graft.toml").read_bytes()
+
+    assert main(["vet", "mp/review"]) == 0
+
+    assert capsys.readouterr().out == (
+        "mp/review SKILL.md:2 privilege ASI03 privilege.sudo\n"
+        "mp/diagnose SKILL.md:2 privilege ASI03 privilege.sudo\n"
+    )
+    assert (package(home) / "skill-graft.toml").read_bytes() == config
+
+
+def test_skills_in_hull_order_given_twice(home: Path, capsys: Capsys) -> None:
+    hull_and_review(home)
+
+    assert main(["vet", "mp/review", "mp/grilling", "mp/review"]) == 0
+
+    # The hull's skills in its order, then those `mp/review` would bring in.
+    assert capsys.readouterr().out == (
+        "mp/grilling SKILL.md:2 privilege ASI03 privilege.sudo\n"
+        "mp/review SKILL.md:2 privilege ASI03 privilege.sudo\n"
+        "mp/diagnose SKILL.md:2 privilege ASI03 privilege.sudo\n"
+    )
+
+
+def test_hull_skills_in_hull_order(home: Path, capsys: Capsys) -> None:
+    skill(home / "mp" / "a", "/b then /c\n")
+    skill(home / "mp" / "b", "sudo x\n")
+    skill(home / "mp" / "c", "sudo x\n")
+    configure(["mp/a"], mp="~/mp")
+
+    assert main(["vet", "mp/c", "mp/b"]) == 0
+
+    assert capsys.readouterr().out == (
+        "mp/b SKILL.md:1 privilege ASI03 privilege.sudo\n"
+        "mp/c SKILL.md:1 privilege ASI03 privilege.sudo\n"
+    )
+
+
+def test_unknown_skill(home: Path, capsys: Capsys) -> None:
+    hull_and_review(home)
+
+    assert main(["vet", "mp/nothing"]) == 1
+
+    out, err = capsys.readouterr()
+    assert out == ""
+    assert "vet: `mp/nothing`: no skill 'nothing' found" in err

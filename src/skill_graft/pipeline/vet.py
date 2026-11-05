@@ -199,8 +199,9 @@ class Flag:
 
 
 def scan(view: View) -> list[Flag]:
-    """Each flag of the skill whose deployed files `view` holds, file by file in
-    the view's order, then by line and pattern.
+    """Each flag of the skill whose deployed files `view` holds, once: file by
+    file in the view's order, by path bytes as `deployed.walk` sorts it, then by
+    line and pattern.
 
     Each file is read as resolution reads it; one read in another encoding than
     strict UTF-8 is flagged as a whole, and still scanned. Lines are split at line

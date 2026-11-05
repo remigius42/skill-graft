@@ -280,10 +280,11 @@ def _parser() -> tuple[_Parser, dict[str, argparse.ArgumentParser]]:
         "skill",
         help="a skill ID (<source alias>/<name>), or the name a hull skill deploys as",
     )
-    commands.add_parser(
+    vet_parser = commands.add_parser(
         "vet",
         help="flag the lines of each skill worth reading, writing nothing",
     )
+    vet_parser.add_argument("skills", nargs="*", metavar="skill-id")
     add = commands.add_parser(
         "add",
         help="add skills to the entries, then resolve",
@@ -496,7 +497,7 @@ def _main(argv: list[str] | None) -> int:
             elif args.command == "why":
                 explain.show_why(current, warnings, args.skill)
             elif args.command == "vet":
-                vet.vet(current, warnings)
+                vet.vet(current, warnings, args.skills)
             elif args.command == "tree":
                 mermaid = args.format == "mermaid"
                 explain.show_tree(current, warnings, mermaid, args.link)
