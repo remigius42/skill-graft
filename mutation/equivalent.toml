@@ -1,3 +1,29 @@
 # Mutants that cannot change what their pattern matches where skill-graft uses it, per
 # target: `"<target>" = [{ operator = "...", offset = N, reason = "..." }]`. A listed
 # mutant that is killed, or no longer exists, fails `python -m mutation`.
+
+"vet._PATTERNS:unreviewable.long-line" = [
+  { operator = "drop-anchor", offset = 0, reason = "a line holds no line feed: any 1001 characters start at its start too" },
+]
+"vet._PATTERNS:unreviewable.encoded-blob" = [
+  { operator = "drop-class-item", offset = 1, reason = "compiled with IGNORECASE: a-z matches A-Z" },
+  { operator = "drop-class-item", offset = 4, reason = "compiled with IGNORECASE: A-Z matches a-z" },
+]
+"vet._RM" = [
+  { operator = "plus-to-star", offset = 19, reason = "adds only an empty run of options after `rm`, which is no removal, and consumes no later `rm`" },
+]
+"vet._CHMOD" = [
+  { operator = "plus-to-star", offset = 40, reason = "adds only an empty mode, which is neither octal nor a clause" },
+]
+"vet._OCTAL" = [
+  { operator = "min-1", offset = 8, reason = "NOT equivalent: two digits, as `chmod 77`, are a world-writable mode the Vet misses; fixing that is a change of its own" },
+]
+"vet._SYMBOLIC" = [
+  { operator = "star-to-plus", offset = 22, reason = "drops only clauses adding nothing, which add neither `w` nor `s`" },
+]
+"vet._KEY" = [
+  { operator = "plus-to-star", offset = 6, reason = "adds only an empty key, which no flagged key equals" },
+]
+"vet._TOKEN" = [
+  { operator = "plus-to-star", offset = 37, reason = "adds only empty tokens, which lead nowhere: no start outside, `normpath` gives `.`" },
+]

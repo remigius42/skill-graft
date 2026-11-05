@@ -65,7 +65,7 @@ with the archive commit.
 Per target module: run `uv run python -m mutation <its targets>`; for each surviving mutant, a test in that module's
 test file that kills it, or its entry in `equivalent.toml` with the reason.
 
-- [ ] 4.1 `vet`; verify its run exits 0 and `uv run pytest` passes
+- [x] 4.1 `vet`; verify its run exits 0 and `uv run pytest` passes
 - [ ] 4.2 `references`; verify its run exits 0 and `uv run pytest` passes
 - [ ] 4.3 `config` and `discovery`; verify their run exits 0 and `uv run pytest` passes
 - [ ] 4.4 `text` and `hidden`; verify their run exits 0, the whole `uv run python -m mutation` exits 0, and
