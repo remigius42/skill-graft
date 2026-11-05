@@ -9,6 +9,7 @@ words:
   - backref
   - backslashreplace
   - backticked
+  - basetemp
   - bidi
   - blobless
   - blocklist

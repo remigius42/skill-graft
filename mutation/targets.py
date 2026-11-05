@@ -31,6 +31,8 @@ class Target:
 
 # `deployed._escaped` builds its pattern from these two's text, binding neither.
 _DEPLOYED = ("tests/pipeline/test_deployed.py", "tests/cli/test_hidden_characters.py")
+# `edit` checks a rename through `config.NAME`, binding no name of its own.
+_EDIT = ("tests/commands/test_edit.py",)
 # The Vet's flags on graft-vet's labelled corpus.
 _CORPUS = ("tests/cli/test_vet_corpus.py",)
 
@@ -53,7 +55,8 @@ TARGETS = (
         " BACKTICK_RUN_OR_NEWLINE".split()
     ]
     + [Target("discovery.COMMENT")]
-    + [Target(f"config.{name}") for name in "NAME SEGMENT URL SCP REF".split()]
+    + [Target("config.NAME", _EDIT)]
+    + [Target(f"config.{name}") for name in "SEGMENT URL SCP REF".split()]
     + [
         Target("text.CRITICAL_CHARS", _DEPLOYED),
         Target("hidden.WARNING_CHARS", _DEPLOYED),

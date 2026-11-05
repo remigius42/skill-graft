@@ -49,7 +49,7 @@ with the archive commit.
   all carry `linear_time` written out; verify a test runs pytest with the plugin on one mutant of `config.NAME`, sees
   `discovery.NAME` patched too and a test fail that the original passes, one does the same for a `_PATTERNS:` target,
   and every target resolves
-- [ ] 3.4 `__main__.py` and `equivalent.toml`: per target, the existing test files of every module holding the pattern,
+- [x] 3.4 `__main__.py` and `equivalent.toml`: per target, the existing test files of every module holding the pattern,
   its extra files and its registry cases by node id; the unpatched run first; then each mutant in its own pytest process
   without `-x`, one per CPU, stopped past its timeout; a timeout or a kill by `linear_time` tests alone confirmed by a
   run on its own; the report printed with `ascii()`; exit 1 on an unlisted survivor or a stale entry; verify tests of

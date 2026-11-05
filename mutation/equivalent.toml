@@ -1,0 +1,3 @@
+# Mutants that cannot change what their pattern matches where skill-graft uses it, per
+# target: `"<target>" = [{ operator = "...", offset = N, reason = "..." }]`. A listed
+# mutant that is killed, or no longer exists, fails `python -m mutation`.

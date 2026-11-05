@@ -13,6 +13,7 @@ from pathlib import Path
 import pytest
 
 import skill_graft
+from mutation import __main__ as harness
 from mutation import operators, plugin, targets
 
 
@@ -250,3 +251,138 @@ def test_targets_are_the_security_relevant_patterns() -> None:
     assert {"references.REFERENCE", "vet._TOKEN", "text.CRITICAL_CHARS"} <= names
     assert {"vet._PATTERNS:send.url", "hidden.WARNING_CHARS"} <= names
     assert not names & {"config.COUNT", "patch.HUNK", "apm.COMMENT", "discovery.NAME"}
+
+
+CASE = "tests/cli/test_linear_time.py::test_pumped_input_takes_linear_time"
+
+
+def target(name: str) -> targets.Target:
+    return next(t for t in targets.TARGETS if t.name == name)
+
+
+def test_selection_for_a_pattern_imported_by_name() -> None:
+    assert harness.select(target("config.NAME")) == [
+        "tests/commands/test_explain.py",
+        "tests/pipeline/test_config.py",
+        "tests/pipeline/test_discovery.py",
+        "tests/commands/test_edit.py",
+        f"{CASE}[config.NAME]",
+    ]
+
+
+def test_selection_skips_a_missing_test_file_and_adds_extras() -> None:
+    # No `tests/infra/test_text.py`: `hidden` holds the pattern too.
+    assert harness.select(target("text.CRITICAL_CHARS")) == [
+        "tests/pipeline/test_hidden.py",
+        "tests/pipeline/test_deployed.py",
+        "tests/cli/test_hidden_characters.py",
+        f"{CASE}[text.CRITICAL_CHARS]",
+    ]
+
+
+def test_selection_for_a_vet_pattern() -> None:
+    assert harness.select(target("vet._PATTERNS:send.url")) == [
+        "tests/pipeline/test_vet.py",
+        "tests/cli/test_vet_corpus.py",
+        f"{CASE}[vet._PATTERNS:send.url]",
+    ]
+
+
+def outcome(offset: int, status: str, confirmed: bool | None = None) -> harness.Outcome:
+    mutant = operators.Mutant("drop-anchor", offset, f"m{offset}\u202e", 0)
+    return harness.Outcome("config.NAME", mutant, status, confirmed)
+
+
+def entry(offset: int) -> dict[str, object]:
+    return {"operator": "drop-anchor", "offset": offset, "reason": "same"}
+
+
+def test_verdict() -> None:
+    outcomes = [
+        outcome(1, "killed"),
+        outcome(2, "timed out", confirmed=True),
+        outcome(3, "timed out", confirmed=False),
+        outcome(4, "timing only", confirmed=True),
+        outcome(5, "timing only", confirmed=False),
+        outcome(6, "survived"),
+        outcome(7, "survived"),
+    ]
+    equivalent = {"config.NAME": [entry(6), entry(1), entry(9)]}
+
+    lines, code = harness.verdict(outcomes, equivalent)
+
+    assert code == 1
+    assert lines == [
+        "survived: config.NAME drop-anchor at 3: 'm3\\u202e'",
+        "survived: config.NAME drop-anchor at 5: 'm5\\u202e'",
+        "survived: config.NAME drop-anchor at 7: 'm7\\u202e'",
+        "stale: config.NAME drop-anchor at 1: killed",
+        "stale: config.NAME drop-anchor at 9: no such mutant",
+        "7 mutants: 3 killed, 1 equivalent, 3 survived",
+    ]
+
+
+def test_verdict_passes_when_every_survivor_is_listed() -> None:
+    outcomes = [outcome(1, "killed"), outcome(6, "survived")]
+    equivalent = {"config.NAME": [entry(6)], "config.SCP": [entry(1)]}
+
+    lines, code = harness.verdict(outcomes, equivalent)
+
+    assert (lines, code) == (["2 mutants: 1 killed, 1 equivalent, 0 survived"], 0)
+
+
+def test_failing_unpatched_run_stops_the_harness(
+    monkeypatch: pytest.MonkeyPatch, capsys: pytest.CaptureFixture[str]
+) -> None:
+    calls = []
+
+    def run(tests: list[str], mutant: object, timeout: object) -> harness.Run:
+        calls.append(mutant)
+        return harness.Run(["tests/x.py::test_x"], False, 0.1)
+
+    monkeypatch.setattr(harness, "run_pytest", run)
+
+    assert harness.main(["config.REF"]) == 2
+    assert calls == [None]
+    assert "config.REF" in capsys.readouterr().err
+
+
+def test_a_kill_by_timing_alone_is_run_again_alone(
+    monkeypatch: pytest.MonkeyPatch, tmp_path: Path
+) -> None:
+    (tmp_path / "equivalent.toml").write_text("")
+    monkeypatch.setattr(harness, "EQUIVALENT", tmp_path / "equivalent.toml")
+    runs: dict[object, int] = {}
+
+    def run(tests: list[str], mutant: object, timeout: object) -> harness.Run:
+        runs[mutant] = runs.get(mutant, 0) + 1
+        if mutant is None:
+            return harness.Run([], False, 0.1)
+        return harness.Run(["t::timed"], True, 0.1)
+
+    monkeypatch.setattr(harness, "run_pytest", run)
+
+    assert harness.main(["config.REF"]) == 0
+    mutants = [m for m in runs if m is not None]
+    assert mutants and all(runs[m] == 2 for m in mutants)
+
+
+def test_unknown_target(capsys: pytest.CaptureFixture[str]) -> None:
+    assert harness.main(["config.NOPE"]) == 2
+    assert "config.NOPE" in capsys.readouterr().err
+
+
+def test_a_run_writing_no_report_stops_the_harness_with_2(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    def crashed(
+        command: list[str], **kwargs: object
+    ) -> subprocess.CompletedProcess[bytes]:
+        return subprocess.CompletedProcess(command, 3, b"crashed", b"")
+
+    monkeypatch.setattr(subprocess, "run", crashed)
+
+    with pytest.raises(SystemExit) as stopped:
+        harness.run_pytest(["tests/x.py"], None, None)
+
+    assert stopped.value.code == 2
