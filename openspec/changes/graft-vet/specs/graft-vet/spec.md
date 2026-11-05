@@ -122,9 +122,9 @@ exit code and the first line of its error output, bounded as the **Check** bound
 
 #### Scenario: Reader reaches its cap
 
-- **WHEN** `mp/x`'s reader exits non-zero with `Error: Reached max turns (30)`
-- **THEN** the summary names `mp/x` `no-reply`, the skill shows that line as quoted text, and the report file lists its
-  scan **Flags**
+- **WHEN** `mp/x`'s reader exits non-zero on reaching `--max-turns`
+- **THEN** the summary names `mp/x` `no-reply`, the skill shows its exit code and the first line of its error output if
+  it has one, never a line of its output, and the report file lists its scan **Flags**
 
 ### Requirement: The reader's reply
 

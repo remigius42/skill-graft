@@ -34,6 +34,8 @@ half: one confined reader per **Skill**, merged with the scan in code, reporting
   empty folder apart from any **Package**, **Source** or the cache, as `deploy --into` requires; besides the git cache
   it fetches into, the only thing `vet` ever writes. It gives the readers their folders, a **Skill** not yet added
   included.
+- `skill-graft vet` names the **Package** on its first standard error line, `skill-graft: package: <package>`, as the
+  writing commands do: the skill reads that line alone of its standard error, for `[check]`'s caps and `entries`.
 - `evals/graft-vet/`: opt-in scenarios, never run in hooks or CI: `injected`, and `corpus`, which scores the readers
   against a labelled corpus of synthetic **Skills** (obvious harm, harm phrased past the scan, injected, harmless). A
   test runs `vet` over the same corpus, so the scan's known misses stay on record.
@@ -50,6 +52,7 @@ half: one confined reader per **Skill**, merged with the scan in code, reporting
 ### Modified Capabilities
 
 - `vet`: an added requirement for `--into <dir>`.
+- `scope`: `vet` names the **Package** as the commands that write do.
 
 ## Impact
 
