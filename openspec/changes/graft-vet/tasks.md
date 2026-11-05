@@ -7,7 +7,7 @@ Test-first: each task's test fails before its code, then passes. One commit per 
 - [x] 1.1 Move `deploy`'s `_check_into` and `_check_into_sources` to `commands/transaction.py` as `check_into` and
   `check_into_sources`, `deploy.py` calling them there; verify `uv run pytest tests/commands/test_deploy.py` and
   `lint-imports` pass
-- [ ] 1.2 `vet --into <dir>`: checked as `deploy --into`'s folder, each vetted **Skill** written to
+- [x] 1.2 `vet --into <dir>`: checked as `deploy --into`'s folder, each vetted **Skill** written to
   `<dir>/<alias>/<name>/` after every scan, `<dir>` emptied on a failed write; verify in `tests/commands/test_vet.py` "A
   Skill not yet added", "Patched and renamed", "A Skill with no Flag", "Folder not empty", "Hidden character", and the
   lock, config and `.apm/skills/` bytes unchanged

@@ -1,11 +1,16 @@
 """The `vet` spec: which skills are vetted, as deployed, and what is printed."""
 
+import os
+import re
+import sys
 from pathlib import Path
 from typing import TypeAlias
 
 import pytest
 from conftest import (
+    ClosedStdout,
     after_package_line,
+    closed_stdout,
     configure,
     make_patch,
     skill,
@@ -15,6 +20,10 @@ from conftest import (
 )
 
 from skill_graft.cli import main
+from skill_graft.commands import vet as commands
+from skill_graft.infra import paths
+from skill_graft.infra.errors import SkillGraftError
+from skill_graft.pipeline import deployed
 
 Capsys: TypeAlias = pytest.CaptureFixture[str]
 
@@ -270,3 +279,200 @@ def test_an_unknown_key(home: Path, capsys: Capsys) -> None:
     write_config('entries = ["mp/tdd"]\n[sources.mp]\npath = "~/mp"\n[vet]\nx = 1\n')
 
     assert "vet" in fails_as_resolve(capsys)
+
+
+def files_under(folder: Path) -> dict[str, bytes]:
+    """Each file under `folder` by relative path, with its bytes."""
+    return {
+        f.relative_to(folder).as_posix(): f.read_bytes()
+        for f in sorted(folder.rglob("*"))
+        if f.is_file()
+    }
+
+
+def empty(tmp_path: Path) -> Path:
+    into = tmp_path / "into"
+    into.mkdir()
+    return into
+
+
+def test_into_a_skill_not_yet_added(
+    home: Path, tmp_path: Path, scope: paths.Scope, capsys: Capsys
+) -> None:
+    hull_and_review(home)
+    assert main(["resolve"]) == 0
+    before = snapshot(package(home))
+    into = empty(tmp_path)
+    capsys.readouterr()
+
+    commands.vet(scope, [], ["mp/review"], into)
+
+    assert capsys.readouterr().out == (
+        "mp/review SKILL.md:2 privilege ASI03 privilege.sudo\n"
+        "mp/diagnose SKILL.md:2 privilege ASI03 privilege.sudo\n"
+    )
+    assert files_under(into) == {
+        "mp/diagnose/SKILL.md": b"# diagnose\nsudo it\n",
+        "mp/review/SKILL.md": b"# review\nsudo /diagnose, /grilling\n",
+    }
+    assert snapshot(package(home)) == before
+
+
+def test_into_patched_and_renamed(
+    home: Path, tmp_path: Path, scope: paths.Scope
+) -> None:
+    upstream = "# tdd\nRun /grilling.\nsudo it\n"
+    skill(home / "mp" / "tdd", upstream)
+    (home / "mp" / "tdd" / "run.sh").write_text("echo\n")
+    (home / "mp" / "tdd" / "run.sh").chmod(0o755)
+    skill(home / "mp" / "grilling", "# grilling\n")
+    patched = make_patch(
+        tmp_path, {"SKILL.md": upstream}, {"SKILL.md": "# tdd\nRun /grilling.\n"}
+    )
+    write_patch("tdd.patch", patched)
+    write_config(
+        'entries = ["mp/tdd"]\n[sources.mp]\npath = "~/mp"\n'
+        '[rename]\n"mp/grilling" = "mp-grilling"\n'
+        '[patches]\n"mp/tdd" = ["patches/tdd.patch"]\n'
+    )
+    deployed = tmp_path / "deployed"
+    deployed.mkdir()
+    assert main(["resolve"]) == 0
+    assert main(["deploy", "--into", str(deployed)]) == 0
+    into = empty(tmp_path)
+
+    commands.vet(scope, [], [], into)
+
+    skills = deployed / ".apm" / "skills"
+    assert files_under(into / "mp" / "tdd") == files_under(skills / "tdd")
+    assert files_under(into / "mp" / "grilling") == files_under(skills / "mp-grilling")
+    assert b"/mp-grilling" in (into / "mp" / "tdd" / "SKILL.md").read_bytes()
+    assert os.access(into / "mp" / "tdd" / "run.sh", os.X_OK)
+
+
+def test_into_a_skill_with_no_flag(
+    home: Path, tmp_path: Path, scope: paths.Scope, capsys: Capsys
+) -> None:
+    skill(home / "mp" / "tdd", "# tdd\n")
+    configure(["mp/tdd"], mp="~/mp")
+    into = empty(tmp_path)
+
+    commands.vet(scope, [], [], into)
+
+    assert capsys.readouterr().out == ""
+    assert files_under(into) == {"mp/tdd/SKILL.md": b"# tdd\n"}
+
+
+@pytest.mark.parametrize("where", ["holds a file", "in the package"])
+def test_into_a_folder_refused(
+    home: Path, tmp_path: Path, scope: paths.Scope, capsys: Capsys, where: str
+) -> None:
+    skill(home / "mp" / "tdd", "sudo it\n")
+    configure(["mp/tdd"], mp="~/mp")
+    if where == "holds a file":
+        into = empty(tmp_path)
+        (into / "x").write_text("x\n")
+    else:
+        into = package(home) / "into"
+        into.mkdir()
+    before = snapshot(into)
+
+    with pytest.raises(SkillGraftError, match=re.escape(str(into))):
+        commands.vet(scope, [], [], into)
+
+    assert capsys.readouterr().out == ""
+    assert snapshot(into) == before
+
+
+def test_into_hidden_character(
+    home: Path, tmp_path: Path, scope: paths.Scope, capsys: Capsys
+) -> None:
+    skill(home / "mp" / "ok", "sudo it\n")
+    skill(home / "mp" / "tdd", "sudo \U000e0041\n")
+    configure(["mp/ok", "mp/tdd"], mp="~/mp")
+    into = empty(tmp_path)
+
+    with pytest.raises(SkillGraftError, match="U\\+E0041"):
+        commands.vet(scope, [], [], into)
+
+    assert capsys.readouterr().out == ""
+    assert list(into.iterdir()) == []
+
+
+def test_into_a_failed_write_empties_the_folder(
+    home: Path,
+    tmp_path: Path,
+    scope: paths.Scope,
+    capsys: Capsys,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    skill(home / "mp" / "a", "/b\n")
+    skill(home / "mp" / "b", "sudo it\n")
+    configure(["mp/a"], mp="~/mp")
+    into = empty(tmp_path)
+    written: list[Path] = []
+    real = Path.write_bytes
+
+    def fail_second(self: Path, data: bytes) -> int:
+        if written:
+            raise OSError("disk full")
+        written.append(self)
+        return real(self, data)
+
+    monkeypatch.setattr(Path, "write_bytes", fail_second)
+
+    with pytest.raises(OSError, match="disk full"):
+        commands.vet(scope, [], [], into)
+
+    assert written and capsys.readouterr().out == ""
+    assert list(into.iterdir()) == []
+
+
+def test_into_two_names_one_file(
+    home: Path,
+    tmp_path: Path,
+    scope: paths.Scope,
+    capsys: Capsys,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    # As `SKILL.md` and `skill.md` are on a case-insensitive file system: the
+    # second would replace the first, and a reader read other bytes than the scan.
+    skill(home / "mp" / "tdd", "# tdd\n")
+    configure(["mp/tdd"], mp="~/mp")
+    view = {"SKILL.md": (b"sudo it\n", False), "./SKILL.md": (b"# fine\n", False)}
+    monkeypatch.setattr(deployed, "deployed_files", lambda folder, rewrites: view)
+    into = empty(tmp_path)
+
+    with pytest.raises(SkillGraftError, match="mp/tdd.*SKILL.md"):
+        commands.vet(scope, [], [], into)
+
+    assert capsys.readouterr().out == ""
+    assert list(into.iterdir()) == []
+
+
+def test_into_emptied_when_printing_fails(
+    home: Path, tmp_path: Path, scope: paths.Scope, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    skill(home / "mp" / "tdd", "sudo it\n")
+    configure(["mp/tdd"], mp="~/mp")
+    into = empty(tmp_path)
+    closed_stdout(monkeypatch)
+
+    with pytest.raises(BrokenPipeError):
+        commands.vet(scope, [], [], into)
+
+    assert list(into.iterdir()) == []
+
+
+def test_into_emptied_when_its_notice_fails(
+    home: Path, tmp_path: Path, scope: paths.Scope, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    skill(home / "mp" / "tdd", "sudo it\n")
+    configure(["mp/tdd"], mp="~/mp")
+    into = empty(tmp_path)
+    monkeypatch.setattr(sys, "stderr", ClosedStdout())
+
+    with pytest.raises(BrokenPipeError):
+        commands.vet(scope, [], [], into)
+
+    assert list(into.iterdir()) == []

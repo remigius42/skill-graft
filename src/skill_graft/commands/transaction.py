@@ -83,8 +83,9 @@ def check_copies(skills: Path, locked: dict[str, Any] | None) -> None:
 
 
 def check_into(into: Path) -> None:
-    """Refuses an `--into` folder `deploy` could not use without harm: anything but an
-    existing, empty folder, or one in a package or in or around the cache."""
+    """Refuses an `--into` folder `deploy` or `vet` could not use without harm:
+    anything but an existing, empty folder, or one in a package or in or around
+    the cache."""
     if not into.exists():
         raise SkillGraftError(f"--into {into}: no such folder")
     if not into.is_dir():
