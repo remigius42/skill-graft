@@ -336,6 +336,7 @@ MISSES = [
     ("privilege.su", "import subprocess"),
     ("privilege.su", "the sum"),
     ("privilege.doas", "he does"),
+    ("privilege.pkexec", "pkexec-helper x"),
     ("privilege.runas", "it runs as planned"),
     ("privilege.world-writable", "chmod 755 x"),
     ("privilege.world-writable", "chmod u+w x"),
