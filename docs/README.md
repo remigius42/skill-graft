@@ -14,6 +14,7 @@
 | [CHANGELOG.md](../CHANGELOG.md)                               | what changed for users in each release                                                                |
 | [SECURITY.md](../SECURITY.md)                                 | how to report a vulnerability                                                                         |
 | [skills/graft-check/SKILL.md](../skills/graft-check/SKILL.md) | the **Check**: the skill an agent follows to check a package                                          |
-| [CONTRIBUTING.md](../CONTRIBUTING.md)                         | setup, the change workflow, checks, evals and releasing                                               |
+| [CONTRIBUTING.md](../CONTRIBUTING.md)                         | setup, the change workflow, checks, mutation testing, evals and releasing                             |
 | [evals/graft-check/README.md](../evals/graft-check/README.md) | the opt-in evals of graft-check                                                                       |
+| [mutation/](../mutation/)                                     | the opt-in mutation harness of the security-relevant regexes                                          |
 | [AGENTS.md](../AGENTS.md)                                     | the rules for commits, code and tests                                                                 |

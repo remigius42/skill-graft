@@ -45,3 +45,5 @@ rest.
   directory.
 - Fixture skills and source repositories are synthetic, built in the test. Do not copy real skills into the repository.
 - `evals/` runs agents headless: opt-in, billed in tokens, never in hooks or CI. Run one only when asked.
+- `mutation/` (`uv run python -m mutation`) mutates the security-relevant regexes: opt-in, never in hooks or CI. Run it
+  after changing a pattern it targets.

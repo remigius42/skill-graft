@@ -74,6 +74,17 @@ Nothing bumps node or the digest of the `test-root` job's container image: updat
 Run `install-hooks` before the next commit: a `commit-msg` hook's environment, commitlint's, is otherwise installed
 during that commit, which has overwritten the index of a worktree with the hook's own files.
 
+## Mutation testing
+
+`uv run python -m mutation [target…]`, from the repository root, mutates each security-relevant regex: the **Vet**'s,
+**Reference** finding, the `name:` comment, `skill-graft.toml` names and URLs, the **Hidden character** classes
+([mutation/targets.py](mutation/targets.py)). For each mutant, one token changed, it runs the tests of the modules
+holding the pattern, on one process per CPU, and exits 1 on a mutant no test kills, unless
+[mutation/equivalent.toml](mutation/equivalent.toml) lists it with the reason it cannot change behavior, and on a listed
+one that no longer survives or exists. It is opt-in and takes minutes, so no hook or CI job runs it; run it after
+changing a target pattern, then kill each survivor with a test in its module's test file, or list it. With no target it
+runs them all; a target is named as in `targets.py`, such as `config.NAME` or `vet._PATTERNS:send.url`.
+
 ## Evals
 
 `evals/graft-check/run.sh [scenario…]` runs the working copy of the `graft-check` skill headless with `claude -p` on

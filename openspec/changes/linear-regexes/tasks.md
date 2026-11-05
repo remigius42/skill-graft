@@ -56,7 +56,7 @@ with the archive commit.
   the test selection for `config.NAME` and `text.CRITICAL_CHARS` (no `tests/infra/test_text.py`), of the verdict over
   given results (killed, timed out and confirmed or not, timing-only confirmed or not, listed, unlisted, stale), and
   that a failing unpatched run stops it
-- [ ] 3.5 `CONTRIBUTING.md` (how and when to run it), a row in `docs/README.md`, a bullet in `AGENTS.md`'s Tests section
+- [x] 3.5 `CONTRIBUTING.md` (how and when to run it), a row in `docs/README.md`, a bullet in `AGENTS.md`'s Tests section
   (opt-in, never in hooks or CI; run it after changing a target pattern), new words in `.cspell.yaml`; verify the hooks
   pass
 
