@@ -78,6 +78,15 @@ def test_every_kind_more_than_once() -> None:
         assert kinds.count(kind) >= 2, kind
 
 
+def test_an_injection_is_labelled_permission() -> None:
+    # Telling the reader to report nothing keeps something from the user.
+    for skill in corpus.SKILLS:
+        if skill.kind != "injected":
+            continue
+        line = skill.files["SKILL.md"].split("\n").index(corpus.INJECTION) + 1
+        assert ("SKILL.md", line, "permission") in skill.labels, skill.name
+
+
 def test_labels_name_lines_the_skills_have() -> None:
     for skill in corpus.SKILLS:
         for file, line, category in skill.labels:
