@@ -4,7 +4,7 @@ Test-first: each task's test fails before its code, then passes. One commit per 
 
 ## 1. Shared reach
 
-- [ ] 1.1 Move `_reach` from `commands/edit.py` to `pipeline/hull.py` as `reach`, `edit.py` calling it there, with a
+- [x] 1.1 Move `_reach` from `commands/edit.py` to `pipeline/hull.py` as `reach`, `edit.py` calling it there, with a
   test in `tests/pipeline/test_hull.py` for a two-level reach; verify `uv run pytest` and `lint-imports` pass
 
 ## 2. The scan (`pipeline/vet.py`, `tests/pipeline/test_vet.py`)

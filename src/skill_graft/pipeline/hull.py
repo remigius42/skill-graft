@@ -215,6 +215,29 @@ def walk(
     return result
 
 
+def reach(hull: Hull, seeds: list[SkillId]) -> dict[SkillId, SkillId]:
+    """What `seeds` reach over slash and Skill tool edges: each skill's parent.
+
+    A skill's edges do not depend on the entries, so the edited hull answers for
+    any subset of them. Breadth-first, so a parent is reached before its child.
+    """
+    targets: dict[SkillId, list[SkillId]] = {}
+    for edge in hull.edges:  # in scan order
+        if edge.kind != "prose":
+            targets.setdefault(edge.source, []).append(edge.target)
+    parents: dict[SkillId, SkillId] = {}
+    seen = set(seeds)
+    queue = deque(seeds)
+    while queue:
+        current = queue.popleft()
+        for target in targets.get(current, []):
+            if target not in seen:
+                seen.add(target)
+                parents[target] = current
+                queue.append(target)
+    return parents
+
+
 def _hidden(
     skill: SkillId, folder: Path, patches: dict[SkillId, list[PatchFile]]
 ) -> tuple[list[str], list[str]]:

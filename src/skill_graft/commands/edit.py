@@ -3,7 +3,6 @@
 Each edit resolves the edited text first and writes nothing unless it resolves.
 """
 
-from collections import deque
 from collections.abc import Generator
 from contextlib import contextmanager
 from pathlib import Path
@@ -16,8 +15,7 @@ from skill_graft.commands import explain, review, transaction
 from skill_graft.infra import files, paths
 from skill_graft.infra.errors import SkillGraftError, notice
 from skill_graft.pipeline import compute, config
-from skill_graft.pipeline.config import SkillId
-from skill_graft.pipeline.hull import Hull
+from skill_graft.pipeline.hull import Hull, reach
 
 # What an edit's dry run does not write.
 WRITTEN = "skill-graft.toml, skill-graft.lock and .apm/skills/"
@@ -88,7 +86,7 @@ def _add(
         run.proceed()
         hull = _finish(scope, warnings, document, run)
     # The hull before the edit: what the other entries reach.
-    parents = _reach(hull, [e for e in hull.entries if str(e) not in added])
+    parents = reach(hull, [e for e in hull.entries if str(e) not in added])
     for skill in hull.entries:
         if str(skill) in added and skill in parents:
             notice(f"`{skill}` was already in the hull, via `{parents[skill]}`")
@@ -117,7 +115,7 @@ def _remove(
             array.remove(text)
         run.proceed()
         hull = _finish(scope, warnings, document, run)
-    parents = _reach(hull, hull.entries)  # the remaining entries
+    parents = reach(hull, hull.entries)  # the remaining entries
     for skill, parent in parents.items():
         if str(skill) in skills:
             notice(f"`{skill}` stays in the hull, via `{parent}`")
@@ -219,29 +217,6 @@ def _unbind(scope: paths.Scope, warnings: list[str], key: str, run: review.Run) 
         del cast(Table, document["bind"])[key]
         run.proceed()
         _finish(scope, warnings, document, run)
-
-
-def _reach(hull: Hull, seeds: list[SkillId]) -> dict[SkillId, SkillId]:
-    """What `seeds` reach over slash and Skill tool edges: each skill's parent.
-
-    A skill's edges do not depend on the entries, so the edited hull answers for
-    any subset of them. Breadth-first, so a parent is reached before its child.
-    """
-    targets: dict[SkillId, list[SkillId]] = {}
-    for edge in hull.edges:  # in scan order
-        if edge.kind != "prose":
-            targets.setdefault(edge.source, []).append(edge.target)
-    parents: dict[SkillId, SkillId] = {}
-    seen = set(seeds)
-    queue = deque(seeds)
-    while queue:
-        current = queue.popleft()
-        for target in targets.get(current, []):
-            if target not in seen:
-                seen.add(target)
-                parents[target] = current
-                queue.append(target)
-    return parents
 
 
 def _finish(

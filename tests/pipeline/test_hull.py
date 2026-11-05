@@ -20,7 +20,7 @@ from conftest import (
 from skill_graft.cli import main
 from skill_graft.infra import paths
 from skill_graft.infra.cache import Cache
-from skill_graft.pipeline import compute, config
+from skill_graft.pipeline import compute, config, hull
 from skill_graft.pipeline.config import SkillId
 from skill_graft.pipeline.hull import Hull
 
@@ -776,3 +776,18 @@ def test_parent_folder_name_shown_escaped(home: Path, capsys: Capsys) -> None:
 
     assert code == 1 and RLO not in err
     assert "m\\u202ep/tdd/SKILL.md:1: U+E0041" in err
+
+
+def test_reach_two_levels(scope: paths.Scope, home: Path) -> None:
+    skill(home / "mp" / "tdd", "/grilling, then `notes`\n")
+    skill(home / "mp" / "grilling", "/notes\n")
+    skill(home / "mp" / "notes")
+    configure(["mp/tdd", "mp/notes"], mp="~/mp")
+
+    with compute.compute_hull(scope, config.load(scope), Cache.default()) as walked:
+        reached = hull.reach(walked, [SkillId("mp", "tdd")])
+
+    assert reached == {
+        SkillId("mp", "grilling"): SkillId("mp", "tdd"),
+        SkillId("mp", "notes"): SkillId("mp", "grilling"),
+    }
