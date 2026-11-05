@@ -5,6 +5,7 @@ Patterns, never a verdict: a flag is no fault, and no flag is no pass.
 
 from dataclasses import dataclass
 
+from skill_graft.pipeline import hidden
 from skill_graft.pipeline.deployed import View
 
 # Each category's risk IDs: the OWASP Top 10 for LLM Applications 2025 (LLM) and
@@ -35,5 +36,19 @@ class Flag:
 
 
 def scan(view: View) -> list[Flag]:
-    """Each flag of the skill whose deployed files `view` holds."""
-    return []
+    """Each flag of the skill whose deployed files `view` holds, file by file in
+    the view's order, then by line.
+
+    Each file is read as resolution reads it; one read in another encoding than
+    strict UTF-8 is flagged as a whole, and still scanned.
+    """
+    found = []
+    for path, (data, _) in view.items():
+        decoded = hidden.decode_as(data, path.lower().endswith(".md"), "replace")
+        if decoded is None:
+            found.append(Flag(path, 0, "unreviewable.binary"))
+            continue
+        _, encoding = decoded
+        if encoding != "UTF-8":
+            found.append(Flag(path, 0, "unreviewable.encoding"))
+    return found

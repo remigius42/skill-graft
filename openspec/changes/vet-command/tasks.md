@@ -11,7 +11,7 @@ Test-first: each task's test fails before its code, then passes. One commit per 
 
 - [x] 2.1 `Flag`, the eight categories and the OWASP table; `scan` over a `deployed.View` yielding nothing yet; verify a
   test pins the table as the spec lists it (vet, "Categories and their OWASP IDs")
-- [ ] 2.2 File decoding: `unreviewable.binary` and `unreviewable.encoding` at line 0, a UTF-16 file still scanned; line
+- [x] 2.2 File decoding: `unreviewable.binary` and `unreviewable.encoding` at line 0, a UTF-16 file still scanned; line
   numbers as `hidden.py`'s; verify the "Binary file" scenario and a UTF-16 case pass
 - [ ] 2.3 Paths outside the project and secret stores: `read.outside-path`, `write.outside-path`, `read.secret-store`,
   URL paths skipped; verify the "Outside the project by form" scenarios pass
