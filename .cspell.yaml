@@ -151,6 +151,7 @@ words:
   - signingkey
   - signum
   - SIGPIPE
+  - smtplib
   - socat
   - splitlines
   - startswith

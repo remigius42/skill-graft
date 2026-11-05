@@ -28,8 +28,8 @@ It SHALL NOT read or write `skill-graft.lock`, write `skill-graft.toml` or `.apm
 
 Without arguments, `vet` SHALL vet every **Hull** **Skill**. With **Skill IDs**, it SHALL vet those **Skills** only, and
 for each outside the **Hull**, also every **Skill** its `add` would bring into the **Hull**, all as they would deploy
-once added. Each argument SHALL name a **Skill** of a declared **Source**, else `vet` fails as `add` does; one given
-twice SHALL be vetted once.
+once added. Each argument SHALL name a **Skill** of a declared **Source**, else `vet` fails as `rename` does, naming
+`vet`; one given twice SHALL be vetted once.
 
 #### Scenario: A Hull Skill
 
@@ -45,7 +45,7 @@ twice SHALL be vetted once.
 #### Scenario: Unknown Skill
 
 - **WHEN** the user runs `skill-graft vet mp/nothing`, and **Source** `mp` holds no **Skill** `nothing`
-- **THEN** it exits 1 with the error `add` gives for it, and prints no **Flag**
+- **THEN** it exits 1 with the error `rename` gives for it, naming `vet`, and prints no **Flag**
 
 ### Requirement: Skills are vetted as deployed
 
@@ -83,9 +83,9 @@ SHALL be those of the OWASP Top 10 for LLM Applications 2025 (`LLM`) and for Age
 
 `vet` SHALL flag, at least: `read` a path outside the project, or a secret store; `write` a path outside the project
 written to; `send` a URL, a network tool or call, the agent's web tools, a push; `run` a shell code block, piping to a
-shell, `eval` and its kin, a destructive command, an executable or a shebang; `privilege` `sudo`, `su`, `doas`,
-world-writable or setuid modes; `persistence` agent config, hooks, shell startup files, schedulers; `permission` tool
-grants in front matter, skipped permission prompts, telling the agent not to ask or tell.
+shell or an interpreter, `eval` and its kin, a destructive command, an executable or a shebang; `privilege` `sudo`,
+`su`, `doas`, world-writable or setuid modes; `persistence` agent config, hooks, shell startup files, schedulers;
+`permission` tool grants in front matter, skipped permission prompts, telling the agent not to ask or tell.
 
 #### Scenario: Pipe to a shell
 
