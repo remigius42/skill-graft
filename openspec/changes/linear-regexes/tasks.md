@@ -23,7 +23,7 @@ with the archive commit.
   `config` and `apm` as distinct objects, a by-name import counting once; failing on each without an entry under any of
   its names, and on each entry naming neither a pattern nor a function returning one; verify it fails naming every
   pattern once against an empty registry
-- [ ] 2.3 The registry: per pattern, a `linear_time` case with id `<module>.<name>`, the call the code makes and a
+- [x] 2.3 The registry: per pattern, a `linear_time` case with id `<module>.<name>`, the call the code makes and a
   pumped input of about 100 000 characters, timed under one second, the pattern resolved by `getattr` at test time,
   `_PATTERNS:` entries through `_COMPILED`'s bound `search.__self__`, `deployed._escaped(False)` and
   `deployed._escaped(True)` each called once before the clock starts; verify the guard and every case pass, and that
