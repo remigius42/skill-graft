@@ -91,6 +91,7 @@ def test_slash_opening_a_code_span(tmp_path: Path, text: str) -> None:
     assert [r.text for r in refs if r.kind == "slash"] == ["/tdd"]
 
 
+@pytest.mark.linear_time
 def test_long_line_scans_in_linear_time(tmp_path: Path) -> None:
     folder = skill(tmp_path / "x", "`x`/a" * 8000 + "\n")
 

@@ -1,6 +1,7 @@
 import time
 from pathlib import Path
 
+import pytest
 from conftest import FakeApm
 
 from skill_graft.infra import apm, paths
@@ -28,6 +29,7 @@ def test_install_registers_a_project_package_in_its_root(
     assert apm.registered(scope)
 
 
+@pytest.mark.linear_time
 def test_long_run_of_whitespace_in_an_item_scans_at_once(tmp_path: Path) -> None:
     scope = project(tmp_path)
     scope.manifest.write_text("dependencies:\n  - a" + " " * 100_000 + "b\n")

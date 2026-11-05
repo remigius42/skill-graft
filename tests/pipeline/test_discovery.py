@@ -151,6 +151,7 @@ def test_comment_and_quotes(home: Path, capsys: Capsys, line: str) -> None:
     assert vendored() == {"tdd"}
 
 
+@pytest.mark.linear_time
 def test_long_run_of_whitespace_in_a_name_reads_at_once(home: Path) -> None:
     name = "a" + " " * 100_000 + "b"
     skill(home / "x", f"---\nname: {name}\n---\n")

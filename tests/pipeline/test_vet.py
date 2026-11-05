@@ -176,6 +176,7 @@ SLOW_SEND_RUN = [
 ]
 
 
+@pytest.mark.linear_time
 @pytest.mark.parametrize("line", SLOW_SEND_RUN, ids=lambda line: line[:6])
 def test_send_and_run_take_linear_time(line: str) -> None:
     assert scan_time(line) < 1
@@ -418,6 +419,7 @@ def test_agent_config() -> None:
 SLOW_PRIVILEGE = ["chmod " + "a" * 50000, "chmod " * 8000, "chown " * 8000]
 
 
+@pytest.mark.linear_time
 @pytest.mark.parametrize("line", SLOW_PRIVILEGE, ids=lambda line: line[:8])
 def test_privilege_takes_linear_time(line: str) -> None:
     assert scan_time(line) < 1

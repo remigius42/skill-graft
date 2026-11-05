@@ -15,7 +15,7 @@ with the archive commit.
 
 ## 2. Linear time, kept
 
-- [ ] 2.1 The `linear_time` marker in `pyproject.toml`, on `test_send_and_run_take_linear_time` and
+- [x] 2.1 The `linear_time` marker in `pyproject.toml`, on `test_send_and_run_take_linear_time` and
   `test_privilege_takes_linear_time` in `tests/pipeline/test_vet.py` and `test_long_line_scans_in_linear_time` in
   `tests/pipeline/test_references.py`; verify `uv run pytest -m linear_time` selects exactly them and passes
 - [ ] 2.2 `tests/cli/test_linear_time.py`: the guard, collecting every module-level `re.Pattern` of `discovery`,

@@ -84,6 +84,7 @@ testpaths = ["tests"]
 markers = [
   "needs_permissions: takes the owner's rights away and relies on them; skipped as root",
   "root_safe: takes the owner's rights away and passes as root too",
+  "linear_time: times a regex over Upstream text on a pumped input against a fixed limit",
 ]
 
 [tool.importlinter]

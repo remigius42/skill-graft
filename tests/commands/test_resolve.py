@@ -205,6 +205,7 @@ def test_resolution_error(home: Path, capsys: Capsys) -> None:
     assert (lock_file(home).read_bytes(), copy.read_bytes()) == before
 
 
+@pytest.mark.linear_time
 def test_long_run_of_whitespace_in_a_name(home: Path, capsys: Capsys) -> None:
     skill(home / "own" / "x", "---\nname: a" + " " * 100_000 + "b\n---\n")
     configure(["own/x"], own="~/own")
