@@ -9,6 +9,11 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 
 ### Added
 
+- `skill-graft vet [skill-id…]`, a **Vet**: it points at the lines of each **Hull** **Skill**, as it would deploy, worth
+  reading before trusting it, writing nothing. Named **Skill IDs** are vetted alone, one not yet added with what its
+  `add` would bring in. One **Flag** per line, `<skill id> <file>:<line> <category> <owasp ids> <pattern>`, in eight
+  categories (`read`, `write`, `send`, `run`, `privilege`, `persistence`, `permission`, `unreviewable`), its standard
+  output never holding the text it matched. It never judges: it exits 0 whatever it flags, and no **Flag** is not a pass
 - skill-graft is on PyPI, from 0.4.0 on: `uv tool install skill-graft==<version>`, or with pipx, pip or pipenv. Each
   file there is built from the signed release tag, and carries an attestation naming this repository's publish workflow
 - In a project **Package**, every command that writes its `skill-graft.lock`, or would in its dry run, warns of each
