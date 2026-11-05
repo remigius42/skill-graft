@@ -133,10 +133,13 @@ def _status(run: Run) -> str:
 
 
 def verdict(
-    outcomes: list[Outcome], equivalent: dict[str, list[dict[str, object]]]
+    outcomes: list[Outcome],
+    equivalent: dict[str, list[dict[str, object]]],
+    ran: set[str],
 ) -> tuple[list[str], int]:
     """The report's lines, and the exit code: 1 on a survivor not listed, or a
-    listed mutant of a target run that is killed or does not exist."""
+    listed mutant that is killed or does not exist, of a target in `ran` or of
+    no target at all."""
     listed = {
         (name, str(entry["operator"]), int(str(entry["offset"])))
         for name, entries in equivalent.items()
@@ -150,9 +153,9 @@ def verdict(
         if not o.killed and (o.target, o.mutant.operator, o.mutant.offset) not in listed
     ]
     survivors = len(lines)
-    run = {o.target for o in outcomes}
+    known = {target.name for target in targets.TARGETS}
     for name, operator, offset in sorted(listed, key=str):
-        if name not in run:
+        if name not in ran and name in known:
             continue
         found = by_key.get((name, operator, offset))
         if found is None:
@@ -201,7 +204,7 @@ def main(argv: list[str]) -> int:
             again = run_pytest(job[2], (job[0], job[1].text), job[3])
             confirmed = again.failed is None or bool(again.failed)
             outcomes[index] = Outcome(outcome.target, job[1], outcome.status, confirmed)
-    lines, code = verdict(outcomes, equivalent)
+    lines, code = verdict(outcomes, equivalent, {t.name for t in chosen})
     print("\n".join(lines))
     print(f"{time.perf_counter() - start:.0f} s", file=sys.stderr)
     return code

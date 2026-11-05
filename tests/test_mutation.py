@@ -309,7 +309,7 @@ def test_verdict() -> None:
     ]
     equivalent = {"config.NAME": [entry(6), entry(1), entry(9)]}
 
-    lines, code = harness.verdict(outcomes, equivalent)
+    lines, code = harness.verdict(outcomes, equivalent, {"config.NAME"})
 
     assert code == 1
     assert lines == [
@@ -326,9 +326,21 @@ def test_verdict_passes_when_every_survivor_is_listed() -> None:
     outcomes = [outcome(1, "killed"), outcome(6, "survived")]
     equivalent = {"config.NAME": [entry(6)], "config.SCP": [entry(1)]}
 
-    lines, code = harness.verdict(outcomes, equivalent)
+    lines, code = harness.verdict(outcomes, equivalent, {"config.NAME"})
 
     assert (lines, code) == (["2 mutants: 1 killed, 1 equivalent, 0 survived"], 0)
+
+
+def test_verdict_counts_an_entry_of_no_target_or_no_mutants_stale() -> None:
+    equivalent = {"config.GONE": [entry(1)], "config.REF": [entry(2)]}
+
+    lines, code = harness.verdict([], equivalent, {"config.REF"})
+
+    assert code == 1
+    assert lines[:2] == [
+        "stale: config.GONE drop-anchor at 1: no such mutant",
+        "stale: config.REF drop-anchor at 2: no such mutant",
+    ]
 
 
 def test_failing_unpatched_run_stops_the_harness(
