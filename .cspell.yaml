@@ -45,11 +45,15 @@ words:
   - expanduser
   - fcntl
   - fileno
+  - findall
+  - finditer
   - followlinks
   - frontmatter
   - fsencode
   - fstat
+  - fullmatch
   - functools
+  - getattr
   - geteuid
   - getline
   - gitdir
@@ -74,6 +78,7 @@ words:
   - kiro
   - linecap
   - linejoin
+  - lookarounds
   - mailx
   - mattpocock
   - mawk
@@ -85,6 +90,7 @@ words:
   - monkeypatched
   - mpgrilling
   - mptdd
+  - mutmut
   - mypy
   - ncat
   - netrc
