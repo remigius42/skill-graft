@@ -86,11 +86,12 @@ reminder; a change to what a key means, no test catches.
 - `cli.py`, the console entry point: it parses and dispatches, reaching `pipeline/` and `infra/` only through
   `commands/`, `infra.errors` aside.
 - `commands/`: the commands, `resolve`, `deploy`, `update`, `init_package` (`init`), `edit` (`add`, `remove`, `rename`,
-  `bind`, `unbind`) and `explain` (`why`, `tree`); `scope`, which builds the `Scope`; `transaction`, which writes the
-  copies and the lock together; `review`, the hull diff and the Deployed diff those that write the lock share (built by
-  `pipeline/deployed.py`); and `housekeeping`, which prunes the cache after a command. Each command builds the one git
-  `Cache` it reads through.
-- `pipeline/`: config to **Hull** to vendored skills and lock, `compute.compute_hull` computing the **Hull**.
+  `bind`, `unbind`), `explain` (`why`, `tree`) and `vet`; `scope`, which builds the `Scope`; `transaction`, which writes
+  the copies and the lock together; `review`, the hull diff and the Deployed diff those that write the lock share (built
+  by `pipeline/deployed.py`); and `housekeeping`, which prunes the cache after a command. Each command builds the one
+  git `Cache` it reads through.
+- `pipeline/`: config to **Hull** to vendored skills and lock, `compute.compute_hull` computing the **Hull**; `vet`
+  holding the patterns and `vet.scan`, which flags one **Skill** as deployed.
 - `infra/`: `files` (walking, checking and copying a skill, atomic writes), `git`, `apm`, `cache` (the git sources'
   cache), `paths` (where skill-graft and APM keep their files), `text` (the hidden character table and escaping output),
   and `errors`.

@@ -42,7 +42,7 @@ Test-first: each task's test fails before its code, then passes. One commit per 
 
 - [x] 4.1 `README.md` Commands: `vet`, what a **Flag** line holds, that it never judges; verify the hooks and
   `check-pins` pass
-- [ ] 4.2 `docs/security.md`: the Future work item becomes a section on the **Vet**; Residual risks and the OWASP rows
+- [x] 4.2 `docs/security.md`: the Future work item becomes a section on the **Vet**; Residual risks and the OWASP rows
   (LLM01, LLM03, ASI05) say what it narrows and what it does not; `docs/architecture.md` lists `pipeline/vet.py` and
   `commands/vet.py` if it lists modules; new words in `.cspell.yaml`; verify every relative link resolves and the hooks
   pass
