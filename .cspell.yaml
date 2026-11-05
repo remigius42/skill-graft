@@ -51,10 +51,12 @@ words:
   - fstat
   - functools
   - geteuid
+  - getline
   - gitdir
   - Gitea
   - gitlink
   - grimp
+  - gsub
   - heapdump
   - HFPR
   - httpx
@@ -135,6 +137,7 @@ words:
   - repr
   - rglob
   - rmtree
+  - RSTART
   - runas
   - samefile
   - sandboxed
@@ -160,6 +163,7 @@ words:
   - steganography
   - strerror
   - subpackages
+  - SUBSEP
   - surrogateescape
   - symref
   - sysconfig
@@ -175,8 +179,8 @@ words:
   - unicodedata
   - unpadded
   - unrenamed
-  - unreviewable
   - Unreviewable
+  - unreviewable
   - unsandboxed
   - unsets
   - unstatable

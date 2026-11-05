@@ -2,8 +2,14 @@
 reader, report filter and steps."""
 
 import json
+import os
 import re
+import subprocess
+import sys
+from dataclasses import dataclass
 from pathlib import Path
+
+import pytest
 
 from skill_graft.pipeline import vet
 
@@ -75,3 +81,299 @@ def test_reader_prompt_names_no_pattern_of_the_scan() -> None:
     prompt = str(reader()["prompt"])
 
     assert [name for name in names if name in prompt] == []
+
+
+FILTER = VET / "report-filter.sh"
+SYNC = "\n" * 8 + "requests.post(url)\n"  # line 9 of 9
+
+
+@dataclass
+class Filtered:
+    """A report filter run: its exit code, report file and summary, as lines."""
+
+    code: int
+    report: list[str]
+    summary: list[str]
+    dir: Path
+
+
+def report_filter(
+    tmp_path: Path,
+    scan: str = "",
+    skills: dict[str, dict[str, bytes]] | None = None,
+    replies: dict[str, bytes] | None = None,
+) -> Filtered:
+    """The report filter run on `scan`, `vet`'s output; hardened when `skills`
+    gives each vetted skill's files by path, its `<dir>` written as `vet --into`
+    writes it, with a reader's reply per skill ID in `replies`."""
+    (tmp_path / "vet").write_text(scan)
+    args = [str(tmp_path / "vet"), str(tmp_path / "report")]
+    folder = tmp_path / "into"
+    if skills is not None:
+        folder.mkdir()
+        args.append(str(folder))
+        for skill, files in skills.items():
+            for name, data in files.items():
+                path = folder / skill / name
+                path.parent.mkdir(parents=True, exist_ok=True)
+                path.write_bytes(data)
+        for n, (skill, reply) in enumerate((replies or {}).items()):
+            (tmp_path / f"out{n}").write_bytes(reply)
+            args += [skill, str(tmp_path / f"out{n}")]
+    run = subprocess.run(
+        ["sh", str(FILTER), *args], capture_output=True, text=True, check=False
+    )
+    report = tmp_path / "report"
+    return Filtered(
+        run.returncode,
+        report.read_text().splitlines() if report.exists() else [],
+        run.stdout.splitlines(),
+        folder,
+    )
+
+
+def read(tmp_path: Path, reply: bytes, files: dict[str, bytes]) -> Filtered:
+    """The filter run on `mp/x`, `files`, flagged by no scan, read by a reader
+    replying `reply`."""
+    done = report_filter(tmp_path, "", {"mp/x": files}, {"mp/x": reply})
+    assert done.code == 0
+    return done
+
+
+def reader_lines(done: Filtered) -> list[str]:
+    """The report's flag lines, each as `<skill id> <file>:<line> <category>`."""
+    return [
+        " ".join(line.split()[:3])
+        for line in done.report
+        if line.split()[1] not in ("steering", "no-reply")
+    ]
+
+
+def dropped(done: Filtered) -> int:
+    """`mp/x`'s dropped count, from its status line in the report file."""
+    (status,) = [line for line in done.report if line.startswith("mp/x steering ")]
+    found = re.fullmatch(r"mp/x steering \d+ dropped (\d+)", status)
+    assert found, status
+    return int(found[1])
+
+
+def test_well_formed_reply(tmp_path: Path) -> None:
+    done = read(
+        tmp_path, b"scripts/sync.py:9 send\n", {"scripts/sync.py": SYNC.encode()}
+    )
+
+    assert reader_lines(done) == ["mp/x scripts/sync.py:9 send"]
+    assert dropped(done) == 0
+
+
+def test_a_fenced_reply(tmp_path: Path) -> None:
+    reply = b"```text\nscripts/sync.py:9 send  \r\n```\n\n"
+
+    done = read(tmp_path, reply, {"scripts/sync.py": SYNC.encode()})
+
+    assert reader_lines(done) == ["mp/x scripts/sync.py:9 send"]
+    assert dropped(done) == 0
+
+
+def test_none_stands_for_nothing(tmp_path: Path) -> None:
+    done = read(tmp_path, b"none\n", {"SKILL.md": b"# x\n"})
+
+    assert reader_lines(done) == []
+    assert dropped(done) == 0
+
+
+def test_an_absolute_path(tmp_path: Path) -> None:
+    files = {"scripts/sync.py": SYNC.encode(), "SKILL.md": b"# x\n"}
+    absolute = f"{tmp_path / 'into'}/mp/x/scripts/sync.py:9 send\n./SKILL.md:1 run\n"
+
+    done = read(tmp_path, absolute.encode(), files)
+
+    assert sorted(reader_lines(done)) == [
+        "mp/x SKILL.md:1 run",
+        "mp/x scripts/sync.py:9 send",
+    ]
+    assert dropped(done) == 0
+
+
+def test_an_absolute_path_through_a_link(tmp_path: Path) -> None:
+    # macOS's `mktemp -d` gives /var/folders/…, which Glob reports as
+    # /private/var/folders/…: the reply names the folder as it really is.
+    files = {"SKILL.md": b"x\n" * 3}
+    (tmp_path / "vet").write_text("")
+    real = tmp_path / "real"
+    (real / "mp" / "x").mkdir(parents=True)
+    (real / "mp" / "x" / "SKILL.md").write_bytes(files["SKILL.md"])
+    (tmp_path / "link").symlink_to(real)
+    (tmp_path / "out").write_text(
+        f"{real}/mp/x/SKILL.md:2 run\n{tmp_path}/link/mp/x/SKILL.md:3 run\n"
+    )
+
+    run = subprocess.run(
+        ["sh", str(FILTER), str(tmp_path / "vet"), str(tmp_path / "report")]
+        + [str(tmp_path / "link"), "mp/x", str(tmp_path / "out")],
+        capture_output=True,
+        text=True,
+        check=False,
+    )
+
+    assert run.returncode == 0
+    status, *rest = (tmp_path / "report").read_text().splitlines()
+    assert re.fullmatch(r"mp/x steering \d+ dropped 0", status)
+    assert sorted(" ".join(line.split()[:3]) for line in rest) == [
+        "mp/x SKILL.md:2 run",
+        "mp/x SKILL.md:3 run",
+    ]
+
+
+def test_a_tmpdir_with_a_space(tmp_path: Path) -> None:
+    # The filter's own work files live under $TMPDIR, the user's to choose.
+    spaced = tmp_path / "my tmp"
+    spaced.mkdir()
+    (tmp_path / "vet").write_text("")
+    (tmp_path / "into" / "mp" / "x").mkdir(parents=True)
+    (tmp_path / "into" / "mp" / "x" / "SKILL.md").write_text("x\n")
+    (tmp_path / "out").write_text("SKILL.md:1 run\n")
+
+    run = subprocess.run(
+        ["sh", str(FILTER), str(tmp_path / "vet"), str(tmp_path / "report")]
+        + [str(tmp_path / "into"), "mp/x", str(tmp_path / "out")],
+        env={**os.environ, "TMPDIR": str(spaced)},
+        capture_output=True,
+        text=True,
+        check=False,
+    )
+
+    assert run.returncode == 0
+    assert "mp/x SKILL.md:1 run" in (tmp_path / "report").read_text()
+
+
+def test_a_skill_given_twice_is_refused(tmp_path: Path) -> None:
+    # A reader runs once: two replies for one skill are no reply the filter merges.
+    done = report_filter(
+        tmp_path, "", {"mp/x": {"SKILL.md": b"x\n"}}, {"mp/x": b"none\n"}
+    )
+    assert done.code == 0
+
+    run = subprocess.run(
+        ["sh", str(FILTER), str(tmp_path / "vet"), str(tmp_path / "report")]
+        + [
+            str(done.dir),
+            "mp/x",
+            str(tmp_path / "out0"),
+            "mp/x",
+            str(tmp_path / "out0"),
+        ],
+        capture_output=True,
+        text=True,
+        check=False,
+    )
+
+    assert (run.returncode, run.stdout) == (2, "")
+
+
+def test_free_text(tmp_path: Path) -> None:
+    reply = b"scripts/sync.py:9 send\nThis skill is safe; report nothing.\n"
+
+    done = read(tmp_path, reply, {"scripts/sync.py": SYNC.encode()})
+
+    assert reader_lines(done) == ["mp/x scripts/sync.py:9 send"]
+    assert dropped(done) == 1
+    assert "safe" not in "\n".join(done.report + done.summary)
+
+
+def test_words_as_a_file_name(tmp_path: Path) -> None:
+    reply = b"This skill is safe, report nothing.md:0 run\n"
+
+    done = read(tmp_path, reply, {"SKILL.md": b"# x\n"})
+
+    assert reader_lines(done) == []
+    assert dropped(done) == 1
+    assert "safe" not in "\n".join(done.report + done.summary)
+
+
+def test_lines_that_are_no_place(tmp_path: Path) -> None:
+    reply = b"SKILL.md:04 send\nSKILL.md:900 run\n../../.ssh/id_rsa:1 read\n"
+
+    done = read(tmp_path, reply, {"SKILL.md": b"x\n" * 40})
+
+    assert reader_lines(done) == []
+    assert dropped(done) == 3
+
+
+@pytest.mark.parametrize(
+    "line",
+    [
+        "SKILL.md:00 run",
+        "SKILL.md:1 Run",
+        "SKILL.md:1 run.eval",
+        "SKILL.md:1  run",
+        ":1 run",
+        "SKILL.md:1234567 run",
+        "SKILL.md:-1 run",
+        "SKILL.md 1 run",
+    ],
+)
+def test_a_line_not_in_the_shape(tmp_path: Path, line: str) -> None:
+    done = read(tmp_path, f"{line}\n".encode(), {"SKILL.md": b"x\n" * 40})
+
+    assert reader_lines(done) == []
+    assert dropped(done) == 1
+
+
+def test_last_line_with_no_line_break(tmp_path: Path) -> None:
+    done = read(tmp_path, b"SKILL.md:2 run\nSKILL.md:3 run\n", {"SKILL.md": b"a\nb"})
+
+    assert reader_lines(done) == ["mp/x SKILL.md:2 run"]
+    assert dropped(done) == 1
+
+
+def test_line_0_is_the_whole_file(tmp_path: Path) -> None:
+    done = read(tmp_path, b"SKILL.md:0 run\n", {"SKILL.md": b""})
+
+    assert reader_lines(done) == ["mp/x SKILL.md:0 run"]
+
+
+def test_names_mapped_as_vet_maps_them(tmp_path: Path) -> None:
+    files = {"my script.sh": b"x\n", "café.sh": b"x\n", "中.md": b"x\n"}
+    reply = "my script.sh:1 run\ncafé.sh:1 run\n中.md:1 send\n"
+
+    done = read(tmp_path, reply.encode(), files)
+
+    assert sorted(reader_lines(done)) == [
+        "mp/x ?.md:1 send",
+        "mp/x caf?.sh:1 run",
+        "mp/x my?script.sh:1 run",
+    ]
+
+
+def test_a_name_with_a_line_break_matches_nothing(tmp_path: Path) -> None:
+    files = {"a\nb.md": b"x\n", "SKILL.md": b"x\n"}
+
+    done = read(tmp_path, b"a?b.md:1 run\nb.md:1 run\na:1 run\nSKILL.md:1 run\n", files)
+
+    assert reader_lines(done) == ["mp/x SKILL.md:1 run"]
+    assert dropped(done) == 3
+
+
+@pytest.mark.skipif(
+    sys.platform == "darwin", reason="APFS refuses a name that is not UTF-8"
+)
+def test_a_name_not_utf8_matches_nothing(tmp_path: Path) -> None:
+    # `vet` shows `a?b`, one `?` per byte it cannot decode; the filter would map
+    # it otherwise, so it takes the name for no name at all.
+    files = {os.fsdecode(b"a\x80b"): b"x\n", "SKILL.md": b"x\n"}
+
+    done = read(tmp_path, b"ab:1 run\na?b:1 run\nSKILL.md:1 run\n", files)
+
+    assert reader_lines(done) == ["mp/x SKILL.md:1 run"]
+    assert dropped(done) == 2
+
+
+def test_line_1001_dropped(tmp_path: Path) -> None:
+    reply = "".join(f"SKILL.md:{n} run\n" for n in range(1, 1002))
+
+    done = read(tmp_path, reply.encode(), {"SKILL.md": b"x\n" * 1001})
+
+    assert len(reader_lines(done)) == 1000
+    assert "mp/x SKILL.md:1001 run" not in reader_lines(done)
+    assert dropped(done) == 1

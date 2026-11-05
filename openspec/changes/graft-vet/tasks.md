@@ -21,7 +21,7 @@ Test-first: each task's test fails before its code, then passes. One commit per 
 - [x] 2.1 `run-claude.sh`, a copy of graft-check's; verify a test that the two are byte for byte equal ("Runner drift")
 - [x] 2.2 `reader.json`: `Read`, `Grep`, `Glob`, the eight categories by intent, the reply shape, `none`, `probe` mode,
   the untrusted-text paragraph, no pattern name of `pipeline/vet.py`; verify a test of its tools and prompt
-- [ ] 2.3 `report-filter.sh`, keeping and dropping: sanitizing, blank and fence lines skipped, `<dir>/<skill id>/` and
+- [x] 2.3 `report-filter.sh`, keeping and dropping: sanitizing, blank and fence lines skipped, `<dir>/<skill id>/` and
   `./` stripped, the line shape, only names of `<dir>/<skill id>/` as `vet` maps them and lines within them (awk's
   `NR`), at most 1000, every other line dropped and counted, no reply refused; verify "Well-formed reply", "A fenced
   reply", "An absolute path", "Free text", "Words as a file name", "Lines that are no place", "Last line with no line
