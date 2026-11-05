@@ -247,6 +247,51 @@ HITS = [
     ("run.destructive", "mkfs.ext4 x"),
     ("run.destructive", "shred x"),
     ("run.destructive", ":(){ :|:& };:"),
+    ("privilege.sudo", "sudo make install"),
+    ("privilege.su", "su - root"),
+    ("privilege.doas", "doas make install"),
+    ("privilege.pkexec", "pkexec x"),
+    ("privilege.runas", "runas /user:admin x"),
+    ("privilege.world-writable", "chmod 777 x"),
+    ("privilege.world-writable", "chmod -R a+w x"),
+    ("privilege.world-writable", "chmod o+rw x"),
+    ("privilege.world-writable", "chmod 666 x"),
+    ("privilege.world-writable", "chmod 0666 x"),
+    ("privilege.world-writable", "chmod 1777 x"),
+    ("privilege.world-writable", "chmod o=rwx x"),
+    ("privilege.world-writable", "Run `chmod 777` on it"),
+    ("privilege.world-writable", "chmod --recursive 777 /srv"),
+    ("privilege.world-writable", "chmod 'o+w' x"),
+    ("privilege.setuid", "chmod u+s x"),
+    ("privilege.setuid", "chmod g+s x"),
+    ("privilege.setuid", "chmod 4755 x"),
+    ("privilege.setuid", "chmod 2755 x"),
+    ("privilege.setuid", "chmod +s /bin/bash"),
+    ("privilege.setuid", "chmod 04755 x"),
+    ("privilege.setuid", "sudo chmod -R g=rxs x"),
+    ("privilege.setuid", "chmod 4755."),
+    ("privilege.setuid", "chmod --verbose u+s f"),
+    ("privilege.chown-root", "chown root:root x"),
+    ("persistence.agent-config", "edit CLAUDE.md"),
+    ("persistence.agent-config", "edit AGENTS.md and GEMINI.md"),
+    ("persistence.agent-config", "write .claude/commands/x.md"),
+    ("persistence.agent-config", "under .cursor/rules"),
+    ("persistence.agent-config", "in .codex/config.toml"),
+    ("persistence.agent-config", "edit settings.json"),
+    ("persistence.agent-config", "add it to .mcp.json"),
+    ("persistence.hooks", "cp x .git/hooks/pre-commit"),
+    ("persistence.hooks", '  "hooks": {'),
+    ("persistence.shell-rc", "echo x >> .bashrc"),
+    ("persistence.shell-rc", "source .zshrc"),
+    ("persistence.shell-rc", "edit .profile"),
+    ("persistence.shell-rc", "edit .bash_profile"),
+    ("persistence.shell-rc", "edit config.fish"),
+    ("persistence.scheduler", "crontab -e"),
+    ("persistence.scheduler", "into /etc/cron.d"),
+    ("persistence.scheduler", "systemctl --user enable x"),
+    ("persistence.scheduler", "launchctl load x"),
+    ("persistence.scheduler", "in LaunchAgents"),
+    ("persistence.scheduler", "schtasks /create x"),
 ]
 MISSES = [
     ("send.url", "see x.example"),
@@ -275,6 +320,30 @@ MISSES = [
     ("run.destructive", "rm -f build"),
     ("run.destructive", "rm -r build; touch -f x"),
     ("run.destructive", "add if=x"),
+    ("privilege.sudo", "pseudocode"),
+    ("privilege.su", "import subprocess"),
+    ("privilege.su", "the sum"),
+    ("privilege.doas", "he does"),
+    ("privilege.runas", "it runs as planned"),
+    ("privilege.world-writable", "chmod 755 x"),
+    ("privilege.world-writable", "chmod u+w x"),
+    ("privilege.world-writable", "chmod 664 x"),
+    ("privilege.world-writable", "chmod o-w x"),
+    ("privilege.setuid", "chmod 0755 x"),
+    ("privilege.setuid", "chmod u+x x"),
+    ("privilege.setuid", "port 4755"),
+    ("privilege.setuid", "chmod 755 notes-2024.md"),
+    ("privilege.setuid", "chmod u-s x"),
+    ("privilege.setuid", "chmod o+s x"),
+    ("privilege.chown-root", "chown alice x"),
+    ("persistence.agent-config", "ask Claude"),
+    ("persistence.agent-config", "read CLAUDE.mdx"),
+    ("persistence.agent-config", "edit app-settings.yaml"),
+    ("persistence.hooks", "use React hooks"),
+    ("persistence.shell-rc", "a user profile"),
+    ("persistence.shell-rc", "edit fish.config"),
+    ("persistence.scheduler", "a cron-like rhythm"),
+    ("persistence.scheduler", "systemctl status x"),
 ]
 
 
@@ -286,6 +355,18 @@ def test_pattern_flags_its_line(pattern: str, line: str) -> None:
 @pytest.mark.parametrize(("pattern", "line"), MISSES)
 def test_pattern_leaves_a_near_miss_alone(pattern: str, line: str) -> None:
     assert pattern not in patterns(line)
+
+
+def test_agent_config() -> None:
+    assert "persistence.agent-config" in patterns("append this rule to CLAUDE.md")
+
+
+SLOW_PRIVILEGE = ["chmod " + "a" * 50000, "chmod " * 8000, "chown " * 8000]
+
+
+@pytest.mark.parametrize("line", SLOW_PRIVILEGE, ids=lambda line: line[:8])
+def test_privilege_takes_linear_time(line: str) -> None:
+    assert scan_time(line) < 1
 
 
 def test_executable() -> None:

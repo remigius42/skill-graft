@@ -17,7 +17,7 @@ Test-first: each task's test fails before its code, then passes. One commit per 
   URL paths skipped; verify the "Outside the project by form" scenarios pass
 - [x] 2.4 `send` and `run` patterns, the executable bit and the shebang; verify "Pipe to a shell", "A send Flag" and a
   hit and a near miss per pattern pass
-- [ ] 2.5 `privilege` and `persistence` patterns, word boundaries (`subprocess` is no `su`); verify "A secret store",
+- [x] 2.5 `privilege` and `persistence` patterns, word boundaries (`subprocess` is no `su`); verify "A secret store",
   "Agent config" and a hit and a near miss per pattern pass
 - [ ] 2.6 `permission` patterns and `SKILL.md` front matter (`allowed-tools`, `hooks`); verify "Tool grant", "Not
   asking", and that `allowed-tools` outside front matter or in another file is no `permission.tool-grant`

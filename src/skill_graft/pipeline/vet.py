@@ -56,6 +56,52 @@ def _destructive(line: str) -> bool:
     return bool(_DESTRUCTIVE.search(line))
 
 
+# Each `chmod`'s mode: its first argument not an option, without the quote or
+# backtick around it.
+_CHMOD = re.compile(r"""\bchmod\s+(?:-[\w-]+\s+)*[`'"]?([^\s`'"]+)""", re.IGNORECASE)
+_OCTAL = re.compile(r"0*([0-7]{3,4})")
+_SYMBOLIC = re.compile(r"([ugoa]*)[+=]([rwxXst]*)")
+
+
+def _modes(line: str) -> list[str]:
+    """Each `chmod`'s mode on `line`, without the punctuation ending a sentence."""
+    return [mode.rstrip(".,;:)") for mode in _CHMOD.findall(line)]
+
+
+def _clauses(mode: str) -> list[tuple[str, str]]:
+    """Each clause of symbolic `mode` that adds or sets: who, and what."""
+    return [
+        (clause[1], clause[2])
+        for text in mode.split(",")
+        if (clause := _SYMBOLIC.fullmatch(text))
+    ]
+
+
+def _world_writable(line: str) -> bool:
+    """Whether a `chmod` on `line` lets others write."""
+    for mode in _modes(line):
+        if octal := _OCTAL.fullmatch(mode):
+            if octal[1][-1] in "2367":  # others may write
+                return True
+        elif any(set(who) & {"o", "a"} and "w" in add for who, add in _clauses(mode)):
+            return True
+    return False
+
+
+def _setuid(line: str) -> bool:
+    """Whether a `chmod` on `line` sets the setuid or setgid bit."""
+    for mode in _modes(line):
+        if octal := _OCTAL.fullmatch(mode):
+            if len(octal[1]) == 4 and octal[1][0] in "234567":
+                return True
+        elif any(
+            (not who or set(who) & {"u", "g", "a"}) and "s" in add
+            for who, add in _clauses(mode)
+        ):
+            return True
+    return False
+
+
 # Each pattern a line is matched against, by name: `<category>.<what>`.
 _PATTERNS: dict[str, str | Callable[[str], bool]] = {
     "read.secret-store": (
@@ -80,6 +126,27 @@ _PATTERNS: dict[str, str | Callable[[str], bool]] = {
         rf"|\b(?:{_SHELLS})\s+-c\b"
     ),
     "run.destructive": _destructive,
+    "privilege.sudo": _commands("sudo"),
+    "privilege.su": _commands("su"),
+    "privilege.doas": _commands("doas"),
+    "privilege.pkexec": _commands("pkexec"),
+    "privilege.runas": _commands("runas"),
+    "privilege.world-writable": _world_writable,
+    "privilege.setuid": _setuid,
+    "privilege.chown-root": r"\bchown\s+(?:-\w+\s+)*root\b",
+    "persistence.agent-config": (
+        r"\b(?:CLAUDE|AGENTS|GEMINI)\.md\b|(?<![\w.])\.(?:claude|cursor|codex)/"
+        r"|\bsettings\.json\b|(?<![\w.])\.mcp\.json\b"
+    ),
+    "persistence.hooks": r"\.git/hooks\b|\"hooks\"\s*:",
+    "persistence.shell-rc": (
+        r"(?<![\w.])\.(?:bashrc|bash_profile|zshrc|zprofile|zshenv|profile)\b"
+        r"|\bconfig\.fish\b"
+    ),
+    "persistence.scheduler": (
+        r"\bcrontab\b|\bcron\.d\b|\bsystemctl\s+(?:--user\s+)?enable\b"
+        r"|\blaunchctl\b|\bLaunchAgents\b|\bschtasks\b"
+    ),
 }
 _COMPILED: list[tuple[str, Callable[[str], object]]] = [
     (name, re.compile(test, re.IGNORECASE).search if isinstance(test, str) else test)

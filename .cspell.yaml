@@ -142,6 +142,7 @@ words:
   - schtasks
   - sdist
   - setattr
+  - setgid
   - setuid
   - shellcheck
   - shlex
@@ -167,6 +168,7 @@ words:
   - trixie
   - typeshed
   - ufeff
+  - ugoa
   - ultraplan
   - ultrareview
   - unicodedata
