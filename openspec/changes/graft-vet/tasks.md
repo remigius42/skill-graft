@@ -12,6 +12,9 @@ Test-first: each task's test fails before its code, then passes. One commit per 
   Skill not yet added", "Patched and renamed", "A Skill with no Flag", "Folder not empty", "Hidden character", and the
   lock, config and `.apm/skills/` bytes unchanged
 - [x] 1.3 `--into` in `cli.py` and `vet --help`; verify "Empty value" and the help in `tests/cli/test_cli.py`
+- [x] 1.4 `vet` names the **Package** on its first standard error line, `skill-graft: package: <package>`, as the
+  writing commands do, before loading the config (added: the design took it as given, but `vet` did not print it, and
+  the skill reads it); verify in `tests/commands/test_vet.py`, its own stderr and a failure's
 
 ## 2. The skill's files (`skills/graft-vet/`, `tests/cli/test_graft_vet.py`)
 

@@ -8,6 +8,8 @@ from skill_graft.infra.errors import SkillGraftError, notice
 
 # Commands that write: they name the package they act on before anything else.
 WRITERS = ("resolve", "deploy", "update", "add", "remove", "rename", "bind", "unbind")
+# And `vet`, whose first line the graft-vet skill reads: the package, for `[check]`.
+NAMERS = (*WRITERS, "vet")
 
 
 def of(command: str, project: bool) -> paths.Scope:
@@ -21,7 +23,7 @@ def of(command: str, project: bool) -> paths.Scope:
     else:
         root = Path.home()
     current = paths.Scope(root)
-    if command in WRITERS:  # init names it once its own checks pass
+    if command in NAMERS:  # init names it once its own checks pass
         notice(f"package: {current.package.absolute()}")
     return current
 

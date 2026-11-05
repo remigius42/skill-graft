@@ -244,15 +244,27 @@ def test_unknown_skill(home: Path, capsys: Capsys) -> None:
     assert "vet: `mp/nothing`: no skill 'nothing' found" in err
 
 
+def test_names_the_package_first(home: Path, capsys: Capsys) -> None:
+    skill(home / "mp" / "tdd", "# tdd\n")
+    configure(["mp/tdd"], mp="~/mp")
+
+    assert main(["vet"]) == 0
+
+    err = capsys.readouterr().err
+    assert err.startswith(f"skill-graft: package: {package(home)}\n")
+
+
 def fails_as_resolve(capsys: Capsys) -> str:
-    """`vet`'s stderr, after checking it fails as `resolve` does, printing no flag."""
+    """`vet`'s stderr, after checking it fails as `resolve` does, printing no flag,
+    the package named first as `resolve` names it."""
     assert main(["resolve"]) == 1
-    resolved = after_package_line(capsys.readouterr().err)
+    resolved = capsys.readouterr().err
     assert main(["vet"]) == 1
     out, err = capsys.readouterr()
     assert out == ""
+    assert err.startswith("skill-graft: package: ")
     assert err == resolved
-    return err
+    return after_package_line(err)
 
 
 def test_hidden_character(home: Path, capsys: Capsys) -> None:
