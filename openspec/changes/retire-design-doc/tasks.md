@@ -45,9 +45,9 @@ order by `tests/pipeline/test_hull.py`.
   `SECURITY.md`, CONTRIBUTING.md, LICENSE and the badges on `main`; verify every relative link resolves in the working
   tree, and the built README's links all name `blob/v0.4.0/` or `raw.githubusercontent.com/…/v0.4.0/`, with no relative
   one left
-- [ ] 3.3 `tests/cli/test_pypi_readme.py`: build the wheel and read its `METADATA` description; fail on a relative link
-  or `src` left, or a `blob/v` link naming another version than `pyproject.toml`'s or a file missing from the working
-  tree; verify it fails against a README with a link the substitutions miss, then passes
+- [x] 3.3 `tests/cli/test_pypi_readme.py`: build the wheel and read its `METADATA` description; fail on a relative link,
+  reference definition, `src` or `href` left, or a `blob/v` link naming another version than `pyproject.toml`'s or a
+  file missing from the working tree; verify it fails against a README with a link the substitutions miss, then passes
 
 ## 4. Check
 
