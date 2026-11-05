@@ -59,12 +59,12 @@ def _builds_a_pattern(entry: str) -> bool:
     if not call or call[1] not in MODULES:
         return False
     function = getattr(module(call[1]), call[2], None)
-    arguments = ast.literal_eval(f"({call[3]},)") if call[3] else ()
     if not callable(function):
         return False
     try:
+        arguments = ast.literal_eval(f"({call[3]},)") if call[3] else ()
         inspect.signature(function).bind(*arguments)
-    except TypeError:
+    except (TypeError, ValueError, SyntaxError):
         return False
     return isinstance(function(*arguments), re.Pattern)
 
@@ -166,11 +166,18 @@ def test_guard_counts_a_pattern_imported_by_name_once() -> None:
 
 
 def test_guard_names_an_entry_that_is_no_pattern() -> None:
-    entries = [*ALL_NAMES, "vet._GONE", "deployed._hunks(False)", "vet._PATTERNS:x"]
+    entries = [
+        *ALL_NAMES,
+        "vet._GONE",
+        "deployed._hunks(False)",
+        "deployed._escaped(x)",
+    ]
+    entries.append("vet._PATTERNS:x")
 
     assert problems(entries) == [
         "entry vet._GONE names no pattern",
         "entry deployed._hunks(False) names no pattern",
+        "entry deployed._escaped(x) names no pattern",
         "entry vet._PATTERNS:x names no pattern",
     ]
 
