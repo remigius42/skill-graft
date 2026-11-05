@@ -147,11 +147,23 @@ _PATTERNS: dict[str, str | Callable[[str], bool]] = {
         r"\bcrontab\b|\bcron\.d\b|\bsystemctl\s+(?:--user\s+)?enable\b"
         r"|\blaunchctl\b|\bLaunchAgents\b|\bschtasks\b"
     ),
+    "permission.skip-prompts": (
+        r"--dangerously-skip-permissions\b|\bbypassPermissions\b"
+        r"|--permission-mode\b|--yolo\b"
+    ),
+    "permission.no-ask": (
+        r"\bwithout\s+asking\b|\b(?:do\s+not|don[’']?t)\s+(?:ask|tell|mention)\b"
+        r"|\bsilently\b|\bquietly\b"
+    ),
 }
 _COMPILED: list[tuple[str, Callable[[str], object]]] = [
     (name, re.compile(test, re.IGNORECASE).search if isinstance(test, str) else test)
     for name, test in _PATTERNS.items()
 ]
+
+# The top-level keys of `SKILL.md`'s front matter flagged, by pattern.
+_KEYS = {"allowed-tools": "permission.tool-grant", "hooks": "persistence.hooks"}
+_KEY = re.compile(r"([\w-]+)\s*:")
 
 # A path-like token; `${HOME}` holds braces, which end any other.
 _TOKEN = re.compile(r"""(?:\$\{HOME\}|[^\s'"`()<>|;,=\[\]{}])+""")
@@ -201,12 +213,26 @@ def scan(view: View) -> list[Flag]:
         text, encoding = decoded
         if encoding != "UTF-8":
             found.append(Flag(path, 0, "unreviewable.encoding"))
-        for number, line in enumerate(text.split("\n"), 1):
+        lines = text.split("\n")
+        front = _front_matter(lines) if path == "SKILL.md" else 0
+        for number, line in enumerate(lines, 1):
             names = _line(line)
             if number == 1 and line.startswith("#!"):
                 names.add("run.shebang")
+            key = _KEY.match(line)
+            if 1 < number <= front and key and key[1] in _KEYS:
+                names.add(_KEYS[key[1]])
             found += [Flag(path, number, name) for name in sorted(names)]
     return found
+
+
+def _front_matter(lines: list[str]) -> int:
+    """The number of the last line of the front matter, the block between a first
+    line `---` and the next; 0 without one."""
+    if lines[0].lstrip("\ufeff").rstrip() != "---":  # as `references` reads it
+        return 0
+    ends = (n for n, line in enumerate(lines[1:], 2) if line.rstrip() == "---")
+    return next(ends, 1) - 1
 
 
 def _line(line: str) -> set[str]:

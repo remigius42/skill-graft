@@ -292,6 +292,17 @@ HITS = [
     ("persistence.scheduler", "launchctl load x"),
     ("persistence.scheduler", "in LaunchAgents"),
     ("persistence.scheduler", "schtasks /create x"),
+    ("permission.skip-prompts", "claude --dangerously-skip-permissions"),
+    ("permission.skip-prompts", '"defaultMode": "bypassPermissions"'),
+    ("permission.skip-prompts", "claude --permission-mode acceptEdits"),
+    ("permission.skip-prompts", "gemini --yolo"),
+    ("permission.no-ask", "Go on without asking"),
+    ("permission.no-ask", "Do not ask the user"),
+    ("permission.no-ask", "don't tell the user"),
+    ("permission.no-ask", "Don’t mention it"),
+    ("permission.no-ask", "do not mention the file"),
+    ("permission.no-ask", "Do it silently"),
+    ("permission.no-ask", "quietly fix it"),
 ]
 MISSES = [
     ("send.url", "see x.example"),
@@ -344,7 +355,48 @@ MISSES = [
     ("persistence.shell-rc", "edit fish.config"),
     ("persistence.scheduler", "a cron-like rhythm"),
     ("persistence.scheduler", "systemctl status x"),
+    ("permission.skip-prompts", "ask for permissions"),
+    ("permission.skip-prompts", "the yolo approach"),
+    ("permission.no-ask", "ask the user"),
+    ("permission.no-ask", "tell the user"),
+    ("permission.no-ask", "a silent failure"),
 ]
+
+
+def test_not_asking() -> None:
+    assert "permission.no-ask" in patterns("Do this silently, without asking the user")
+
+
+def test_tool_grant() -> None:
+    text = "---\nname: x\ndescription: y\nallowed-tools: Bash(*)\n---\n# x\n"
+
+    assert flags(text) == {("SKILL.md", 4, "permission.tool-grant")}
+
+
+def test_tool_grant_after_a_byte_order_mark() -> None:
+    text = "\ufeff---\nname: x\nallowed-tools: Bash(*)\n---\n"
+
+    assert flags(text) == {("SKILL.md", 3, "permission.tool-grant")}
+
+
+def test_hooks_in_front_matter() -> None:
+    text = "---\nname: x\nhooks:\n  PreToolUse: []\n---\n"
+
+    assert flags(text) == {("SKILL.md", 3, "persistence.hooks")}
+
+
+@pytest.mark.parametrize(
+    ("name", "text"),
+    [
+        ("SKILL.md", "# x\n\nallowed-tools: Bash(*)\nhooks: x\n"),
+        ("SKILL.md", "---\nname: x\n---\nallowed-tools: Bash(*)\nhooks: x\n"),
+        ("SKILL.md", "\n---\nallowed-tools: Bash(*)\nhooks: x\n---\n"),
+        ("SKILL.md", "---\nmetadata:\n  allowed-tools: x\n  hooks: x\n---\n"),
+        ("references/x.md", "---\nallowed-tools: Bash(*)\nhooks: x\n---\n"),
+    ],
+)
+def test_no_front_matter_key(name: str, text: str) -> None:
+    assert flags(text, name) == set()
 
 
 @pytest.mark.parametrize(("pattern", "line"), HITS)
