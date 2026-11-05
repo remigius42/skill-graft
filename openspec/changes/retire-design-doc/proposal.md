@@ -18,10 +18,9 @@ behaviors a user sees that only `design.md` states; deleting it without them lea
 - `docs/README.md` maps every doc; CONTEXT.md, CONTRIBUTING.md and AGENTS.md link to it, and ADR mentions become links.
 - The README shows the skill-graft logo, floated right beside its title and pitch. `docs/assets/` holds it twice: the
   full mark for 64 px and up, and a small one for less, such as a favicon.
-- The README's links to the docs (`docs/`, CONTEXT.md) name the release, `blob/v<version>/`, not `blob/main/`: the
-  README on PyPI and on each tag then leads to that release's guides, not main's. `check-pins` holds them to
-  `pyproject.toml`'s version, and the release commit raises them with the other pins. Until then they name the last
-  release, which lacks `docs/howto.md` and `docs/README.md`, so the branch merges right before a release.
+- The README links the docs, CONTEXT.md and the logo relatively, so on GitHub each ref's README leads to that ref's
+  docs. The build rewrites those links to absolute ones naming the release, `blob/v<version>/`, so the README on PyPI
+  leads to that release's guides; the build backend becomes hatchling, with hatch-fancy-pypi-readme.
 - The six behaviors only `design.md` states become requirements and scenarios, each pinned by a test:
   - `deploy` compares the lock parsed: a comment or line endings an editor added are no difference.
   - The notice for a changed path **Source** **Skill** is
@@ -57,7 +56,9 @@ None.
   `docs/assets/skill-graft-small.svg`; `docs/design.md` removed. `.markdownlint.yaml` allows `<img>`, which alone can
   size and float the logo.
 - Tests for the behaviors no test pins yet: `tests/commands/test_deploy.py` (a reformatted lock),
-  `tests/cli/test_hidden_characters.py` (the config not scanned). No change to `src/`, unless one of those tests finds
-  the code differs.
-- Tooling: `scripts/check_pins.py` and `tests/test_check_pins.py` pin the README's `blob/v<version>/` links;
-  CONTRIBUTING.md's release steps raise them.
+  `tests/cli/test_hidden_characters.py` (the config not scanned), `tests/commands/test_review.py` (`resolve --dry-run`
+  after a killed run) and `tests/pipeline/test_hull.py` (the error that stops the walk last). No change to `src/`: each
+  passed as written.
+- Build: `pyproject.toml`'s `[build-system]` moves from `uv_build` to hatchling and hatch-fancy-pypi-readme, its
+  `readme` to the hook's substitutions; the wheel and sdist hold the same files as before.
+  `tests/cli/test_pypi_readme.py` builds the wheel and checks its description's links.

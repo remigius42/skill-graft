@@ -54,6 +54,7 @@ words:
   - gitlink
   - grimp
   - heapdump
+  - HFPR
   - ignorecase
   - ignorewhitespace
   - importlinter

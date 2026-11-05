@@ -38,21 +38,37 @@ PyPI shows for each release.
 
 - **The README keeps its Cache section.** An error message (`infra/cache.py`) sends users to "Cache" in the README.
 
-- **The README's docs links name the release, `blob/v<version>/`, held by `check-pins`.** Each tag's README then leads
-  to its own guides; the release commit raises them with the other pins. Alternatives: `blob/main/`, which shows a user
-  of an older release main's guides; relative links, which PyPI does not resolve.
+- **The README links the repository's files relatively; the build makes them absolute, naming the release.** GitHub
+  resolves a relative link against the ref it shows, so main's README leads to main's docs and a tag's to its own, and
+  none breaks between releases. PyPI resolves one against `pypi.org`, so the build rewrites each relative link and image
+  to `blob/v<version>/` and `raw.githubusercontent.com/…/v<version>/`: hatch-fancy-pypi-readme's substitutions, with
+  `$HFPR_VERSION`, the package's version. It is a hatchling metadata hook, and `uv_build` refuses dynamic metadata, so
+  the build backend becomes hatchling; both are build requirements, not runtime ones. Same-page `#` links stay as they
+  are, as do the absolute links to `SECURITY.md`, CONTRIBUTING.md and LICENSE on `main`. Alternatives: absolute
+  `blob/main/` links, the common default, which show a user of an older release main's guides, open main's copy from a
+  local preview or a branch's page, and 404 there for a file main lacks yet; hand-pinned `blob/v<version>/` links held
+  by `check-pins` and raised in each release commit, which break until a release ships the files they name; rewriting in
+  the publish workflow only, which keeps `uv_build` but makes a local build differ from the published one; a second
+  README for PyPI, which doubles the text to keep in step.
+
+- **The tag holds the relative links; only the built metadata names the release.** The tag's signature covers the tree,
+  whose README is unchanged, so a clone matches what was signed and `publish.yml`'s key check reads the same file. The
+  rewritten text lives only in the sdist's `PKG-INFO` and the wheel's `METADATA`, which PyPI's PEP 740 attestations
+  cover; it follows from the tag's tree and version, so a build from the tag or the sdist repeats it.
 
 - **One logo in the README, the full mark, 128 px, floated right.** The small mark is for sizes the full one blurs at,
   which the README is not; two would repeat it on one screen. On the right, the title, badges and pitch keep a straight
   left edge, also on a narrow screen. Markdown can neither size nor float an image, so `<img align="right">`, which
-  GitHub and PyPI keep, and `img` joins MD033's allowed elements. Its URL is absolute, which PyPI needs, and on `main`,
-  not a tag: the logo does not change per release.
+  GitHub and PyPI keep, and `img` joins MD033's allowed elements. Its `src` is relative, as the links are, and the build
+  makes it absolute.
 
 ## Risks / Trade-offs
 
-- \[Until the next release, `blob/v0.4.0/docs/howto.md` and `blob/v0.4.0/docs/README.md` do not exist\] → the branch
-  merges right before a release, whose commit raises the links; `check-pins` checks the version, not that the file
-  exists at that tag.
+- [A relative link the substitutions do not match reaches PyPI broken] → they match every Markdown link and `src` that
+  names no scheme and no `#` anchor; a test builds the wheel and fails on a relative link left in its description, or a
+  `blob/v` link naming another version or a missing file.
+- [A build from a commit between releases names a tag that lacks the files linked] → only a release is published, and
+  its build names its own tag.
 - [Spec deltas copy whole requirements, so a concurrent change to the same requirement conflicts] → none is in flight.
 - \[`docs/apm-behavior.md` names APM 0.35.0 and no hook checks it\] → CONTRIBUTING.md's Tooling says to measure again
   when the `apm-cli` pin moves.
