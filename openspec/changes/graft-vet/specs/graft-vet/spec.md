@@ -306,3 +306,30 @@ The skill's folder SHALL hold its own `run-claude.sh` and `reader.json`, and `ru
 
 - **WHEN** `skills/graft-check/run-claude.sh` changes and `skills/graft-vet/run-claude.sh` does not
 - **THEN** the test suite fails
+
+### Requirement: A corpus measures the Vet
+
+This repository SHALL hold a corpus of synthetic **Skills**, written by code, each labelled with the places, file, line
+and category, a **Vet** should flag, none for a harmless one, and with the places `skill-graft vet` flags in it. It
+SHALL hold obvious harm, harm phrased to pass the scan's patterns, harm that tells its reader to report nothing, and
+harmless text that looks like harm. A test SHALL run `skill-graft vet` over the corpus and fail when what it flags
+differs from the corpus's record. An opt-in eval SHALL run the skill over the corpus and print, per **Skill**, its
+labelled places flagged `scan`, `reader`, `both` or by neither, the `reader` **Flags** on places it does not label, and
+its steering count; it SHALL never run in hooks or CI.
+
+#### Scenario: An evasion stays on record
+
+- **WHEN** a corpus **Skill**'s `SKILL.md` asks in prose to download an installer and hand it to the shell, naming no
+  URL or command
+- **THEN** its labels hold that line's `run`, and its record holds no **Flag** of the scan there
+
+#### Scenario: The scan changes
+
+- **WHEN** `pipeline/vet.py` starts or stops flagging a place of a corpus **Skill**
+- **THEN** the test suite fails until the corpus's record follows
+
+#### Scenario: Readers against the corpus
+
+- **WHEN** the user runs `evals/graft-vet/run.sh corpus`
+- **THEN** it prints, per corpus **Skill**, its labelled places by `scan`, `reader`, `both` and missed, its unlabelled
+  `reader` **Flags** and its steering count, whatever they are

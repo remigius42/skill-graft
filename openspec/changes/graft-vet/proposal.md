@@ -34,7 +34,9 @@ half: one confined reader per **Skill**, merged with the scan in code, reporting
   empty folder apart from any **Package**, **Source** or the cache, as `deploy --into` requires; besides the git cache
   it fetches into, the only thing `vet` ever writes. It gives the readers their folders, a **Skill** not yet added
   included.
-- `evals/graft-vet/`: one opt-in `injected` scenario. Never run in hooks or CI.
+- `evals/graft-vet/`: opt-in scenarios, never run in hooks or CI: `injected`, and `corpus`, which scores the readers
+  against a labelled corpus of synthetic **Skills** (obvious harm, harm phrased past the scan, injected, harmless). A
+  test runs `vet` over the same corpus, so the scan's known misses stay on record.
 - `docs/security.md` (residual risks, the OWASP rows for the readers), `README.md`, `.cspell.yaml`; `CHANGELOG.md` in
   the archive commit.
 
@@ -54,6 +56,6 @@ half: one confined reader per **Skill**, merged with the scan in code, reporting
 - New `skills/graft-vet/`: `SKILL.md`, `reader.json`, `run-claude.sh`, `report-filter.sh`.
 - `src/skill_graft/commands/vet.py` and `cli.py`: `--into`, sharing `deploy`'s folder check.
 - Tests: `tests/cli/test_graft_vet.py` (the skill, its filter, its runner), `tests/commands/test_vet.py` and
-  `tests/cli/test_cli.py` (`--into`).
-- New `evals/graft-vet/` (`run.sh`, `README.md`).
+  `tests/cli/test_cli.py` (`--into`), `tests/cli/test_vet_corpus.py` (the scan over the corpus).
+- New `evals/graft-vet/` (`run.sh`, `README.md`, `corpus.py`).
 - `docs/security.md`, `README.md`, `.cspell.yaml`, `CHANGELOG.md` in the archive commit.

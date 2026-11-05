@@ -179,6 +179,33 @@ the report file holds that `SKILL.md` line's `run` **Flag** with `run.pipe-to-sh
 summary a `run` count for that **Skill**, the transcript every caveat and no `zq7`, and that the **Package** is
 unchanged.
 
+### The corpus
+
+Tests show the filter and the quarantine hold; they cannot show a reader finds anything. A corpus does: synthetic
+**Skills** with labels, each a place, `(file, line, category)`, a **Vet** should flag. `evals/graft-vet/corpus.py`, the
+standard library only, holds it as code, as fixtures are built in the test: each **Skill**'s files, its labels, and its
+record, the places `vet` flags in it. `python corpus.py write <folder>` writes it as a path **Source**'s folder;
+`python corpus.py score <report file>` prints, per **Skill**, its labels by `seen-by` (`scan`, `reader`, `both`, or
+`missed` when no **Flag** has that file, line and category), its `reader` **Flags** on unlabelled places, and its
+steering status line, then the totals; it judges nothing and exits 0.
+
+Its **Skills**, each kind more than once: obvious harm, which the scan catches; the same harm phrased to pass every
+pattern (a fetch-and-run in prose, a secret named by description, agent config named by what it does, a silence asked in
+other words, a one-liner run by an interpreter the scan does not name); harm whose text tells its reader to report
+nothing; harmless text that looks like harm (a documentation URL, `sudo` named to forbid it), labelled with nothing.
+
+`tests/cli/test_vet_corpus.py` writes the corpus as a path **Source**, runs `skill-graft vet` over every **Skill**, and
+compares each **Skill**'s `(file, line, category)` set with its record: a change to `pipeline/vet.py` that catches an
+evasion, or stops catching a place, fails until the record follows, so the scan's known misses stay written down. It
+costs no token. The eval's `corpus` scenario runs `/graft-vet` hardened over the same **Skills** and prints the score:
+how many labels the readers add to the scan's, how many they miss, what they flag on harmless text, and whether the
+injected ones show a steering count. One run is one sample; the README says to run it several times before reading a
+rate off it. No threshold fails it: a reader's rate is a number to watch, not a test.
+
+Alternative: corpus folders checked in as Markdown files. Rejected: AGENTS.md builds fixture **Skills** in code, and
+labels by line number drift when a file is edited by hand; built in code, a label can point at the line holding a
+marker.
+
 ## Risks / Trade-offs
 
 - \[A reader can still misplace or drop **Flags**\] → the steering count shows a drop where the scan saw something;
