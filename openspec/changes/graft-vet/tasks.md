@@ -45,7 +45,7 @@ Test-first: each task's test fails before its code, then passes. One commit per 
   sentences for "The scan is the CLI's", "A Package in user scope", "A warning names a Reference", "An error names a
   link target", "Hardened by the probe", "One reader per Skill", "Error output empty" and "The main agent never reads
   Skill text"
-- [ ] 3.3 The report: the filter's summary, the report file's path for the user, `vet`'s output and the report file
+- [x] 3.3 The report: the filter's summary, the report file's path for the user, `vet`'s output and the report file
   never opened, `skill-graft remove <id>` for a flagged **Entry** only, no verdict, the fixed caveats with every report;
   verify tests for "Reports only", "Caveats always", each caveat present, and "The main agent never reads Skill text"
 
