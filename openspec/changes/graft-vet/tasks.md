@@ -64,7 +64,7 @@ Test-first: each task's test fails before its code, then passes. One commit per 
   risks (a steered reader, **Skill IDs** reaching the main agent, category-level steering count, prompt-level
   quarantine, file names reaching the user only through the report file), the OWASP rows for its readers (LLM01, LLM02,
   LLM05, ASI05, ASI07, ASI08: one **Skill** per reader); verify every relative link resolves and the hooks pass
-- [ ] 5.2 `README.md` Security and Commands (`vet --into`, graft-vet); new words in `.cspell.yaml`; verify the hooks and
+- [x] 5.2 `README.md` Security and Commands (`vet --into`, graft-vet); new words in `.cspell.yaml`; verify the hooks and
   `check-pins` pass
 
 ## 6. Check
