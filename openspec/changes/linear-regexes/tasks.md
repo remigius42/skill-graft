@@ -5,10 +5,11 @@ with the archive commit.
 
 ## 1. The comment pattern
 
-- [x] 1.1 `discovery.COMMENT` becomes `(?<!\s)\s+#.*$`; verify a test in `tests/pipeline/test_discovery.py` reads a
-  `name:` of `a`, 100 000 spaces and `b` within a second as that whole value (red: the old pattern takes about 26 s), a
-  test in `tests/commands/test_resolve.py` has `resolve` exit non-zero within seconds on that **Skill** as an **Entry**,
-  and the existing comment and quote tests still pass (skill-discovery, "Long run of whitespace")
+- [x] 1.1 `discovery.COMMENT` becomes `(?<!\s)\s+#.*`, without `$`, which a line feed would make quadratic; verify a
+  test in `tests/pipeline/test_discovery.py` reads a `name:` of `a`, 100 000 spaces and `b` within a second as that
+  whole value (red: the old pattern takes about 26 s), a test in `tests/commands/test_resolve.py` has `resolve` exit
+  non-zero within seconds on that **Skill** as an **Entry**, and the existing comment and quote tests still pass
+  (skill-discovery, "Long run of whitespace")
 - [x] 1.2 `apm.COMMENT` the same; verify a test in `tests/infra/test_apm.py` over an `apm.yml` line `- a`, 100 000
   spaces, `b` (an inner run: the scan strips a line's ends before the pattern) finishes within a second, red before the
   fix, and the existing `apm.yml` scan tests pass
@@ -22,7 +23,7 @@ with the archive commit.
   `references`, `vet` (with each string pattern of `_PATTERNS`), `hidden`, `text`, `patch`, `rename`, `deployed`,
   `config` and `apm` as distinct objects, a by-name import counting once; failing on each without an entry under any of
   its names, and on each entry naming neither a pattern nor a function returning one; verify it fails naming every
-  pattern once against an empty registry
+  pattern once against an empty registry (the check against the real registry lands with 2.3)
 - [x] 2.3 The registry: per pattern, a `linear_time` case with id `<module>.<name>`, the call the code makes and a
   pumped input of about 100 000 characters, timed under one second, the pattern resolved by `getattr` at test time,
   `_PATTERNS:` entries through `_COMPILED`'s bound `search.__self__`, `deployed._escaped(False)` and
@@ -52,10 +53,10 @@ with the archive commit.
 - [x] 3.4 `__main__.py` and `equivalent.toml`: per target, the existing test files of every module holding the pattern,
   its extra files and its registry cases by node id; the unpatched run first; then each mutant in its own pytest process
   without `-x`, one per CPU, stopped past its timeout; a timeout or a kill by `linear_time` tests alone confirmed by a
-  run on its own; the report printed with `ascii()`; exit 1 on an unlisted survivor or a stale entry; verify tests of
-  the test selection for `config.NAME` and `text.CRITICAL_CHARS` (no `tests/infra/test_text.py`), of the verdict over
-  given results (killed, timed out and confirmed or not, timing-only confirmed or not, listed, unlisted, stale), and
-  that a failing unpatched run stops it
+  run on its own; the report printed with `ascii()`; exit 1 on an unlisted survivor or a stale entry, 2 on a failing
+  unpatched run or an unknown target; verify tests of the test selection for `config.NAME` and `text.CRITICAL_CHARS` (no
+  `tests/infra/test_text.py`), of the verdict over given results (killed, timed out and confirmed or not, timing-only
+  confirmed or not, listed, unlisted, stale), and that a failing unpatched run stops it
 - [x] 3.5 `CONTRIBUTING.md` (how and when to run it), a row in `docs/README.md`, a bullet in `AGENTS.md`'s Tests section
   (opt-in, never in hooks or CI; run it after changing a target pattern), new words in `.cspell.yaml`; verify the hooks
   pass
@@ -63,7 +64,8 @@ with the archive commit.
 ## 4. Gaps the harness finds
 
 Per target module: run `uv run python -m mutation <its targets>`; for each surviving mutant, a test in that module's
-test file that kills it, or its entry in `equivalent.toml` with the reason.
+test file that kills it, or its entry in `equivalent.toml` with the reason. `vet` and `references` take an `EDGES`
+table; the `vet._OCTAL` survivor was a real miss, fixed in 4.5 (design, Gaps the harness found).
 
 - [x] 4.1 `vet`; verify its run exits 0 and `uv run pytest` passes
 - [x] 4.2 `references`; verify its run exits 0 and `uv run pytest` passes
