@@ -29,11 +29,13 @@ words:
   - copytree
   - cowork
   - dataclass
+  - dataclasses
   - dataviz
   - delenv
   - devnull
   - difflib
   - diffutils
+  - doas
   - docstrings
   - EACCES
   - elif
@@ -55,6 +57,7 @@ words:
   - grimp
   - heapdump
   - HFPR
+  - httpx
   - ignorecase
   - ignorewhitespace
   - importlinter
@@ -79,10 +82,13 @@ words:
   - mpgrilling
   - mptdd
   - mypy
+  - ncat
+  - netrc
   - noatime
   - NOCTTY
   - NONBLOCK
   - noopener
+  - normpath
   - nosystem
   - nowarn
   - numstat
@@ -102,8 +108,10 @@ words:
   - pipefail
   - pipenv
   - pipx
+  - pkexec
   - pocock
   - popleft
+  - posixpath
   - powerup
   - preexec
   - pstack
@@ -111,6 +119,7 @@ words:
   - pycodestyle
   - pypa
   - pypi
+  - pypirc
   - pyproject
   - pytest
   - pytestmark
@@ -124,11 +133,14 @@ words:
   - repr
   - rglob
   - rmtree
+  - runas
   - samefile
   - sandboxed
   - scandir
+  - schtasks
   - sdist
   - setattr
+  - setuid
   - shellcheck
   - shlex
   - shutil
@@ -158,6 +170,8 @@ words:
   - unicodedata
   - unpadded
   - unrenamed
+  - unreviewable
+  - Unreviewable
   - unsandboxed
   - unsets
   - unstatable

@@ -79,6 +79,15 @@ missed, false or misdirected **References**, rewrites that changed the wrong tex
 proposes **Binds**, **Entries** and **Patches**; the user accepts each, and resolution stays skill-graft's alone.
 _Avoid_: Audit, verify, validation
 
+**Vet**: A review, invoked by the user, of what each **Skill**, as it would deploy, can make an agent read, write, send
+or run, and where. Any **Skill** of a declared **Source** can be vetted, in the **Hull** or not yet. It reports, never
+judges: no verdict that a **Skill** is safe, no fix proposed. _Avoid_: Security check, audit, scan
+
+**Flag**: One thing a **Vet** points out for the user to read: a line of a file in a **Skill**, what it may make an
+agent do there (read, write, send, run, gain privilege, persist, widen its permissions, or hide from review), and the
+OWASP risk that names it. A **Flag** is never a fault, and no **Flag** is never a pass. _Avoid_: Finding, issue,
+violation, alert
+
 **Hidden character**: An invisible character that can carry instructions a reader of the rendered text never sees:
 Unicode tag characters, bidi embeddings, overrides and isolates, supplementary variation selectors. A **Skill** holding
 one, **Upstream** or patched, fails resolution. _Avoid_: Invisible Unicode, steganography
