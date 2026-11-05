@@ -109,11 +109,11 @@ def test_score(tmp_path: Path) -> None:
     assert done.returncode == 0, done.stderr
     lines = done.stdout.splitlines()
     assert (
-        "c/fetch-run obvious labels 2 scan 0 reader 0 both 1 missed 1"
+        "fetch-run obvious labels 2 scan 0 reader 0 both 1 missed 1"
         " unlabelled-reader 1 steering 1 dropped 2"
     ) in lines
     assert (
-        "c/docs-link harmless labels 0 scan 0 reader 0 both 0 missed 0"
+        "docs-link harmless labels 0 scan 0 reader 0 both 0 missed 0"
         " unlabelled-reader 0 no-reply steering 1"
     ) in lines
     total = len(corpus.SKILLS)

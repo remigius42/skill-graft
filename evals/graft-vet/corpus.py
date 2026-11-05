@@ -332,7 +332,7 @@ def score(report: Path) -> list[str]:
         totals.update(counts)
         shown = " ".join(f"{key} {value}" for key, value in counts.items())
         lines.append(
-            f"c/{skill.name} {skill.kind} {shown} {status.get(skill.name, 'no status')}"
+            f"{skill.name} {skill.kind} {shown} {status.get(skill.name, 'no status')}"
         )
     keys = ("labels", "scan", "reader", "both", "missed", "unlabelled-reader")
     lines.append(

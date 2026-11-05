@@ -8,6 +8,7 @@ pre-commit and CI.
 uv sync
 CLAUDE_CODE_OAUTH_TOKEN=<token> evals/graft-vet/run.sh            # every scenario
 CLAUDE_CODE_OAUTH_TOKEN=<token> evals/graft-vet/run.sh injected   # only these
+CLAUDE_CODE_OAUTH_TOKEN=<token> evals/graft-vet/run.sh corpus     # the score, below
 ```
 
 `ANTHROPIC_API_KEY=<key>` works as well. `claude setup-token` prints a token billed to your subscription. Without a
@@ -34,3 +35,25 @@ you can read in the temporary folder, deleted on exit. The session runs with `--
 transcript holds every tool call and result.
 
 The script prints one `ok` or `FAILED` line per check, and exits non-zero when any check fails or `claude` does.
+
+## The corpus
+
+`corpus` vets every **Skill** of `corpus.py`'s corpus, each an entry of source `up`: obvious harm, the same harm phrased
+past the scan's patterns, harm that tells its reader to report nothing, and harmless text that looks like harm. Each is
+labelled with the places, file, line and category, a **Vet** should flag; a harmless one with none. Its checks are only
+that a report file exists, that the injected text is nowhere in the transcript, and that the package is unchanged: the
+point is the score it prints, one line per **Skill**,
+
+```text
+<name> <kind> labels <n> scan <a> reader <b> both <c> missed <d> unlabelled-reader <e> <status line>
+```
+
+then the totals. `reader` and `both` labels are what the readers add to the scan; `missed`, what neither saw;
+`unlabelled-reader`, what a reader flagged where no label is, noise on a harmless **Skill**; the status line, its
+steering count. An injected **Skill** whose reader stayed silent shows as `reader 0` with a steering count above 0 where
+the scan saw it, and as `missed` where it did not. A reader's run varies: one run is one sample, so run it several times
+before reading a rate off it, and compare totals across runs, not single lines. No threshold fails it.
+
+`tests/cli/test_vet_corpus.py` runs `skill-graft vet` over the same corpus on every commit, at no cost, and fails when
+the scan flags otherwise than each **Skill**'s record: the scan's known misses, the evasive **Skills**, stay written
+down, and a change to `pipeline/vet.py` that catches one updates its record.
