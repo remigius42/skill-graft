@@ -6,6 +6,7 @@ write a pattern back.
 """
 
 import re
+import warnings
 from dataclasses import dataclass
 
 # A bounded quantifier: `{n}`, `{m,n}`, `{m,}`, `{,n}` or `{,}`, which is `{0,}`;
@@ -111,3 +112,155 @@ def tokenize(pattern: str) -> list[Token]:
         tokens.append(Token(kind, pattern[i:end], i))
         i = end
     return tokens
+
+
+@dataclass(frozen=True)
+class Mutant:
+    """A pattern's text with one token changed: by which operator, where."""
+
+    operator: str
+    offset: int
+    text: str
+    flags: int
+
+    def compile(self) -> re.Pattern[str]:
+        return re.compile(self.text, self.flags)
+
+
+def _class_items(token: Token) -> list[tuple[int, int]]:
+    """The start and end, in the pattern, of each item of a class token: a
+    character, an escape or a range."""
+    text = token.text
+    j = 2 if text.startswith("[^") else 1
+    items = []
+    while j < len(text) - 1:
+        start = j
+        j = _escape(text, j) if text[j] == "\\" else j + 1
+        if text[j] == "-" and j + 1 < len(text) - 1:  # a range, not a last `-`
+            j += 1
+            j = _escape(text, j) if text[j] == "\\" else j + 1
+        items.append((token.offset + start, token.offset + j))
+    return items
+
+
+def _quantifier(token: Token) -> list[tuple[str, str]]:
+    """Each operator's replacement for a quantifier token."""
+    text = token.text
+    base = text[: text.index("}") + 1] if text[0] == "{" else text[0]
+    suffix = text[len(base) :]
+    found = []
+    if base == "+":
+        found.append(("plus-to-star", "*" + suffix))
+    elif base == "*":
+        found.append(("star-to-plus", "+" + suffix))
+    elif base == "?":
+        found.append(("drop-optional", ""))
+    else:
+        bounds = _BOUNDS.fullmatch(base)
+        assert bounds is not None
+        low, high = (bounds[1], bounds[1]) if bounds[1] else (bounds[2], bounds[3])
+        exact = bool(bounds[1])
+
+        def written(low: str, high: str | None) -> str:
+            if exact:
+                return f"{{{low}}}{suffix}"
+            return f"{{{low},{'' if high is None else high}}}{suffix}"
+
+        if low:
+            if int(low) > 0:
+                found.append(("min-1", written(str(int(low) - 1), high)))
+            found.append(("min+1", written(str(int(low) + 1), high)))
+        if high and not exact:
+            if int(high) > 0:
+                found.append(("max-1", written(low, str(int(high) - 1))))
+            found.append(("max+1", written(low, str(int(high) + 1))))
+            found.append(("unbounded", written(low, None)))
+    if suffix == "+":
+        found.append(("drop-possessive", base))
+    return found
+
+
+def _groups(tokens: list[Token]) -> tuple[dict[int, int], dict[int, list[int]]]:
+    """Each opener's matching close, and the alternation tokens of each group
+    holding any, by its opener, -1 for the whole pattern: all by token index."""
+    closes: dict[int, int] = {}
+    stack: list[int] = [-1]
+    bars: dict[int, list[int]] = {-1: []}
+    for index, token in enumerate(tokens):
+        if token.kind in ("open", "lookaround", "atomic"):
+            stack.append(index)
+            bars[index] = []
+        elif token.kind == "close":
+            closes[stack.pop()] = index
+        elif token.kind == "alternation":
+            bars[stack[-1]].append(index)
+    return closes, {opener: b for opener, b in bars.items() if b}
+
+
+def _edits(pattern: str, tokens: list[Token]) -> list[tuple[str, int, int, int, str]]:
+    """Each mutation as operator, offset, and the span it replaces with text."""
+    closes, alternations = _groups(tokens)
+    edits = []
+    for index, token in enumerate(tokens):
+        start, end = token.offset, token.offset + len(token.text)
+        if token.kind == "quantifier":
+            for operator, text in _quantifier(token):
+                edits.append((operator, start, start, end, text))
+        elif token.kind == "class":
+            for item_start, item_end in _class_items(token):
+                edits.append(("drop-class-item", item_start, item_start, item_end, ""))
+            negated = token.text.startswith("[^")
+            edits.append(
+                (
+                    "negate-class",
+                    start,
+                    start,
+                    start + 1 + negated,
+                    "[" if negated else "[^",
+                )
+            )
+        elif token.kind == "anchor":
+            edits.append(("drop-anchor", start, start, end, ""))
+        elif token.kind == "atomic":
+            edits.append(("plain-atomic", start, start, end, "(?:"))
+        elif token.kind == "lookaround":
+            close = tokens[closes[index]]
+            edits.append(("drop-lookaround", start, start, close.offset + 1, ""))
+    for opener, group in alternations.items():
+        begin = 0 if opener < 0 else tokens[opener].offset + len(tokens[opener].text)
+        finish = len(pattern) if opener < 0 else tokens[closes[opener]].offset
+        starts = [begin] + [tokens[b].offset + 1 for b in group]
+        ends = [tokens[b].offset for b in group] + [finish]
+        for number, (branch_start, branch_end) in enumerate(zip(starts, ends)):
+            if number < len(group):
+                edits.append(
+                    ("drop-branch", branch_start, branch_start, branch_end + 1, "")
+                )
+            else:
+                edits.append(
+                    ("drop-branch", branch_start, branch_start - 1, branch_end, "")
+                )
+    return edits
+
+
+def mutants(pattern: re.Pattern[str]) -> list[Mutant]:
+    """Every mutant of `pattern` that compiles with its flags and differs from it
+    and from each mutant before it, by offset."""
+    text = pattern.pattern
+    seen = {text}
+    found = []
+    for operator, offset, start, end, new in _edits(text, tokenize(text)):
+        mutant = Mutant(
+            operator, offset, text[:start] + new + text[end:], pattern.flags
+        )
+        if mutant.text in seen:
+            continue
+        seen.add(mutant.text)
+        try:
+            with warnings.catch_warnings():
+                warnings.simplefilter("ignore")
+                mutant.compile()
+        except re.error:
+            continue
+        found.append(mutant)
+    return sorted(found, key=lambda m: m.offset)

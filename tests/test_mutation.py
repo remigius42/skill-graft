@@ -94,3 +94,62 @@ def test_tokens_join_back_to_every_pattern() -> None:
     assert len(patterns) > 50
     for pattern in patterns:
         assert "".join(texts(pattern)) == pattern
+
+
+def mutated(pattern: str, operator: str) -> list[tuple[int, str]]:
+    return [
+        (m.offset, m.text)
+        for m in operators.mutants(re.compile(pattern))
+        if m.operator == operator
+    ]
+
+
+@pytest.mark.parametrize(
+    ("pattern", "operator", "expected"),
+    [
+        ("a+b*", "plus-to-star", [(1, "a*b*")]),
+        ("a+b*", "star-to-plus", [(3, "a+b+")]),
+        ("ab?c", "drop-optional", [(2, "abc")]),
+        ("a++b", "plus-to-star", [(1, "a*+b")]),
+        ("a{3}", "min-1", [(1, "a{2}")]),
+        ("a{3}", "min+1", [(1, "a{4}")]),
+        ("a{0}b", "min-1", []),
+        ("a*+b", "drop-possessive", [(1, "a*b")]),
+        ("(?>ab)c", "plain-atomic", [(0, "(?:ab)c")]),
+        ("[a-cx]", "drop-class-item", [(1, "[x]"), (4, "[a-c]")]),
+        ("[^a-cx]", "drop-class-item", [(2, "[^x]"), (5, "[^a-c]")]),
+        ("[a-c]x", "negate-class", [(0, "[^a-c]x")]),
+        ("[^a-c]x", "negate-class", [(0, "[a-c]x")]),
+        ("[a-c-x]", "drop-class-item", [(1, "[-x]"), (4, "[a-cx]"), (5, "[a-c-]")]),
+        (r"^a\bb$", "drop-anchor", [(0, r"a\bb$"), (2, "^ab$"), (5, r"^a\bb")]),
+        ("(?<!x)a(?=b)", "drop-lookaround", [(0, "a(?=b)"), (7, "(?<!x)a")]),
+        ("a|b|c", "drop-branch", [(0, "b|c"), (2, "a|c"), (4, "a|b")]),
+        ("x(?:a|b)", "drop-branch", [(4, "x(?:b)"), (6, "x(?:a)")]),
+    ],
+)
+def test_operator(pattern: str, operator: str, expected: list[tuple[int, str]]) -> None:
+    assert mutated(pattern, operator) == expected
+
+
+def test_both_bounds_moved_and_dropped() -> None:
+    found = [m.text for m in operators.mutants(re.compile("a{3,4}"))]
+
+    assert found == ["a{2,4}", "a{4,4}", "a{3,3}", "a{3,5}", "a{3,}"]
+
+
+def test_mutants_that_do_not_compile_or_repeat_are_dropped() -> None:
+    # `[]|a|a` does not compile; dropping either last branch gives `[a]|a`.
+    found = [(m.operator, m.text) for m in operators.mutants(re.compile("[a]|a|a"))]
+
+    assert found == [
+        ("negate-class", "[^a]|a|a"),
+        ("drop-branch", "a|a"),
+        ("drop-branch", "[a]|a"),
+    ]
+
+
+def test_mutant_keeps_the_original_flags() -> None:
+    (mutant,) = operators.mutants(re.compile("a+", re.IGNORECASE))
+
+    assert mutant.compile().flags & re.IGNORECASE
+    assert mutant.compile().fullmatch("")

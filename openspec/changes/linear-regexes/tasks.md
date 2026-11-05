@@ -38,7 +38,7 @@ with the archive commit.
   `mutation`; verify tests split escapes, classes with a leading `]` or `^`, group openers, lookarounds, quantifiers
   with lazy and possessive suffixes and `{m,n}`, and alternation, and join back to the original text for every target
   pattern
-- [ ] 3.2 The operators (quantifier, `{n}` and `{m,n}` bounds included, class, anchor and lookaround, alternation,
+- [x] 3.2 The operators (quantifier, `{n}` and `{m,n}` bounds included, class, anchor and lookaround, alternation,
   possessive and atomic), each mutant with its operator and offset, those that do not compile, unchanged and repeated
   ones dropped; verify a test per operator on a small pattern, and `{3,4}` giving `{2,4}`, `{4,4}`, `{3,3}`, `{3,5}` and
   `{3,}`
