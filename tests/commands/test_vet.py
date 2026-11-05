@@ -4,7 +4,15 @@ from pathlib import Path
 from typing import TypeAlias
 
 import pytest
-from conftest import configure, make_patch, skill, snapshot, write_config, write_patch
+from conftest import (
+    after_package_line,
+    configure,
+    make_patch,
+    skill,
+    snapshot,
+    write_config,
+    write_patch,
+)
 
 from skill_graft.cli import main
 
@@ -226,3 +234,39 @@ def test_unknown_skill(home: Path, capsys: Capsys) -> None:
     out, err = capsys.readouterr()
     assert out == ""
     assert "vet: `mp/nothing`: no skill 'nothing' found" in err
+
+
+def fails_as_resolve(capsys: Capsys) -> str:
+    """`vet`'s stderr, after checking it fails as `resolve` does, printing no flag."""
+    assert main(["resolve"]) == 1
+    resolved = after_package_line(capsys.readouterr().err)
+    assert main(["vet"]) == 1
+    out, err = capsys.readouterr()
+    assert out == ""
+    assert err == resolved
+    return err
+
+
+def test_hidden_character(home: Path, capsys: Capsys) -> None:
+    skill(home / "mp" / "tdd", "sudo \U000e0041\n")
+    configure(["mp/tdd"], mp="~/mp")
+
+    assert "tdd/SKILL.md:1: U+E0041" in fails_as_resolve(capsys)
+
+
+def test_patch_does_not_apply(home: Path, tmp_path: Path, capsys: Capsys) -> None:
+    skill(home / "mp" / "tdd", "sudo make install\n")
+    write_patch("tdd.patch", make_patch(tmp_path, {"SKILL.md": "x\n"}, {}))
+    write_config(
+        'entries = ["mp/tdd"]\n[sources.mp]\npath = "~/mp"\n'
+        '[patches]\n"mp/tdd" = ["patches/tdd.patch"]\n'
+    )
+
+    assert "patches do not apply" in fails_as_resolve(capsys)
+
+
+def test_an_unknown_key(home: Path, capsys: Capsys) -> None:
+    skill(home / "mp" / "tdd", "sudo make install\n")
+    write_config('entries = ["mp/tdd"]\n[sources.mp]\npath = "~/mp"\n[vet]\nx = 1\n')
+
+    assert "vet" in fails_as_resolve(capsys)
