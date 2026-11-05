@@ -59,7 +59,7 @@ def _destructive(line: str) -> bool:
 # Each `chmod`'s mode: its first argument not an option, without the quote or
 # backtick around it.
 _CHMOD = re.compile(r"""\bchmod\s+(?:-[\w-]+\s+)*[`'"]?([^\s`'"]+)""", re.IGNORECASE)
-_OCTAL = re.compile(r"0*([0-7]{3,4})")
+_OCTAL = re.compile(r"0*([0-7]{1,4})")
 _SYMBOLIC = re.compile(r"([ugoa]*)[+=]([rwxXst]*)")
 
 

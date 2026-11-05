@@ -15,9 +15,6 @@
 "vet._CHMOD" = [
   { operator = "plus-to-star", offset = 40, reason = "adds only an empty mode, which is neither octal nor a clause" },
 ]
-"vet._OCTAL" = [
-  { operator = "min-1", offset = 8, reason = "NOT equivalent: two digits, as `chmod 77`, are a world-writable mode the Vet misses; fixing that is a change of its own" },
-]
 "vet._SYMBOLIC" = [
   { operator = "star-to-plus", offset = 22, reason = "drops only clauses adding nothing, which add neither `w` nor `s`" },
 ]

@@ -70,3 +70,6 @@ test file that kills it, or its entry in `equivalent.toml` with the reason.
 - [x] 4.3 `config` and `discovery`; verify their run exits 0 and `uv run pytest` passes
 - [x] 4.4 `text` and `hidden`; verify their run exits 0, the whole `uv run python -m mutation` exits 0, and
   `uv run pytest` passes
+- [x] 4.5 `vet._OCTAL` becomes `0*([0-7]{1,4})`, as its `{2,4}` mutant showed: `chmod 77`, `chmod 7` and `chmod 2` are
+  world-writable modes the **Vet** missed; verify `test_vet.py` flags them, not `chmod 74` or `chmod 0`, and the run of
+  `vet._OCTAL` exits 0 with no entry in `equivalent.toml`
