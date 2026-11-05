@@ -12,6 +12,8 @@
 # A folder as it really is, every link and `..` resolved; nothing if it is none.
 real() { (cd "$1" 2> /dev/null && pwd -P); }
 tmp=$(real "${TMPDIR:-/tmp}")
+# None: every absolute path would pass for one under it.
+[ -n "$tmp" ] || { echo "run-claude.sh: \$TMPDIR is no folder: ${TMPDIR:-/tmp}" >&2; exit 2; }
 # A temporary folder: really under $TMPDIR, so no link leads out of it.
 temporary() {
   case $1 in

@@ -239,6 +239,31 @@ def test_run_claude_refuses_what_could_widen_it(
     assert "run-claude.sh: " in (tmp_path / "files" / "err").read_text()
 
 
+def test_run_claude_refuses_a_tmpdir_that_is_no_folder(tmp_path: Path) -> None:
+    # With no temporary folder to compare against, every absolute path would pass.
+    (tmp_path / "work").mkdir()
+    (tmp_path / "files").mkdir()
+    (tmp_path / "files" / "prompt").write_text("p\n")
+    bin_dir = tmp_path / "bin"
+    bin_dir.mkdir()
+    (bin_dir / "claude").write_text("#!/bin/sh\necho ran\n")
+    (bin_dir / "claude").chmod(0o755)
+    path = f"{bin_dir}{os.pathsep}{os.environ['PATH']}"
+
+    run = subprocess.run(
+        ["sh", str(RUN_CLAUDE), "reader", str(tmp_path / "work")]
+        + [str(tmp_path / "files"), "30", "1.0"],
+        env={**os.environ, "PATH": path, "TMPDIR": str(tmp_path / "missing")},
+        capture_output=True,
+        text=True,
+        check=False,
+    )
+
+    assert run.returncode == 2
+    assert "run-claude.sh: " in run.stderr
+    assert not (tmp_path / "files" / "out").exists()
+
+
 def test_run_claude_refuses_a_files_folder_outside_tmpdir(tmp_path: Path) -> None:
     outside = tmp_path.parent / f"{tmp_path.name}-files"
     outside.mkdir()
