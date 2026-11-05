@@ -40,7 +40,7 @@ Test-first: each task's test fails before its code, then passes. One commit per 
 
 ## 4. Docs
 
-- [ ] 4.1 `README.md` Commands: `vet`, what a **Flag** line holds, that it never judges; verify the hooks and
+- [x] 4.1 `README.md` Commands: `vet`, what a **Flag** line holds, that it never judges; verify the hooks and
   `check-pins` pass
 - [ ] 4.2 `docs/security.md`: the Future work item becomes a section on the **Vet**; Residual risks and the OWASP rows
   (LLM01, LLM03, ASI05) say what it narrows and what it does not; `docs/architecture.md` lists `pipeline/vet.py` and
