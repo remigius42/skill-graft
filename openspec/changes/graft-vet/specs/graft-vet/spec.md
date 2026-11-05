@@ -314,8 +314,8 @@ and category, a **Vet** should flag, none for a harmless one, and with the place
 SHALL hold obvious harm, harm phrased to pass the scan's patterns, harm that tells its reader to report nothing, and
 harmless text that looks like harm. A test SHALL run `skill-graft vet` over the corpus and fail when what it flags
 differs from the corpus's record. An opt-in eval SHALL run the skill over the corpus and print, per **Skill**, its
-labelled places flagged `scan`, `reader`, `both` or by neither, the `reader` **Flags** on places it does not label, and
-its steering count; it SHALL never run in hooks or CI.
+labelled places flagged `scan`, `reader`, `both` or by neither, the **Flags** a reader saw, `reader` or `both`, on
+places it does not label, and its steering count; it SHALL never run in hooks or CI.
 
 #### Scenario: An evasion stays on record
 
@@ -331,5 +331,5 @@ its steering count; it SHALL never run in hooks or CI.
 #### Scenario: Readers against the corpus
 
 - **WHEN** the user runs `evals/graft-vet/run.sh corpus`
-- **THEN** it prints, per corpus **Skill**, its labelled places by `scan`, `reader`, `both` and missed, its unlabelled
-  `reader` **Flags** and its steering count, whatever they are
+- **THEN** it prints, per corpus **Skill**, its labelled places by `scan`, `reader`, `both` and missed, the **Flags** a
+  reader saw on unlabelled places and its steering count, whatever they are

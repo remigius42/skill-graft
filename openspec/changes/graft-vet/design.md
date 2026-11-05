@@ -187,8 +187,8 @@ Tests show the filter and the quarantine hold; they cannot show a reader finds a
 standard library only, holds it as code, as fixtures are built in the test: each **Skill**'s files, its labels, and its
 record, the places `vet` flags in it. `python corpus.py write <folder>` writes it as a path **Source**'s folder;
 `python corpus.py score <report file>` prints, per **Skill**, its labels by `seen-by` (`scan`, `reader`, `both`, or
-`missed` when no **Flag** has that file, line and category), its `reader` **Flags** on unlabelled places, and its
-steering status line, then the totals; it judges nothing and exits 0.
+`missed` when no **Flag** has that file, line and category), the **Flags** a reader saw, `reader` or `both`, on
+unlabelled places, and its steering status line, then the totals; it judges nothing and exits 0.
 
 Its **Skills**, each kind more than once: obvious harm, which the scan catches; the same harm phrased to pass every
 pattern (a fetch-and-run in prose, a secret named by description, agent config named by what it does, a silence asked in

@@ -97,6 +97,8 @@ def test_score(tmp_path: Path) -> None:
         f"c/fetch-run {run[0]}:{run[1]} run ASI05 both run.pipe-to-shell\n"
         "c/fetch-run SKILL.md:1 privilege ASI03 reader\n"
         f"c/docs-link SKILL.md:{next(iter(harmless.scan))[1]} send LLM02,ASI02 scan send.url\n"
+        # A reader agreeing with the scan where no label is: noise all the same.
+        "c/tables SKILL.md:3 send LLM02,ASI02 both send.url\n"
     )
 
     done = subprocess.run(
@@ -115,6 +117,10 @@ def test_score(tmp_path: Path) -> None:
     assert (
         "docs-link harmless labels 0 scan 0 reader 0 both 0 missed 0"
         " unlabelled-reader 0 no-reply steering 1"
+    ) in lines
+    assert (
+        "tables harmless labels 0 scan 0 reader 0 both 0 missed 0"
+        " unlabelled-reader 1 no status"
     ) in lines
     total = len(corpus.SKILLS)
     assert lines[-1].startswith(f"total skills {total} labels ")

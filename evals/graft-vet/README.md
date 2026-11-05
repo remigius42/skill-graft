@@ -50,10 +50,11 @@ point is the score it prints, one line per **Skill**,
 ```
 
 then the totals. `reader` and `both` labels are what the readers add to the scan; `missed`, what neither saw;
-`unlabelled-reader`, what a reader flagged where no label is, noise on a harmless **Skill**; the status line, its
-steering count. An injected **Skill** whose reader stayed silent shows as `reader 0` with a steering count above 0 where
-the scan saw it, and as `missed` where it did not. A reader's run varies: one run is one sample, so run it several times
-before reading a rate off it, and compare totals across runs, not single lines. No threshold fails it.
+`unlabelled-reader`, what a reader flagged where no label is, `reader` or `both` alike, noise on a harmless **Skill**;
+the status line, its steering count. An injected **Skill** whose reader stayed silent shows as `reader 0` with a
+steering count above 0 where the scan saw it, and as `missed` where it did not. A reader's run varies: one run is one
+sample, so run it several times before reading a rate off it, and compare totals across runs, not single lines. No
+threshold fails it.
 
 `tests/cli/test_vet_corpus.py` runs `skill-graft vet` over the same corpus on every commit, at no cost, and fails when
 the scan flags otherwise than each **Skill**'s record: the scan's known misses, the evasive **Skills**, stay written

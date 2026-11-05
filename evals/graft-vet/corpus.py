@@ -301,8 +301,9 @@ def differences(skill: Skill, flagged: set[Place] | frozenset[Place]) -> list[st
 
 
 def score(report: Path) -> list[str]:
-    """A line per corpus skill: its labels by `seen-by`, or missed; its `reader`
-    flags on unlabelled places; its status line; then the totals."""
+    """A line per corpus skill: its labels by `seen-by`, or missed; the flags a
+    reader saw, `reader` or `both`, on unlabelled places; its status line; then
+    the totals."""
     seen: dict[str, dict[Place, str]] = {skill.name: {} for skill in SKILLS}
     status: dict[str, str] = {}
     for line in report.read_text().splitlines():
@@ -322,7 +323,7 @@ def score(report: Path) -> list[str]:
         unlabelled = sum(
             1
             for place, who in flags.items()
-            if who == "reader" and place not in skill.labels
+            if who in ("reader", "both") and place not in skill.labels
         )
         counts = {
             "labels": len(skill.labels),
