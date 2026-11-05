@@ -60,7 +60,7 @@ Test-first: each task's test fails before its code, then passes. One commit per 
 
 ## 5. Docs
 
-- [ ] 5.1 `docs/security.md`: graft-vet's readers and filter in The Vet section, beside the **Check**'s, its Residual
+- [x] 5.1 `docs/security.md`: graft-vet's readers and filter in The Vet section, beside the **Check**'s, its Residual
   risks (a steered reader, **Skill IDs** reaching the main agent, category-level steering count, prompt-level
   quarantine, file names reaching the user only through the report file), the OWASP rows for its readers (LLM01, LLM02,
   LLM05, ASI05, ASI07, ASI08: one **Skill** per reader); verify every relative link resolves and the hooks pass
