@@ -26,7 +26,7 @@ Test-first: each task's test fails before its code, then passes. One commit per 
 
 ## 3. The command (`commands/vet.py`, `cli.py`)
 
-- [ ] 3.1 `skill-graft vet` without arguments: compute the **Hull** as `tree` does, scan each **Skill** as deployed
+- [x] 3.1 `skill-graft vet` without arguments: compute the **Hull** as `tree` does, scan each **Skill** as deployed
   (rewrites applied), print the **Flag** lines sorted and de-duplicated, the closing notice; verify in
   `tests/commands/test_vet.py` "No lock", "A Patch removes a line", "A Patch adds a line", "A script", "Matched text is
   never printed", "A file name with a space", "Flags found", "Nothing flagged", and that the lock, config and
