@@ -9,6 +9,16 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 
 ### Added
 
+- The `graft-vet` skill, `/graft-vet [skill-id…]`, installed as graft-check is and run only when you ask: it vets the
+  **Skills** `skill-graft vet` vets. Hardened by graft-check's probe, it adds to the scan one reader per **Skill**,
+  confined to that **Skill**'s folder and blind to the scan, that looks for intent rather than patterns. Code merges
+  both into a report file you open, one line per **Flag** with who saw it, `scan`, `reader` or `both`; the agent sees
+  only numbers, a steering count among them for where a reader stayed silent on what the scan saw. Unhardened, it is the
+  scan alone, and reads no **Skill** text. It reports only, every report ending with fixed caveats, and names
+  `skill-graft remove` for a flagged **Entry** at most
+- `skill-graft vet --into <dir>` also writes each vetted **Skill**, as it scanned it, to `<dir>/<alias>/<name>/`, a
+  **Skill** not yet added included, once every **Skill** is scanned. `<dir>` must be an empty folder outside any
+  **Package**, **Source** and the cache, as for `deploy --into`; on any error it stays empty
 - `skill-graft vet [skill-id…]`, a **Vet**: it points at the lines of each **Hull** **Skill**, as it would deploy, worth
   reading before trusting it, writing nothing. Named **Skill IDs** are vetted alone, one not yet added with what its
   `add` would bring in. One **Flag** per line, `<skill id> <file>:<line> <category> <owasp ids> <pattern>`, in eight
@@ -22,6 +32,8 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 
 ### Changed
 
+- `skill-graft vet` names the **Package** first on its standard error, `skill-graft: package: <package>`, as the
+  commands that write do
 - The README installs from PyPI first; installing from the repository at a signed tag stays, below it. Its links to
   other files of the repository work on the PyPI project page too, where those to the docs, CONTEXT.md and the logo name
   the release, so an older release's page leads to its own guides
@@ -34,6 +46,8 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 
 ### Fixed
 
+- graft-check's readers and patcher refuse to start when `$TMPDIR` is no folder, instead of taking any absolute path for
+  a temporary one
 - A `~user` path naming no user, in a path **Source** or in `[patches]`, ends with an error naming the path, not a
   traceback
 - `update --dry-run` prints `nothing to apply` when the lock differs only in the folder a path **Source** is recorded
