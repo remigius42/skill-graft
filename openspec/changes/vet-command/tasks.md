@@ -15,7 +15,7 @@ Test-first: each task's test fails before its code, then passes. One commit per 
   numbers as `hidden.py`'s; verify the "Binary file" scenario and a UTF-16 case pass
 - [x] 2.3 Paths outside the project and secret stores: `read.outside-path`, `write.outside-path`, `read.secret-store`,
   URL paths skipped; verify the "Outside the project by form" scenarios pass
-- [ ] 2.4 `send` and `run` patterns, the executable bit and the shebang; verify "Pipe to a shell", "A send Flag" and a
+- [x] 2.4 `send` and `run` patterns, the executable bit and the shebang; verify "Pipe to a shell", "A send Flag" and a
   hit and a near miss per pattern pass
 - [ ] 2.5 `privilege` and `persistence` patterns, word boundaries (`subprocess` is no `su`); verify "A secret store",
   "Agent config" and a hit and a near miss per pattern pass

@@ -68,9 +68,11 @@ words:
   - ISREG
   - iterdir
   - keepends
+  - keygen
   - kiro
   - linecap
   - linejoin
+  - mailx
   - mattpocock
   - mawk
   - metavar

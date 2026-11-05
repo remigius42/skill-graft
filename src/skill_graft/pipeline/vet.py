@@ -6,6 +6,7 @@ regular expressions, approximate by design: easy to evade, and noisy.
 
 import posixpath
 import re
+from collections.abc import Callable
 from dataclasses import dataclass
 
 from skill_graft.pipeline import hidden
@@ -24,15 +25,65 @@ OWASP = {
     "unreviewable": ("LLM03",),
 }
 
+
+def _commands(*names: str) -> str:
+    """Any of these command names, as a word: not part of a dotted or hyphenated
+    name, so `.ssh` and `ssh-keygen` are no `ssh`; `/usr/bin/ssh` is."""
+    return rf"(?<![\w.-])(?:{'|'.join(names)})(?![\w-])"
+
+
+_SHELLS = "sh|bash|zsh|dash|ksh|fish|pwsh|powershell"
+# What runs code piped into it: a shell, or an interpreter reading its stdin.
+_PIPED = f"{_SHELLS}|iex|python[23]?|node|perl|ruby"
+
+# Each `rm`'s options: the run of them after the command.
+_RM = re.compile(r"\brm((?:\s+-[\w-]+)+)", re.IGNORECASE)
+_DESTRUCTIVE = re.compile(
+    r"\bdd\s+if=|\bmkfs\b|\bshred\b|:\(\)\s*\{\s*:\s*\|\s*:\s*&\s*\}\s*;\s*:",
+    re.IGNORECASE,
+)
+
+
+def _destructive(line: str) -> bool:
+    """Whether `line` removes recursively and by force, or wipes a disk or file."""
+    for options in _RM.findall(line):
+        words = options.split()
+        short = "".join(w[1:] for w in words if not w.startswith("--"))
+        if ("--recursive" in words or "r" in short.lower()) and (
+            "--force" in words or "f" in short
+        ):
+            return True
+    return bool(_DESTRUCTIVE.search(line))
+
+
 # Each pattern a line is matched against, by name: `<category>.<what>`.
-_PATTERNS = {
+_PATTERNS: dict[str, str | Callable[[str], bool]] = {
     "read.secret-store": (
         r"(?<![\w.])\.(?:ssh|aws|gnupg|env|netrc|npmrc|pypirc)\b"
         r"|\bid_(?:rsa|ed25519)\b|\bkeychain\b|\bcredentials\b"
     ),
+    # Patterns start where a run starts, and scan the line from its start at most
+    # once: a backtracking one would take quadratic time over a crafted line.
+    "send.url": r"(?<![a-z0-9+.-])[a-z][a-z0-9+.-]*://",
+    "send.network-tool": (
+        _commands("curl", "wget", "nc", "ncat", "scp", "ssh", "Invoke-WebRequest")
+        + r"|^(?=.*\brsync\b).*\s[\w.@-]+:"
+    ),
+    "send.network-call": (r"\brequests\.|\burllib\b|\bhttpx\b|\bfetch\s*\(|\bsocket\b"),
+    "send.web-tool": r"\bWeb(?:Fetch|Search)\b",
+    "send.push": r"\bgit\s+push\b|\bgh\s+(?:pr\s+create|gist)\b",
+    "send.mail": _commands("sendmail", "mailx?", "smtplib", "smtp"),
+    "run.shell-block": rf"^\s*(?:```|~~~)\s*(?:{_SHELLS}|shell|console)\b",
+    "run.pipe-to-shell": rf"\|\s*(?:sudo\s+)?(?:{_PIPED})(?![\w-])",
+    "run.eval": (
+        r"\beval\b|\bexec\s*\(|\bos\.system\b|\bsubprocess\b"
+        rf"|\b(?:{_SHELLS})\s+-c\b"
+    ),
+    "run.destructive": _destructive,
 }
-_COMPILED = [
-    (name, re.compile(regex, re.IGNORECASE)) for name, regex in _PATTERNS.items()
+_COMPILED: list[tuple[str, Callable[[str], object]]] = [
+    (name, re.compile(test, re.IGNORECASE).search if isinstance(test, str) else test)
+    for name, test in _PATTERNS.items()
 ]
 
 # A path-like token; `${HOME}` holds braces, which end any other.
@@ -73,7 +124,9 @@ def scan(view: View) -> list[Flag]:
     feeds and numbered from 1, as the hidden character check numbers them.
     """
     found = []
-    for path, (data, _) in view.items():
+    for path, (data, executable) in view.items():
+        if executable:
+            found.append(Flag(path, 0, "run.executable"))
         decoded = hidden.decode_as(data, path.lower().endswith(".md"), "replace")
         if decoded is None:
             found.append(Flag(path, 0, "unreviewable.binary"))
@@ -82,13 +135,16 @@ def scan(view: View) -> list[Flag]:
         if encoding != "UTF-8":
             found.append(Flag(path, 0, "unreviewable.encoding"))
         for number, line in enumerate(text.split("\n"), 1):
-            found += [Flag(path, number, name) for name in sorted(_line(line))]
+            names = _line(line)
+            if number == 1 and line.startswith("#!"):
+                names.add("run.shebang")
+            found += [Flag(path, number, name) for name in sorted(names)]
     return found
 
 
 def _line(line: str) -> set[str]:
     """The patterns `line` matches."""
-    found = {name for name, regex in _COMPILED if regex.search(line)}
+    found = {name for name, test in _COMPILED if test(line)}
     kept = _DISCARDS.sub(" ", line)
     if any(_outside(token) for token in _TOKEN.findall(kept)):
         found.add("write.outside-path" if _WRITES.search(kept) else "read.outside-path")
