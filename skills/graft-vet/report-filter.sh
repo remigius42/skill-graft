@@ -12,6 +12,7 @@ case $# in
   *) [ $((($# - 3) % 2)) -eq 0 ] || exit 2 ;;
 esac
 vet=$1 report=$2
+shift 2
 [ -f "$vet" ] || exit 2
 work=$(mktemp -d) || exit 2
 trap 'rm -rf "$work"' EXIT
@@ -20,9 +21,9 @@ trap 'exit 2' HUP INT TERM
 : > "$work/pairs" || exit 2  # each reader's skill ID and its reply, sanitized
 : > "$work/names" || exit 2  # each file of a skill read: ok or bad, lines, name
 dir='' physical=''
-if [ $# -ge 3 ]; then
-  dir=$3
-  shift 3
+if [ $# -ge 1 ]; then
+  dir=$1
+  shift
   # As it really is, every link resolved: a reader's tools may name it so.
   physical=$(cd "$dir" && pwd -P) || exit 2
   for folder in "$dir"/*/*; do
@@ -66,24 +67,44 @@ while [ $# -gt 0 ]; do
     done' sh "$dir/$id" "$id" {} + >> "$work/names" || exit 2
 done
 
+: > "$report" || exit 2
+tab=$(printf '\t')
 work=$work dir=$dir physical=$physical report=$report LC_ALL=C awk '
 BEGIN {
   work = ENVIRON["work"]; dir = ENVIRON["dir"]; physical = ENVIRON["physical"]
   report = ENVIRON["report"]
-  split("read write send run privilege persistence permission unreviewable", c, " ")
-  for (i in c) category[c[i]] = 1
+  categories = split("read write send run privilege persistence permission unreviewable", c, " ")
+  for (i = 1; i <= categories; i++) category[c[i]] = 1
+  # Each category`s OWASP IDs, as `pipeline/vet.py` gives them: for a reader`s
+  # own flag only; a scan flag keeps those its `vet` line printed.
+  owasp["read"] = "LLM02"
+  owasp["write"] = "ASI02"
+  owasp["send"] = "LLM02,ASI02"
+  owasp["run"] = "ASI05"
+  owasp["privilege"] = "ASI03"
+  owasp["persistence"] = "ASI06"
+  owasp["permission"] = "ASI02"
+  owasp["unreviewable"] = "LLM03"
   while ((getline line < (work "/names")) > 0) {
     split(line, f, " ")
     key = f[1] SUBSEP f[4]
     if (key in lines || f[2] == "bad") bad[key] = 1
     lines[key] = f[3]
   }
-  while ((getline line < (work "/skills")) > 0) add(line)
+  while ((getline line < (work "/skills")) > 0) folders[++folder_count] = line
   while ((getline line < (work "/pairs")) > 0) {
     # The reply`s path, under $TMPDIR, may hold spaces; a skill ID never does.
     at = index(line, " ")
+    pairs[++pair_count] = substr(line, 1, at - 1)
     read_reply(substr(line, 1, at - 1), substr(line, at + 1))
   }
+}
+
+# A line of `vet`: `<skill id> <file>:<line> <category> <owasp ids> <pattern>`.
+NF != 5 || !match($2, /:[0-9]+$/) { failed = 1; exit }
+{
+  add($1)
+  scan[$1, substr($2, 1, RSTART - 1), substr($2, RSTART + 1), $3, $5] = $4
 }
 
 # Adds `id` to the skills, in the order first seen.
@@ -91,7 +112,6 @@ function add(id) { if (!(id in known)) { known[id] = 1; order[++skills] = id } }
 
 # Keeps each line of a reply that is a place of skill `id`; drops and counts the rest.
 function read_reply(id, file,   line, prefix, real) {
-  add(id)
   replied[id] = 1
   dropped[id] += 0
   prefix = dir "/" id "/"
@@ -124,14 +144,52 @@ function place(id, line,   rest, key) {
   return at_file != "" && key in lines && !(key in bad) && at_line + 0 <= lines[key]
 }
 
+# One flag of the report: its sort key, by skill, file, line, category and
+# pattern, then its line; counted in the summary.
+function emit(id, file, line, cat, ids, seen, pattern) {
+  printf "%d\t%s\t%d\t%s\t%s\t%s %s:%s %s %s %s%s\n", rank[id], file, line, cat, \
+    pattern, id, file, line, cat, ids, seen, (pattern == "" ? "" : " " pattern) \
+    > (work "/flags")
+  count[id, cat, seen]++
+  total++
+}
+
 END {
-  for (i = 1; i <= skills; i++) {
-    id = order[i]
-    if (id in replied) print id " steering 0 dropped " dropped[id] > report
-    else print id " no-reply steering 0" > report
+  if (failed) exit 2
+  for (i = 1; i <= pair_count; i++) add(pairs[i])
+  for (i = 1; i <= folder_count; i++) add(folders[i])
+  for (i = 1; i <= skills; i++) rank[order[i]] = i
+  summary = work "/summary"
+  if (dir != "")
+    for (i = 1; i <= skills; i++) {
+      id = order[i]
+      if (id in replied) status = id " steering 0 dropped " dropped[id]
+      else status = id " no-reply steering 0"
+      print status >> report
+      print status > summary
+    }
+  for (key in scan) {
+    split(key, f, SUBSEP)
+    both = (f[1], f[2], f[3], f[4]) in flag
+    if (both) answered[f[1], f[2], f[3], f[4]] = 1
+    emit(f[1], f[2], f[3], f[4], scan[key], both ? "both" : "scan", f[5])
   }
   for (key in flag) {
+    if (key in answered) continue
     split(key, f, SUBSEP)
-    print f[1] " " f[2] ":" f[3] " " f[4] > report
+    emit(f[1], f[2], f[3], f[4], owasp[f[4]], "reader", "")
   }
+  for (i = 1; i <= skills; i++)
+    for (j = 1; j <= categories; j++) {
+      id = order[i]; cat = c[j]
+      if (count[id, cat, "scan"] + count[id, cat, "reader"] + count[id, cat, "both"])
+        printf "%s %s scan %d reader %d both %d\n", id, cat, count[id, cat, "scan"], \
+          count[id, cat, "reader"], count[id, cat, "both"] > summary
+    }
+  print "flags " (total + 0) > summary
 }' "$vet" || exit 2
+touch "$work/flags" || exit 2
+# By skill as ranked, then file, line, category and pattern.
+LC_ALL=C sort -t "$tab" -k1,1n -k2,2 -k3,3n -k4,4 -k5,5 "$work/flags" > "$work/sorted" || exit 2
+cut -f 6 "$work/sorted" >> "$report" || exit 2
+cat "$work/summary" || exit 2

@@ -26,7 +26,7 @@ Test-first: each task's test fails before its code, then passes. One commit per 
   `NR`), at most 1000, every other line dropped and counted, no reply refused; verify "Well-formed reply", "A fenced
   reply", "An absolute path", "Free text", "Words as a file name", "Lines that are no place", "Last line with no line
   break", a name with a newline matching nothing, and line 1001 dropped
-- [ ] 2.4 `report-filter.sh`, merging into the report file, and the summary on standard output: the line shape,
+- [x] 2.4 `report-filter.sh`, merging into the report file, and the summary on standard output: the line shape,
   `seen-by`, a scan **Flag**'s OWASP IDs copied from its `vet` line and a reader-only one's from its table, order,
   duplicates dropped, the status lines first; verify "Both", "Reader only", "A file name with a space", "Scan IDs as
   printed", "Words as file names", "A summary line", "The reader cannot choose seen-by or OWASP IDs", and a test that
