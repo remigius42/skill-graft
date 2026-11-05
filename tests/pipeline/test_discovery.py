@@ -2,6 +2,7 @@
 through `discovery` itself where a deploy cannot show it."""
 
 import os
+import time
 import tomllib
 from collections.abc import Iterator
 from pathlib import Path
@@ -148,6 +149,17 @@ def test_comment_and_quotes(home: Path, capsys: Capsys, line: str) -> None:
 
     assert deploy(capsys) == (0, "")
     assert vendored() == {"tdd"}
+
+
+def test_long_run_of_whitespace_in_a_name_reads_at_once(home: Path) -> None:
+    name = "a" + " " * 100_000 + "b"
+    skill(home / "x", f"---\nname: {name}\n---\n")
+
+    start = time.perf_counter()
+    found = discovery.read_name(home / "x")
+
+    assert time.perf_counter() - start < 1
+    assert found == name
 
 
 @pytest.mark.parametrize(

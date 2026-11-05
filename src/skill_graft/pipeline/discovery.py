@@ -12,8 +12,10 @@ from skill_graft.infra.errors import SkillGraftError
 from skill_graft.pipeline import references
 from skill_graft.pipeline.config import NAME, SEGMENT, SkillId
 
-# A comment: `#` after whitespace, to the end of the line.
-COMMENT = re.compile(r"\s+#.*$")
+# A comment: `#` after whitespace, to the end of the line. Tried only where a run
+# of whitespace starts, so a long run without `#` is read in linear time; no `$`,
+# which a line feed after many ` #` would make quadratic.
+COMMENT = re.compile(r"(?<!\s)\s+#.*")
 # The bytes an error shows as they are; it writes any other as `\ooo`.
 SAFE = frozenset((string.ascii_letters + string.digits + "._/-").encode())
 

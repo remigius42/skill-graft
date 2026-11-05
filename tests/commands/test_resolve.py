@@ -1,5 +1,6 @@
 """The `resolve` spec: the command, the lock it writes, and the tree it prints."""
 
+import time
 import tomllib
 from pathlib import Path
 from typing import TypeAlias
@@ -202,6 +203,17 @@ def test_resolution_error(home: Path, capsys: Capsys) -> None:
     assert main(["resolve"]) == 1
 
     assert (lock_file(home).read_bytes(), copy.read_bytes()) == before
+
+
+def test_long_run_of_whitespace_in_a_name(home: Path, capsys: Capsys) -> None:
+    skill(home / "own" / "x", "---\nname: a" + " " * 100_000 + "b\n---\n")
+    configure(["own/x"], own="~/own")
+
+    start = time.perf_counter()
+    code = main(["resolve"])
+
+    assert time.perf_counter() - start < 5
+    assert code == 1 and "is not one path segment" in capsys.readouterr().err
 
 
 def test_git_source_without_ref(tmp_path: Path, capsys: Capsys) -> None:

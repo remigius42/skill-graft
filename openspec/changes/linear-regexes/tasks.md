@@ -5,7 +5,7 @@ with the archive commit.
 
 ## 1. The comment pattern
 
-- [ ] 1.1 `discovery.COMMENT` becomes `(?<!\s)\s+#.*$`; verify a test in `tests/pipeline/test_discovery.py` reads a
+- [x] 1.1 `discovery.COMMENT` becomes `(?<!\s)\s+#.*$`; verify a test in `tests/pipeline/test_discovery.py` reads a
   `name:` of `a`, 100 000 spaces and `b` within a second as that whole value (red: the old pattern takes about 26 s), a
   test in `tests/commands/test_resolve.py` has `resolve` exit non-zero within seconds on that **Skill** as an **Entry**,
   and the existing comment and quote tests still pass (skill-discovery, "Long run of whitespace")
