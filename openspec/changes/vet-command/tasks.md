@@ -35,7 +35,7 @@ Test-first: each task's test fails before its code, then passes. One commit per 
   repeated IDs; verify "A Hull Skill", "A Skill not yet added", "Unknown Skill", and `skill-graft.toml` unchanged
 - [x] 3.3 Errors as `resolve`'s: a **Hidden character**, a failing **Patch**, a `[vet]` table; verify "Hidden character"
   and "An unknown key" exit 1 with no **Flag** on standard output
-- [ ] 3.4 Help: `vet` in the top-level list and `skill-graft vet --help` in the glossary's terms; verify in
+- [x] 3.4 Help: `vet` in the top-level list and `skill-graft vet --help` in the glossary's terms; verify in
   `tests/cli/test_cli.py`
 
 ## 4. Docs

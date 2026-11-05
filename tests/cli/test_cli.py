@@ -24,6 +24,7 @@ COMMANDS = [
     "rename",
     "bind",
     "unbind",
+    "vet",
     "help",
 ]
 
@@ -157,6 +158,16 @@ def test_unbind_help(capsys: pytest.CaptureFixture[str]) -> None:
     code, out, _ = run(["unbind", "--help"], capsys)
     assert code == 0
     assert "resolve by default" in out
+
+
+def test_vet_help(capsys: pytest.CaptureFixture[str]) -> None:
+    code, out, _ = run(["vet", "--help"], capsys)
+    flat = " ".join(out.split())
+    assert code == 0
+    assert "patches and renames applied" in flat
+    assert "never the text it matched" in flat
+    assert "a flag is not a fault" in flat
+    assert "<source alias>/<name>" in flat
 
 
 def test_unbind_missing_argument(capsys: pytest.CaptureFixture[str]) -> None:

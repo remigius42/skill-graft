@@ -283,8 +283,26 @@ def _parser() -> tuple[_Parser, dict[str, argparse.ArgumentParser]]:
     vet_parser = commands.add_parser(
         "vet",
         help="flag the lines of each skill worth reading, writing nothing",
+        description=(
+            "Compute the hull as resolve does and scan each skill as it would "
+            "deploy, patches and renames applied, every file of it, for where it "
+            "may make an agent read, write or send outside the project, run code, "
+            "gain privilege, persist, widen its permissions, or hide from review. "
+            "Print a flag per line: <skill id> <file>:<line> <category> <owasp ids> "
+            "<pattern>, line 0 for a whole file; file names as ASCII, never the "
+            "text it matched. Exits 0 whatever it flags: a flag is not a fault, and "
+            "no flag is not a pass. Never reads the lock or runs APM."
+        ),
     )
-    vet_parser.add_argument("skills", nargs="*", metavar="skill-id")
+    vet_parser.add_argument(
+        "skills",
+        nargs="*",
+        metavar="skill-id",
+        help=(
+            "<source alias>/<name>; default: every hull skill. One outside the hull "
+            "is vetted with every skill its add would bring in"
+        ),
+    )
     add = commands.add_parser(
         "add",
         help="add skills to the entries, then resolve",
