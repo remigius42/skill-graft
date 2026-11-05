@@ -49,4 +49,4 @@ Test-first: each task's test fails before its code, then passes. One commit per 
 
 ## 5. Check
 
-- [ ] 5.1 Run `uv run pytest`, `uv run mypy .` and `openspec validate vet-command --strict`; verify all pass
+- [x] 5.1 Run `uv run pytest`, `uv run mypy .` and `openspec validate vet-command --strict`; verify all pass
