@@ -168,6 +168,8 @@ def test_vet_help(capsys: pytest.CaptureFixture[str]) -> None:
     assert "never the text it matched" in flat
     assert "a flag is not a fault" in flat
     assert "<source alias>/<name>" in flat
+    assert "[--into DIR]" in out
+    assert "DIR/<alias>/<name>/" in flat and "empty folder" in flat
 
 
 def test_unbind_missing_argument(capsys: pytest.CaptureFixture[str]) -> None:
@@ -195,11 +197,12 @@ def test_into_without_a_value(capsys: pytest.CaptureFixture[str]) -> None:
     assert "--into" in err
 
 
+@pytest.mark.parametrize("command", ["deploy", "vet"])
 def test_into_with_an_empty_value(
-    home: Path, capsys: pytest.CaptureFixture[str]
+    home: Path, capsys: pytest.CaptureFixture[str], command: str
 ) -> None:
     before = sorted(home.iterdir())
-    code, out, err = run(["deploy", "--into", ""], capsys)
+    code, out, err = run([command, "--into", ""], capsys)
     assert (code, out) == (2, "")
     assert "--into" in err and "package:" not in err
     assert sorted(home.iterdir()) == before

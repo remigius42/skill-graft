@@ -1,7 +1,6 @@
 """The `vet` spec: which skills are vetted, as deployed, and what is printed."""
 
 import os
-import re
 import sys
 from pathlib import Path
 from typing import TypeAlias
@@ -365,7 +364,7 @@ def test_into_a_skill_with_no_flag(
 
 @pytest.mark.parametrize("where", ["holds a file", "in the package"])
 def test_into_a_folder_refused(
-    home: Path, tmp_path: Path, scope: paths.Scope, capsys: Capsys, where: str
+    home: Path, tmp_path: Path, capsys: Capsys, where: str
 ) -> None:
     skill(home / "mp" / "tdd", "sudo it\n")
     configure(["mp/tdd"], mp="~/mp")
@@ -377,10 +376,10 @@ def test_into_a_folder_refused(
         into.mkdir()
     before = snapshot(into)
 
-    with pytest.raises(SkillGraftError, match=re.escape(str(into))):
-        commands.vet(scope, [], [], into)
+    assert main(["vet", "--into", str(into)]) == 1
 
-    assert capsys.readouterr().out == ""
+    out, err = capsys.readouterr()
+    assert out == "" and f"--into {into}: " in err
     assert snapshot(into) == before
 
 

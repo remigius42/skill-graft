@@ -11,7 +11,7 @@ Test-first: each task's test fails before its code, then passes. One commit per 
   `<dir>/<alias>/<name>/` after every scan, `<dir>` emptied on a failed write; verify in `tests/commands/test_vet.py` "A
   Skill not yet added", "Patched and renamed", "A Skill with no Flag", "Folder not empty", "Hidden character", and the
   lock, config and `.apm/skills/` bytes unchanged
-- [ ] 1.3 `--into` in `cli.py` and `vet --help`; verify "Empty value" and the help in `tests/cli/test_cli.py`
+- [x] 1.3 `--into` in `cli.py` and `vet --help`; verify "Empty value" and the help in `tests/cli/test_cli.py`
 
 ## 2. The skill's files (`skills/graft-vet/`, `tests/cli/test_graft_vet.py`)
 

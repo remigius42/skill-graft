@@ -303,6 +303,16 @@ def _parser() -> tuple[_Parser, dict[str, argparse.ArgumentParser]]:
             "is vetted with every skill its add would bring in"
         ),
     )
+    vet_parser.add_argument(
+        "--into",
+        type=_into,
+        metavar="DIR",
+        help=(
+            "also write each skill vetted, as scanned, to DIR/<alias>/<name>/, once "
+            "every skill is scanned; nothing on an error. DIR must be an existing, "
+            "empty folder outside any package, source and the cache"
+        ),
+    )
     add = commands.add_parser(
         "add",
         help="add skills to the entries, then resolve",
@@ -515,7 +525,7 @@ def _main(argv: list[str] | None) -> int:
             elif args.command == "why":
                 explain.show_why(current, warnings, args.skill)
             elif args.command == "vet":
-                vet.vet(current, warnings, args.skills)
+                vet.vet(current, warnings, args.skills, args.into)
             elif args.command == "tree":
                 mermaid = args.format == "mermaid"
                 explain.show_tree(current, warnings, mermaid, args.link)
