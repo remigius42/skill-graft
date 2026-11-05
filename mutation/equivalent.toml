@@ -24,6 +24,21 @@
 "vet._KEY" = [
   { operator = "plus-to-star", offset = 6, reason = "adds only an empty key, which no flagged key equals" },
 ]
+"references.REFERENCE" = [
+  { operator = "drop-possessive", offset = 182, reason = "the next character, a quote, space, `)` or `,`, is never a name character: giving one back cannot match" },
+  { operator = "drop-possessive", offset = 207, reason = "only an optional `)` follows: backtracking finds no other end" },
+  { operator = "drop-possessive", offset = 255, reason = "a backtick follows, never a name character: giving one back cannot match" },
+  { operator = "drop-possessive", offset = 326, reason = "a run given back leaves a letter or digit next, which the lookahead refuses" },
+  { operator = "drop-possessive", offset = 340, reason = "a run given back leaves a letter or digit next, which the lookahead refuses" },
+  { operator = "drop-possessive", offset = 343, reason = "a segment given back leaves `-` next, which the lookahead refuses" },
+]
+"references.SENTENCE_END" = [
+  { operator = "drop-branch", offset = 130, reason = "only whitespace lies between such an end and the window's limit, where the window then ends: it holds no name" },
+  { operator = "star-to-plus", offset = 132, reason = "without whitespace the end is the limit itself, where the window then ends" },
+]
+"references.QUOTED_NAME" = [
+  { operator = "drop-possessive", offset = 48, reason = "the closing quote follows, never a name character: giving one back cannot match" },
+]
 "vet._TOKEN" = [
   { operator = "plus-to-star", offset = 37, reason = "adds only empty tokens, which lead nowhere: no start outside, `normpath` gives `.`" },
 ]

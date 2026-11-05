@@ -384,3 +384,86 @@ def test_sentence_skips_the_own_name_line(tmp_path: Path) -> None:
     text = '---\ndescription: via the Skill tool\nname: "tdd"\n---\n'
 
     assert kinds(text, tmp_path) == []
+
+
+# Texts at the edges of each pattern, so a pattern changed by one token fails
+# (`python -m mutation`): each text, and the references found in it, as written.
+# cspell:disable: lines at a pattern's edge are seldom words
+EDGES = [
+    ("`1`", ["`1`"]),
+    ("a-b-", []),
+    ("a1-b2", ["a1-b2"]),
+    ("`a``b`", []),
+    ("Skill(x,\ny)", ["Skill(x)"]),
+    ("Skill tool `a.` x", ["Skill tool `a`", "`a.`"]),
+    ('Skill tool "a"\n\t\n"b"', ['Skill tool "a"']),
+    ('Skill tool "a"\n\t- "b"', ['Skill tool "a"']),
+    ('Skill tool "a"\n. or "b"', ['Skill tool "a"', 'Skill tool "b"']),
+    ("/1x", ["/1x"]),
+    ("/t1", ["/t1"]),
+    ("/tDD", ["/tDD"]),
+    ("/x_y", ["/x_y"]),
+    ("`t1`", ["`t1`"]),
+    ("~a-b", []),
+    ("\\a-b", []),
+    ("<a-b", []),
+    ("@a-b", []),
+    (":/tdd", []),
+    ("\\/tdd", []),
+    ("-/tdd", []),
+    ("`Tdd`", ["`Tdd`"]),
+    ("`tDD`", ["`tDD`"]),
+    ("`a_b`", ["`a_b`"]),
+    ("`a-b`", ["`a-b`"]),
+    ("x.a-b", []),
+    ("x:a-b", []),
+    ("='a-b", []),
+    ("a-b_c", []),
+    (".../tdd", []),
+    ("/tdd//x", []),
+    ("Skill(1)", ["Skill(1)"]),
+    ("`a\n`/tdd", ["/tdd"]),
+    ("Skill(t1)", ["Skill(t1)"]),
+    ("?my-skill", []),
+    ("&my-skill", []),
+    ("-my-skill", []),
+    ("my-skill/", []),
+    ("Skill(x.y)", ["Skill(x.y)"]),
+    ("Skill(a_b)", ["Skill(a_b)"]),
+    ("x my-skill:x", []),
+    ('Skill tool "1a"', ['Skill tool "1a"']),
+    ('Skill tool "t1".', ['Skill tool "t1"']),
+    ('Skill tool "Tdd".', ['Skill tool "Tdd"']),
+    ('Skill tool "tDD".', ['Skill tool "tDD"']),
+    ('Skill tool "a_b".', ['Skill tool "a_b"']),
+    ("Skill(x,y\nSkill(x,y", ["Skill(x)", "Skill(x)"]),
+    ('Skill tool "a"! "b"', ['Skill tool "a"']),
+    ('Skill tool "a"? "b"', ['Skill tool "a"']),
+    ('Skill tool "a"\n* "b"', ['Skill tool "a"']),
+    ('Skill tool "a"\n+ "b"', ['Skill tool "a"']),
+    ('Skill tool "a"\n  "b"', ['Skill tool "a"', 'Skill tool "b"']),
+    ('Skill tool "a"\n-\t"b"', ['Skill tool "a"']),
+    ('Skill tool "a"." "B"', ['Skill tool "a"']),
+    ('Skill tool "a".\' "b"', ['Skill tool "a"']),
+    ('Skill tool "a".` "B"', ['Skill tool "a"']),
+    ('Skill tool "a".] "B"', ['Skill tool "a"']),
+    ('Skill tool "a"\n  \n"b"', ['Skill tool "a"']),
+    ('Skill tool "a". *"b"*', ['Skill tool "a"']),
+    ('Skill tool "a". ("b")', ['Skill tool "a"']),
+    ('Skill tool "a". ["b"]', ['Skill tool "a"']),
+    ('Skill tool "a"\n  - "b"', ['Skill tool "a"']),
+    ('Skill tool "a"\n~~~\n"b"', ['Skill tool "a"']),
+    ('Skill tool "a" i.e. "b"', ['Skill tool "a"', 'Skill tool "b"']),
+    ('Skill tool "a". \'b\' "c"', ['Skill tool "a"']),
+    ('Skill tool "a" xe.g. "b"', ['Skill tool "a"']),
+    ('Skill tool "a" xi.e. "b"', ['Skill tool "a"']),
+    ('Skill tool "a"\n1. then "b"', ['Skill tool "a"']),
+]
+# cspell:enable
+
+
+@pytest.mark.parametrize(("text", "found"), EDGES)
+def test_pattern_edges(tmp_path: Path, text: str, found: list[str]) -> None:
+    (tmp_path / "notes.md").write_text(text)
+
+    assert [ref.text for ref in references.scan(tmp_path)] == found
