@@ -4,19 +4,64 @@ reader, report filter and steps."""
 import json
 import os
 import re
+import shutil
 import subprocess
 import sys
+import tomllib
 from dataclasses import dataclass
 from pathlib import Path
 
 import pytest
+from conftest import Upstream, write_config
 
+from skill_graft.cli import main
 from skill_graft.pipeline import vet
 
 ROOT = Path(__file__).parents[2]
 SKILLS = ROOT / "skills"
 VET = SKILLS / "graft-vet"
 CATEGORIES = list(vet.OWASP)
+
+
+def front_matter() -> dict[str, str]:
+    """The `key: value` lines between the `---` fences opening `SKILL.md`."""
+    opening, block, _ = (VET / "SKILL.md").read_text().split("---\n", 2)
+    assert opening == ""
+    return dict(line.split(": ", 1) for line in block.splitlines())
+
+
+def test_front_matter() -> None:
+    fields = front_matter()
+
+    assert fields["name"] == "graft-vet"
+    assert fields["disable-model-invocation"] == "true"
+    assert "only when the user asks" in fields["description"]
+    assert "<alias>/<name>" in fields["argument-hint"]
+
+
+def test_alone_in_its_hull(
+    home: Path, tmp_path: Path, capsys: pytest.CaptureFixture[str]
+) -> None:
+    # A commit of the working tree's `skills/`, as a git source installs it.
+    upstream = Upstream(tmp_path / "sg")
+    shutil.copytree(SKILLS, upstream.path / "skills")
+    sha = upstream.commit({})
+    write_config(
+        'entries = ["sg/graft-vet"]\n'
+        f'[sources.sg]\ngit = "{upstream.url}"\nref = "{sha}"\nsubdirectory = "skills"\n'
+    )
+
+    code = main(["resolve"])
+
+    out, err = capsys.readouterr()
+    assert code == 0, err
+    assert out == "sg/graft-vet\n"
+    assert "warning" not in err
+    lock = tomllib.loads(
+        (home / ".apm" / "skill-graft" / "skill-graft.lock").read_text()
+    )
+    assert [s["id"] for s in lock["skills"]] == ["sg/graft-vet"]
+    assert lock["suggestions"] == []
 
 
 def test_runner_is_graft_checks() -> None:
