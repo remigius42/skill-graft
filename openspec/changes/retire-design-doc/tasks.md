@@ -36,10 +36,11 @@ order by `tests/pipeline/test_hull.py`.
 
 ## 3. Release-named links on PyPI
 
-- [ ] 3.1 `pyproject.toml`: build with hatchling and hatch-fancy-pypi-readme, `readme` dynamic, substitutions turning
+- [x] 3.1 `pyproject.toml`: build with hatchling and hatch-fancy-pypi-readme, `readme` dynamic, substitutions turning
   each relative Markdown link and `src` into `blob/v$HFPR_VERSION/` and `raw.githubusercontent.com/…/v$HFPR_VERSION/`;
-  verify `uv build` holds the same wheel and sdist files as `uv_build` did, `twine check` passes, and `uv tool install`
-  from the worktree runs `skill-graft --version`
+  verify `uv build` holds the same wheel and sdist files as `uv_build` did, but for the sdist's `.gitignore`, which
+  hatchling always adds, and `pyproject.toml.orig`, which only `uv_build` wrote, `twine check` passes, and
+  `uv tool install` from the worktree runs `skill-graft --version`
 - [ ] 3.2 Point the README's links to `docs/` and CONTEXT.md, and the logo's `src`, at relative paths, leaving
   `SECURITY.md`, CONTRIBUTING.md, LICENSE and the badges on `main`; verify every relative link resolves in the working
   tree, and the built README's links all name `blob/v0.4.0/` or `raw.githubusercontent.com/…/v0.4.0/`, with no relative

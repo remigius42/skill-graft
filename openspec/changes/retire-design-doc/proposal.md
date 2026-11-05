@@ -60,5 +60,5 @@ None.
   after a killed run) and `tests/pipeline/test_hull.py` (the error that stops the walk last). No change to `src/`: each
   passed as written.
 - Build: `pyproject.toml`'s `[build-system]` moves from `uv_build` to hatchling and hatch-fancy-pypi-readme, its
-  `readme` to the hook's substitutions; the wheel and sdist hold the same files as before.
-  `tests/cli/test_pypi_readme.py` builds the wheel and checks its description's links.
+  `readme` to the hook's substitutions; the wheel holds the same files as before, the sdist also hatchling's
+  `.gitignore`. `tests/cli/test_pypi_readme.py` builds the wheel and checks its description's links.
