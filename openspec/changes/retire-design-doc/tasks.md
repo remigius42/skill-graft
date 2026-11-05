@@ -41,7 +41,7 @@ order by `tests/pipeline/test_hull.py`.
   verify `uv build` holds the same wheel and sdist files as `uv_build` did, but for the sdist's `.gitignore`, which
   hatchling always adds, and `pyproject.toml.orig`, which only `uv_build` wrote, `twine check` passes, and
   `uv tool install` from the worktree runs `skill-graft --version`
-- [ ] 3.2 Point the README's links to `docs/` and CONTEXT.md, and the logo's `src`, at relative paths, leaving
+- [x] 3.2 Point the README's links to `docs/` and CONTEXT.md, and the logo's `src`, at relative paths, leaving
   `SECURITY.md`, CONTRIBUTING.md, LICENSE and the badges on `main`; verify every relative link resolves in the working
   tree, and the built README's links all name `blob/v0.4.0/` or `raw.githubusercontent.com/…/v0.4.0/`, with no relative
   one left

@@ -1,7 +1,6 @@
 # [skill-graft](https://github.com/remigius42/skill-graft)
 
-<img src="https://raw.githubusercontent.com/remigius42/skill-graft/main/docs/assets/skill-graft.svg" alt=""
-width="128" align="right">
+<img src="docs/assets/skill-graft.svg" alt="" width="128" align="right">
 
 [![Version](https://img.shields.io/badge/dynamic/toml?url=https%3A%2F%2Fraw.githubusercontent.com%2Fremigius42%2Fskill-graft%2Fmain%2Fpyproject.toml&query=%24.project.version&label=version)](https://github.com/remigius42/skill-graft/blob/main/pyproject.toml)
 [![License](https://img.shields.io/badge/license-MIT-blue.svg)](https://github.com/remigius42/skill-graft/blob/main/LICENSE)
@@ -115,9 +114,8 @@ The dry run writes `mp/tdd` and every skill it calls, as they would deploy, to `
 Read it in an editor, never by printing it to a terminal: it is untrusted text. Then run the `add` itself.
 
 `tdd` and the skills it calls are now in `~/.claude/skills/`. To deploy them under other names, see `[rename]` and
-`prefix` in [Config](#config). [docs/howto.md](https://github.com/remigius42/skill-graft/blob/main/docs/howto.md) covers
-the next steps: editing the config by hand, updating a source, writing a patch, sharing skills through a project, and
-checking a package with graft-check.
+`prefix` in [Config](#config). [docs/howto.md](docs/howto.md) covers the next steps: editing the config by hand,
+updating a source, writing a patch, sharing skills through a project, and checking a package with graft-check.
 
 ## Commands
 
@@ -220,11 +218,10 @@ readers-at-once = 4
 - `[bind]`: settles which skill a reference means when several sources have one of that name, or with `false` makes it
   no reference at all.
 - `[patches]`: unified diffs, applied before renames, so a patch can change what a skill calls (see
-  [Write a patch](https://github.com/remigius42/skill-graft/blob/main/docs/howto.md#write-a-patch)).
+  [Write a patch](docs/howto.md#write-a-patch)).
 - `reserved`: deployed names to refuse, on top of the harness built-ins skill-graft warns about.
 - `[check]`: how far graft-check's readers and patcher may go: turns and spend in USD each, and how many readers run at
-  once. Each value is written in plain decimal digits;
-  [docs/security.md](https://github.com/remigius42/skill-graft/blob/main/docs/security.md#limits) says what reaching a
+  once. Each value is written in plain decimal digits; [docs/security.md](docs/security.md#limits) says what reaching a
   limit does.
 
 ## Cache
@@ -241,8 +238,8 @@ holding commits and trees and only the files read, and one export per commit and
 
 ## Security
 
-Skill text comes from other people's repositories and may carry prompt injection.
-[docs/security.md](https://github.com/remigius42/skill-graft/blob/main/docs/security.md) has the details.
+Skill text comes from other people's repositories and may carry prompt injection. [docs/security.md](docs/security.md)
+has the details.
 
 - skill-graft fails resolution on a skill holding a hidden character (tag characters, bidi controls, supplementary
   variation selectors), as APM's install does, so none reaches any agent through the hull.
@@ -253,9 +250,8 @@ Skill text comes from other people's repositories and may carry prompt injection
   only as far as your harness's model follows them. Otherwise it says it is unhardened and why, and reads only on your
   yes; an unhardened check is likely not secure.
 - In a hardened check, each reader and the patcher stop at a cap on their turns and their spend, and at most 4 readers
-  run at once, all settable in `[check]`
-  ([Limits](https://github.com/remigius42/skill-graft/blob/main/docs/security.md#limits)). The patcher's reply never
-  reaches the main agent, and its diff reaches it only as counts.
+  run at once, all settable in `[check]` ([Limits](docs/security.md#limits)). The patcher's reply never reaches the main
+  agent, and its diff reaches it only as counts.
 - A reader's reply reaches the main agent only as a report filter admits it, held to the report shape and bound in code,
   or, when the reader fails, as one bounded error line.
 - Run it outside auto mode; in Claude Code's sandbox, allow the API's domain. Fix arguments and how many readers run at
@@ -266,11 +262,9 @@ says, not in a public issue.
 
 ## Documentation
 
-- [docs/howto.md](https://github.com/remigius42/skill-graft/blob/main/docs/howto.md): common tasks, from adding a source
-  to writing a patch.
-- [CONTEXT.md](https://github.com/remigius42/skill-graft/blob/main/CONTEXT.md): the terms these docs use.
-- [docs/](https://github.com/remigius42/skill-graft/blob/main/docs/README.md): security, architecture, decisions and the
-  specs.
+- [docs/howto.md](docs/howto.md): common tasks, from adding a source to writing a patch.
+- [CONTEXT.md](CONTEXT.md): the terms these docs use.
+- [docs/](docs/README.md): security, architecture, decisions and the specs.
 
 ## Contributing
 
