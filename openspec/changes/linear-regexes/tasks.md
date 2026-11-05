@@ -28,7 +28,7 @@ with the archive commit.
   `_PATTERNS:` entries through `_COMPILED`'s bound `search.__self__`, `deployed._escaped(False)` and
   `deployed._escaped(True)` each called once before the clock starts; verify the guard and every case pass, and that
   restoring `\s+#.*$` in either module fails its case
-- [ ] 2.4 ADR 0011, "Regexes over **Upstream** text run in linear time", extending 0007: the means, an entry by hand for
+- [x] 2.4 ADR 0011, "Regexes over **Upstream** text run in linear time", extending 0007: the means, an entry by hand for
   a pattern built in a function, the options considered, the **Deployed diff**'s cap kept; verify the markdown hooks
   pass
 
