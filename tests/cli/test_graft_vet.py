@@ -586,3 +586,109 @@ def test_filters_table_is_vets() -> None:
     table = dict(re.findall(r'owasp\["([a-z]+)"\] = "([A-Z0-9,]+)"', text))
 
     assert table == {key: ",".join(ids) for key, ids in vet.OWASP.items()}
+
+
+RUN_12 = "mp/x SKILL.md:12 run ASI05 run.eval\n"
+
+
+def status(
+    tmp_path: Path, scan: str, reply: bytes | None, files: dict[str, bytes] = SKILL
+) -> str:
+    """`mp/x`'s status line in the summary, its reader replying `reply`, or having
+    failed when `None`."""
+    replies = {} if reply is None else {"mp/x": reply}
+    done = report_filter(tmp_path, scan, {"mp/x": files}, replies)
+    assert done.code == 0
+    (line,) = [s for s in done.summary if s.split()[1] in STATUS]
+    assert done.report[0] == line
+    return line
+
+
+def test_a_steered_reader(tmp_path: Path) -> None:
+    scan = RUN_12 + "mp/x SKILL.md:12 send LLM02,ASI02 send.url\n"
+
+    assert status(tmp_path, scan, b"none\n") == "mp/x steering 2 dropped 0"
+
+
+def test_another_line_same_category(tmp_path: Path) -> None:
+    assert status(tmp_path, RUN_12, b"SKILL.md:30 run\n") == "mp/x steering 0 dropped 0"
+
+
+def test_another_file_same_category(tmp_path: Path) -> None:
+    files = {**SKILL, "run.sh": b"x\n"}
+
+    shown = status(tmp_path, RUN_12, b"run.sh:1 run\n", files)
+
+    assert shown == "mp/x steering 1 dropped 0"
+
+
+def test_line_0_on_neither_side(tmp_path: Path) -> None:
+    scan = "mp/x bin/tool:0 run ASI05 run.executable\n" + RUN_12
+    files = {**SKILL, "bin/tool": b"x\n"}
+
+    done = report_filter(tmp_path, scan, {"mp/x": files}, {"mp/x": b"SKILL.md:0 run\n"})
+
+    assert done.report == [
+        "mp/x steering 1 dropped 0",
+        "mp/x SKILL.md:0 run ASI05 reader",
+        "mp/x SKILL.md:12 run ASI05 scan run.eval",
+        "mp/x bin/tool:0 run ASI05 scan run.executable",
+    ]
+
+
+def test_only_dropped_lines(tmp_path: Path) -> None:
+    assert status(tmp_path, RUN_12, b"done\n") == "mp/x steering 1 dropped 1"
+
+
+def test_no_reply_counts_as_none(tmp_path: Path) -> None:
+    scan = RUN_12 + "mp/x SKILL.md:3 send LLM02,ASI02 send.url\n"
+
+    assert status(tmp_path, scan, None) == "mp/x no-reply steering 2"
+
+
+def test_two_files_one_mapped_name(tmp_path: Path) -> None:
+    files = {"a b.md": b"x\n" * 3, "a\tb.md": b"x\n" * 3}
+    scan = "mp/x a?b.md:3 run ASI05 run.eval\n"
+
+    shown = status(tmp_path, scan, b"a?b.md:3 run\n", files)
+
+    assert shown == "mp/x steering 1 dropped 1"
+
+
+def test_two_patterns_one_line(tmp_path: Path) -> None:
+    scan = (
+        "mp/x SKILL.md:12 send LLM02,ASI02 send.url\n"
+        "mp/x SKILL.md:12 send LLM02,ASI02 send.network-tool\n"
+    )
+
+    done = report_filter(tmp_path, scan, {"mp/x": SKILL}, {"mp/x": b"none\n"})
+
+    assert done.report == [
+        "mp/x steering 1 dropped 0",
+        "mp/x SKILL.md:12 send LLM02,ASI02 scan send.network-tool",
+        "mp/x SKILL.md:12 send LLM02,ASI02 scan send.url",
+    ]
+
+
+def test_a_both_flag_counts_nothing(tmp_path: Path) -> None:
+    assert status(tmp_path, RUN_12, b"SKILL.md:12 run\n") == "mp/x steering 0 dropped 0"
+
+
+def test_steering_per_skill(tmp_path: Path) -> None:
+    scan = (
+        "mp/b SKILL.md:9 run ASI05 run.eval\n"
+        "mp/b SKILL.md:10 read LLM02 read.secret-store\n"
+        "mp/b SKILL.md:9 privilege ASI03 privilege.sudo\n"
+        "mp/b SKILL.md:9 privilege ASI03 privilege.su\n"
+        "mp/a SKILL.md:1 send LLM02,ASI02 send.url\n"
+    )
+    skills = {"mp/a": SKILL, "mp/b": SKILL, "mp/c": SKILL}
+    replies = {"mp/b": b"SKILL.md:2 run\n", "mp/c": b"none\n"}
+
+    done = report_filter(tmp_path, scan, skills, replies)
+
+    assert done.summary[:3] == [
+        "mp/b steering 2 dropped 0",
+        "mp/a no-reply steering 1",
+        "mp/c steering 0 dropped 0",
+    ]

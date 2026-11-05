@@ -124,6 +124,7 @@ function read_reply(id, file,   line, prefix, real) {
     else if (substr(line, 1, 2) == "./") line = substr(line, 3)
     if (!place(id, line) || ++kept[id] > 1000) { dropped[id]++; continue }
     flag[id, at_file, at_line, at_category] = 1
+    if (at_line > 0) answered[id, at_file, at_category] = 1
   }
   close(file)
 }
@@ -160,22 +161,32 @@ END {
   for (i = 1; i <= folder_count; i++) add(folders[i])
   for (i = 1; i <= skills; i++) rank[order[i]] = i
   summary = work "/summary"
+  # The steering count: each file, line and category of the scan, line 0 aside,
+  # in a file where the reply flagged that category at no line above 0. A failed
+  # reader counts as one that replied `none`.
+  for (key in scan) {
+    split(key, f, SUBSEP)
+    if (f[3] > 0 && !((f[1], f[2], f[4]) in answered) && !((f[1], f[2], f[3], f[4]) in unanswered)) {
+      unanswered[f[1], f[2], f[3], f[4]] = 1
+      steering[f[1]]++
+    }
+  }
   if (dir != "")
     for (i = 1; i <= skills; i++) {
       id = order[i]
-      if (id in replied) status = id " steering 0 dropped " dropped[id]
-      else status = id " no-reply steering 0"
+      if (id in replied) status = id " steering " (steering[id] + 0) " dropped " dropped[id]
+      else status = id " no-reply steering " (steering[id] + 0)
       print status >> report
       print status > summary
     }
   for (key in scan) {
     split(key, f, SUBSEP)
     both = (f[1], f[2], f[3], f[4]) in flag
-    if (both) answered[f[1], f[2], f[3], f[4]] = 1
+    if (both) matched[f[1], f[2], f[3], f[4]] = 1
     emit(f[1], f[2], f[3], f[4], scan[key], both ? "both" : "scan", f[5])
   }
   for (key in flag) {
-    if (key in answered) continue
+    if (key in matched) continue
     split(key, f, SUBSEP)
     emit(f[1], f[2], f[3], f[4], owasp[f[4]], "reader", "")
   }

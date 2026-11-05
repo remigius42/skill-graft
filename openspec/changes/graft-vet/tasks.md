@@ -31,7 +31,7 @@ Test-first: each task's test fails before its code, then passes. One commit per 
   duplicates dropped, the status lines first; verify "Both", "Reader only", "A file name with a space", "Scan IDs as
   printed", "Words as file names", "A summary line", "The reader cannot choose seen-by or OWASP IDs", and a test that
   its table equals `pipeline/vet.py`'s
-- [ ] 2.5 `report-filter.sh`, the steering count, once per file, line and category; verify "A steered reader", "Another
+- [x] 2.5 `report-filter.sh`, the steering count, once per file, line and category; verify "A steered reader", "Another
   line, same category", "Two patterns, one line", "Line 0 on neither side", "Only dropped lines", a `no-reply` count,
   "Two files, one mapped name", and a `both` **Flag** counting nothing
 
