@@ -18,7 +18,11 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 ### Changed
 
 - The README installs from PyPI first; installing from the repository at a signed tag stays, below it. Its links to
-  other files of the repository are absolute, so they work on the PyPI project page too
+  other files of the repository work on the PyPI project page too, where those to the docs, CONTEXT.md and the logo name
+  the release, so an older release's page leads to its own guides
+- The README keeps a quickstart and the reference; the guides (adding and updating a **Source**, writing and redoing a
+  **Patch**, a project **Package**, graft-check) are in `docs/howto.md`, and `docs/README.md` lists every doc. The
+  README shows the skill-graft logo
 - In a project **Package**, `skill-graft.lock` records a path **Source** written as `~/…` (`path = "~/skills"`) as
   written, empty and `.` segments dropped, so a committed lock reads the same on every machine. It recorded the absolute
   folder, which each teammate's `resolve` or `deploy` rewrote; a lock written before is rewritten once

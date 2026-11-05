@@ -18,7 +18,8 @@ to accept the change.
 
 - **WHEN** after `resolve` the user adds a comment line to `skill-graft.lock` and converts its line endings to CRLF,
   then runs `deploy`
-- **THEN** `deploy` exits 0
+- **THEN** `deploy` exits 0, and `skill-graft.lock` is rewritten as skill-graft writes it: the comment gone, its line
+  endings LF
 
 #### Scenario: Config edited by hand
 

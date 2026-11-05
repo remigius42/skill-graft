@@ -437,11 +437,12 @@ An edit with `--dry-run` or `--diff-file` SHALL print, before its tree, the **Hu
 against the **Hull** it would vendor, in `update`'s form: `hull (+ added, - removed, ~ changed):`, then `+`, `-` or `~`
 and the **Skill ID** per **Skill**, sorted, each changed file under a `+` or `~` line as `update` names them; or
 `hull unchanged`. A plain edit SHALL print as before. A **Skill** is matched to its copy through the lock's **Skill
-IDs** and **Deployed names**, and a copy read only as an entry of `.apm/skills/`; one the lock records without a copy,
-and every **Skill** with no lock, is `+`, and a **Skill** is `-` only when it leaves the **Hull** and had a copy. A
-removed **Skill**'s ID, read from the lock, SHALL be quoted as file paths are. Without `--diff-file`, when it marks a
-**Skill** `+` or `~`, it SHALL print `review: skill-graft <command> <arguments> --dry-run --diff-file <file>`, each
-argument quoted for a POSIX shell, right before its `dry run:` line.
+IDs** and **Deployed names**, and a copy read only as an entry of `.apm/skills/`, or of the `.apm/skills.old/` a killed
+run left when the next writing run would keep it; one the lock records without a copy, and every **Skill** with no lock,
+is `+`, and a **Skill** is `-` only when it leaves the **Hull** and had a copy. A removed **Skill**'s ID, read from the
+lock, SHALL be quoted as file paths are. Without `--diff-file`, when it marks a **Skill** `+` or `~`, it SHALL print
+`review: skill-graft <command> <arguments> --dry-run --diff-file <file>`, each argument quoted for a POSIX shell, right
+before its `dry run:` line.
 
 #### Scenario: Skills joining
 
@@ -485,6 +486,12 @@ argument quoted for a POSIX shell, right before its `dry run:` line.
 - **WHEN** the lock records `mp/tdd` with `deployed = "../../outside"` and no copy deployed under that name, and the
   user runs `add mp/notes --dry-run --diff-file review.diff`
 - **THEN** it reads nothing outside `.apm/skills/`, and prints `mp/tdd` as `+`
+
+#### Scenario: After a killed run
+
+- **WHEN** a run was killed after swapping in new copies and before writing the lock, so `.apm/skills.old/` holds the
+  copies the lock records, and the user runs `resolve --dry-run`
+- **THEN** the **Hull diff** compares against the copies in `.apm/skills.old/`, not those in `.apm/skills/`
 
 #### Scenario: A removed ID holding a control character
 

@@ -64,9 +64,15 @@ PyPI shows for each release.
 
 ## Risks / Trade-offs
 
-- [A relative link the substitutions do not match reaches PyPI broken] → they match every Markdown link and `src` that
-  names no scheme and no `#` anchor; a test builds the wheel and fails on a relative link left in its description, or a
-  `blob/v` link naming another version or a missing file.
+- [A relative link the substitutions do not match reaches PyPI broken] → they match each inline Markdown link without a
+  title, and each `src`, that names no scheme and no `#` anchor; a test builds the wheel and fails on a relative link,
+  reference definition, `src` or `href` left in its description, or a `blob/v` link naming another version or a missing
+  file. An angle-bracket target, `](<docs/x.md>)`, comes out as `…/v<version>/<docs/x.md>`, which the test fails as a
+  missing file.
+- [The substitutions also rewrite a link inside a code span or fence, which the test misses when the file exists] → the
+  README holds no such example; one added later would show on PyPI with the release's URL.
+- [Offline, with hatchling not in uv's cache, the test cannot build the wheel and fails] → rare: uv keeps the build
+  requirements once fetched.
 - [A build from a commit between releases names a tag that lacks the files linked] → only a release is published, and
   its build names its own tag.
 - [Spec deltas copy whole requirements, so a concurrent change to the same requirement conflicts] → none is in flight.

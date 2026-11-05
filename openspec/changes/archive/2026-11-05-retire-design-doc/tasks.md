@@ -9,19 +9,20 @@
 - [x] 1.2 Replace `docs/design.md` with `docs/architecture.md` and `docs/apm-behavior.md`, saying there why lone
   surrogates are in no class, and point `AGENTS.md` at the specs and `docs/architecture.md`; verify
   `grep -rn 'docs/design.md'` outside archived changes finds nothing
-- [x] 1.3 Add `docs/README.md` and link CONTEXT.md, CONTRIBUTING.md, `docs/security.md` and the ADRs to it and each
-  other; verify every relative link resolves
+- [x] 1.3 Add `docs/README.md` and link CONTEXT.md, CONTRIBUTING.md and AGENTS.md to it, and `docs/security.md` and the
+  ADRs to each other; verify every relative link resolves
 - [x] 1.4 Add the logo: `docs/assets/skill-graft.svg` and `docs/assets/skill-graft-small.svg`, the full mark in the
-  README as `<img alt="" width="128" align="right">` from its `raw.githubusercontent.com` URL on `main`, `img` allowed
-  in `.markdownlint.yaml`, and `docs/assets/` in `docs/README.md` with its size rule; verify the hooks pass,
-  `twine check` passes, and `readme_renderer` keeps the `<img>` with its `width` and `align`
+  README as `<img alt="" width="128" align="right">` from its `raw.githubusercontent.com` URL on `main` (3.2 makes it
+  relative), `img` allowed in `.markdownlint.yaml`, and `docs/assets/` in `docs/README.md` with its size rule; verify
+  the hooks pass, `twine check` passes, and `readme_renderer` keeps the `<img>` with its `width` and `align`
 
 ## 2. Pin the behaviors no test pins yet
 
 Each should pass at once: the code already behaves so. One that fails is a bug, reported before any fix.
 
 - [x] 2.1 `tests/commands/test_deploy.py`: after `resolve`, a comment line added to `skill-graft.lock` and CRLF line
-  endings, and `deploy` exits 0 (deploy, "Lock reformatted by an editor"); verify it passes
+  endings, and `deploy` exits 0 and rewrites the lock to the bytes `resolve` wrote (deploy, "Lock reformatted by an
+  editor"); verify it passes
 - [x] 2.2 `tests/cli/test_hidden_characters.py`: a U+202E in a `skill-graft.toml` comment, and `resolve` exits 0
   (hidden-characters, "In the config"); verify it passes
 - [x] 2.3 `tests/commands/test_review.py`: after a killed run leaves `.apm/skills.old/` holding the lock's copies,
@@ -51,4 +52,4 @@ order by `tests/pipeline/test_hull.py`.
 
 ## 4. Check
 
-- [ ] 4.1 Run `uv run pytest` and `openspec validate retire-design-doc --strict`; verify both pass
+- [x] 4.1 Run `uv run pytest` and `openspec validate retire-design-doc --strict`; verify both pass

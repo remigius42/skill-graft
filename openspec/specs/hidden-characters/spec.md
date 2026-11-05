@@ -12,7 +12,7 @@ agent, the **Check**'s included, reads text a person cannot see.
 Resolution SHALL fail, exit 1, when a **Hull** **Skill** holds a **Hidden character** in a file's text or in a file or
 folder name: a Unicode tag character (U+E0001 to U+E007F), a bidi embedding, override or isolate (U+202A to U+202E,
 U+2066 to U+2069), or a supplementary variation selector (U+E0100 to U+E01EF). The error SHALL name each file, line,
-code point and class.
+code point and class. `skill-graft.toml` is the user's, not a **Skill**, and SHALL NOT be scanned.
 
 #### Scenario: Tag characters in SKILL.md
 
@@ -32,6 +32,11 @@ code point and class.
 #### Scenario: Outside the hull
 
 - **WHEN** a **Source** holds a **Skill** with U+E0041 that no **Hull** **Skill** reaches
+- **THEN** `skill-graft resolve` succeeds
+
+#### Scenario: In the config
+
+- **WHEN** a comment in `skill-graft.toml` holds U+202E, and no **Hull** **Skill** holds a **Hidden character**
 - **THEN** `skill-graft resolve` succeeds
 
 ### Requirement: Which files are read
@@ -106,7 +111,9 @@ checked too, named by its path inside the **Skill** as in the patched copy.
 A **Skill** holding a **Hidden character**, or a Markdown file that is not UTF-8, SHALL still have its other
 **References** read, so the walk reaches every **Skill** it would, and one run SHALL report every **Hidden character**
 and every such Markdown file of the **Hull**. Like a failing **Patch**, they SHALL be reported before another error that
-stops the walk, and the warnings for unused `[rename]`, `[patches]` and `[bind]` keys SHALL be left out.
+stops the walk: the error SHALL list the failing **Patches** under `patches do not apply:`, then these under
+`hidden characters:`, then that error. The warnings for unused `[rename]`, `[patches]` and `[bind]` keys SHALL be left
+out.
 
 #### Scenario: Two skills
 
@@ -121,7 +128,7 @@ stops the walk, and the warnings for unused `[rename]`, `[patches]` and `[bind]`
 #### Scenario: With a failing patch
 
 - **WHEN** `mp/tdd`'s **Patch** fails and **Entry** `mp/notes` holds U+E0041
-- **THEN** one `skill-graft resolve` reports both
+- **THEN** one `skill-graft resolve` reports both, the line `patches do not apply:` before the line `hidden characters:`
 
 ### Requirement: Invisible debris warns
 

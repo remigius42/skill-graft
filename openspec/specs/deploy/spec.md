@@ -125,14 +125,22 @@ project scope it SHALL instead run `apm install ./.apm/skill-graft` in the proje
 
 `deploy` SHALL deploy the **Hull** `skill-graft.lock` records: it SHALL resolve the **Hull** as `resolve` does, only to
 check it against the lock, and deploy only if the two are the same, but for path **Source** text and folders as "Changed
-path Source deployed" says. Otherwise, and when the lock is missing, cannot be read or is of another `version`, `deploy`
-SHALL exit 1 writing nothing and running no `apm`, naming each **Skill** that differs, or what else does, and
-`skill-graft resolve` to accept the change.
+path Source deployed" says. The lock SHALL be compared parsed, so a comment or line endings an editor added to it are no
+difference. Otherwise, and when the lock is missing, cannot be read or is of another `version`, `deploy` SHALL exit 1
+writing nothing and running no `apm`, naming each **Skill** that differs, or what else does, and `skill-graft resolve`
+to accept the change.
 
 #### Scenario: Nothing changed
 
 - **WHEN** the user runs `resolve`, then `deploy`
 - **THEN** `deploy` exits 0, and `skill-graft.lock` keeps its bytes
+
+#### Scenario: Lock reformatted by an editor
+
+- **WHEN** after `resolve` the user adds a comment line to `skill-graft.lock` and converts its line endings to CRLF,
+  then runs `deploy`
+- **THEN** `deploy` exits 0, and `skill-graft.lock` is rewritten as skill-graft writes it: the comment gone, its line
+  endings LF
 
 #### Scenario: Config edited by hand
 
@@ -175,15 +183,16 @@ SHALL exit 1 writing nothing and running no `apm`, naming each **Skill** that di
 
 When the only differences from the lock are the text of **Skills** of path **Sources** that have no **Patches** and the
 paths path **Sources** are recorded at, `deploy` SHALL vendor and deploy them, write the new hashes and paths into
-`skill-graft.lock`, and once it is written print a notice naming each such **Skill**. Any change to the **Hull**'s shape
-SHALL be refused as "Deploy what the lock records" says, whatever **Source** caused it, and so SHALL a changed path
-**Source** **Skill** with **Patches**.
+`skill-graft.lock`, and once it is written print a notice per such **Skill**,
+`<skill id> changed in its path source since skill-graft.lock: deployed as is`. Any change to the **Hull**'s shape SHALL
+be refused as "Deploy what the lock records" says, whatever **Source** caused it, and so SHALL a changed path **Source**
+**Skill** with **Patches**.
 
 #### Scenario: Own skill edited
 
 - **WHEN** after `resolve` the user edits the text of `own/chisel`, in a path **Source**, and runs `deploy`
-- **THEN** a notice names `own/chisel`, `.apm/skills/chisel/` holds the new text, the lock records its new hash, and
-  `deploy` exits 0
+- **THEN** stderr holds `own/chisel changed in its path source since skill-graft.lock: deployed as is`,
+  `.apm/skills/chisel/` holds the new text, the lock records its new hash, and `deploy` exits 0
 
 #### Scenario: No notice when the lock write fails
 
