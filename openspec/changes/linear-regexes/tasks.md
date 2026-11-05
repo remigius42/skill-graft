@@ -34,7 +34,7 @@ with the archive commit.
 
 ## 3. The mutation harness (`mutation/`, `tests/test_mutation.py`)
 
-- [ ] 3.1 `operators.py`: the tokenizer, and `pythonpath = ["."]` in `[tool.pytest.ini_options]` so tests import
+- [x] 3.1 `operators.py`: the tokenizer, and `pythonpath = ["."]` in `[tool.pytest.ini_options]` so tests import
   `mutation`; verify tests split escapes, classes with a leading `]` or `^`, group openers, lookarounds, quantifiers
   with lazy and possessive suffixes and `{m,n}`, and alternation, and join back to the original text for every target
   pattern
