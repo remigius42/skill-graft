@@ -10,7 +10,8 @@ from skill_graft.infra import paths
 from skill_graft.infra.errors import SkillGraftError
 
 # A YAML comment in `apm.yml`: `#` after whitespace, to the end of the line.
-COMMENT = re.compile(r"\s+#.*$")
+# Tried only where a run of whitespace starts, and no `$`: linear in the text.
+COMMENT = re.compile(r"(?<!\s)\s+#.*")
 
 MISSING = "APM is not installed: no `apm` on PATH"
 

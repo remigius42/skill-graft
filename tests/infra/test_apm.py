@@ -1,3 +1,4 @@
+import time
 from pathlib import Path
 
 from conftest import FakeApm
@@ -25,3 +26,14 @@ def test_install_registers_a_project_package_in_its_root(
     assert fake_apm.calls == [["install", "./.apm/skill-graft"]]
     assert fake_apm.working_folders == [str(scope.root)]
     assert apm.registered(scope)
+
+
+def test_long_run_of_whitespace_in_an_item_scans_at_once(tmp_path: Path) -> None:
+    scope = project(tmp_path)
+    scope.manifest.write_text("dependencies:\n  - a" + " " * 100_000 + "b\n")
+
+    start = time.perf_counter()
+    found = apm.registered(scope)
+
+    assert time.perf_counter() - start < 1
+    assert not found

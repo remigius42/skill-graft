@@ -9,7 +9,7 @@ with the archive commit.
   `name:` of `a`, 100 000 spaces and `b` within a second as that whole value (red: the old pattern takes about 26 s), a
   test in `tests/commands/test_resolve.py` has `resolve` exit non-zero within seconds on that **Skill** as an **Entry**,
   and the existing comment and quote tests still pass (skill-discovery, "Long run of whitespace")
-- [ ] 1.2 `apm.COMMENT` the same; verify a test in `tests/infra/test_apm.py` over an `apm.yml` line `- a`, 100 000
+- [x] 1.2 `apm.COMMENT` the same; verify a test in `tests/infra/test_apm.py` over an `apm.yml` line `- a`, 100 000
   spaces, `b` (an inner run: the scan strips a line's ends before the pattern) finishes within a second, red before the
   fix, and the existing `apm.yml` scan tests pass
 
