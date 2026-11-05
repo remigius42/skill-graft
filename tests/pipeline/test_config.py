@@ -180,6 +180,53 @@ def test_git_source_with_branch_and_ref_loads(scope: paths.Scope) -> None:
     }
 
 
+def test_digit_only_refs_load(scope: paths.Scope) -> None:
+    write_config(
+        f'[sources.a]\ngit = "/srv/a"\nref = "{"0" * 40}"\n'
+        f'[sources.b]\ngit = "/srv/b"\nref = "{"0" * 64}"\n'
+    )
+
+    sources = config.load(scope).sources
+
+    assert sources["a"] == config.GitSource("/srv/a", None, "0" * 40)
+    assert sources["b"] == config.GitSource("/srv/b", None, "0" * 64)
+
+
+@pytest.mark.parametrize(
+    "url",
+    [
+        "https://",
+        "a/b@example.com:me/s.git",
+        "a b@example.com:me/s.git",
+        "a/b:c",
+        ":h:p",
+        "example.com:",
+    ],
+)
+def test_git_url_of_no_form_is_refused(scope: paths.Scope, url: str) -> None:
+    write_config(f'[sources.mp]\ngit = "{url}"\n')
+
+    with pytest.raises(SkillGraftError, match="'sources.mp.git'"):
+        config.load(scope)
+
+
+def test_alias_and_subdirectory_take_every_name_character(
+    scope: paths.Scope, home: Path
+) -> None:
+    (home / "a").mkdir()
+    folders = "Aa/0a/_a/-a/aA/a./a_"
+    write_config(
+        '[sources.Aa]\npath = "~/a"\n[sources.0a]\npath = "~/a"\n'
+        '[sources.aA]\npath = "~/a"\n[sources.a_]\npath = "~/a"\n'
+        f'[sources.mp]\ngit = "/srv/s"\nsubdirectory = "{folders}"\n'
+    )
+
+    loaded = config.load(scope).sources
+
+    assert sorted(loaded) == ["0a", "Aa", "aA", "a_", "mp"]
+    assert loaded["mp"] == config.GitSource("/srv/s", None, None, folders)
+
+
 def test_uppercase_ref_is_rejected(capsys: Capsys) -> None:
     write_config(f'[sources.mp]\ngit = "/srv/s"\nref = "{SHA1.upper()}"\n')
 

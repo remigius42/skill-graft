@@ -151,6 +151,15 @@ def test_comment_and_quotes(home: Path, capsys: Capsys, line: str) -> None:
     assert vendored() == {"tdd"}
 
 
+@pytest.mark.parametrize(
+    ("line", "name"), [("name: tdd #", "tdd"), ("name: a#b", "a#b")]
+)
+def test_comment_needs_whitespace_before_it(home: Path, line: str, name: str) -> None:
+    skill(home / "x", f"---\n{line}\n---\n")
+
+    assert discovery.read_name(home / "x") == name
+
+
 @pytest.mark.linear_time
 def test_long_run_of_whitespace_in_a_name_reads_at_once(home: Path) -> None:
     name = "a" + " " * 100_000 + "b"

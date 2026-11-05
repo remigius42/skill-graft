@@ -644,6 +644,7 @@ def test_why_names_a_remote_sources_upstream_folder(
         ("file:///srv/github.com/o/r", None),
         ("/srv/github.com/o/r", None),
         ("user:tok@github.com:o/r", None),
+        ("@github.com:o/r", None),
         ("https://git\thub.com/o/r", None),
         ("https://github.com/o/r//", None),
         ("https://github.com/o/r?", None),
