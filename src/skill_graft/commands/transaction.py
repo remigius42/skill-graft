@@ -2,6 +2,7 @@
 command that writes the lock does it; and loads the config, for every command,
 writing or not."""
 
+import os
 from collections.abc import Callable, Generator
 from contextlib import contextmanager
 from dataclasses import dataclass, field
@@ -79,6 +80,34 @@ def check_copies(skills: Path, locked: dict[str, Any] | None) -> None:
             *(f"  {problem}" for problem in problems),
             "move an edit into a patch, or delete the folder to vendor it again",
         )
+
+
+def check_into(into: Path) -> None:
+    """Refuses an `--into` folder `deploy` could not use without harm: anything but an
+    existing, empty folder, or one in a package or in or around the cache."""
+    if not into.exists():
+        raise SkillGraftError(f"--into {into}: no such folder")
+    if not into.is_dir():
+        raise SkillGraftError(f"--into {into}: not a folder")
+    if any(into.iterdir()):
+        raise SkillGraftError(f"--into {into}: not empty")
+    resolved = paths.folded(into.resolve())
+    # As given too, but without `..`: a path only passing through a package is fine.
+    given = paths.folded(Path(os.path.normpath(into.absolute())))
+    if any(paths.in_package(p) for p in (given, resolved)):
+        raise SkillGraftError(f"--into {into}: inside a package (.apm/skill-graft)")
+    if paths.overlap(resolved, paths.folded(cache := paths.cache().resolve())):
+        raise SkillGraftError(f"--into {into}: overlaps the cache {cache}")
+
+
+def check_into_sources(into: Path, loaded: config.Config) -> None:
+    """Refuses an `--into` folder inside a path source, compared resolved."""
+    folded = paths.folded(into.resolve())
+    for alias, source in sorted(loaded.sources.items()):
+        if isinstance(source, config.PathSource) and folded.is_relative_to(
+            paths.folded(source.folder)
+        ):
+            raise SkillGraftError(f"--into {into}: inside source {alias!r}")
 
 
 def _machine_specific(

@@ -4,7 +4,7 @@ Test-first: each task's test fails before its code, then passes. One commit per 
 
 ## 1. `vet --into`
 
-- [ ] 1.1 Move `deploy`'s `_check_into` and `_check_into_sources` to `commands/transaction.py` as `check_into` and
+- [x] 1.1 Move `deploy`'s `_check_into` and `_check_into_sources` to `commands/transaction.py` as `check_into` and
   `check_into_sources`, `deploy.py` calling them there; verify `uv run pytest tests/commands/test_deploy.py` and
   `lint-imports` pass
 - [ ] 1.2 `vet --into <dir>`: checked as `deploy --into`'s folder, each vetted **Skill** written to

@@ -1,7 +1,6 @@
 """Vendors the hull into the package, writes the lock, and has APM deploy it."""
 
 import contextlib
-import os
 import shutil
 import tomllib
 from pathlib import Path
@@ -21,7 +20,7 @@ def deploy(
     cache = Cache.default()
     if given is not None:
         notice(f"into: {given.absolute()}")
-        _check_into(given)
+        transaction.check_into(given)
     into = None if given is None else given.resolve()
     skills = scope.skills if into is None else into / ".apm" / "skills"
     lock_file = None if into is None else into / "skill-graft.lock"
@@ -30,7 +29,7 @@ def deploy(
     try:
         loaded = transaction.load(scope, warnings)
         if given is not None:
-            _check_into_sources(given, loaded)
+            transaction.check_into_sources(given, loaded)
         recorded = lock.load(scope.lock_file)  # the package's, for `--into` too
         path_aliases = config.path_aliases(loaded)
 
@@ -72,34 +71,6 @@ def deploy(
         explain.announce_suggestions(resolved)
         if not no_apm_install:
             apm.install(scope)
-
-
-def _check_into(into: Path) -> None:
-    """Refuses an `--into` folder `deploy` could not use without harm: anything but an
-    existing, empty folder, or one in a package or in or around the cache."""
-    if not into.exists():
-        raise SkillGraftError(f"--into {into}: no such folder")
-    if not into.is_dir():
-        raise SkillGraftError(f"--into {into}: not a folder")
-    if any(into.iterdir()):
-        raise SkillGraftError(f"--into {into}: not empty")
-    resolved = paths.folded(into.resolve())
-    # As given too, but without `..`: a path only passing through a package is fine.
-    given = paths.folded(Path(os.path.normpath(into.absolute())))
-    if any(paths.in_package(p) for p in (given, resolved)):
-        raise SkillGraftError(f"--into {into}: inside a package (.apm/skill-graft)")
-    if paths.overlap(resolved, paths.folded(cache := paths.cache().resolve())):
-        raise SkillGraftError(f"--into {into}: overlaps the cache {cache}")
-
-
-def _check_into_sources(into: Path, loaded: config.Config) -> None:
-    """Refuses an `--into` folder inside a path source, compared resolved."""
-    folded = paths.folded(into.resolve())
-    for alias, source in sorted(loaded.sources.items()):
-        if isinstance(source, config.PathSource) and folded.is_relative_to(
-            paths.folded(source.folder)
-        ):
-            raise SkillGraftError(f"--into {into}: inside source {alias!r}")
 
 
 def _undo_into(into: Path) -> None:
