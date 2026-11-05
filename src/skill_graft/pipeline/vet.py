@@ -155,6 +155,10 @@ _PATTERNS: dict[str, str | Callable[[str], bool]] = {
         r"\bwithout\s+asking\b|\b(?:do\s+not|don[’']?t)\s+(?:ask|tell|mention)\b"
         r"|\bsilently\b|\bquietly\b"
     ),
+    # Base64's alphabet holds hexadecimal's.
+    "unreviewable.encoded-blob": r"[A-Za-z0-9+/]{200}",
+    # Too long to read, as minified code is.
+    "unreviewable.long-line": r"^.{1001}",
 }
 _COMPILED: list[tuple[str, Callable[[str], object]]] = [
     (name, re.compile(test, re.IGNORECASE).search if isinstance(test, str) else test)

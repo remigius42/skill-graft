@@ -1,5 +1,6 @@
 """The `vet` spec's patterns: one skill's deployed files in, its flags out."""
 
+import base64
 import time
 
 import pytest
@@ -432,3 +433,26 @@ def test_shebang_on_line_1() -> None:
 
     assert ("tool", 1, "run.shebang") in found
     assert ("tool", 3, "run.shebang") not in found
+
+
+def test_encoded_blob() -> None:
+    blob = base64.b64encode(bytes(range(256)) * 2)[:400].decode()
+    text = "\n" * 11 + f"data = '{blob}'\n"
+
+    assert ("tool.py", 12, "unreviewable.encoded-blob") in flags(text, "tool.py")
+
+
+def test_hexadecimal_blob() -> None:
+    assert "unreviewable.encoded-blob" in patterns("0123456789abcdef" * 13)
+
+
+def test_short_run_is_no_blob() -> None:
+    assert "unreviewable.encoded-blob" not in patterns("A" * 199 + " " + "A" * 199)
+
+
+def test_long_line() -> None:
+    assert patterns("word " * 200 + "x") == {"unreviewable.long-line"}
+
+
+def test_line_of_1000_characters() -> None:
+    assert patterns("word " * 200) == set()

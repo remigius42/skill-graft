@@ -21,7 +21,7 @@ Test-first: each task's test fails before its code, then passes. One commit per 
   "Agent config" and a hit and a near miss per pattern pass
 - [x] 2.6 `permission` patterns and `SKILL.md` front matter (`allowed-tools`, `hooks`); verify "Tool grant", "Not
   asking", and that `allowed-tools` outside front matter or in another file is no `permission.tool-grant`
-- [ ] 2.7 `unreviewable.long-line` and `unreviewable.encoded-blob`; verify "Encoded blob" and a 199-character run left
+- [x] 2.7 `unreviewable.long-line` and `unreviewable.encoded-blob`; verify "Encoded blob" and a 199-character run left
   alone
 
 ## 3. The command (`commands/vet.py`, `cli.py`)
