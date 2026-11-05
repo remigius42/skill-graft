@@ -22,6 +22,7 @@ words:
   - CLAUDECODE
   - cntrl
   - Codeberg
+  - collectreport
   - commitlint
   - conftest
   - contextvars
@@ -43,6 +44,7 @@ words:
   - ELOOP
   - Errno
   - evals
+  - exitstatus
   - expanduser
   - fcntl
   - fileno
@@ -79,6 +81,7 @@ words:
   - kiro
   - linecap
   - linejoin
+  - logreport
   - lookarounds
   - mailx
   - mattpocock
@@ -97,6 +100,7 @@ words:
   - netrc
   - noatime
   - NOCTTY
+  - nodeid
   - NONBLOCK
   - noopener
   - normpath
@@ -151,6 +155,7 @@ words:
   - scandir
   - schtasks
   - sdist
+  - sessionfinish
   - setattr
   - setgid
   - setuid

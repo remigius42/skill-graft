@@ -2,13 +2,18 @@
 verdict. The harness itself never runs in hooks or CI; these tests do."""
 
 import importlib
+import json
+import os
 import pkgutil
 import re
+import subprocess
+import sys
+from pathlib import Path
 
 import pytest
 
 import skill_graft
-from mutation import operators
+from mutation import operators, plugin, targets
 
 
 def texts(pattern: str) -> list[str]:
@@ -153,3 +158,95 @@ def test_mutant_keeps_the_original_flags() -> None:
 
     assert mutant.compile().flags & re.IGNORECASE
     assert mutant.compile().fullmatch("")
+
+
+ROOT = Path(__file__).parents[1]
+
+
+def run_plugin(
+    tmp_path: Path, source: str, target: str | None = None, text: str = ""
+) -> dict[str, object]:
+    """The plugin's report of pytest run on `source`, with `text` patched in as
+    `target`'s mutant, or nothing patched."""
+    probe = tmp_path / "test_probe.py"
+    probe.write_text(source)
+    report = tmp_path / "report.json"
+    env = {**os.environ, plugin.REPORT: str(report)}
+    env.pop(plugin.MUTANT, None)
+    if target is not None:
+        env[plugin.MUTANT] = json.dumps({"target": target, "text": text})
+    command = [sys.executable, "-m", "pytest", "-q", "-p", "mutation.plugin"]
+    command += ["-p", "no:cacheprovider", str(probe)]
+    subprocess.run(command, cwd=ROOT, env=env, capture_output=True, check=False)
+    result: dict[str, object] = json.loads(report.read_text())
+    return result
+
+
+NAME_PROBE = """\
+from skill_graft.pipeline import config, discovery
+
+def test_dot():
+    assert discovery.NAME.fullmatch("a.b")
+
+def test_same_object():
+    assert discovery.NAME is config.NAME
+"""
+
+
+def test_plugin_patches_a_pattern_under_every_name(tmp_path: Path) -> None:
+    dropped_dot = "[A-Za-z0-9][A-Za-z0-9_-]*"
+
+    assert run_plugin(tmp_path, NAME_PROBE)["failed"] == []
+    assert run_plugin(tmp_path, NAME_PROBE, "config.NAME", dropped_dot) == {
+        "failed": ["test_probe.py::test_dot"],
+        "timing_only": False,
+    }
+
+
+WEB_TOOL_PROBE = """\
+from skill_graft.pipeline import vet
+
+def test_web_fetch():
+    assert "send.web-tool" in vet._line("use WebFetch")
+"""
+
+
+def test_plugin_patches_a_vet_pattern(tmp_path: Path) -> None:
+    target = "vet._PATTERNS:send.web-tool"
+
+    assert run_plugin(tmp_path, WEB_TOOL_PROBE)["failed"] == []
+    assert run_plugin(tmp_path, WEB_TOOL_PROBE, target, r"\bWeb(?:Search)\b") == {
+        "failed": ["test_probe.py::test_web_fetch"],
+        "timing_only": False,
+    }
+
+
+TIMING_PROBE = """\
+import pytest
+from skill_graft.pipeline import config
+
+@pytest.mark.linear_time
+def test_timed():
+    assert config.NAME.fullmatch("a.b")
+"""
+
+
+def test_plugin_tells_a_kill_by_timing_tests_alone(tmp_path: Path) -> None:
+    report = run_plugin(tmp_path, TIMING_PROBE, "config.NAME", "[A-Za-z0-9]*")
+
+    assert report == {"failed": ["test_probe.py::test_timed"], "timing_only": True}
+
+
+def test_every_target_resolves() -> None:
+    for target in targets.TARGETS:
+        assert isinstance(targets.resolve(target.name), re.Pattern), target.name
+        assert all((ROOT / extra).is_file() for extra in target.extra), target.name
+
+
+def test_targets_are_the_security_relevant_patterns() -> None:
+    names = {target.name for target in targets.TARGETS}
+
+    assert {"discovery.COMMENT", "config.NAME", "config.SCP"} <= names
+    assert {"references.REFERENCE", "vet._TOKEN", "text.CRITICAL_CHARS"} <= names
+    assert {"vet._PATTERNS:send.url", "hidden.WARNING_CHARS"} <= names
+    assert not names & {"config.COUNT", "patch.HUNK", "apm.COMMENT", "discovery.NAME"}

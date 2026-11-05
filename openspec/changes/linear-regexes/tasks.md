@@ -42,7 +42,7 @@ with the archive commit.
   possessive and atomic), each mutant with its operator and offset, those that do not compile, unchanged and repeated
   ones dropped; verify a test per operator on a small pattern, and `{3,4}` giving `{2,4}`, `{4,4}`, `{3,3}`, `{3,5}` and
   `{3,}`
-- [ ] 3.3 `targets.py` and `plugin.py`: the security-relevant targets, with extra test files where the layers miss a use
+- [x] 3.3 `targets.py` and `plugin.py`: the security-relevant targets, with extra test files where the layers miss a use
   (`deployed`'s for `CRITICAL_CHARS` and `WARNING_CHARS`, `tests/cli/test_vet_corpus.py` for `vet`'s); the mutant
   patched in at `pytest_configure` on every `skill_graft` module attribute bound to the original, a `_PATTERNS:` target
   by replacing its `_COMPILED` tuple with the mutant's `search`, with the original's flags; the failed tests and whether
