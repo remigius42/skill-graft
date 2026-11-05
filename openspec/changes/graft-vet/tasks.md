@@ -51,7 +51,7 @@ Test-first: each task's test fails before its code, then passes. One commit per 
 
 ## 4. Eval (`evals/graft-vet/`)
 
-- [ ] 4.1 `run.sh` and `README.md`, the `injected` scenario as the design describes; verify `bash -n` and `shellcheck`
+- [x] 4.1 `run.sh` and `README.md`, the `injected` scenario as the design describes; verify `bash -n` and `shellcheck`
   pass and `run.sh` without a token stops before building anything. Do not run the scenario
 - [ ] 4.2 `evals/graft-vet/corpus.py`: the corpus, its labels and records, `write` and `score`;
   `tests/cli/test_vet_corpus.py` running `vet` over it; verify "An evasion stays on record", "The scan changes" (a
