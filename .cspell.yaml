@@ -54,6 +54,7 @@ words:
   - findall
   - finditer
   - followlinks
+  - foogrilling
   - frontmatter
   - fsdecode
   - fsencode
