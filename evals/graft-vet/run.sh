@@ -20,15 +20,20 @@ repo="$(cd "$(dirname "$0")/../.." && pwd)"
 skill_graft="$repo/.venv/bin/skill-graft"
 python="$repo/.venv/bin/python"
 corpus_py="$repo/evals/graft-vet/corpus.py"
+
+# CORPUS_SKILLS="<name>…": only those corpus skills, and their payloads' twins.
+# Checked first, by the venv's Python or else any python3: corpus.py needs only the
+# standard library, so a name is refused even where the venv lies elsewhere.
+read -ra corpus_skills <<< "${CORPUS_SKILLS:-}"
+if [[ " ${selected[*]} " == *" corpus "* && ${#corpus_skills[@]} -gt 0 ]]; then
+  checker="$python"
+  [[ -x "$checker" ]] || checker=python3
+  "$checker" -I "$corpus_py" check "${corpus_skills[@]}" || exit 2
+fi
+
 if [[ ! -x "$skill_graft" ]]; then
   echo "run.sh: $skill_graft is missing; run \`uv sync\` in $repo" >&2
   exit 2
-fi
-
-# CORPUS_SKILLS="<name>…": only those corpus skills, and their payloads' twins.
-read -ra corpus_skills <<< "${CORPUS_SKILLS:-}"
-if [[ " ${selected[*]} " == *" corpus "* && ${#corpus_skills[@]} -gt 0 ]]; then
-  "$python" -I "$corpus_py" check "${corpus_skills[@]}" || exit 2
 fi
 
 if [[ -z "${CLAUDE_CODE_OAUTH_TOKEN:-}" && -z "${ANTHROPIC_API_KEY:-}" ]]; then

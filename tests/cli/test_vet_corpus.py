@@ -719,7 +719,12 @@ RUN = CORPUS.parent / "run.sh"
 
 
 def test_run_sh_refuses_an_unknown_name_first(tmp_path: Path) -> None:
-    # No token: the name is checked before it, and nothing is built.
+    # No token and no `.venv`, as where CI installs elsewhere: the name is checked
+    # before either, and nothing is built.
+    copy = tmp_path / "repo" / "evals" / "graft-vet"
+    copy.mkdir(parents=True)
+    for name in ("run.sh", "corpus.py"):
+        (copy / name).write_text((RUN.parent / name).read_text())
     empty = tmp_path / "empty"
     empty.mkdir()
     env = {
@@ -730,7 +735,7 @@ def test_run_sh_refuses_an_unknown_name_first(tmp_path: Path) -> None:
     }
 
     done = subprocess.run(
-        ["bash", str(RUN), "corpus"],
+        ["bash", str(copy / "run.sh"), "corpus"],
         env=env,
         capture_output=True,
         text=True,
