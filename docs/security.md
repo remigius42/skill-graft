@@ -132,7 +132,10 @@ file: their file names are the **Skill** authors' words. You open the report fil
 
 Unhardened, `graft-vet` is the scan alone, and reads no **Skill** text in its session, without asking. Every report ends
 with fixed caveats. `evals/graft-vet/` scores the readers against a labelled corpus of synthetic **Skills**, obvious,
-evasive, injected and harmless; a test keeps the scan's record of the same corpus, its known misses included.
+evasive, injected and harmless; a test keeps the scan's record of the same corpus, its known misses included. Some of
+its **Skills** attack what the readers rely on: that they read every file, that a payload sits on one line, that the
+steering count notices a reader talked out of a place, that line 0 cannot silence it, and that a reply's cap costs a
+flood only its tail.
 
 ## Residual risks
 
