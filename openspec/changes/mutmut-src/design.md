@@ -81,13 +81,16 @@ line holding a message often holds logic too.
 
 ### An equivalent mutant: a pragma with its reason
 
-`# pragma: no mutate, <reason>` on the line: mutmut reads the first word after `no mutate` (`block`, `start`, `end`,
-else a bare line pragma), so the reason follows a comma. The pragma goes on the statement's first line, and its reason
-is short enough that the line stays within ruff's 88 columns: ruff counts a `# pragma:` comment, and a statement it
-splits keeps the pragma on one line only, as mutmut reads it, and the rest stay mutated. Inline keeps the reason next to
-the code, where a reader of the line sees it, and survives line moves; a list like `equivalent.toml` needs a wrapper to
-check it, and mutmut names mutants by function and number, which shift with every edit. A pragma silences every mutant
-on its line, so it goes on the narrowest line, sparingly: a reviewer reads each.
+A bare `# pragma: no mutate` on the line, its reason in a comment above, `# Equivalent mutants: <reason>`. ruff counts a
+`# pragma:` comment toward its 88 columns, and wraps a statement it pushes past them: the pragma then sits on the
+closing line, where mutmut does not read it for the mutated expression. Task 2.1 found a reason on the line itself,
+after a comma, pushed most lines past 88; the bare pragma, 21 characters, fits all but two. A line that cannot take it
+sits in a `# pragma: no mutate start, <reason>` … `# pragma: no mutate end` region, each on its own line, the `end`
+before the next statement of the same block: mutmut scans a module's top level before the functions' bodies, so a region
+cannot end outside the block it starts in. Next to the code, the reason is where a reader of the line sees it, and
+survives line moves; a list like `equivalent.toml` needs a wrapper to check it, and mutmut names mutants by function and
+number, which shift with every edit. A pragma silences every mutant on its line, so it goes on the narrowest line,
+sparingly: a reviewer reads each.
 
 ### Killing `pipeline/` survivors
 

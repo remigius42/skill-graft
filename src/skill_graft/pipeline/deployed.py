@@ -183,8 +183,10 @@ def _file_diff(
         out.append(f"deleted file mode {_mode(before[1])}\n")
     elif before is not None and after is not None and before[1] != after[1]:
         out += [f"old mode {_mode(before[1])}\n", f"new mode {_mode(after[1])}\n"]
+    # pragma: no mutate start, an encoding is read with both sides only
     a, old_encoding = _lines(path, before[0]) if before else ([], "")
     b, new_encoding = _lines(path, after[0]) if after else ([], "")
+    # pragma: no mutate end
     notes = []
     if before and after and old_encoding != new_encoding:
         notes.append(f"read as {old_encoding}, now as {new_encoding}")
@@ -235,7 +237,8 @@ def _lines(path: str, data: bytes) -> tuple[list[str], str]:
 
 def _raw(data: bytes) -> str:
     """`data` as lenient UTF-8, each byte that cannot be decoded kept apart."""
-    return data.decode("utf-8", errors="surrogateescape")
+    # Equivalent mutants: UTF-8 is the default, and a codec's name has no case.
+    return data.decode("utf-8", errors="surrogateescape")  # pragma: no mutate
 
 
 def _split(text: str) -> list[str]:
@@ -246,7 +249,8 @@ def _split(text: str) -> list[str]:
 
 def _blocks(a: list[str], b: list[str], too_big: bool, budget: Budget) -> list[_Block]:
     """The changed blocks from `a` to `b`, in order."""
-    whole = [(0, len(a), 0, len(b))] if a or b else []
+    # Equivalent mutants: with both sides empty it is never returned.
+    whole = [(0, len(a), 0, len(b))] if a or b else []  # pragma: no mutate
     if too_big:
         return whole
     codes: dict[str, int] = {}  # one step to compare two lines, whatever their length
@@ -286,12 +290,17 @@ def _myers(a: list[int], b: list[int], budget: Budget) -> str:
     left = budget.left
     trace: list[array[int]] = []
     try:
-        for d in range(n + m + 1):
-            if 2 * d + 1 > left:
+        # Equivalent mutants: it returns by D = n + m.
+        for d in range(n + m + 1):  # pragma: no mutate
+            # Equivalent mutants: a step's unit, within a fixed budget.
+            if 2 * d + 1 > left:  # pragma: no mutate
                 raise _Overrun
             left -= 2 * d + 1
-            row = array("i", [-1]) * (2 * d + 1)
-            for k in range(-d, d + 1, 2):
+            # Equivalent mutants: any negative marks a diagonal not reached; a longer
+            # row is unused.
+            row = array("i", [-1]) * (2 * d + 1)  # pragma: no mutate
+            # Equivalent mutants: `d + 2` gives the same k.
+            for k in range(-d, d + 1, 2):  # pragma: no mutate
                 if not left:
                     raise _Overrun
                 left -= 1
@@ -303,11 +312,14 @@ def _myers(a: list[int], b: list[int], budget: Budget) -> str:
                 s = 0
                 while s < stop and a[x + s] == b[x - k + s]:
                     s += 1
-                left -= min(s + 1, stop)
+                # Equivalent mutants: a step's unit, within a fixed budget.
+                left -= min(s + 1, stop)  # pragma: no mutate
                 if s == stop < room:
                     raise _Overrun
                 row[k + d] = x + s
-                if x + s == n and x + s - k == m:
+                # Equivalent mutants: the last lines differ, as `_blocks` trims
+                # them, so s is 0 here.
+                if x + s == n and x + s - k == m:  # pragma: no mutate
                     trace.append(row)
                     return _backtrack(trace, n, m)
             trace.append(row)
@@ -322,12 +334,17 @@ def _start(last: "array[int]", d: int, k: int, n: int, m: int) -> tuple[int, boo
 
     -1 when neither does. `last` holds D - 1's diagonals, -1 for one not reached.
     """
-    down = last[k + d] if k != d else -1
+    # Equivalent mutants: any negative does, here and below.
+    down = last[k + d] if k != d else -1  # pragma: no mutate
     if down - k > m:
-        down = -1
+        # Equivalent mutants: any negative does.
+        down = -1  # pragma: no mutate
+    # pragma: no mutate start, any negative does
     right = last[k + d - 2] + 1 if k != -d and last[k + d - 2] >= 0 else -1
+    # pragma: no mutate end
     if right > n:
-        right = -1
+        # Equivalent mutants: any negative does.
+        right = -1  # pragma: no mutate
     return (down, True) if down >= right else (right, False)
 
 
@@ -339,10 +356,12 @@ def _backtrack(trace: "list[array[int]]", n: int, m: int) -> str:
         k = x - y
         start, down = _start(trace[d - 1], d, k, n, m)
         ops += "=" * (x - start)
-        ops.append("+" if down else "-")
+        # Equivalent mutants: ops are counted, so a longer one counts alike.
+        ops.append("+" if down else "-")  # pragma: no mutate
         x = start if down else start - 1
         y = x - (k + 1 if down else k - 1)
-    ops += "=" * x
+    # Equivalent mutants: the first lines differ, as `_blocks` trims them: x is 0.
+    ops += "=" * x  # pragma: no mutate
     return "".join(reversed(ops))
 
 
@@ -394,8 +413,11 @@ def _escape_char(match: re.Match[str]) -> str:
     if char == "\\":
         return "\\\\"
     code = ord(char)
-    if 0xDC80 <= code <= 0xDCFF:  # a byte that cannot be decoded, 0x80 or above
+    # A byte that cannot be decoded, 0x80 or above. Equivalent mutants: nothing
+    # escaped is U+DD00.
+    if 0xDC80 <= code <= 0xDCFF:  # pragma: no mutate
         return f"\\x{code - 0xDC00:02x}"
     if code < 0x80:  # so `\x80` and up are bytes, `\u0080` and up characters
         return f"\\x{code:02x}"
-    return f"\\u{code:04x}" if code <= 0xFFFF else f"\\U{code:08x}"
+    # Equivalent mutants: nothing escaped is U+FFFF or U+10000.
+    return f"\\u{code:04x}" if code <= 0xFFFF else f"\\U{code:08x}"  # pragma: no mutate

@@ -211,6 +211,14 @@ BEFORE = "".join(f"{i} line\n" for i in range(1, 41)).encode()
         BEFORE.replace(b"3 line\n", b"3 x\n").replace(b"7 line\n", b"7 y\n"),
         BEFORE[:-1],
         b"0 first\n" + BEFORE + b"41 last",
+        # Six unchanged lines between two changes: one hunk; seven: two.
+        BEFORE.replace(b"\n3 line\n", b"\n3 x\n").replace(b"10 line\n", b"10 y\n"),
+        BEFORE.replace(b"\n3 line\n", b"\n3 x\n").replace(b"11 line\n", b"11 y\n"),
+        # Gaps counted on the old side, from the end of the change before.
+        BEFORE.replace(b"\n3 line\n", b"\n3 x\n").replace(b"10 line\n11 line\n", b""),
+        BEFORE.replace(b"\n3 line\n4 line\n5 line\n6 line\n", b"\n3 x\n").replace(
+            b"12 line\n", b"12 y\n"
+        ),
     ],
 )
 def test_hunks_as_git_has_them(tmp_path: Path, after: bytes) -> None:
@@ -614,3 +622,188 @@ def test_format_character_escaped() -> None:
     lines = diff_of("SKILL.md", b"# ab\n", f"# a{char}b\n".encode())
 
     assert "+# a\\u180eb" in lines
+
+
+def test_walk_sorts_by_path_bytes(tmp_path: Path) -> None:
+    folder = skill(tmp_path / "tdd", "# tdd\n")
+    (folder / "a-b").write_text("x\n")
+    (folder / "a").mkdir()
+    (folder / "a" / "b").write_text("x\n")
+
+    paths = [path for path, _, _ in deployed.walk(folder, {})]
+
+    assert paths == ["SKILL.md", "a-b", "a/b"]  # `-` is 0x2d, `/` 0x2f
+
+
+def test_changed_sorts_by_path_bytes() -> None:
+    new = {"\u0080": (b"x", False), "\udc80": (b"x", False)}
+
+    # U+0080 is the bytes c2 80, a stray 0x80 byte (U+DC80 as read) is 80 alone.
+    assert deployed.changed({}, new) == ["\udc80", "\u0080"]
+
+
+def test_summary_removed_then_changed() -> None:
+    old = {"a.md": (b"x", False), "b.md": (b"x", False)}
+    new = {"b.md": (b"yy", False)}
+
+    assert deployed.summary(old, new) == [
+        "a.md (removed)",
+        "b.md (changed, 1 -> 2 bytes)",
+    ]
+
+
+def test_summary_twenty_files_in_full() -> None:
+    new = {f"f{i:02}.md": (b"x", False) for i in range(20)}
+
+    lines = deployed.summary({}, new)
+
+    assert len(lines) == 20
+    assert lines[-1] == "f19.md (new, 1 bytes)"
+
+
+def test_quote_printable_ascii_edges() -> None:
+    assert deployed.quote("!") == "!"
+    assert deployed.quote("~") == "~"
+    assert deployed.quote("a\x7f") == '"a\\177"'
+
+
+def test_diff_of_two_files() -> None:
+    old = {"a.md": (b"1\n", False), "b.md": (b"1\n", False)}
+    new = {"a.md": (b"2\n", False), "b.md": (b"2\n", False)}
+
+    text = deployed.diff(old, new, deployed.Budget())
+
+    one = "--- a/{0}\n+++ b/{0}\n@@ -1 +1 @@\n-1\n+2\n"
+    assert text == (
+        "diff --git a/a.md b/a.md\n"
+        + one.format("a.md")
+        + "diff --git a/b.md b/b.md\n"
+        + one.format("b.md")
+    )
+
+
+def test_executable_removed_and_made_plain() -> None:
+    removed = ours((b"x\n", True), None)
+    plain = ours((b"x\n", True), (b"y\n", False))
+
+    assert removed[1] == "deleted file mode 100755"
+    assert plain[1:3] == ["old mode 100755", "new mode 100644"]
+
+
+def test_file_of_one_megabyte_diffed_by_line() -> None:
+    before = b"a\n" * 500_000  # 1 000 000 bytes: at the limit, not past it
+
+    lines = ours((before, False), (b"z\n" + before[2:], False))
+
+    assert hunks(lines) == ["@@ -1,4 +1,4 @@", "-a", "+z", " a", " a", " a", ""]
+
+
+def test_new_file_past_one_megabyte_shown_added() -> None:
+    lines = ours(None, (b"a\n" * 600_000, False))
+
+    body = hunks(lines)
+    assert body[0] == "@@ -0,0 +1,600000 @@"
+    assert len(body) == 600_002
+
+
+def test_escapable_character_without_backslash_no_note() -> None:
+    lines = diff_of("run.sh", b"a\n", b"a\x1b\n")
+
+    assert lines[0] == "diff --git a/run.sh b/run.sh"
+    assert NOTE not in lines
+
+
+def test_escape_doubles_backslash_beside_an_escape() -> None:
+    assert deployed.escape(["\\x1b \x1b\n"]) == ["\\\\x1b \\x1b\\x0a"]
+
+
+@pytest.mark.parametrize("path", ["SKILL.md", "README.MD"])
+def test_markdown_not_read_as_utf16(path: str) -> None:
+    lines = diff_of(path, b"", "a\n".encode("utf-16"))
+
+    assert "+\\xff\\xfe" + "a\\x00" in lines  # the byte order mark, then UTF-16LE
+
+
+def test_c1_control_shown_as_character() -> None:
+    lines = diff_of("notes.txt", b"", "a\u0080\n".encode())
+
+    assert "+a\\u0080" in lines
+
+
+def test_lines_only_added_need_no_budget() -> None:
+    new = {"f": (BEFORE.replace(b"\n5 line\n", b"\n5 line\nnew\n"), False)}
+
+    text = deployed.diff({"f": (BEFORE, False)}, new, deployed.Budget(0))
+
+    assert hunks(text.split("\n"))[0] == "@@ -3,6 +3,7 @@"
+
+
+def test_tie_between_two_shortest_diffs_as_git_breaks_it(tmp_path: Path) -> None:
+    before, after = b"a\nb\n", b"b\nb\nb\nb\na\n"
+
+    expected = git_diff(tmp_path, (before, False), (after, False))
+
+    assert hunks(ours((before, False), (after, False))) == hunks(expected)
+
+
+def test_steps_of_one_changed_line() -> None:
+    budget = deployed.Budget()
+
+    deployed.diff({"f": (b"x\n", False)}, {"f": (b"y\n", False)}, budget)
+
+    # D = 0, 1, 2: 1 + 3 + 5 entries kept, 1 + 2 + 2 diagonals tried, 1 pair compared.
+    assert 10**7 - budget.left == 15
+
+
+def lcs(a: list[str], b: list[str]) -> int:
+    """The longest common subsequence's length, by the textbook table."""
+    row = [0] * (len(b) + 1)
+    for x in a:
+        prev = row[:]
+        for j, y in enumerate(b):
+            row[j + 1] = prev[j] + 1 if x == y else max(row[j], prev[j + 1])
+    return row[-1]
+
+
+def applied(a: list[str], text: str) -> list[str]:
+    """`a` with the hunks of `text` applied, each line checked against `a`."""
+    out: list[str] = []
+    i = 0
+    for hunk in text.split("@@ -")[1:]:
+        header, *body = hunk.split("\n")
+        start = int(header.split(" ")[0].split(",")[0])
+        start = start - 1 if start else 0
+        out += a[i:start]
+        i = start
+        for line in body:
+            if line[:1] in (" ", "-"):
+                assert a[i] == line[1:] + "\n", (a, text)
+                i += 1
+            if line[:1] in (" ", "+"):
+                out.append(line[1:] + "\n")
+    return out + a[i:]
+
+
+def test_diff_shortest_and_within_an_exact_budget() -> None:
+    r = random.Random(3)
+    for _ in range(400):
+        a = [r.choice("abc") + "\n" for _ in range(r.randrange(13))]
+        b = [r.choice("abc") + "\n" for _ in range(r.randrange(13))]
+        if a == b:
+            continue
+        old = {"f": ("".join(a).encode(), False)}
+        new = {"f": ("".join(b).encode(), False)}
+        budget = deployed.Budget()
+
+        text = deployed.diff(old, new, budget)
+
+        assert applied(a, text) == b, (a, b, text)
+        edits = [line for line in hunks(text.split("\n")) if line[:1] in ("+", "-")]
+        assert len(edits) == len(a) + len(b) - 2 * lcs(a, b), (a, b, text)
+        used = 10**7 - budget.left
+        exact = deployed.Budget(used)
+        assert deployed.diff(old, new, exact) == text, (a, b)
+        assert exact.left == 0, (a, b)
+        if used:
+            short = deployed.diff(old, new, deployed.Budget(used - 1))
+            assert short == deployed.diff(old, new, deployed.Budget(0)), (a, b)

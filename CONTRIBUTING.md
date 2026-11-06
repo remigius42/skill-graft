@@ -99,10 +99,11 @@ rerun skips functions that did not change. It forks, so it runs on Linux and mac
 the survivors, `uv run mutmut show <mutant>` prints one's diff. It never fails a build: read the survivors after
 changing a module, and kill each with a test in the module's test file. Two kinds are known noise, not gaps: a message's
 wording (help texts sit in a `# pragma: no mutate start` … `end` region around `cli._parser`), and a change mypy would
-refuse, which the hooks keep from landing. A mutant that cannot change behavior gets `# pragma: no mutate, <reason>` on
-the first line of its statement, short enough that the line stays within 88 columns; it silences every mutant on that
-line, so use it sparingly. The `linear_time` tests are left out: their wall-clock limit misses under load, and the regex
-harness times them.
+refuse, which the hooks keep from landing. A mutant that cannot change behavior gets a bare `# pragma: no mutate` on its
+line, and `# Equivalent mutants: <reason>` in a comment above; a line the pragma would push past 88 columns, which ruff
+would wrap, sits in a `# pragma: no mutate start, <reason>` … `# pragma: no mutate end` region instead, the `end` before
+the next statement of the same block. Either silences every mutant on its lines, so use it sparingly. The `linear_time`
+tests are left out: their wall-clock limit misses under load, and the regex harness times them.
 
 ## Evals
 
