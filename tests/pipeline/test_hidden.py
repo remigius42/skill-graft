@@ -191,3 +191,35 @@ def test_patch_with_a_nul_and_a_bad_byte(tmp_path: Path) -> None:
     found, _ = hidden.scan_patch("p.patch", data)
 
     assert found == ["p.patch:2: U+202E (bidi control)"]
+
+
+def test_files_after_markdown_not_utf8_scanned(tmp_path: Path) -> None:
+    folder = skill(tmp_path / "tdd", "# tdd\n")
+    (folder / "a.md").write_bytes(b"\xff\n")
+    (folder / "b.md").write_text("\N{RIGHT-TO-LEFT OVERRIDE}\n")
+
+    found, _ = hidden.scan(folder)
+
+    assert found == [
+        "a.md: not UTF-8, so its references cannot be read",
+        "b.md:1: U+202E (bidi control)",
+    ]
+
+
+def test_warning_per_file(tmp_path: Path) -> None:
+    folder = skill(tmp_path / "tdd", "a\N{ZERO WIDTH SPACE}\n")
+    (folder / "b.md").write_text("b\N{ZERO WIDTH SPACE}\n")
+
+    _, warnings = hidden.scan(folder)
+
+    assert sorted(warnings) == [
+        "SKILL.md:1: 1 invisible character, the first U+200B",
+        "b.md:1: 1 invisible character, the first U+200B",
+    ]
+
+
+def test_utf32_named_as_its_codec_is() -> None:
+    assert hidden.decode_as("a\n".encode("utf-32"), False, "strict") == (
+        "a\n",
+        "UTF-32",
+    )

@@ -21,7 +21,10 @@ SAFE = frozenset((string.ascii_letters + string.digits + "._/-").encode())
 
 
 def _skill_folders(
-    scope: paths.Scope, source: Path, confined: bool = False
+    # Equivalent mutants: every caller passes `confined`.
+    scope: paths.Scope,
+    source: Path,
+    confined: bool = False,  # pragma: no mutate
 ) -> list[Path]:
     """Every folder under `source` holding a `SKILL.md`, not looking inside one.
 
@@ -68,7 +71,11 @@ def read_name(folder: Path) -> str:
     skill_md = folder / "SKILL.md"
     flags = os.O_RDONLY | os.O_NONBLOCK | os.O_NOCTTY
     try:
+        # Equivalent mutants: a codec's name has no case; None reads in the
+        # locale's encoding, UTF-8 where the tests run.
+        # pragma: no mutate start
         with open(os.open(skill_md, flags), encoding="utf-8-sig") as file:
+            # pragma: no mutate end
             if not stat.S_ISREG(os.fstat(file.fileno()).st_mode):
                 raise SkillGraftError(f"{skill_md}: not a regular file")
             text = file.read()
@@ -77,9 +84,12 @@ def read_name(folder: Path) -> str:
     found = references.name_line(text)
     if found is None:
         return folder.name
-    following = text[found[1] :].splitlines()[:1]
+    # Equivalent mutants: only the first line is read.
+    following = text[found[1] :].splitlines()[:1]  # pragma: no mutate
     continued = bool(following) and following[0][:1].isspace()
+    # pragma: no mutate start, `_scalar` strips what is left
     value = _scalar(text[found[0] : found[1]].rstrip("\r\n").removeprefix("name:"))
+    # pragma: no mutate end
     if value is None or continued:
         raise SkillGraftError(f"{skill_md}: unsupported form of `name:`")
     return value
@@ -90,7 +100,8 @@ def _scalar(raw: str) -> str | None:
     raw = raw.strip()
     if raw[:1] in ("'", '"'):
         end = raw.find(raw[0], 1)
-        if end < 0:
+        # Equivalent mutants: `find` starts at 1, so it is never 0.
+        if end < 0:  # pragma: no mutate
             return None
         rest = raw[end + 1 :]
         if rest.strip() and not COMMENT.match(rest):

@@ -160,6 +160,30 @@ def test_comment_needs_whitespace_before_it(home: Path, line: str, name: str) ->
     assert discovery.read_name(home / "x") == name
 
 
+@pytest.mark.parametrize(
+    ("line", "name"),
+    [("name: skillX", "skillX"), ("name: Xray", "Xray"), ('name: "a" # "b"', "a")],
+)
+def test_name_read_whole(home: Path, line: str, name: str) -> None:
+    skill(home / "x", f"---\n{line}\n---\n")
+
+    assert discovery.read_name(home / "x") == name
+
+
+def test_empty_quoted_name_reads_empty(home: Path) -> None:
+    skill(home / "x", '---\nname: ""\n---\n')
+
+    assert discovery.read_name(home / "x") == ""  # one path segment it is not
+
+
+@pytest.mark.parametrize("text", ["---\nname: |\n---\n", "---\nname: a\n b\n---\n"])
+def test_unsupported_name_refused(home: Path, text: str) -> None:
+    skill(home / "x", text)
+
+    with pytest.raises(SkillGraftError, match="unsupported form of `name:`"):
+        discovery.read_name(home / "x")
+
+
 @pytest.mark.linear_time
 def test_long_run_of_whitespace_in_a_name_reads_at_once(home: Path) -> None:
     name = "a" + " " * 100_000 + "b"
