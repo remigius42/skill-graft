@@ -266,6 +266,9 @@ HITS = [
     ("privilege.world-writable", "chmod 'o+w' x"),
     ("privilege.world-writable", "chmod 77 x"),
     ("privilege.world-writable", "chmod 7 x"),
+    ("privilege.world-writable", "chmod u+x,o+w x"),
+    ("privilege.setuid", "chmod a+s x"),
+    ("read.outside-path", "cat a 2>&1~/notes"),
     ("privilege.world-writable", "chmod 2 x"),
     ("privilege.setuid", "chmod u+s x"),
     ("privilege.setuid", "chmod g+s x"),
@@ -355,6 +358,8 @@ MISSES = [
     ("privilege.setuid", "chmod 755 notes-2024.md"),
     ("privilege.setuid", "chmod u-s x"),
     ("privilege.setuid", "chmod o+s x"),
+    ("privilege.setuid", "chmod 1755 x"),
+    ("run.destructive", "rm --force x"),
     ("privilege.chown-root", "chown alice x"),
     ("persistence.agent-config", "ask Claude"),
     ("persistence.agent-config", "read CLAUDE.mdx"),
@@ -402,10 +407,37 @@ def test_hooks_in_front_matter() -> None:
         ("SKILL.md", "\n---\nallowed-tools: Bash(*)\nhooks: x\n---\n"),
         ("SKILL.md", "---\nmetadata:\n  allowed-tools: x\n  hooks: x\n---\n"),
         ("references/x.md", "---\nallowed-tools: Bash(*)\nhooks: x\n---\n"),
+        ("SKILL.md", "X---\nhooks: x\n---\n"),
+        ("SKILL.md", "---\nhooks: x\n"),  # never closed
     ],
 )
 def test_no_front_matter_key(name: str, text: str) -> None:
     assert flags(text, name) == set()
+
+
+def test_key_first_in_front_matter() -> None:
+    assert flags("---\nhooks: x\n---\n") == {("SKILL.md", 2, "persistence.hooks")}
+
+
+def test_front_matter_with_crlf_line_ends() -> None:
+    text = "---\r\nhooks: x\r\n---\r\n"
+
+    assert flags(text) == {("SKILL.md", 2, "persistence.hooks")}
+
+
+def test_markdown_in_utf16_binary_whatever_its_case() -> None:
+    view = {"NOTES.MD": ("plain\n".encode("utf-16"), False)}
+
+    assert vet.scan(view) == [vet.Flag("NOTES.MD", 0, "unreviewable.binary")]
+
+
+def test_files_after_a_binary_one_scanned() -> None:
+    view = {"a.bin": (b"\0\xff", False), "b.md": (b"sudo x\n", False)}
+
+    assert vet.scan(view) == [
+        vet.Flag("a.bin", 0, "unreviewable.binary"),
+        vet.Flag("b.md", 1, "privilege.sudo"),
+    ]
 
 
 @pytest.mark.parametrize(("pattern", "line"), HITS)

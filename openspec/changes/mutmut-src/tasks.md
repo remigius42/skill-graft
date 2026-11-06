@@ -31,7 +31,7 @@ Verify per task: the module's rerun leaves only those two kinds of survivor, and
 - [x] 2.1 `deployed` (74)
 - [x] 2.2 `references` (34)
 - [x] 2.3 `lock` (31)
-- [ ] 2.4 `vet` (30)
+- [x] 2.4 `vet` (30)
 - [ ] 2.5 `config` (27)
 - [ ] 2.6 `discovery` (20) and `hidden` (14)
 - [ ] 2.7 `patch` (16) and `rename` (8)
