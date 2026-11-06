@@ -18,5 +18,5 @@
 | [CONTRIBUTING.md](../CONTRIBUTING.md)                         | setup, the change workflow, checks, mutation testing, evals and releasing                             |
 | [evals/graft-check/README.md](../evals/graft-check/README.md) | the opt-in evals of graft-check                                                                       |
 | [evals/graft-vet/README.md](../evals/graft-vet/README.md)     | the opt-in evals of graft-vet, and how to read and compare its corpus scores                          |
-| [mutation/](../mutation/)                                     | the opt-in mutation harness of the security-relevant regexes                                          |
+| [mutation/](../mutation/)                                     | the opt-in mutation harness of the security-relevant regexes; mutmut, for the rest, in CONTRIBUTING   |
 | [AGENTS.md](../AGENTS.md)                                     | the rules for commits, code and tests                                                                 |

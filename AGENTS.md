@@ -47,3 +47,5 @@ rest.
 - `evals/` runs agents headless: opt-in, billed in tokens, never in hooks or CI. Run one only when asked.
 - `mutation/` (`uv run python -m mutation`) mutates the security-relevant regexes: opt-in, never in hooks or CI. Run it
   after changing a pattern it targets.
+- mutmut (`uv run mutmut run "skill_graft.<layer>.<module>*"`) mutates the rest: opt-in, never in hooks or CI, reports
+  only. After changing a module, kill its new survivors with tests, as CONTRIBUTING.md's Mutation testing says.

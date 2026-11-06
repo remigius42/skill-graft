@@ -15,7 +15,7 @@ before it passes on the code. Survivor counts are the spike's.
   fails or costs more than the mutants it removes, drop it and record why in `design.md`
 - [x] 1.2 `# pragma: no mutate start` and `end` around `def _parser` in `cli.py`; verify a rerun of
   `skill_graft.cli.x__parser*` reports no mutants of it, and `uv run pytest` passes
-- [ ] 1.3 `CONTRIBUTING.md`'s Mutation testing section: which harness covers what, how to run mutmut (all, one module by
+- [x] 1.3 `CONTRIBUTING.md`'s Mutation testing section: which harness covers what, how to run mutmut (all, one module by
   glob, `mutmut results`, `mutmut show`), opt-in, about two hours, Linux and macOS only, never a gate; equivalent
   mutants as `# pragma: no mutate, <reason>`; message wording and mutants mypy refuses as known noise. A line in
   `AGENTS.md`'s Tests section, a row in `docs/README.md`, new words in `.cspell.yaml`; verify the markdown and cspell

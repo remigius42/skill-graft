@@ -76,6 +76,11 @@ during that commit, which has overwritten the index of a worktree with the hook'
 
 ## Mutation testing
 
+Two harnesses, both opt-in, so no hook or CI job runs either: `mutation/` mutates the tokens of the security-relevant
+regexes and fails on a survivor; mutmut mutates the rest of `src/skill_graft/` and only reports.
+
+### The regex harness
+
 `uv run python -m mutation [target…]`, from the repository root, mutates each security-relevant regex: the **Vet**'s,
 **Reference** finding, the `name:` comment, `skill-graft.toml` names and URLs, the **Hidden character** classes
 ([mutation/targets.py](mutation/targets.py)). For each mutant, one token changed, it runs the tests of the modules
@@ -84,6 +89,20 @@ holding the pattern, on one process per CPU, and exits 1 on a mutant no test kil
 one that no longer survives or exists. It is opt-in and takes minutes, so no hook or CI job runs it; run it after
 changing a target pattern, then kill each survivor with a test in its module's test file, or list it. With no target it
 runs them all; a target is named as in `targets.py`, such as `config.NAME` or `vet._PATTERNS:send.url`.
+
+### mutmut
+
+`uv run mutmut run`, from the repository root, mutates every function in `src/skill_graft/` (`[tool.mutmut]` in
+`pyproject.toml`) and runs the tests that reach each mutant, in a copy of the repository in `mutants/`. A full run takes
+about two hours; `uv run mutmut run "skill_graft.pipeline.lock*"` runs one module's mutants in a few minutes, and a
+rerun skips functions that did not change. It forks, so it runs on Linux and macOS only. `uv run mutmut results` lists
+the survivors, `uv run mutmut show <mutant>` prints one's diff. It never fails a build: read the survivors after
+changing a module, and kill each with a test in the module's test file. Two kinds are known noise, not gaps: a message's
+wording (help texts sit in a `# pragma: no mutate start` … `end` region around `cli._parser`), and a change mypy would
+refuse, which the hooks keep from landing. A mutant that cannot change behavior gets `# pragma: no mutate, <reason>` on
+the first line of its statement, short enough that the line stays within 88 columns; it silences every mutant on that
+line, so use it sparingly. The `linear_time` tests are left out: their wall-clock limit misses under load, and the regex
+harness times them.
 
 ## Evals
 
