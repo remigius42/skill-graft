@@ -22,7 +22,7 @@ their labels, decided by design.md's rule, before any eval run of them; their re
 
 ## 2. Score and compare
 
-- [ ] 2.1 `score <report> <skill folder> <transcript> <claude version> <model>`: per **Skill** the fixed key–value line
+- [x] 2.1 `score <report> <skill folder> <transcript> <claude version> <model>`: per **Skill** the fixed key–value line
   of design.md (payloads by `reader` on a core place in one of their categories, `scan-only`, `missed`, triggers and
   injections flagged, `noise`, `line-0`, a `whole` place matched at line 0, `held`, `steered`, `unknown`, `no-reply`
   over twinned payloads, `status` last); per kind sums, `flood`'s and `line-zero`'s noise left out; `corpus`, `skill`,
