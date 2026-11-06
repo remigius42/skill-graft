@@ -7,6 +7,16 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 
 ## [Unreleased]
 
+### Changed
+
+- `/graft-vet`'s readers flag each line that speaks to them as a reviewer, telling them what to reply or flag or that
+  the **Skill** is safe, as `permission`: the report file now shows that a **Skill** tries to talk its reviewer out of a
+  **Flag**, where readers used to ignore such text without a word
+- `/graft-vet`'s readers no longer flag a link named for you to read as `send`; a line that has the agent fetch it still
+  is
+- `/graft-vet`'s steering count no longer counts a place of the scan whose line the reader flagged in another category:
+  a reader that disagrees on the category has not been talked into silence
+
 ## [0.4.1] - 2026-11-06
 
 ### Added
