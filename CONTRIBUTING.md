@@ -92,6 +92,12 @@ synthetic packages and greps its reports. It is opt-in and costs tokens, so no h
 skill changes. It needs `CLAUDE_CODE_OAUTH_TOKEN` (from `claude setup-token`) or `ANTHROPIC_API_KEY`. Scenarios and
 checks: [evals/graft-check/README.md](evals/graft-check/README.md).
 
+`evals/graft-vet/run.sh [scenario…]` does the same for the `graft-vet` skill, with the same token and opt-in. Its
+`corpus` scenario vets a labelled corpus of synthetic skills and prints a score per skill and kind; run it when the
+skill or the corpus changes, and compare runs before and after. `CORPUS_SKILLS="<name>…"` runs a few skills only,
+`GRAFT_VET_SCORES=<dir>` keeps each score, and `evals/graft-vet/corpus.py compare` sums kept scores scored against the
+same corpus and skill. Labels, the score and how to read it: [evals/graft-vet/README.md](evals/graft-vet/README.md).
+
 ## Releasing
 
 A release turns `CHANGELOG.md`'s `[Unreleased]` into a version, tagged `v<version>`, uploaded to PyPI and published as a
