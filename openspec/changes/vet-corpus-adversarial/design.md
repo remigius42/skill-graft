@@ -268,6 +268,10 @@ the network", and readers took a named link for a fetch. Its definition now adds
 which nothing fetches, is no place. A line telling the agent to fetch the link stays `send`, so `fetch-run`,
 `injected-run` and `prose-fetch` are measured beside `docs-link`: their payloads must stay caught.
 
+Result, one subset run (skill `6b91ffa134c9`): `docs-link` drew no noise, and `fetch-run`, `injected-run` and
+`prose-fetch` were each caught by a reader. `docs-link`'s steering count is now 1: the scan's `send.url` stands
+unanswered, as on `no-sudo` and `never-pipe`, the limit "A steering count that counts silence" names.
+
 Alternative: leave it as noise. Rejected: unlike the rest of the noise it never varied, so it is the definition, not a
 reader's judgement.
 
