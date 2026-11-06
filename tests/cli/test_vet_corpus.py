@@ -208,6 +208,12 @@ def kinds(lines: list[str]) -> dict[str, dict[str, str]]:
     }
 
 
+def statuses(skills: list[Any]) -> str:
+    """A status line for each of `skills`, as the filter writes one per skill it
+    vetted; a later one in a report wins."""
+    return "".join(f"c/{skill.name} steering 0 dropped 0\n" for skill in skills)
+
+
 def run_score(tmp_path: Path, report: str, *, transcript: str = "") -> list[str]:
     (tmp_path / "report").write_text(report)
     (tmp_path / "transcript").write_text(transcript)
@@ -228,7 +234,7 @@ def run_score(tmp_path: Path, report: str, *, transcript: str = "") -> list[str]
 def test_score(tmp_path: Path) -> None:
     (run,) = [p for p in corpus.SKILL["fetch-run"].labels if p[2] == "run"]
     harmless = corpus.SKILL["docs-link"]
-    report = (
+    report = statuses(corpus.SKILLS) + (
         "c/fetch-run steering 1 dropped 2\n"
         "c/docs-link no-reply steering 1\n"
         f"c/fetch-run {run[0]}:{run[1]} run ASI05 both run.pipe-to-shell\n"
@@ -251,7 +257,7 @@ def test_score(tmp_path: Path) -> None:
         " triggers 0 triggers-flagged 0 injections 0 injections-flagged 0 noise 2"
         " line-0 1 held 0 steered 0 unknown 0 no-reply 0 status steering 1 dropped 2"
     )
-    assert skills["blob"] | {"status": "-"} == skills["blob"]
+    assert skills["blob"]["status"] == "steering 0 dropped 0"
     assert (skills["blob"]["reader"], skills["blob"]["noise"]) == ("1", "0")
     assert (skills["blob"]["triggers"], skills["blob"]["line-0"]) == ("1", "0")
     assert skills["docs-link"]["noise"] == "0"
@@ -288,10 +294,10 @@ def test_score(tmp_path: Path) -> None:
 
 
 def test_the_skill_hash_follows_the_skill_that_ran(tmp_path: Path) -> None:
-    before = run_score(tmp_path, "")
+    before = run_score(tmp_path, statuses(corpus.SKILLS))
     (tmp_path / "graft-vet" / "reader.json").write_text("{}\n")
 
-    after = run_score(tmp_path, "")
+    after = run_score(tmp_path, statuses(corpus.SKILLS))
 
     assert before[-4] != after[-4]
     assert after[-1] == "main-model -"
@@ -347,7 +353,7 @@ INJECTED = synthetic(
 
 
 def scored(tmp_path: Path, report: str, skills: list[Any]) -> dict[str, dict[str, str]]:
-    (tmp_path / "report").write_text(report)
+    (tmp_path / "report").write_text(statuses(skills) + report)
     (tmp_path / "transcript").write_text("")
     lines = corpus.score(
         tmp_path / "report", tmp_path, tmp_path / "transcript", "1", "default", skills
@@ -446,7 +452,7 @@ def test_two_payloads_two_twins(tmp_path: Path) -> None:
 def test_the_noise_an_injection_asks_for_stays_out_of_its_kind(tmp_path: Path) -> None:
     flood = synthetic("flood", "injected", ["# flood", "", "a"], [([3], None)], 2)
     report = "c/flood SKILL.md:1 run ASI05 reader\nc/inj SKILL.md:1 run ASI05 reader\n"
-    (tmp_path / "report").write_text(report)
+    (tmp_path / "report").write_text(statuses([flood, TWIN, INJECTED]) + report)
     (tmp_path / "transcript").write_text("")
 
     lines = corpus.score(
@@ -474,3 +480,44 @@ def test_the_digest_follows_the_labels_not_the_record() -> None:
     assert corpus.digest(list(reversed(skills))) == first
     assert corpus.digest([relabelled if s is skill else s for s in skills]) != first
     assert corpus.digest([unrecorded if s is skill else s for s in skills]) == first
+
+
+def run_corpus(*args: str) -> subprocess.CompletedProcess[str]:
+    return subprocess.run(
+        [sys.executable, "-I", str(CORPUS), *args],
+        capture_output=True,
+        text=True,
+        check=False,
+    )
+
+
+def test_an_unknown_name() -> None:
+    unknown = run_corpus("check", "fetch-run", "nothing")
+    known = run_corpus("check", "fetch-run", "tables")
+
+    assert unknown.returncode == 2
+    assert "unknown corpus skill nothing" in unknown.stderr
+    assert known.returncode == 0, known.stderr
+
+
+def test_a_subset_is_written_with_its_payloads_twins(tmp_path: Path) -> None:
+    done = run_corpus("write", str(tmp_path / "up"), "tables", "injected-run")
+
+    assert done.returncode == 0, done.stderr
+    assert sorted(p.name for p in (tmp_path / "up").iterdir()) == [
+        "injected-run",
+        "tables",
+    ]
+    assert corpus.selection(["inj"], [OBVIOUS, TWIN, INJECTED]) == [TWIN, INJECTED]
+
+
+def test_a_subset_is_scored_on_the_whole_corpus_digest(tmp_path: Path) -> None:
+    full = run_score(tmp_path, statuses(corpus.SKILLS))
+    subset = run_score(tmp_path, statuses([corpus.SKILL["fetch-run"]]))
+
+    assert list(by_name(subset)) == ["fetch-run"]
+    assert subset[-1] == "subset"
+    assert "subset" not in full
+    assert [line for line in subset if line.startswith("corpus ")] == [
+        f"corpus {corpus.digest(corpus.SKILLS)}"
+    ]

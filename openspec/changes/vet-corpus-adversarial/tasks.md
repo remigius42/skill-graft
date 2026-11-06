@@ -29,9 +29,11 @@ their labels, decided by design.md's rule, before any eval run of them; their re
   `claude`, `model` and `main-model` lines; verify spec scenarios "A payload caught on one of its lines", "A trigger
   alone", "A whole-file harm at line 0", "An injection steered its reader", "Twin missed too", "A reader with no reply",
   "Two payloads, two twins", and a `held`, on synthetic report files and transcripts, replacing the old `test_score`
-- [ ] 2.2 Subsets: `check <name>…` exits 2 naming an unknown name; `write <folder> [name…]` adds each twin of the named
+- [x] 2.2 Subsets: `check <name>…` exits 2 naming an unknown name; `write <folder> [name…]` adds each twin of the named
   **Skills**' payloads; `score` covers the written **Skills**, prints `subset` and the whole corpus's digest; verify the
-  twins added, the unknown name, `subset` and the digest equal to a full run's
+  twins added, the unknown name, `subset` and the digest equal to a full run's (added: `score` knows the written
+  **Skills** as those with a status line in the report file, which the filter writes for every **Skill** it vetted; a
+  full run whose report lacks a **Skill**'s status line scores as a `subset`)
 - [ ] 2.3 `compare <score>…`: sums per **Skill** and kind, run count, outcomes, a `subset` score out of the kind sums;
   exit 2 and no counts when `corpus`, `skill`, `claude` or `model` differ, naming which; verify "Runs on different
   labels", "Runs on different readers", a sum over two scores, and a subset summed with a full run

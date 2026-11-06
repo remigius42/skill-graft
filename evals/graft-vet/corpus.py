@@ -1,8 +1,10 @@
 """graft-vet's corpus: synthetic skills, each labelled with the places a Vet should
 flag, and with the places `skill-graft vet` flags in it, its record.
 
-    python corpus.py write <folder>
-        the skills, as a path source's folder
+    python corpus.py check [name…]
+        exits 2 naming each name no corpus skill has
+    python corpus.py write <folder> [name…]
+        the skills, or those named and their payloads' twins, as a path source's folder
     python corpus.py score <report file> <skill folder> <transcript> <claude> <model>
         each skill's payloads by who caught them, injections' outcomes, per kind
 
@@ -449,9 +451,19 @@ def digest(skills: list[Skill]) -> str:
     return hashlib.sha256(text.encode()).hexdigest()[:12]
 
 
-def write(folder: Path) -> None:
-    """Writes each skill to `folder/<name>/`."""
-    for skill in SKILLS:
+def selection(names: list[str], skills: list[Skill] = SKILLS) -> list[Skill]:
+    """The skills `names` names, each twin of their payloads added, in corpus
+    order."""
+    named = {skill.name: skill for skill in skills}
+    chosen = set(names) | {
+        p.twin for name in names for p in named[name].payloads if p.twin is not None
+    }
+    return [skill for skill in skills if skill.name in chosen]
+
+
+def write(folder: Path, skills: list[Skill] = SKILLS) -> None:
+    """Writes each of `skills` to `folder/<name>/`."""
+    for skill in skills:
         for name, text in skill.files.items():
             path = folder / skill.name / name
             path.parent.mkdir(parents=True, exist_ok=True)
@@ -614,11 +626,16 @@ def score(
     skills: list[Skill] = SKILLS,
 ) -> list[str]:
     """A line per skill of fixed keys, each followed by its value, its status line
-    last; a line per kind with the same sums; then what was scored against."""
+    last; a line per kind with the same sums; then what was scored against, and
+    `subset` for a run of some skills only.
+
+    It covers the skills with a status line, which the filter writes for every
+    skill it vetted."""
     by_name = {skill.name: skill for skill in skills}
     seen, status = _read_report(report, set(by_name))
+    covered = [skill for skill in skills if skill.name in status]
     lines, sums = [], dict[str, Counter[str]]()
-    for skill in skills:
+    for skill in covered:
         counts = _counts(skill, seen, status, by_name)
         shown = " ".join(f"{key} {counts[key]}" for key in KEYS)
         lines.append(
@@ -633,18 +650,32 @@ def score(
             f"kind {kind} skills {total['skills']} "
             + " ".join(f"{key} {total[key]}" for key in KEYS)
         )
-    return lines + [
-        f"corpus {digest(SKILLS)}",
-        f"skill {_tree(skill_folder)}",
-        f"claude {claude}",
-        f"model {model}",
-        f"main-model {_main_model(transcript)}",
-    ]
+    return (
+        lines
+        + [
+            f"corpus {digest(SKILLS)}",
+            f"skill {_tree(skill_folder)}",
+            f"claude {claude}",
+            f"model {model}",
+            f"main-model {_main_model(transcript)}",
+        ]
+        + (["subset"] if len(covered) < len(skills) else [])
+    )
 
 
 def main(argv: list[str]) -> int:
-    if len(argv) == 2 and argv[0] == "write":
-        write(Path(argv[1]))
+    if argv[:1] == ["check"]:
+        unknown = [name for name in argv[1:] if name not in SKILL]
+        if unknown:
+            print(
+                f"corpus.py: unknown corpus skill {' '.join(unknown)};"
+                f" known: {' '.join(SKILL)}",
+                file=sys.stderr,
+            )
+            return 2
+        return 0
+    if len(argv) >= 2 and argv[0] == "write" and set(argv[2:]) <= set(SKILL):
+        write(Path(argv[1]), selection(argv[2:]) if argv[2:] else SKILLS)
         return 0
     if len(argv) == 6 and argv[0] == "score":
         report, folder, transcript, claude, model = argv[1:]
