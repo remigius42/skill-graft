@@ -31,6 +31,7 @@ words:
   - copystat
   - copytree
   - cowork
+  - darcs
   - dataclass
   - dataclasses
   - dataviz
@@ -212,3 +213,4 @@ words:
 ignorePaths:
   - .git
   - .claude
+  - mutants

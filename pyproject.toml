@@ -21,6 +21,8 @@ skill-graft = "skill_graft.cli:main"
 dev = [
   "apm-cli==0.35.0",
   "import-linter>=2.15",
+  # One minor version: its config keys moved within 3.x.
+  "mutmut>=3.8.1,<3.9",
   # The mypy hook's version, so `uv run mypy` works in any checkout, worktrees included.
   "mypy==2.4.1",
   "pre-commit",
@@ -68,6 +70,8 @@ max-doc-length = 88
 python_version = "3.11"
 strict = true
 mypy_path = ["src", "tests"]
+# mutmut's copy of the repository.
+exclude = ["^mutants/"]
 
 # For editors (Pylance, pyright); mypy above is the check pre-commit enforces. Standard, not strict: strict
 # flags every value read from parsed TOML, which is untyped.
@@ -78,9 +82,12 @@ reportDeprecated = "warning"
 venvPath = "."
 venv = ".venv"
 extraPaths = ["src", "tests"]
+exclude = ["mutants"]
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]
+# pytest's defaults, and mutmut's copy of the repository, for `pytest .` and editors.
+norecursedirs = ["*.egg", ".*", "_darcs", "build", "CVS", "dist", "node_modules", "venv", "{arch}", "mutants"]
 # `tests/test_mutation.py` imports the harness, `mutation/`, from the repository root.
 pythonpath = ["."]
 markers = [
@@ -88,6 +95,32 @@ markers = [
   "root_safe: takes the owner's rights away and passes as root too",
   "linear_time: times a regex over Upstream text on a pumped input against a fixed limit",
 ]
+
+# Opt-in, never in hooks or CI: `uv run mutmut run`, from the repository root (CONTRIBUTING.md).
+[tool.mutmut]
+source_paths = ["src/skill_graft/"]
+# What the tests read besides `src/`; directories and top-level files only, as mutmut
+# copies a file without creating its folder.
+also_copy = [
+  "mutation/",
+  "tests/",
+  "scripts/",
+  "evals/",
+  "skills/",
+  "docs/",
+  "openspec/",
+  ".github/",
+  "AGENTS.md",
+  "CHANGELOG.md",
+  "CONTEXT.md",
+  "CONTRIBUTING.md",
+  "README.md",
+  "SECURITY.md",
+  ".pre-commit-config.yaml",
+  "uv.lock",
+]
+# A one-second wall-clock limit misses under load; `mutation/` times the regexes.
+pytest_add_cli_args = ["-m", "not linear_time"]
 
 [tool.importlinter]
 root_package = "skill_graft"

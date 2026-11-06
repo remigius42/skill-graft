@@ -39,23 +39,20 @@ tests would kill shows as a survivor.
 ### mutmut's own CLI, configured in `pyproject.toml`
 
 `[tool.mutmut]`: `source_paths = ["src/skill_graft/"]` (`paths_to_mutate` is deprecated in 3.8), `also_copy` naming each
-repository path the tests read, `type_check_command` running mypy on the mutated tree, so a mutant mypy refuses counts
-as caught, and `pytest_add_cli_args = ["-m", "not linear_time"]`. mutmut runs pytest's `testpaths` itself; `tests_dir`
-is deprecated and not set. The `linear_time` tests hold a one-second wall-clock limit, which a busy fork can miss: a
-mutant would count as killed by load, or the run on the unchanged code would fail. They time regexes, which `mutation/`
-already mutates and times, alone. A wrapper module like `mutation/` would add an equivalent-mutant list and an exit
-code: neither is wanted while mutmut only reports. mutmut is pinned to a minor version in the `dev` group, as mypy is,
-since its config keys moved within 3.x.
+repository path the tests read, and `pytest_add_cli_args = ["-m", "not linear_time"]`. mutmut runs pytest's `testpaths`
+itself; `tests_dir` is deprecated and not set. The `linear_time` tests hold a one-second wall-clock limit, which a busy
+fork can miss: a mutant would count as killed by load, or the run on the unchanged code would fail. They time regexes,
+which `mutation/` already mutates and times, alone. A wrapper module like `mutation/` would add an equivalent-mutant
+list and an exit code: neither is wanted while mutmut only reports. mutmut is pinned to a minor version in the `dev`
+group, as mypy is, since its config keys moved within 3.x.
 
-`type_check_command`: `mypy --strict` already refuses many mutants (`None` for a `str` argument, `key=None` where a
-callable is required); counting them as caught keeps them out of the survivors, which is what the project's hooks would
-do to such a change anyway. mutmut parses the command's output as JSON and maps each error to a mutant, so the command
-is a list, run without a shell, `["mypy", "src/skill_graft", "--output", "json", "--no-warn-unused-ignores"]`: mutmut
-marks every line it generates `# type: ignore`, which strict mode's `warn_unused_ignores` reports outside any mutant,
-and mutmut then stops ("Could not find mutant for type error"). It checks the whole mutated tree on every run, before a
-glob narrows the mutants: task 1.1's glob run already meets every mutant's type errors, so an error mypy reports outside
-any mutant (a mutated value flowing into an unchanged caller) stops that run, not a later full one. If it proves slow,
-or fails so, it is dropped and recorded here.
+No `type_check_command`. It was meant to count a mutant `mypy --strict` refuses (`None` for a `str` argument) as caught,
+with `["mypy", "src/skill_graft", "--output", "json", "--no-warn-unused-ignores"]`: JSON is what mutmut parses, and
+mutmut marks its own lines `# type: ignore`. Task 1.1's first glob run stopped on it: a mutant in `lock.py` changed an
+inferred type, and mypy reported the error on a generated line outside any mutant ("Could not find mutant for type
+error", `lock.py:18601`). mutmut type-checks the whole tree before a glob narrows the mutants, so any such mutant
+anywhere stops every run. Mutants mypy would refuse stay among the survivors, as known noise like message wording: no
+pragma, which would silence the line's other mutants too.
 
 `also_copy` lists paths, not `.`: copying the whole checkout would copy `mutants/` and `.venv/` too. Directories and
 top-level files only: mutmut copies a file entry without creating its parent folder. A path the tests need and the list
@@ -106,16 +103,16 @@ committed results file would look current and be wrong after the next source edi
 
 ## Risks / Trade-offs
 
-- [Two hours per full run discourages running it] → per-module globs and mutmut's cache of unchanged functions make the
-  usual run, after a change to one module, take minutes.
+- [Two hours per full run discourages running it] → a per-module glob runs in about two minutes (`rename`, 122 s, most
+  of it the unchanged run and the test-to-function map mutmut builds first).
 - [A pragma hides a real gap] → one per line, with a reason, read in review; `block` only on `_parser`.
 - [mutmut's config moves again within 3.x] → pinned minor version; a key it no longer reads warns at start.
 - [A mutant only a subprocess test would kill shows as a survivor] → its triage finds the subprocess test and adds an
   in-process one, which the layer rule asks for anyway.
 - [Message noise hides a real survivor in the report] → the per-module triage reads every survivor's diff once; later
   runs compare against the baseline.
-- \[`type_check_command` counts as caught a mutant only mypy notices, not a test\] → the hooks run mypy on every commit,
-  so such a change can never land either.
+- [Survivors mypy would refuse inflate the report] → the triage counts them as noise: the hooks run mypy on every
+  commit, so such a change can never land.
 
 ## Migration Plan
 
