@@ -85,6 +85,11 @@ a trailing comment (whitespace then `#`) SHALL NOT change the name.
 - **WHEN** the front matter holds `name: >-` followed by an indented value
 - **THEN** a command that needs that skill exits non-zero naming the `SKILL.md`, rather than using the folder name
 
+#### Scenario: Long run of whitespace
+
+- **WHEN** the front matter holds `name: a`, 100 000 spaces, then `b`, and that **Skill** is an **Entry**
+- **THEN** `resolve` exits non-zero within seconds, as for any name that is not one path segment
+
 ### Requirement: Skill names are one path segment
 
 A name SHALL match `[A-Za-z0-9][A-Za-z0-9._-]*`. An **Entry** naming a **Skill** whose name does not SHALL be an error

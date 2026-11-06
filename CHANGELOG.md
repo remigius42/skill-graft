@@ -46,6 +46,10 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 
 ### Fixed
 
+- A **Skill** whose `name:` line holds a long run of whitespace no longer stalls every command that reads its
+  **Source**: the name reads at once, as a name that is not one path segment; a long `apm.yml` line likewise
+- `skill-graft vet` flags one- and two-digit world-writable `chmod` modes, such as `chmod 77` or `chmod 2`, as
+  `privilege` **Flags**, as it did three- and four-digit ones
 - graft-check's readers and patcher refuse to start when `$TMPDIR` is no folder, instead of taking any absolute path for
   a temporary one
 - A `~user` path naming no user, in a path **Source** or in `[patches]`, ends with an error naming the path, not a
