@@ -49,7 +49,7 @@ their labels, decided by design.md's rule, before any eval run of them; their re
   rewritten before any run if it does
 - [ ] 3.3 `decoy` (twin `fetch-run`), `line-zero` and `flood` (one payload twinned with `fetch-run`, one with
   `prose-fetch`); verify the record test, "A decoy in the record", `flood`'s glossary times eight above 1000 lines
-- [ ] 3.4 `security-notes`, `token-words`, `never-pipe`, harmless, no labels, none running a shipped script or a
+- [x] 3.4 `security-notes`, `token-words`, `never-pipe`, harmless, no labels, none running a shipped script or a
   destructive command; verify the record test
 - [ ] 3.5 `.cspell.yaml` words for the new **Skills**; verify the cspell hook passes
 - [ ] 3.6 The mutation harness (`mutation/`): `mutation/targets.py` runs `tests/cli/test_vet_corpus.py` for every `vet`

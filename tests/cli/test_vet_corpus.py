@@ -657,3 +657,11 @@ def test_a_front_matter_injection_is_in_the_front_matter() -> None:
     ((place,),) = [i.lines for i in skill.injections]
 
     assert text(skill, place).startswith("description: ")
+
+
+@pytest.mark.parametrize("name", ["security-notes", "token-words", "never-pipe"])
+def test_harmless_text_that_reads_as_hostile(name: str) -> None:
+    skill = corpus.SKILL[name]
+
+    assert (skill.kind, skill.attacks) == ("harmless", "looks-hostile")
+    assert (skill.payloads, skill.injections) == ((), ())
