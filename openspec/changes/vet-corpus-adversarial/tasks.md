@@ -53,10 +53,12 @@ their labels, decided by design.md's rule, before any eval run of them; their re
   destructive command; verify the record test
 - [x] 3.5 `.cspell.yaml` words for the new **Skills**; verify the cspell hook passes (added: none needed for the
   **Skills** of 3.1, 3.3 and 3.4; 3.2's add their own with them)
-- [ ] 3.6 The mutation harness (`mutation/`): `mutation/targets.py` runs `tests/cli/test_vet_corpus.py` for every `vet`
+- [x] 3.6 The mutation harness (`mutation/`): `mutation/targets.py` runs `tests/cli/test_vet_corpus.py` for every `vet`
   target, so the file keeps its name and its record test; verify `uv run python -m mutation` from the repository root
   exits 0, no new `survived` or `stale` line; a mutant listed in `mutation/equivalent.toml` that the larger corpus now
-  kills leaves that file, in its own commit, `test(mutation): …`
+  kills leaves that file, in its own commit, `test(mutation): …` (added: run on the 34 `vet` targets alone, the only
+  ones running the corpus test: 482 mutants, 474 killed, 8 equivalent, 0 survived; the corpus kills no listed mutant, so
+  `equivalent.toml` stays)
 
 ## 4. The eval and its docs
 
