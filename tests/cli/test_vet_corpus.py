@@ -6,6 +6,7 @@ import re
 import subprocess
 import sys
 from collections import defaultdict
+from dataclasses import replace
 from pathlib import Path
 from types import ModuleType
 from typing import Any
@@ -226,3 +227,17 @@ def test_score(tmp_path: Path) -> None:
     ) in lines
     total = len(corpus.SKILLS)
     assert lines[-1].startswith(f"total skills {total} labels ")
+
+
+def test_the_digest_follows_the_labels_not_the_record() -> None:
+    skills = list(corpus.SKILLS)
+    first = corpus.digest(skills)
+    skill = corpus.SKILL["fetch-run"]
+    (payload,) = skill.payloads
+    relabelled = replace(skill, payloads=(replace(payload, categories=("run",)),))
+    unrecorded = replace(skill, scan=frozenset())
+
+    assert re.fullmatch(r"[0-9a-f]{12}", first)
+    assert corpus.digest(list(reversed(skills))) == first
+    assert corpus.digest([relabelled if s is skill else s for s in skills]) != first
+    assert corpus.digest([unrecorded if s is skill else s for s in skills]) == first

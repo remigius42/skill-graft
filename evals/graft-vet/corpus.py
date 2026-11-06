@@ -32,9 +32,11 @@ rule. Labels are committed before any eval run of their skill; a label changed a
 a run is its own commit.
 """
 
+import hashlib
+import json
 import sys
 from collections import Counter
-from dataclasses import dataclass
+from dataclasses import asdict, dataclass
 from pathlib import Path
 
 CATEGORIES = (
@@ -421,6 +423,28 @@ SKILLS = [
     ),
 ]
 SKILL = {skill.name: skill for skill in SKILLS}
+
+
+def digest(skills: list[Skill]) -> str:
+    """The first 12 hex digits of SHA-256 over `skills`' names, kinds, attacks,
+    files, payloads and injections, sorted: what a score was scored against. The
+    record is left out, so a change to the scan does not split runs."""
+    labelled = sorted(
+        (
+            {
+                "name": s.name,
+                "kind": s.kind,
+                "attacks": s.attacks,
+                "files": s.files,
+                "payloads": [asdict(p) for p in s.payloads],
+                "injections": [asdict(i) for i in s.injections],
+            }
+            for s in skills
+        ),
+        key=lambda s: str(s["name"]),
+    )
+    text = json.dumps(labelled, sort_keys=True)
+    return hashlib.sha256(text.encode()).hexdigest()[:12]
 
 
 def write(folder: Path) -> None:

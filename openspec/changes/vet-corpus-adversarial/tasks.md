@@ -17,7 +17,7 @@ their labels, decided by design.md's rule, before any eval run of them; their re
   **Skill** has an injection; replace `test_an_injection_is_labelled_permission` by every injection line labelled
   `permission`, each marker of letters and spaces only, and every corpus line holding a marker a line of that
   injection's text
-- [ ] 1.2 The corpus digest: SHA-256 over the whole corpus, names, kinds, attacks, files, payloads with their twins and
+- [x] 1.2 The corpus digest: SHA-256 over the whole corpus, names, kinds, attacks, files, payloads with their twins and
   injections, record left out; verify it changes with a label and not with the record
 
 ## 2. Score and compare
