@@ -65,7 +65,7 @@ their labels, decided by design.md's rule, before any eval run of them; their re
   with the report file, the project's `graft-vet` folder, the transcript, `claude --version` and
   `${ANTHROPIC_MODEL:-default}`, written to `score` beside the report file, both paths printed; `GRAFT_VET_SCORES`
   copying score and report as `<date>-<digest>-*`; verify `shellcheck` and `bash -n` pass, and "An unknown name"
-- [ ] 4.2 `evals/graft-vet/README.md`: the new score line, payloads, triggers and injections, twins and outcomes,
+- [x] 4.2 `evals/graft-vet/README.md`: the new score line, payloads, triggers and injections, twins and outcomes,
   `compare` and what it refuses, changing nothing else between runs to compare, the label rule and that labels precede
   runs; verify markdown hooks pass
 - [ ] 4.3 `docs/security.md` (graft-vet): one sentence on the properties the corpus attacks; verify markdown hooks pass
