@@ -6,7 +6,7 @@ their labels, decided by design.md's rule, before any eval run of them; their re
 
 ## 1. Payloads, triggers, injections and twins (`evals/graft-vet/corpus.py`, `tests/cli/test_vet_corpus.py`)
 
-- [ ] 1.1 `Place` (with `whole`), `Payload` (categories, core, triggers, twin), `Injection` (marker), `Skill.payloads`,
+- [x] 1.1 `Place` (with `whole`), `Payload` (categories, core, triggers, twin), `Injection` (marker), `Skill.payloads`,
   `injections`, `attacks` (`-` for the existing), `labels` as each core place in each category, each trigger `run` and
   each injection `permission`; the existing **Skills** converted, one payload per harm (`quiet-step` two, upload `send`
   and keeping it from the user `permission`, no injection), `one-liner`'s "Run setup.sh" and `blob`'s "Decode" lines

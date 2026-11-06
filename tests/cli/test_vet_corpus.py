@@ -2,11 +2,13 @@
 its synthetic skills flags what their records say, and `score` reads a report file."""
 
 import importlib.util
+import re
 import subprocess
 import sys
 from collections import defaultdict
 from pathlib import Path
 from types import ModuleType
+from typing import Any
 
 import pytest
 from conftest import write_config
@@ -78,13 +80,104 @@ def test_every_kind_more_than_once() -> None:
         assert kinds.count(kind) >= 2, kind
 
 
-def test_an_injection_is_labelled_permission() -> None:
+def places(skill: Any) -> list[Any]:
+    """Every place of `skill`: core, trigger and injection line."""
+    return [
+        place for payload in skill.payloads for place in payload.core + payload.triggers
+    ] + [place for injection in skill.injections for place in injection.lines]
+
+
+def text(skill: Any, place: Any) -> str:
+    """The text of `skill`'s line at `place`."""
+    line: str = skill.files[place.file].split("\n")[place.line - 1]
+    return line
+
+
+def test_labels_follow_the_rule() -> None:
+    # Each core place in each of its payload's categories, each trigger `run`.
+    skill = corpus.SKILL["one-liner"]
+
+    assert skill.labels == {
+        ("setup.sh", 1, "run"),
+        ("setup.sh", 1, "unreviewable"),
+        ("SKILL.md", 3, "run"),
+    }
+    assert skill.attacks == "-"
+
+
+def test_a_skill_of_two_harms_holds_two_payloads() -> None:
+    skill = corpus.SKILL["quiet-step"]
+
+    assert sorted(p.categories for p in skill.payloads) == [("permission",), ("send",)]
+    assert skill.injections == ()
+
+
+def test_a_whole_file_harm_is_whole() -> None:
+    (payload,) = corpus.SKILL["blob"].payloads
+
+    assert [(p.file, p.line, p.whole) for p in payload.core] == [("data.txt", 1, True)]
+    assert [(p.file, p.whole) for p in payload.triggers] == [("SKILL.md", False)]
+
+
+def test_places_lie_within_their_files() -> None:
+    for skill in corpus.SKILLS:
+        for place in places(skill):
+            lines = skill.files[place.file].split("\n")
+            assert 1 <= place.line <= len(lines), (skill.name, place)
+
+
+def test_every_payload_has_a_core_place_and_a_category() -> None:
+    for skill in corpus.SKILLS:
+        for payload in skill.payloads:
+            assert payload.core, (skill.name, payload.name)
+            assert payload.categories, (skill.name, payload.name)
+            assert set(payload.categories) <= set(corpus.CATEGORIES)
+
+
+def test_a_twin_holds_its_payload_and_no_injection() -> None:
+    for skill in corpus.SKILLS:
+        for payload in skill.payloads:
+            if payload.twin is None:
+                continue
+            twin = corpus.SKILL[payload.twin]
+            assert twin.injections == (), twin.name
+            (theirs,) = twin.payloads
+            assert [text(twin, p) for p in theirs.core] == [
+                text(skill, p) for p in payload.core
+            ], (skill.name, payload.name)
+
+
+def test_every_injected_skill_has_an_injection() -> None:
+    for skill in corpus.SKILLS:
+        if skill.kind == "injected":
+            assert skill.injections, skill.name
+
+
+def test_every_injection_line_is_labelled_permission() -> None:
     # Telling the reader to report nothing keeps something from the user.
     for skill in corpus.SKILLS:
-        if skill.kind != "injected":
-            continue
-        line = skill.files["SKILL.md"].split("\n").index(corpus.INJECTION) + 1
-        assert ("SKILL.md", line, "permission") in skill.labels, skill.name
+        for injection in skill.injections:
+            for place in injection.lines:
+                assert (place.file, place.line, "permission") in skill.labels
+
+
+def test_a_marker_is_found_only_in_its_injection() -> None:
+    # Letters and spaces: no quote or backslash for JSON to escape, no comment
+    # sign or key for a quote to drop.
+    holders: dict[str, set[tuple[str, str, int]]] = defaultdict(set)
+    for skill in corpus.SKILLS:
+        for injection in skill.injections:
+            assert re.fullmatch(r"[A-Za-z][A-Za-z ]*[A-Za-z]", injection.marker)
+            holders[injection.marker] |= {
+                (skill.name, p.file, p.line) for p in injection.lines
+            }
+
+    for skill in corpus.SKILLS:
+        for file, content in skill.files.items():
+            for number, line in enumerate(content.split("\n"), 1):
+                for marker, lines in holders.items():
+                    if marker in line:
+                        assert (skill.name, file, number) in lines, marker
 
 
 def test_labels_name_lines_the_skills_have() -> None:
