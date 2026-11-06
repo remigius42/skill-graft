@@ -60,8 +60,13 @@ score.
   days; unset, nothing is kept outside the temporary folder.
 
 - Kept: the scan's record of every corpus **Skill** tested on every commit, at no cost; the eval opt-in, never in hooks
-  or CI; every **Skill** synthetic and built in code. No change to the skill, the report filter or `vet`: what the runs
-  show decides that, in a later change.
+  or CI; every **Skill** synthetic and built in code.
+
+- The skill fixed where the corpus shows it fails. Two baseline runs caught every payload and held every injection, but
+  flagged 11 of 24 injection lines: the readers ignored text telling them what to reply, as `reader.json` says, without
+  reporting it, so a report showed the harm but not that the **Skill** tries to deceive its reviewer. `reader.json` now
+  names such text a place, `permission`. A subset run of the **Skills** whose injections went unflagged measures the fix
+  against the baseline.
 
 ## Capabilities
 
@@ -72,7 +77,8 @@ None.
 ### Modified Capabilities
 
 - `graft-vet`: "A corpus measures the Vet" gains the adversarial **Skills**, labels fixed before a run, payloads apart
-  from injections, and the comparison of runs.
+  from injections, and the comparison of runs; "One reader per Skill" has the reader flag text that speaks to it as a
+  reviewer.
 
 ## Impact
 
@@ -85,7 +91,9 @@ None.
 - `mutation/`: its `vet` targets run `tests/cli/test_vet_corpus.py`, so the larger corpus can kill a mutant
   `equivalent.toml` lists; the harness is rerun once the corpus is in (task 3.6).
 - `docs/security.md`: one sentence on what the corpus attacks. `.cspell.yaml` for new words.
-- No `CHANGELOG.md` entry: an eval is tooling.
+- `skills/graft-vet/reader.json` and `tests/cli/test_graft_vet.py`: the reader flags text addressed to it as a reviewer.
+- `CHANGELOG.md`: the reader's change is one a user sees in the report file; the archive commit adds it. The eval is
+  tooling and gets none.
 
 ## Open Questions
 

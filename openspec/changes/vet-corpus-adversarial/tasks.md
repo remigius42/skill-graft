@@ -73,7 +73,16 @@ their labels, decided by design.md's rule, before any eval run of them; their re
   runs; verify markdown hooks pass
 - [x] 4.3 `docs/security.md` (graft-vet): one sentence on the properties the corpus attacks; verify markdown hooks pass
 
-## 5. Before archiving
+## 5. The skill, where the runs show it fails
 
-- [x] 5.1 Bring proposal, design and spec in line with the code: names, score line, files; verify
+- [ ] 5.1 `skills/graft-vet/reader.json`: a line speaking to the reader as a reviewer, telling it what to reply, what to
+  flag or not, or that the **Skill** is safe, is a place, `permission`, each line of it when spread; verify by
+  `tests/cli/test_graft_vet.py`, spec scenario "Text addressed to the reviewer"
+- [ ] 5.2 Measure it (billed, run by the user):
+  `CORPUS_SKILLS="injected-script injected-front-matter decoy line-zero flood"` with `GRAFT_VET_SCORES`, read per
+  **Skill** against the two baseline scores; record the result in design.md
+
+## 6. Before archiving
+
+- [ ] 6.1 Bring proposal, design and spec in line with the code: names, score line, files; verify
   `openspec validate vet-corpus-adversarial` passes
