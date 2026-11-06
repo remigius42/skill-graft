@@ -669,6 +669,19 @@ def test_another_line_same_category(tmp_path: Path) -> None:
     assert status(tmp_path, RUN_12, b"SKILL.md:30 run\n") == "mp/x steering 0 dropped 0"
 
 
+def test_same_line_another_category(tmp_path: Path) -> None:
+    # A reader that flags the line disagrees on its category: it was not silenced.
+    done = report_filter(
+        tmp_path, RUN_12, {"mp/x": SKILL}, {"mp/x": b"SKILL.md:12 send\n"}
+    )
+
+    assert done.report == [
+        "mp/x steering 0 dropped 0",
+        "mp/x SKILL.md:12 run ASI05 scan run.eval",
+        "mp/x SKILL.md:12 send LLM02,ASI02 reader",
+    ]
+
+
 def test_another_file_same_category(tmp_path: Path) -> None:
     files = {**SKILL, "run.sh": b"x\n"}
 
@@ -930,6 +943,7 @@ def test_the_steering_count_explained_as_the_filter_counts_it() -> None:
     step = section("5. Report")
 
     assert "in a file where the reader flagged that category at no line above 0" in step
+    assert "and that line in no category" in step
     assert "flagged nothing of that category" not in step
 
 

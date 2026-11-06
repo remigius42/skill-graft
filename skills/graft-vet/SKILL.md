@@ -172,8 +172,9 @@ Show, in this order:
 1. The summary as the report filter printed it, in a code block, and what its lines mean:
 
    - `<id> steering <n> dropped <m>`: `<n>` places, a file, line and category, the scan flagged in a file where the
-     reader flagged that category at no line above 0, a whole-file flag answering for no line; `<m>` reply lines dropped
-     as no place of that **Skill**. Either above 0 is a sign to read that **Skill** closely, never a verdict.
+     reader flagged that category at no line above 0 and that line in no category, a whole-file flag answering for no
+     line; `<m>` reply lines dropped as no place of that **Skill**. Either above 0 is a sign to read that **Skill**
+     closely, never a verdict.
    - `<id> no-reply steering <n>`: no reader replied for it, so its **Flags** are the scan's alone; `<n>` counts as if
      the reader had replied `none`.
    - `<id> <category> scan <a> reader <b> both <c>`: its **Flags** of that category, by who saw them.

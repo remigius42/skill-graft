@@ -128,9 +128,10 @@ A report filter in code, `sh` and `awk`, merges each reply with `vet`'s output i
 it, and drops and counts every other: free text, words as a file name, a path outside the folder. A reply can so only
 choose among places the **Skill** already has, and never sets `seen-by` or an OWASP ID. To the main agent it prints only
 numbers: per **Skill** a status, its **Flags** per category and `seen-by`, and a steering count, the scan's places in a
-file where the reader flagged nothing of that category, so a reader steered into silence shows as a number. The main
-agent never opens `vet`'s output, its error output but the line naming the **Package**, a reader's output or the report
-file: their file names are the **Skill** authors' words. You open the report file, as you read a **Deployed diff**.
+file where the reader flagged nothing of that category, and whose line it flagged in no category, so a reader steered
+into silence shows as a number and one that disagrees on a category does not. The main agent never opens `vet`'s output,
+its error output but the line naming the **Package**, a reader's output or the report file: their file names are the
+**Skill** authors' words. You open the report file, as you read a **Deployed diff**.
 
 Unhardened, `graft-vet` is the scan alone, and reads no **Skill** text in its session, without asking. Every report ends
 with fixed caveats. `evals/graft-vet/` scores the readers against a labelled corpus of synthetic **Skills**, obvious,
@@ -178,8 +179,10 @@ For `graft-vet` ([graft-vet](#graft-vet)):
 
 - **A steered reader.** A reader reads what the author wrote and can be talked into silence, or into flagging the wrong
   line. The steering count catches silence only where the scan saw something, and per category and file: a reader that
-  flags one line of a category answers for every line of it in that file, and one that flags a line at random for each
-  category shows as `reader` **Flags** on lines with nothing there. Where neither half sees anything, nothing does.
+  flags one line of a category answers for every line of it in that file, one that flags the scan's line in any category
+  answers for it, and one that flags a line at random for each category shows as `reader` **Flags** on lines with
+  nothing there. On a harmless **Skill** the scan's false **Flags** count too: the count cannot tell a silent reader
+  from a right one. Where neither half sees anything, nothing does.
 - **Skill IDs reach the main agent.** A **Skill ID**'s name is its author's folder name, any length of `[A-Za-z0-9._-]`,
   in every status line and in the listing of `vet --into`'s folder, as the **Check** shows **Skill IDs** too.
 - **File names reach you.** They reach you only through the report file, which the main agent never opens; you read them
