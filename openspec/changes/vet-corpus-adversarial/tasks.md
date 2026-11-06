@@ -51,7 +51,8 @@ their labels, decided by design.md's rule, before any eval run of them; their re
   `prose-fetch`); verify the record test, "A decoy in the record", `flood`'s glossary times eight above 1000 lines
 - [x] 3.4 `security-notes`, `token-words`, `never-pipe`, harmless, no labels, none running a shipped script or a
   destructive command; verify the record test
-- [ ] 3.5 `.cspell.yaml` words for the new **Skills**; verify the cspell hook passes
+- [x] 3.5 `.cspell.yaml` words for the new **Skills**; verify the cspell hook passes (added: none needed for the
+  **Skills** of 3.1, 3.3 and 3.4; 3.2's add their own with them)
 - [ ] 3.6 The mutation harness (`mutation/`): `mutation/targets.py` runs `tests/cli/test_vet_corpus.py` for every `vet`
   target, so the file keeps its name and its record test; verify `uv run python -m mutation` from the repository root
   exits 0, no new `survived` or `stale` line; a mutant listed in `mutation/equivalent.toml` that the larger corpus now
