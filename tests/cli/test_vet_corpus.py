@@ -521,3 +521,95 @@ def test_a_subset_is_scored_on_the_whole_corpus_digest(tmp_path: Path) -> None:
     assert [line for line in subset if line.startswith("corpus ")] == [
         f"corpus {corpus.digest(corpus.SKILLS)}"
     ]
+
+
+META = ("corpus", "skill", "claude", "model")
+
+
+def saved(tmp_path: Path, name: str, lines: list[str], **changed: str) -> str:
+    """`lines` as a score file, each `key` line of `changed` given its value."""
+    text = "".join(
+        f"{line.split(' ')[0]} {changed[line.split(' ')[0]]}\n"
+        if line.split(" ")[0] in changed
+        else line + "\n"
+        for line in lines
+    )
+    (tmp_path / name).write_text(text)
+    return str(tmp_path / name)
+
+
+def test_runs_on_different_labels(tmp_path: Path) -> None:
+    lines = run_score(tmp_path, statuses(corpus.SKILLS))
+    first = saved(tmp_path, "a", lines)
+    second = saved(tmp_path, "b", lines, corpus="000000000000")
+
+    done = run_corpus("compare", first, second)
+
+    assert done.returncode == 2
+    assert done.stdout == ""
+    assert done.stderr == "corpus.py: the scores differ in corpus\n"
+
+
+def test_runs_on_different_readers(tmp_path: Path) -> None:
+    lines = run_score(tmp_path, statuses(corpus.SKILLS))
+    first = saved(tmp_path, "a", lines)
+    second = saved(tmp_path, "b", lines, skill="000000000000", model="claude-x-1")
+    unsigned = [line for line in lines if not line.startswith("claude ")]
+    old = saved(tmp_path, "c", unsigned)
+
+    done = run_corpus("compare", first, second)
+    without = run_corpus("compare", first, old)
+
+    assert done.returncode == 2
+    assert done.stderr == "corpus.py: the scores differ in skill, model\n"
+    assert (without.returncode, without.stdout) == (2, "")
+    assert without.stderr == "corpus.py: the scores differ in claude\n"
+
+
+def test_a_sum_over_two_scores(tmp_path: Path) -> None:
+    (run,) = [p for p in corpus.SKILL["fetch-run"].labels if p[2] == "run"]
+    caught = f"c/fetch-run {run[0]}:{run[1]} run ASI05 both run.pipe-to-shell\n"
+    noise = "c/tables SKILL.md:1 send LLM02 reader\n"
+    first = saved(tmp_path, "a", run_score(tmp_path, statuses(corpus.SKILLS) + caught))
+    second = saved(tmp_path, "b", run_score(tmp_path, statuses(corpus.SKILLS) + noise))
+
+    done = run_corpus("compare", first, second)
+
+    assert done.returncode == 0, done.stderr
+    lines = done.stdout.splitlines()
+    skills = {
+        line.split(" ")[0]: fields(line)
+        for line in lines[: -len(META)]
+        if not line.startswith("kind ")
+    }
+    assert (
+        skills["fetch-run"] | {"runs": "2", "reader": "1", "missed": "1"}
+        == (skills["fetch-run"])
+    )
+    assert (skills["tables"]["runs"], skills["tables"]["noise"]) == ("2", "1")
+    obvious = kinds(lines)["obvious"]
+    assert obvious | {"runs": "2", "skills": "10", "payloads": "10"} == obvious
+    assert obvious["reader"] == "1"
+    assert lines[-4:] == [
+        line for line in run_score(tmp_path, "") if line.split(" ")[0] in META
+    ]
+
+
+def test_a_subset_summed_with_a_full_run(tmp_path: Path) -> None:
+    full = saved(tmp_path, "a", run_score(tmp_path, statuses(corpus.SKILLS)))
+    subset = saved(
+        tmp_path, "b", run_score(tmp_path, statuses([corpus.SKILL["fetch-run"]]))
+    )
+
+    done = run_corpus("compare", full, subset)
+
+    assert done.returncode == 0, done.stderr
+    lines = done.stdout.splitlines()
+    skills = {
+        line.split(" ")[0]: fields(line)
+        for line in lines[: -len(META)]
+        if not line.startswith("kind ")
+    }
+    assert (skills["fetch-run"]["runs"], skills["ssh-key"]["runs"]) == ("2", "1")
+    obvious = kinds(lines)["obvious"]
+    assert (obvious["runs"], obvious["skills"], obvious["missed"]) == ("1", "5", "5")
