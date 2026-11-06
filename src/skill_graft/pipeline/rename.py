@@ -74,7 +74,8 @@ def _rank(config: Config, skill: SkillId) -> int:
     """The order to hint in: not chosen, then renamed, then prefixed."""
     if skill in config.renames:
         return 1
-    return 2 if skill.alias in config.prefixes else 0
+    # Equivalent mutants: any rank above 1 orders alike.
+    return 2 if skill.alias in config.prefixes else 0  # pragma: no mutate
 
 
 def check_unique(config: Config, names: dict[SkillId, str]) -> None:
@@ -144,7 +145,8 @@ def rewrites(hull: Hull) -> dict[SkillId, dict[Path, bytes]]:
         changed = {}
         for file, spans in by_file.items():
             try:
-                text = file.read_bytes().decode("utf-8")
+                # Equivalent mutants: a codec's name has no case.
+                text = file.read_bytes().decode("utf-8")  # pragma: no mutate
             except (OSError, UnicodeDecodeError) as error:  # changed since the scan
                 raise SkillGraftError(f"{file} cannot be rewritten: {error}") from None
             for (start, end), old, new in sorted(spans, reverse=True):  # back to front

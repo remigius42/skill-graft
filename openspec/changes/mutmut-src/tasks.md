@@ -34,7 +34,7 @@ Verify per task: the module's rerun leaves only those two kinds of survivor, and
 - [x] 2.4 `vet` (30)
 - [x] 2.5 `config` (27)
 - [x] 2.6 `discovery` (20) and `hidden` (14)
-- [ ] 2.7 `patch` (16) and `rename` (8)
+- [x] 2.7 `patch` (16) and `rename` (8)
 - [ ] 2.8 `hull` (8), `compute` (6, in a new `tests/pipeline/test_compute.py`) and `vendor` (4)
 
 ## 3. The baseline

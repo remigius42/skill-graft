@@ -51,7 +51,8 @@ def apply(skill: SkillId, upstream: Path, patches: list[PatchFile], work: Path) 
         raise SkillGraftError(f"cannot copy {upstream}: {error.strerror}") from None
     # An empty stand-in for the user's home, so git reads no config. No alias
     # starts with a dot, so no copy ever lands in it.
-    home = work / ".home"
+    # Equivalent mutants: any name no alias takes does.
+    home = work / ".home"  # pragma: no mutate
     home.mkdir(exist_ok=True)
     name = discovery.read_name(upstream)
     for i, patch in enumerate(patches):
@@ -82,7 +83,9 @@ def _size(path: Path) -> int | None:
         mode = path.lstat()
     except (FileNotFoundError, NotADirectoryError):  # gone, or its folder is a file
         return None
-    return mode.st_size if stat.S_ISREG(mode.st_mode) else None
+    # Equivalent mutants: a link's size is never 0, and a folder
+    # still holds its emptied files when it is reached.
+    return mode.st_size if stat.S_ISREG(mode.st_mode) else None  # pragma: no mutate
 
 
 def _filled(folder: Path) -> list[Path]:

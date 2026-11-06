@@ -8,6 +8,7 @@ from pathlib import Path
 import pytest
 from conftest import make_patch, skill
 
+from skill_graft.infra.errors import SkillGraftError
 from skill_graft.pipeline import patch
 from skill_graft.pipeline.config import PatchFile, SkillId
 
@@ -438,3 +439,54 @@ def test_skill_md_made_a_link(tmp_path: Path) -> None:
         patch.apply(TDD, upstream, [PatchFile("p.patch", data)], work_in(tmp_path))
 
     assert failed.value.lines == ["p.patch: makes SKILL.md a link"]
+
+
+def test_hunks_of_two_files_named(tmp_path: Path) -> None:
+    data = make_patch(
+        tmp_path,
+        {"SKILL.md": LINES, "notes.md": LINES},
+        {"SKILL.md": LINES + "more\n", "notes.md": LINES + "more\n"},
+    )
+    upstream = upstream_with(tmp_path, {"SKILL.md": "x\n", "notes.md": "x\n"})
+
+    with pytest.raises(patch.PatchFailed) as failed:
+        patch.apply(TDD, upstream, [PatchFile("p.patch", data)], work_in(tmp_path))
+
+    assert failed.value.lines == [
+        "p.patch: SKILL.md: hunk @@ -8,3 +8,4 @@ does not apply",
+        "p.patch: notes.md: hunk @@ -8,3 +8,4 @@ does not apply",
+    ]
+
+
+def test_reject_shipped_before_the_one_git_writes(tmp_path: Path) -> None:
+    shipped = "--- A.md\n+++ A.md\n@@ -1 +1 @@\n-a\n+b\n"
+    upstream = upstream_with(tmp_path, {"SKILL.md": "x\n", "A.md.rej": shipped})
+    data = make_patch(tmp_path, {"SKILL.md": LINES}, {"SKILL.md": LINES + "more\n"})
+
+    with pytest.raises(patch.PatchFailed) as failed:
+        patch.apply(TDD, upstream, [PatchFile("p.patch", data)], work_in(tmp_path))
+
+    assert failed.value.lines == [
+        "p.patch: SKILL.md: hunk @@ -8,3 +8,4 @@ does not apply"
+    ]
+
+
+def test_folder_named_like_a_reject_file(tmp_path: Path) -> None:
+    upstream = upstream_with(tmp_path, {"old.rej/notes.md": "x\n"})
+    data = make_patch(tmp_path, {"SKILL.md": LINES}, {"SKILL.md": LINES + "more\n"})
+
+    copy = patch.apply(TDD, upstream, [PatchFile("p.patch", data)], work_in(tmp_path))
+
+    assert (copy / "SKILL.md").read_text() == LINES + "more\n"
+
+
+@pytest.mark.needs_permissions
+def test_file_that_cannot_be_copied(tmp_path: Path) -> None:
+    upstream = upstream_with(tmp_path, {"notes.md": "x\n"})
+    (upstream / "notes.md").chmod(0)
+
+    try:
+        with pytest.raises(SkillGraftError, match="cannot copy .*notes.md"):
+            patch.apply(TDD, upstream, [], work_in(tmp_path))
+    finally:
+        (upstream / "notes.md").chmod(0o644)

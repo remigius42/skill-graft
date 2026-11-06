@@ -43,6 +43,12 @@ def test_name_line_replaced(before: str, after: str) -> None:
     assert rename.set_name(before, "mp-grilling") == after
 
 
+def test_name_line_keeps_its_own_line_ending() -> None:
+    before = "---\nname: grilling\r\n---\n"
+
+    assert rename.set_name(before, "mp-grilling") == "---\nname: mp-grilling\r\n---\n"
+
+
 def test_front_matter_without_a_name() -> None:
     before = "---\ndescription: x\n---\nbody\n"
 
@@ -601,3 +607,27 @@ def test_prefixed_onto_a_shipped_name(
     err = after_package_line(capsys.readouterr().err)
     assert "own/view" in err and "`review`" in err
     assert "[rename]" not in err and "prefix" not in err
+
+
+def test_hint_names_the_unchosen_before_the_renamed(
+    home: Path, capsys: pytest.CaptureFixture[str]
+) -> None:
+    skill(home / "mp" / "grilling")
+    skill(home / "own" / "notes")
+    with_renames(home, ["mp/grilling", "own/notes"], '"own/notes" = "grilling"')
+
+    assert main(["resolve"]) == 1
+
+    assert '[rename] "mp/grilling" = "mp-grilling"' in capsys.readouterr().err
+
+
+def test_hint_names_the_renamed_before_the_prefixed(
+    home: Path, capsys: pytest.CaptureFixture[str]
+) -> None:
+    skill(home / "mp" / "a")
+    skill(home / "own" / "x")
+    with_prefixes(home, ["mp/a", "own/x"], '"mp/a" = "own-x"', own="own-")
+
+    assert main(["resolve"]) == 1
+
+    assert 'change [rename] "mp/a" = "own-x"' in capsys.readouterr().err
