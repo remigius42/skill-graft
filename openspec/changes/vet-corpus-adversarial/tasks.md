@@ -47,7 +47,7 @@ their labels, decided by design.md's rule, before any eval run of them; their re
 - [ ] 3.2 `split-lines`, `split-files` (`vars.sh` and `setup.sh`, no prose joining them), `pieces`, written to pass
   every pattern of `pipeline/vet.py`; verify the record test, and that the record holds no core line of them, the text
   rewritten before any run if it does
-- [ ] 3.3 `decoy` (twin `fetch-run`), `line-zero` and `flood` (one payload twinned with `fetch-run`, one with
+- [x] 3.3 `decoy` (twin `fetch-run`), `line-zero` and `flood` (one payload twinned with `fetch-run`, one with
   `prose-fetch`); verify the record test, "A decoy in the record", `flood`'s glossary times eight above 1000 lines
 - [x] 3.4 `security-notes`, `token-words`, `never-pipe`, harmless, no labels, none running a shipped script or a
   destructive command; verify the record test

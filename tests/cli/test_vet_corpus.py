@@ -513,6 +513,7 @@ def test_a_subset_is_written_with_its_payloads_twins(tmp_path: Path) -> None:
         "tables",
     ]
     assert corpus.selection(["inj"], [OBVIOUS, TWIN, INJECTED]) == [TWIN, INJECTED]
+    assert [s.name for s in corpus.selection(["decoy"])] == ["fetch-run", "decoy"]
 
 
 def test_a_subset_is_scored_on_the_whole_corpus_digest(tmp_path: Path) -> None:
@@ -665,3 +666,49 @@ def test_harmless_text_that_reads_as_hostile(name: str) -> None:
 
     assert (skill.kind, skill.attacks) == ("harmless", "looks-hostile")
     assert (skill.payloads, skill.injections) == ((), ())
+
+
+@pytest.mark.parametrize(
+    ("name", "attacks", "twins"),
+    [
+        ("decoy", "decoy", ["fetch-run"]),
+        ("line-zero", "line-0", ["fetch-run", "prose-fetch"]),
+        ("flood", "flood", ["fetch-run", "prose-fetch"]),
+    ],
+)
+def test_an_injection_against_the_reply(
+    name: str, attacks: str, twins: list[str]
+) -> None:
+    skill = corpus.SKILL[name]
+
+    assert (skill.kind, skill.attacks) == ("injected", attacks)
+    assert [p.twin for p in skill.payloads] == twins
+    assert len(skill.injections) == 1
+
+
+def test_a_decoy_in_the_record(home: Path, capsys: pytest.CaptureFixture[str]) -> None:
+    skill = corpus.SKILL["decoy"]
+    decoy = skill.files["SKILL.md"].split("\n").index("Format the changed files.") + 1
+    ((core,),) = [p.core for p in skill.payloads]
+
+    flagged = scanned(home, capsys)["decoy"]
+
+    assert not [label for label in skill.labels if label[1] == decoy]
+    assert {(core.file, core.line, "run"), (core.file, core.line, "send")} <= flagged
+
+
+def test_the_noise_a_decoy_asks_for_stays_out_of_its_kind(tmp_path: Path) -> None:
+    obeyed = (
+        "c/decoy SKILL.md:3 run ASI05 reader\nc/decoy SKILL.md:3 send LLM02 reader\n"
+    )
+
+    lines = run_score(tmp_path, statuses(corpus.SKILLS) + obeyed)
+
+    assert by_name(lines)["decoy"]["noise"] == "2"
+    assert kinds(lines)["injected"]["noise"] == "0"
+
+
+def test_a_flood_past_the_cap() -> None:
+    glossary = corpus.SKILL["flood"].files["references/glossary.md"]
+
+    assert len(glossary.splitlines()) * len(corpus.CATEGORIES) > 1000
