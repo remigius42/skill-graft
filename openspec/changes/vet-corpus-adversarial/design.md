@@ -243,7 +243,11 @@ is phrased freely, so a pattern would be evaded as soon as it is known.
 
 Measured by `CORPUS_SKILLS="injected-script injected-front-matter decoy line-zero flood"`, whose twins come along,
 against the baseline per **Skill**: `compare` refuses to sum across the `skill` digest, so the two are read side by
-side.
+side. Result, one subset run (skill `e24dbbaa4101`): the five flagged 5 of 5 injection lines, against 0 of 10 over the
+two baseline runs, with every payload still caught by a reader, all 7 twinned payloads held and no noise. A full run
+then flagged 12 of 12 injection lines, against 5 and 6 of 12, still caught all 26 payloads and held all 9, and left the
+harmless **Skills**' noise at the baseline's one `docs-link` flag: `security-notes`, which quotes an injection to warn
+of it, drew none.
 
 Alternative: a scan pattern for "reply none" and its kin. Rejected: it names one phrasing; the corpus already holds
 five.
