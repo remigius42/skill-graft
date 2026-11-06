@@ -791,3 +791,70 @@ def test_reach_two_levels(scope: paths.Scope, home: Path) -> None:
         SkillId("mp", "grilling"): SkillId("mp", "tdd"),
         SkillId("mp", "notes"): SkillId("mp", "grilling"),
     }
+
+
+def test_references_after_ones_that_are_none_followed(
+    home: Path, capsys: Capsys
+) -> None:
+    text = '/x, `no-such-skill`, the Skill tool with "word". Then /grilling.\n'
+    skill(home / "mp" / "tdd", text)
+    skill(home / "mp" / "grilling")
+    configure(["mp/tdd"], mp="~/mp")
+    with_binds('"mp/x" = false')
+
+    assert deploy(capsys) == (0, "")
+    assert vendored() == {"tdd", "grilling"}
+
+
+def test_hull_beside_hidden_characters_has_no_warnings(
+    scope: paths.Scope, home: Path
+) -> None:
+    skill(home / "mp" / "tdd", f"/nowhere {TAG}\n")
+    configure(["mp/tdd"], mp="~/mp")
+
+    loaded = config.load(scope)
+    with (
+        pytest.raises(hull.PatchError) as error,
+        compute.compute_hull(scope, loaded, Cache.default()),
+    ):
+        pass
+
+    assert error.value.hull is not None and error.value.hull.warnings == []
+
+
+ZERO_WIDTH = "\N{ZERO WIDTH SPACE}"
+
+
+def test_debris_of_each_patch_warned(home: Path, capsys: Capsys) -> None:
+    skill(home / "mp" / "tdd", "# x\n")
+    head = "--- a/SKILL.md\n+++ b/SKILL.md\n"
+    write_patch("a.patch", f"{head}@@ -1 +1,2 @@\n # x\n+a{ZERO_WIDTH}\n".encode())
+    write_patch(
+        "b.patch", f"{head}@@ -2 +2,2 @@\n a{ZERO_WIDTH}\n+b{ZERO_WIDTH}\n".encode()
+    )
+    write_config(
+        'entries = ["mp/tdd"]\n[sources.mp]\npath = "~/mp"\n'
+        '[patches]\n"mp/tdd" = ["patches/a.patch", "patches/b.patch"]\n'
+    )
+
+    _, err = deploy(capsys)
+
+    warned = [line for line in err.splitlines() if "invisible character" in line]
+    assert ["a.patch" in w for w in warned] == [True, False]
+    assert ["b.patch" in w for w in warned] == [False, True]
+
+
+def test_unchanged_file_not_scanned_as_patched(home: Path, capsys: Capsys) -> None:
+    skill(home / "mp" / "tdd", "# x\n")
+    (home / "mp" / "tdd" / "notes.md").write_bytes(b"\xff")
+    write_patch("a.patch", b"--- a/SKILL.md\n+++ b/SKILL.md\n@@ -1 +1 @@\n-# x\n+# y\n")
+    write_config(
+        'entries = ["mp/tdd"]\n[sources.mp]\npath = "~/mp"\n'
+        '[patches]\n"mp/tdd" = ["patches/a.patch"]\n'
+    )
+
+    code, err = deploy(capsys)
+
+    assert code == 1
+    assert "notes.md: not UTF-8" in err
+    assert "as patched" not in err

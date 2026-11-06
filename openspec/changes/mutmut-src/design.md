@@ -95,10 +95,10 @@ sparingly: a reviewer reads each.
 ### Killing `pipeline/` survivors
 
 Per module, a rerun of its mutants (`uv run mutmut run "skill_graft.pipeline.<module>*"`), then for each survivor a test
-in `tests/pipeline/test_<module>.py`, created for `compute`, which has none (its tests sit in `tests/commands/`),
-test-first: the test fails against the mutant (`mutmut apply <mutant>`, reverted after) and passes on the code. A
-survivor that is a bug gets the fix and, where a spec covers the behavior, a delta spec; its `Fixed` entry comes with
-the archive commit. Timeouts (`hull.reach`, `deployed._blocks`, `deployed._myers`) count as killed.
+in `tests/pipeline/test_<module>.py` (`compute` needed none: its survivors are noise but one equivalent), test-first:
+the test fails against the mutant (`mutmut apply <mutant>`, reverted after) and passes on the code. A survivor that is a
+bug gets the fix and, where a spec covers the behavior, a delta spec; its `Fixed` entry comes with the archive commit.
+Timeouts (`hull.reach`, `deployed._blocks`, `deployed._myers`) count as killed.
 
 ### The baseline, in `CONTRIBUTING.md`
 

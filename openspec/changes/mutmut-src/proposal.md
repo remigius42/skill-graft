@@ -39,7 +39,7 @@ None up front (`skip_specs: true`). A survivor that proves a bug in specified be
 - `.gitignore`: `mutants/`.
 - `src/skill_graft/cli.py`: one pragma on `_parser`; `src/skill_graft/pipeline/*.py`: pragmas on equivalent mutants
   only, and fixes for any survivor that is a bug.
-- `tests/pipeline/test_*.py`: tests killing the `pipeline/` survivors; `test_compute.py` is new.
+- `tests/pipeline/test_*.py`: tests killing the `pipeline/` survivors.
 - `CHANGELOG.md`: a `Fixed` entry per bug found, at archive.
 - `CONTRIBUTING.md`, `AGENTS.md`, `docs/README.md`, `.cspell.yaml`.
 - No runtime dependency; mutmut pulls in `libcst` and others, dev only.

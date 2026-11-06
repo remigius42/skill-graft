@@ -96,7 +96,8 @@ def _subdirectory(alias: str, tree: Path, subdirectory: str, ref: str) -> Path:
             how = "does not exist"
         elif entry.is_symlink():
             how = "runs through a symlink"
-        elif not entry.is_dir(follow_symlinks=False):
+        # Equivalent mutants: a symlink is refused above, so none is followed here.
+        elif not entry.is_dir(follow_symlinks=False):  # pragma: no mutate
             how = "is not a folder"
         else:
             folder /= part

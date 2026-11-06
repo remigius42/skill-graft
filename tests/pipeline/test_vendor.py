@@ -3,10 +3,12 @@ run killed mid-swap."""
 
 from pathlib import Path
 
+import pytest
 from conftest import configure, skill
 
 from skill_graft.infra import paths
 from skill_graft.infra.cache import Cache
+from skill_graft.infra.errors import SkillGraftError
 from skill_graft.pipeline import compute, config, vendor
 
 
@@ -38,6 +40,31 @@ def test_stage_writes_skills_new(home: Path, tmp_path: Path) -> None:
 
     assert held(skills.with_name("skills.new")) == ["tdd"]
     assert held(skills) is None
+
+
+@pytest.mark.needs_permissions
+def test_copy_error_reported_over_the_cleanup_one(home: Path, tmp_path: Path) -> None:
+    folder = skill(home / "own" / "tdd")
+    (folder / "ro").mkdir()
+    (folder / "ro" / "a.md").write_text("x\n")
+    (folder / "ro" / "b.md").write_text("x\n")  # copied: held in a read-only folder
+    configure(["own/tdd"], own="~/own")
+    scope = paths.Scope(home)
+    skills = tmp_path / ".apm" / "skills"
+
+    with compute.compute_hull(scope, config.load(scope), Cache.default()) as hull:
+        # Unreadable once walked: the copy fails, and keeps `ro`'s mode, so
+        # the cleanup cannot delete the partial copy inside it either.
+        (folder / "ro" / "a.md").chmod(0)
+        (folder / "ro").chmod(0o555)
+        try:
+            with pytest.raises(SkillGraftError, match="copying .* failed"):
+                vendor.stage(hull, skills)
+        finally:
+            for ro in [folder / "ro", skills.with_name("skills.new") / "tdd" / "ro"]:
+                if ro.exists():
+                    ro.chmod(0o755)
+            (folder / "ro" / "a.md").chmod(0o644)
 
 
 def test_swap_back_restores_previous(tmp_path: Path) -> None:
