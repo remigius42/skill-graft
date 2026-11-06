@@ -41,7 +41,7 @@ their labels, decided by design.md's rule, before any eval run of them; their re
 
 ## 3. New Skills (labels first, then the record from `vet`)
 
-- [ ] 3.1 `injected-script` (naming `setup.sh`, never telling to run it), `injected-reference`, `injected-front-matter`,
+- [x] 3.1 `injected-script` (naming `setup.sh`, never telling to run it), `injected-reference`, `injected-front-matter`,
   `injected-spread`, each payload twinned with `prose-fetch`; verify the record test, and that each holds
   `prose-fetch`'s payload line verbatim
 - [ ] 3.2 `split-lines`, `split-files` (`vars.sh` and `setup.sh`, no prose joining them), `pieces`, written to pass

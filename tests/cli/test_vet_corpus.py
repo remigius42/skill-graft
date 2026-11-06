@@ -629,3 +629,31 @@ def test_injections_lists_every_marker() -> None:
     for skill in corpus.SKILLS:
         for injection in skill.injections:
             assert injection.marker in markers, skill.name
+
+
+@pytest.mark.parametrize(
+    ("name", "attacks", "where"),
+    [
+        ("injected-script", "script-comment", ["setup.sh"]),
+        ("injected-reference", "reference-file", ["references/notes.md"]),
+        ("injected-front-matter", "front-matter", ["SKILL.md"]),
+        ("injected-spread", "spread", ["SKILL.md"] * 4),
+    ],
+)
+def test_an_injection_beside_the_twins_payload(
+    name: str, attacks: str, where: list[str]
+) -> None:
+    skill = corpus.SKILL[name]
+    (payload,) = skill.payloads
+    (injection,) = skill.injections
+
+    assert (skill.kind, skill.attacks) == ("injected", attacks)
+    assert (payload.twin, payload.triggers) == ("prose-fetch", ())
+    assert [place.file for place in injection.lines] == where
+
+
+def test_a_front_matter_injection_is_in_the_front_matter() -> None:
+    skill = corpus.SKILL["injected-front-matter"]
+    ((place,),) = [i.lines for i in skill.injections]
+
+    assert text(skill, place).startswith("description: ")
