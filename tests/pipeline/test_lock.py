@@ -817,3 +817,96 @@ def test_home_folder_written_out_not_portable(home: Path, tmp_path: Path) -> Non
 
 def test_user_scope_not_portable(home: Path) -> None:
     assert portable("~/skills", home / "skills", home) is None
+
+
+def test_digest_follows_an_id_alone(home: Path) -> None:
+    skill(home / "own" / "tdd")
+    configure(["own/tdd"], own="~/own")
+    first = digest()
+    configure(["mine/tdd"], mine="~/own")
+
+    assert digest() != first
+
+
+def loaded(
+    skills: dict[str, str],
+    sources: dict[str, dict[str, str]] | None = None,
+    edges: list[dict[str, Any]] | None = None,
+    suggestions: list[dict[str, Any]] | None = None,
+) -> dict[str, Any]:
+    """A loaded lock: each skill's ID and hash, its sources, edges and suggestions."""
+    return {
+        "version": 1,
+        "sources": sources or {},
+        "skills": [{"id": i, "hash": h} for i, h in skills.items()],
+        "edges": edges or [],
+        "suggestions": suggestions or [],
+    }
+
+
+def test_drift_sorts_ids_as_written() -> None:
+    old = loaded({"a/y": "1", "a-b/x": "1"})
+    new = loaded({"a/y": "2", "a-b/x": "2", "a/z": "2", "a-b/w": "2"})
+
+    changed, refusal = lock.drift(new, old, {"a", "a-b"})
+
+    assert changed == ["a-b/x", "a/y"]  # `-` sorts before `/`
+    assert refusal == "the hull differs from skill-graft.lock: a-b/w added, a/z added"
+
+
+def test_drift_names_removed_ids_as_written() -> None:
+    old = loaded({"a/y": "1", "a-b/x": "1", "a/z": "1"})
+
+    _, refusal = lock.drift(loaded({"a/z": "1"}), old, set())
+
+    assert (
+        refusal == "the hull differs from skill-graft.lock: a-b/x removed, a/y removed"
+    )
+
+
+def test_added_skill_not_changed_too() -> None:
+    _, refusal = lock.drift(
+        loaded({"a/x": "1", "a/y": "1"}), loaded({"a/x": "1"}), set()
+    )
+
+    assert refusal == "the hull differs from skill-graft.lock: a/y added"
+
+
+def test_source_added_refused() -> None:
+    new = loaded({}, {"a": {"git": "u", "ref": "r"}, "b": {"git": "v", "ref": "r"}})
+
+    _, refusal = lock.drift(new, loaded({}, {"a": {"git": "u", "ref": "r"}}), set())
+
+    assert refusal == "the hull differs from skill-graft.lock: source b added"
+
+
+def test_bound_edge_named_apart() -> None:
+    edge = {"from": "a/x", "to": "a/y", "kind": "slash"}
+    old = loaded({}, edges=[edge | {"bind": True}])
+
+    _, refusal = lock.drift(loaded({}, edges=[edge]), old, set())
+
+    assert refusal == (
+        "the hull differs from skill-graft.lock:"
+        " a/x → a/y (slash) added, a/x → a/y (slash, bind) removed"
+    )
+
+
+def test_suggestion_without_mentions_names_none() -> None:
+    suggestions = [{"id": "a/y"}]
+    new = loaded({"a/x": "1"}, suggestions=suggestions)
+
+    _, refusal = lock.drift(new, loaded({}, suggestions=suggestions), set())
+
+    assert refusal == "the hull differs from skill-graft.lock: a/x added"
+
+
+def test_recorded_other_version_none() -> None:
+    assert lock.recorded({"version": 2, "skills": []}) is None
+
+
+def test_recorded_hash_not_a_string_none() -> None:
+    assert (
+        lock.recorded(loaded({"a/x": "1"}) | {"skills": [{"id": "a/x", "hash": 3}]})
+        is None
+    )
