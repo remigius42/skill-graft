@@ -37,7 +37,7 @@ their labels, decided by design.md's rule, before any eval run of them; their re
 - [x] 2.3 `compare <score>…`: sums per **Skill** and kind, run count, outcomes, a `subset` score out of the kind sums;
   exit 2 and no counts when `corpus`, `skill`, `claude` or `model` differ, naming which; verify "Runs on different
   labels", "Runs on different readers", a sum over two scores, and a subset summed with a full run
-- [ ] 2.4 `corpus.py injections`: each injection's marker, one per line; verify it lists every injected **Skill**'s
+- [x] 2.4 `corpus.py injections`: each injection's marker, one per line; verify it lists every injected **Skill**'s
 
 ## 3. New Skills (labels first, then the record from `vet`)
 

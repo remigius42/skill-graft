@@ -7,6 +7,8 @@ flag, and with the places `skill-graft vet` flags in it, its record.
         the skills, or those named and their payloads' twins, as a path source's folder
     python corpus.py score <report file> <skill folder> <transcript> <claude> <model>
         each skill's payloads by who caught them, injections' outcomes, per kind
+    python corpus.py injections
+        each injection's marker, one per line
     python corpus.py compare <score file>…
         the scores summed per skill and kind; exits 2 when they were scored
         against different labels, skills, `claude` versions or models
@@ -725,18 +727,28 @@ def compare(scores: list[Path]) -> tuple[list[str], list[str]]:
     return lines + [f"{key} {meta[key]}" for key in META], []
 
 
+def _unknown(names: list[str]) -> bool:
+    """Whether a name of `names` is no corpus skill's, each such name told."""
+    unknown = [name for name in names if name not in SKILL]
+    if unknown:
+        print(
+            f"corpus.py: unknown corpus skill {' '.join(unknown)};"
+            f" known: {' '.join(SKILL)}",
+            file=sys.stderr,
+        )
+    return bool(unknown)
+
+
 def main(argv: list[str]) -> int:
-    if argv[:1] == ["check"]:
-        unknown = [name for name in argv[1:] if name not in SKILL]
-        if unknown:
-            print(
-                f"corpus.py: unknown corpus skill {' '.join(unknown)};"
-                f" known: {' '.join(SKILL)}",
-                file=sys.stderr,
-            )
-            return 2
+    if argv == ["injections"]:
+        markers = [i.marker for skill in SKILLS for i in skill.injections]
+        print("\n".join(dict.fromkeys(markers)))
         return 0
-    if len(argv) >= 2 and argv[0] == "write" and set(argv[2:]) <= set(SKILL):
+    if argv[:1] == ["check"]:
+        return 2 if _unknown(argv[1:]) else 0
+    if len(argv) >= 2 and argv[0] == "write":
+        if _unknown(argv[2:]):
+            return 2
         write(Path(argv[1]), selection(argv[2:]) if argv[2:] else SKILLS)
         return 0
     if len(argv) == 6 and argv[0] == "score":
@@ -757,8 +769,9 @@ def main(argv: list[str]) -> int:
         print("\n".join(lines))
         return 0
     print(
-        "usage: corpus.py write <folder>"
-        " | score <report file> <skill folder> <transcript> <claude version> <model>",
+        "usage: corpus.py check [name…] | write <folder> [name…] | injections"
+        " | score <report file> <skill folder> <transcript> <claude version> <model>"
+        " | compare <score file>…",
         file=sys.stderr,
     )
     return 2

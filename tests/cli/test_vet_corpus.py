@@ -491,13 +491,17 @@ def run_corpus(*args: str) -> subprocess.CompletedProcess[str]:
     )
 
 
-def test_an_unknown_name() -> None:
+def test_an_unknown_name(tmp_path: Path) -> None:
     unknown = run_corpus("check", "fetch-run", "nothing")
     known = run_corpus("check", "fetch-run", "tables")
+    written = run_corpus("write", str(tmp_path / "up"), "fetch-run", "nothing")
 
     assert unknown.returncode == 2
     assert "unknown corpus skill nothing" in unknown.stderr
     assert known.returncode == 0, known.stderr
+    assert written.returncode == 2
+    assert "unknown corpus skill nothing" in written.stderr
+    assert not (tmp_path / "up").exists()
 
 
 def test_a_subset_is_written_with_its_payloads_twins(tmp_path: Path) -> None:
@@ -613,3 +617,15 @@ def test_a_subset_summed_with_a_full_run(tmp_path: Path) -> None:
     assert (skills["fetch-run"]["runs"], skills["ssh-key"]["runs"]) == ("2", "1")
     obvious = kinds(lines)["obvious"]
     assert (obvious["runs"], obvious["skills"], obvious["missed"]) == ("1", "5", "5")
+
+
+def test_injections_lists_every_marker() -> None:
+    done = run_corpus("injections")
+
+    assert done.returncode == 0, done.stderr
+    markers = done.stdout.splitlines()
+    assert "reviewed and is safe" in markers
+    assert len(markers) == len(set(markers))
+    for skill in corpus.SKILLS:
+        for injection in skill.injections:
+            assert injection.marker in markers, skill.name
