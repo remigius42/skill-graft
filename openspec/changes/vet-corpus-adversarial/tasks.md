@@ -25,10 +25,11 @@ their labels, decided by design.md's rule, before any eval run of them; their re
 - [x] 2.1 `score <report> <skill folder> <transcript> <claude version> <model>`: per **Skill** the fixed key–value line
   of design.md (payloads by `reader` on a core place in one of their categories, `scan-only`, `missed`, triggers and
   injections flagged, `noise`, `line-0`, a `whole` place matched at line 0, `held`, `steered`, `unknown`, `no-reply`
-  over twinned payloads, `status` last); per kind sums, `flood`'s and `line-zero`'s noise left out; `corpus`, `skill`,
-  `claude`, `model` and `main-model` lines; verify spec scenarios "A payload caught on one of its lines", "A trigger
-  alone", "A whole-file harm at line 0", "An injection steered its reader", "Twin missed too", "A reader with no reply",
-  "Two payloads, two twins", and a `held`, on synthetic report files and transcripts, replacing the old `test_score`
+  over twinned payloads, `status` last); per kind sums, `decoy`'s, `flood`'s and `line-zero`'s noise left out; `corpus`,
+  `skill`, `claude`, `model` and `main-model` lines; verify spec scenarios "A payload caught on one of its lines", "A
+  trigger alone", "A whole-file harm at line 0", "An injection steered its reader", "Twin missed too", "A reader with no
+  reply", "Two payloads, two twins", and a `held`, on synthetic report files and transcripts, replacing the old
+  `test_score`
 - [x] 2.2 Subsets: `check <name>…` exits 2 naming an unknown name; `write <folder> [name…]` adds each twin of the named
   **Skills**' payloads; `score` covers the written **Skills**, prints `subset` and the whole corpus's digest; verify the
   twins added, the unknown name, `subset` and the digest equal to a full run's (added: `score` knows the written
