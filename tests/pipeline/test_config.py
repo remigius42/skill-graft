@@ -201,6 +201,7 @@ def test_digit_only_refs_load(scope: paths.Scope) -> None:
         "a/b:c",
         ":h:p",
         "example.com:",
+        "-x@example.com:me/s.git",  # an option to git, else user@host:path
     ],
 )
 def test_git_url_of_no_form_is_refused(scope: paths.Scope, url: str) -> None:
@@ -378,6 +379,30 @@ def test_bad_patches(
     assert code == 1
     for text in expected:
         assert text in err
+
+
+def test_patch_line_ending_in_differ_loads(scope: paths.Scope, home: Path) -> None:
+    (home / "a").mkdir()
+    folder = home / ".apm" / "skill-graft" / "patches"
+    folder.mkdir(parents=True)
+    text = b"--- a/SKILL.md\n+++ b/SKILL.md\n@@ -1 +1 @@\n-x\n+the two differ\n"
+    (folder / "a.patch").write_bytes(text)
+    write_config(
+        '[sources.mp]\npath = "~/a"\n[patches]\n"mp/tdd" = ["patches/a.patch"]\n'
+    )
+
+    assert config.load(scope).patches[config.SkillId("mp", "tdd")][0].data == text
+
+
+@pytest.mark.parametrize("entry", ["mp/a/b", "mp/", "/a"])
+def test_entry_of_no_form_is_refused(
+    scope: paths.Scope, home: Path, entry: str
+) -> None:
+    (home / "a").mkdir()
+    write_config(f'entries = ["{entry}"]\n[sources.mp]\npath = "~/a"\n')
+
+    with pytest.raises(SkillGraftError, match="expected <source alias>/<skill name>"):
+        config.load(scope)
 
 
 def test_shared_patch_loads(scope: paths.Scope, home: Path) -> None:

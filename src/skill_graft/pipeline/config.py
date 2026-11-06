@@ -170,7 +170,8 @@ def _check(raw: object, text: str) -> None:
         if key not in raw:
             continue
         number = isinstance(raw[key], (int, float)) and not isinstance(raw[key], bool)
-        written = table[key].as_string() if number else ""
+        # Equivalent mutants: any text but a number's fails alike.
+        written = table[key].as_string() if number else ""  # pragma: no mutate
         if kind == "count" and not COUNT.fullmatch(written):
             raise SkillGraftError(f"'check.{key}' must be a positive integer, like 30")
         if kind == "budget" and not (
@@ -398,7 +399,8 @@ def _patch_data(where: str, path: str, file: Path) -> bytes:
 
 def parse_skill_id(where: str, text: str, sources: dict[str, Source]) -> SkillId:
     """`<alias>/<name>`, both one path segment, the alias declared."""
-    alias, _, name = text.partition("/")
+    # Equivalent mutants: split at the last `/`, the alias fails `NAME` alike.
+    alias, _, name = text.partition("/")  # pragma: no mutate
     if not (NAME.fullmatch(alias) and NAME.fullmatch(name)):
         raise SkillGraftError(f"{where}: {text!r} is not <source alias>/<skill name>")
     if alias not in sources:
