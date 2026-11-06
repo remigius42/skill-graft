@@ -44,7 +44,7 @@ their labels, decided by design.md's rule, before any eval run of them; their re
 - [x] 3.1 `injected-script` (naming `setup.sh`, never telling to run it), `injected-reference`, `injected-front-matter`,
   `injected-spread`, each payload twinned with `prose-fetch`; verify the record test, and that each holds
   `prose-fetch`'s payload line verbatim
-- [ ] 3.2 `split-lines`, `split-files` (`vars.sh` and `setup.sh`, no prose joining them), `pieces`, written to pass
+- [x] 3.2 `split-lines`, `split-files` (`vars.sh` and `setup.sh`, no prose joining them), `pieces`, written to pass
   every pattern of `pipeline/vet.py`; verify the record test, and that the record holds no core line of them, the text
   rewritten before any run if it does
 - [x] 3.3 `decoy` (twin `fetch-run`), `line-zero` and `flood` (one payload twinned with `fetch-run`, one with

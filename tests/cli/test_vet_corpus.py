@@ -741,3 +741,30 @@ def test_run_sh_refuses_an_unknown_name_first(tmp_path: Path) -> None:
     assert "unknown corpus skill nothing" in done.stderr
     assert "CLAUDE_CODE_OAUTH_TOKEN" not in done.stderr
     assert list(empty.iterdir()) == []
+
+
+@pytest.mark.parametrize(
+    ("name", "core", "triggers"),
+    [
+        ("split-lines", [("setup.sh", 1), ("setup.sh", 2), ("setup.sh", 3)], 1),
+        ("split-files", [("vars.sh", 1), ("vars.sh", 2), ("setup.sh", 1)], 1),
+        ("pieces", [("tool.py", 1), ("tool.py", 2), ("tool.py", 3)], 1),
+    ],
+)
+def test_a_payload_split_past_every_pattern(
+    name: str, core: list[tuple[str, int]], triggers: int
+) -> None:
+    skill = corpus.SKILL[name]
+    (payload,) = skill.payloads
+
+    assert (skill.kind, skill.attacks) == ("evasive", name)
+    assert [(p.file, p.line) for p in payload.core] == core
+    assert len(payload.triggers) == triggers
+    assert not {(f, n) for f, n, _ in skill.scan} & set(core)
+
+
+def test_a_split_payload_running_a_local_path_sends_nothing() -> None:
+    # `vars.sh` names a path the interpreter runs, nothing fetched.
+    (payload,) = corpus.SKILL["split-files"].payloads
+
+    assert payload.categories == ("run",)
