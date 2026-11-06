@@ -203,10 +203,12 @@ against.
 
 `CORPUS_SKILLS="<name>…"` makes only those corpus **Skills** entries, each twin of their payloads added, so an attack
 reruns after a change to `reader.json` without 29 readers. Not positional arguments: those name scenarios. `run.sh`
-checks the names first, with `corpus.py check <name>…`, after only the check that `uv sync` ran, before the token check
-and before building anything: an unknown name exits 2, as an unknown scenario does. `corpus.py write` takes the names;
-`score` then covers those **Skills** alone and prints `subset`. `compare` sums a subset score's **Skills** with the
-rest, each with its own run count, and leaves it out of the per-kind sums, which a subset would skew.
+checks the names first, with `corpus.py check <name>…`, before the check that `uv sync` ran, before the token check and
+before building anything: an unknown name exits 2, as an unknown scenario does. `corpus.py` needs only the standard
+library, so the check runs on the venv's Python where there is one and else on any `python3`: CI installs skill-graft
+outside the repository's `.venv`, and a check after the venv's would never reach the name there. `corpus.py write` takes
+the names; `score` then covers those **Skills** alone and prints `subset`. `compare` sums a subset score's **Skills**
+with the rest, each with its own run count, and leaves it out of the per-kind sums, which a subset would skew.
 
 `GRAFT_VET_SCORES=<dir>` copies `score` and the report file to `<dir>/<date>-<digest>-score` and `-report`, `<date>` UTC
 to the second, as `date -u +%Y%m%dT%H%M%SZ` prints it. The temporary folder lies under `/tmp`, often held in memory and
