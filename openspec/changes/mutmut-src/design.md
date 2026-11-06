@@ -71,11 +71,13 @@ gains `exclude = ["mutants"]`, and pytest's `norecursedirs` gains `mutants`: `te
 
 ### Message wording is not mutated, or not counted
 
-`def _parser` in `cli.py` carries `# pragma: no mutate block`: its 340 survivors are help text. Other messages
-(`SkillGraftError` texts, **Vet** reasons, warnings) are scattered through expressions a pragma would cover too much of;
-their mutants stay in the report as noise. A test already pins a message's key phrase where a user acts on it; pinning
-exact wording would make every rewording a test change. `do_not_mutate_patterns` (a regex over source lines) was
-considered and rejected: a line holding a message often holds logic too.
+`def _parser` in `cli.py` sits between `# pragma: no mutate start` and `# pragma: no mutate end`, each on its own line:
+its 340 survivors are help text. Not `block`: on its own line at module level it silences every statement after it to
+the module's end, and after the `def` line it would push that line past 88 columns. Other messages (`SkillGraftError`
+texts, **Vet** reasons, warnings) are scattered through expressions a pragma would cover too much of; their mutants stay
+in the report as noise. A test already pins a message's key phrase where a user acts on it; pinning exact wording would
+make every rewording a test change. `do_not_mutate_patterns` (a regex over source lines) was considered and rejected: a
+line holding a message often holds logic too.
 
 ### An equivalent mutant: a pragma with its reason
 
@@ -105,7 +107,7 @@ committed results file would look current and be wrong after the next source edi
 
 - [Two hours per full run discourages running it] → a per-module glob runs in about two minutes (`rename`, 122 s, most
   of it the unchanged run and the test-to-function map mutmut builds first).
-- [A pragma hides a real gap] → one per line, with a reason, read in review; `block` only on `_parser`.
+- [A pragma hides a real gap] → one per line, with a reason, read in review; a region only around `_parser`.
 - [mutmut's config moves again within 3.x] → pinned minor version; a key it no longer reads warns at start.
 - [A mutant only a subprocess test would kill shows as a survivor] → its triage finds the subprocess test and adds an
   in-process one, which the layer rule asks for anyway.

@@ -13,7 +13,7 @@ covers only the security-relevant patterns; nothing measures how tightly the tes
   run as `uv run mutmut run`, from the repository root. Opt-in: no hook or CI job runs it; a full run takes about two
   hours and forks, so it runs on Linux and macOS only. It reports and never fails a build.
 - `mutation/` stays as it is: it mutates regex tokens, which mutmut does not; the two overlap only shallowly.
-- Message wording is not tested: `cli._parser`, the help texts, carries `# pragma: no mutate block`; mutants of other
+- Message wording is not tested: `cli._parser`, the help texts, sits in a `# pragma: no mutate` region; mutants of other
   message strings are known noise in the report.
 - A mutant that cannot change behavior carries `# pragma: no mutate` on its line, with the reason after it.
 - Every surviving mutant in `pipeline/` is killed by a test in its module's test file, marked equivalent, or is message

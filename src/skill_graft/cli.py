@@ -136,6 +136,7 @@ class _Parser(_Command):
         self.exit(2, f"{self.prog}: error: {message}\n\ncommands:\n{self.commands}")
 
 
+# pragma: no mutate start, help texts: their wording is not tested
 def _parser() -> tuple[_Parser, dict[str, argparse.ArgumentParser]]:
     """The parser and each command's own, by name."""
     parser = _Parser(
@@ -388,6 +389,9 @@ def _parser() -> tuple[_Parser, dict[str, argparse.ArgumentParser]]:
         f"  {action.dest:<10}{action.help}\n" for action in commands._choices_actions
     )
     return parser, dict(commands.choices)
+
+
+# pragma: no mutate end
 
 
 def main(argv: list[str] | None = None) -> int:
