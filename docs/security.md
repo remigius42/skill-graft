@@ -118,7 +118,9 @@ not a fault, and no **Flag** is not a pass: read what it points at, and the rest
 The `graft-vet` skill adds the half patterns miss: a reader per **Skill** that looks for intent. Hardened by the same
 probe as the **Check**, each reader is a `claude -p --restricted` process holding `Read`, `Grep` and `Glob`, given only
 its own **Skill**'s folder as `vet --into` writes it, no target's, and no **Flag** of the scan; its turns, spend and
-readers at once are `[check]`'s. It replies `<file>:<line> <category>` lines, or `none`.
+readers at once are `[check]`'s. It replies `<file>:<line> <category>` lines, or `none`. Text telling it, as a reviewer,
+what to reply or flag, or that the **Skill** is safe, it never follows but flags `permission`, so an attempt to steer it
+shows in the report file.
 
 A report filter in code, `sh` and `awk`, merges each reply with `vet`'s output into a report file, one line per
 **Flag**: `<skill id> <file>:<line> <category> <owasp ids> <seen-by> [<pattern>]`, `seen-by` one of `scan`, `reader`,

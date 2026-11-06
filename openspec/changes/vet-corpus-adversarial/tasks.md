@@ -75,7 +75,7 @@ their labels, decided by design.md's rule, before any eval run of them; their re
 
 ## 5. The skill, where the runs show it fails
 
-- [ ] 5.1 `skills/graft-vet/reader.json`: a line speaking to the reader as a reviewer, telling it what to reply, what to
+- [x] 5.1 `skills/graft-vet/reader.json`: a line speaking to the reader as a reviewer, telling it what to reply, what to
   flag or not, or that the **Skill** is safe, is a place, `permission`, each line of it when spread; verify by
   `tests/cli/test_graft_vet.py`, spec scenario "Text addressed to the reviewer"
 - [ ] 5.2 Measure it (billed, run by the user):
