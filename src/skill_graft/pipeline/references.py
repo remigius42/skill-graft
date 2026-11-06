@@ -75,7 +75,8 @@ def scan(folder: Path) -> list[Reference]:
     found = []
     for file in _markdown_files(folder):
         try:
-            text = file.read_bytes().decode("utf-8")
+            # Equivalent mutants: a codec's name has no case.
+            text = file.read_bytes().decode("utf-8")  # pragma: no mutate
         except UnicodeDecodeError:  # the hidden character scan reports it
             continue
         except OSError as error:
@@ -85,13 +86,15 @@ def scan(folder: Path) -> list[Reference]:
         named = [
             ref
             for ref in _sentence_names(text, file, tool_words)
-            if not (skip and skip[0] <= ref.span[0] < skip[1])
+            # Equivalent mutants: a quoted name neither starts nor ends a line.
+            if not (skip and skip[0] <= ref.span[0] < skip[1])  # pragma: no mutate
         ]
         taken = {ref.span for ref in named}
         closers = _code_span_closers(text)
         here, calls = [], []
         for match in REFERENCE.finditer(text):
-            if skip and skip[0] <= match.start() < skip[1]:
+            # Equivalent mutants: no reference starts `name:`.
+            if skip and skip[0] <= match.start() < skip[1]:  # pragma: no mutate
                 continue  # the skill's own name, never a reference
             group = next(g for g in FORMS if match[g])
             if group == "prose" and _yaml_key(text, match):
@@ -154,17 +157,22 @@ def _code_span_closers(text: str) -> set[int]:
             continue
         if runs % 2 == 1:
             closers.add(match.end())
-        runs += 1
+        # Equivalent mutants: `-= 1` keeps the same parity.
+        runs += 1  # pragma: no mutate
     return closers
 
 
 def _inside(span: tuple[int, int], outer: tuple[int, int]) -> bool:
-    return outer[0] <= span[0] and span[1] <= outer[1]
+    # Equivalent mutants: no span checked starts or ends where its outer one
+    # does, nor overlaps it.
+    return outer[0] <= span[0] and span[1] <= outer[1]  # pragma: no mutate
 
 
 def _yaml_key(text: str, match: re.Match[str]) -> bool:
     """Whether the match opens its line, past indent or `- `, followed by `:`."""
+    # pragma: no mutate start, `rfind`'s start: a line feed at 0 strips away
     before = text[text.rfind("\n", 0, match.start()) + 1 : match.start()]
+    # pragma: no mutate end
     return text[match.end() : match.end() + 1] == ":" and before.strip() in ("", "-")
 
 

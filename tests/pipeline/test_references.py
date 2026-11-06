@@ -467,3 +467,89 @@ def test_pattern_edges(tmp_path: Path, text: str, found: list[str]) -> None:
     (tmp_path / "notes.md").write_text(text)
 
     assert [ref.text for ref in references.scan(tmp_path)] == found
+
+
+def test_files_after_one_not_utf8_still_scanned(tmp_path: Path) -> None:
+    folder = skill(tmp_path / "tdd", "/a\n")
+    (folder / "b.md").write_bytes(b"/b \xff\n")
+    (folder / "c.md").write_text("/c\n")
+
+    assert found(folder) == ["/a", "/c"]
+
+
+def test_skill_md_first_whatever_its_name_sorts_by(tmp_path: Path) -> None:
+    folder = skill(tmp_path / "tdd", "/b\n")
+    (folder / "AGENTS.md").write_text("/a\n")
+
+    assert found(folder) == ["/b", "/a"]
+
+
+def test_line_after_the_own_name_line_scanned(tmp_path: Path) -> None:
+    folder = skill(tmp_path / "tdd", "---\nname: tdd\n/grilling\n---\n")
+
+    assert found(folder) == ["/grilling"]
+
+
+@pytest.mark.parametrize(
+    "text",
+    [
+        "allowed-tools: x\nsee /grilling\n",
+        "`lint`/check and /grilling\n",
+        'Call the Skill tool with "my-skill". Then /grilling.\n',
+    ],
+)
+def test_references_after_one_dropped(tmp_path: Path, text: str) -> None:
+    folder = skill(tmp_path / "tdd", text)
+
+    assert found(folder)[-1] == "/grilling"
+
+
+def test_slash_name_keeps_its_last_letter(tmp_path: Path) -> None:
+    folder = skill(tmp_path / "tdd", "run /fooX.\n")
+
+    assert found(folder) == ["/fooX"]
+
+
+def test_sentences_each_to_the_next(tmp_path: Path) -> None:
+    text = 'Use the Skill tool with "a". Then the Skill tool with "b", the Skill tool "c"\n'
+    folder = skill(tmp_path / "tdd", text)
+
+    assert found(folder) == [
+        'Skill tool "a"',
+        'Skill tool "b"',
+        'Skill tool "c"',
+    ]
+
+
+def test_code_span_closer_on_a_later_line(tmp_path: Path) -> None:
+    folder = skill(tmp_path / "tdd", "x\n`lint`/check\n")
+
+    assert found(folder) == ["`lint`"]
+
+
+@pytest.mark.parametrize(
+    ("text", "expected"),
+    [
+        ("intro\nmy-key: x\n", []),
+        ("a\nb\nmy-key: x\n", []),
+        ("intro\n- my-key: x\n", []),
+        ("intro\nx my-key: v\n", ["my-key"]),
+        ("see my-skill: now\n", ["my-skill"]),
+    ],
+)
+def test_yaml_key_on_a_later_line(
+    tmp_path: Path, text: str, expected: list[str]
+) -> None:
+    folder = skill(tmp_path / "tdd", text)
+
+    assert found(folder) == expected
+
+
+def test_front_matter_needs_its_fence_alone() -> None:
+    assert references.front_matter("X---\nname: x\n---\n") is None
+
+
+def test_name_line_after_another_key() -> None:
+    text = "---\ndescription: d\nname: x\n---\n"
+
+    assert references.front_matter(text) == (4, (19, 27))

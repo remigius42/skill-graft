@@ -29,7 +29,7 @@ that is a bug: its fix, and a delta spec if a spec covers the behavior; its `Fix
 Verify per task: the module's rerun leaves only those two kinds of survivor, and `uv run pytest` passes.
 
 - [x] 2.1 `deployed` (74)
-- [ ] 2.2 `references` (34)
+- [x] 2.2 `references` (34)
 - [ ] 2.3 `lock` (31)
 - [ ] 2.4 `vet` (30)
 - [ ] 2.5 `config` (27)
