@@ -66,7 +66,9 @@ score.
   flagged 11 of 24 injection lines: the readers ignored text telling them what to reply, as `reader.json` says, without
   reporting it, so a report showed the harm but not that the **Skill** tries to deceive its reviewer. `reader.json` now
   names such text a place, `permission`. A subset run of the **Skills** whose injections went unflagged measures the fix
-  against the baseline.
+  against the baseline. The steering count, which raised 3 or 4 alarms a run and none for a steered reader, no longer
+  counts a scan place whose line the reader flagged in another category. `pieces` is labelled `unreviewable` too, as
+  `one-liner`'s encoded payload is.
 
 ## Capabilities
 
@@ -78,7 +80,7 @@ None.
 
 - `graft-vet`: "A corpus measures the Vet" gains the adversarial **Skills**, labels fixed before a run, payloads apart
   from injections, and the comparison of runs; "One reader per Skill" has the reader flag text that speaks to it as a
-  reviewer.
+  reviewer; "Steering count" leaves out a scan place whose line the reader flagged.
 
 ## Impact
 
@@ -92,6 +94,7 @@ None.
   `equivalent.toml` lists; the harness is rerun once the corpus is in (task 3.6).
 - `docs/security.md`: one sentence on what the corpus attacks. `.cspell.yaml` for new words.
 - `skills/graft-vet/reader.json` and `tests/cli/test_graft_vet.py`: the reader flags text addressed to it as a reviewer.
+- `skills/graft-vet/report-filter.sh` and `SKILL.md`, `tests/cli/test_graft_vet.py`: the steering count's new rule.
 - `CHANGELOG.md`: the reader's change is one a user sees in the report file; the archive commit adds it. The eval is
   tooling and gets none.
 

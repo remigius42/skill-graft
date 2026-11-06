@@ -43,6 +43,55 @@ exit code and the first line of its error output, bounded as the **Check** bound
 - **THEN** the summary names `mp/x` `no-reply`, the skill shows its exit code and the first line of its error output if
   it has one, never a line of its output, and the report file lists its scan **Flags**
 
+### Requirement: Steering count
+
+The summary and the report file SHALL give for each **Skill** a reader replied for the count of distinct file, line and
+category of the scan's **Flags** in a file where the reader gave no **Flag** of that category at any line, and no
+**Flag** of any category at that line, computed by the report filter, line 0 left out on both sides. A **Skill** whose
+reader failed or reached a cap SHALL still get a count, as if its reader had replied `none`, and be named as read by no
+reader, and why.
+
+#### Scenario: A steered reader
+
+- **WHEN** the scan flags `mp/x` `SKILL.md:12 run` and `SKILL.md:12 send`, and its reader replies `none`
+- **THEN** the summary gives `mp/x` a steering count of 2
+
+#### Scenario: Another line, same category
+
+- **WHEN** the scan flags `mp/x` `SKILL.md:12 run`, and its reader replies `SKILL.md:30 run`
+- **THEN** that scan **Flag** adds nothing to `mp/x`'s steering count
+
+#### Scenario: Same line, another category
+
+- **WHEN** the scan flags `mp/x` `SKILL.md:12 read`, and its reader replies `SKILL.md:12 write`
+- **THEN** that scan **Flag** adds nothing to `mp/x`'s steering count, and the report file lists both **Flags**
+
+#### Scenario: Line 0 on neither side
+
+- **WHEN** the scan flags `mp/x` `bin/tool:0 run` and `SKILL.md:12 run`, and its reader replies `SKILL.md:0 run`
+- **THEN** `mp/x`'s steering count is 1, for `SKILL.md:12`, and the report file still lists all three **Flags**
+
+#### Scenario: Only dropped lines
+
+- **WHEN** the scan flags `mp/x` `SKILL.md:12 run`, and `mp/x`'s reader replies only `done`
+- **THEN** the summary holds `mp/x steering 1 dropped 1`
+
+#### Scenario: Last line with no line break
+
+- **WHEN** `SKILL.md` is `a\nb`, with no final line break, and a reader replies `SKILL.md:2 run`
+- **THEN** that line is kept
+
+#### Scenario: Two files, one mapped name
+
+- **WHEN** `mp/x` holds `a b.md` and `a<TAB>b.md`, the scan flags `a?b.md:3 run`, and the reader replies `a?b.md:3 run`
+- **THEN** that reply line matches nothing, and `mp/x`'s steering count is 1
+
+#### Scenario: Two patterns, one line
+
+- **WHEN** `vet` prints `mp/x SKILL.md:12 send LLM02,ASI02 send.url` and
+  `mp/x SKILL.md:12 send LLM02,ASI02 send.network-tool`, and its reader replies `none`
+- **THEN** the report file holds both **Flag** lines, and `mp/x`'s steering count is 1
+
 ### Requirement: A corpus measures the Vet
 
 This repository SHALL hold a corpus of synthetic **Skills**, written by code, each labelled with the places, file, line
