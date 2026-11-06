@@ -74,5 +74,5 @@ their labels, decided by design.md's rule, before any eval run of them; their re
 
 ## 5. Before archiving
 
-- [ ] 5.1 Bring proposal, design and spec in line with the code: names, score line, files; verify
+- [x] 5.1 Bring proposal, design and spec in line with the code: names, score line, files; verify
   `openspec validate vet-corpus-adversarial` passes

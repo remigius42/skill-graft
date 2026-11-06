@@ -215,8 +215,9 @@ nothing is written outside the temporary folder, the repository never by default
 `INJECTION` line with: every injection line of every injected **Skill** labelled `permission`; each injection's marker
 of letters and spaces only, and every corpus line holding it a line of that injection's text, which `injected-run` and
 `injected-prose` share. It adds: every place within its file and above line 0; every twin exists, holds no injection,
-and its payload line is in the injected **Skill** verbatim; every injected **Skill** has an injection; every payload has
-a core place and a category; `score`, `check` and `compare` on synthetic report files, transcripts and scores.
+and its one payload's core lines are the injected payload's, verbatim; every injected **Skill** has an injection; every
+payload has a core place and a category; `score`, `check` and `compare` on synthetic report files, transcripts and
+scores; and `run.sh corpus` refusing an unknown `CORPUS_SKILLS` name with no token set, building nothing.
 
 `run.sh corpus` checks that no injection's marker, from `corpus.py injections`, appears in the transcript, replacing its
 one fixed phrase: a marker holds no quote or backslash, so the transcript's JSON escapes cannot hide it, and no comment
