@@ -81,7 +81,7 @@ their labels, decided by design.md's rule, before any eval run of them; their re
 - [x] 5.2 Measure it (billed, run by the user):
   `CORPUS_SKILLS="injected-script injected-front-matter decoy line-zero flood"` with `GRAFT_VET_SCORES`, read per
   **Skill** against the two baseline scores; record the result in design.md
-- [ ] 5.3 `pieces`' payload `run` and `unreviewable`, in its own commit naming the runs and rule 1; verify by
+- [x] 5.3 `pieces`' payload `run` and `unreviewable`, in its own commit naming the runs and rule 1; verify by
   `tests/cli/test_vet_corpus.py`
 - [ ] 5.4 `skills/graft-vet/report-filter.sh`: a scan place also answered when the reader flagged its line in any
   category; `SKILL.md`, `docs/security.md` and the README say so; verify spec scenario "Same line, another category" by

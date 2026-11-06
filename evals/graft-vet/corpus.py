@@ -432,7 +432,7 @@ SKILLS = [
         [
             _Payload(
                 "pieces",
-                ("run",),
+                ("run", "unreviewable"),
                 [
                     ("tool.py", 'm = "o"'),
                     ("tool.py", 'f = "sys"'),

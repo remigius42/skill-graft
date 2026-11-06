@@ -768,3 +768,10 @@ def test_a_split_payload_running_a_local_path_sends_nothing() -> None:
     (payload,) = corpus.SKILL["split-files"].payloads
 
     assert payload.categories == ("run",)
+
+
+def test_a_payload_assembled_from_pieces_is_unreviewable() -> None:
+    # Rule 1: assembled names hide what the line says, as `one-liner`'s base64 does.
+    (payload,) = corpus.SKILL["pieces"].payloads
+
+    assert payload.categories == ("run", "unreviewable")
