@@ -173,7 +173,8 @@ flood only its tail.
   **Deployed diff** of what they would vendor against the **Vendored copies**, every **Skill** added before the first
   `add`. What changed since the last `deploy` is git's to show: in a committed **Package**, the diff of its
   `.apm/skills/` since the commit you deployed. `vet` points at the lines worth reading first ([The Vet](#the-vet)), by
-  pattern only: what it does not flag reaches your agent too.
+  pattern only: what it does not flag reaches your agent too. `/graft-vet` adds a confined reader per **Skill** that
+  looks for intent ([graft-vet](#graft-vet)); it narrows what you must read, and judges nothing either.
 
 For `graft-vet` ([graft-vet](#graft-vet)):
 
