@@ -36,10 +36,10 @@ and exits 1.
 skill-graft needs Python 3.11 or later. Install the latest release from PyPI with any of:
 
 ```sh
-uv tool install skill-graft==0.4.0
-pipx install --python python3.11 skill-graft==0.4.0
-pip install skill-graft==0.4.0      # into the active environment
-pipenv install skill-graft==0.4.0
+uv tool install skill-graft==0.4.1
+pipx install --python python3.11 skill-graft==0.4.1
+pip install skill-graft==0.4.1      # into the active environment
+pipenv install skill-graft==0.4.1
 ```
 
 uv picks a suitable Python itself; pipx and pip use theirs, so point them at 3.11 or later. pipenv installs into that
@@ -49,10 +49,10 @@ repository's publish workflow built and uploaded it.
 To install from the signed release tag instead (see below), install from the repository:
 
 ```sh
-uv tool install git+https://github.com/remigius42/skill-graft@v0.4.0
-pipx install --python python3.11 git+https://github.com/remigius42/skill-graft@v0.4.0
-pip install git+https://github.com/remigius42/skill-graft@v0.4.0      # into the active environment
-pipenv install "skill-graft @ git+https://github.com/remigius42/skill-graft@v0.4.0"
+uv tool install git+https://github.com/remigius42/skill-graft@v0.4.1
+pipx install --python python3.11 git+https://github.com/remigius42/skill-graft@v0.4.1
+pip install git+https://github.com/remigius42/skill-graft@v0.4.1      # into the active environment
+pipenv install "skill-graft @ git+https://github.com/remigius42/skill-graft@v0.4.1"
 ```
 
 skill-graft also runs `git`. With git 2.44 or later, looking up what the [cache](#cache) holds never contacts the
@@ -61,7 +61,7 @@ later.
 
 These install the latest release; the others are listed under
 [releases](https://github.com/remigius42/skill-graft/releases), and each tag's README describes its release. To install
-the unreleased `main` instead, drop `@v0.4.0` from a repository URL. `skill-graft --version` names what is installed:
+the unreleased `main` instead, drop `@v0.4.1` from a repository URL. `skill-graft --version` names what is installed:
 the version, `skill-graft <version>`, and for a repository install also the tag or branch the URL names and the commit,
 `skill-graft <version> (v<version> @ <commit>)`, or only the commit for a URL naming neither.
 

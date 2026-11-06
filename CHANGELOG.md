@@ -7,6 +7,8 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 
 ## [Unreleased]
 
+## [0.4.1] - 2026-11-06
+
 ### Added
 
 - The `graft-vet` skill, `/graft-vet [skill-id…]`, installed as graft-check is and run only when you ask: it vets the
@@ -348,4 +350,5 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 [0.2.3]: https://github.com/remigius42/skill-graft/compare/v0.2.2...v0.2.3
 [0.3.0]: https://github.com/remigius42/skill-graft/compare/v0.2.3...v0.3.0
 [0.4.0]: https://github.com/remigius42/skill-graft/compare/v0.3.0...v0.4.0
-[unreleased]: https://github.com/remigius42/skill-graft/compare/v0.4.0...HEAD
+[0.4.1]: https://github.com/remigius42/skill-graft/compare/v0.4.0...v0.4.1
+[unreleased]: https://github.com/remigius42/skill-graft/compare/v0.4.1...HEAD
