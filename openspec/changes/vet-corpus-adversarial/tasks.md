@@ -86,6 +86,9 @@ their labels, decided by design.md's rule, before any eval run of them; their re
 - [x] 5.4 `skills/graft-vet/report-filter.sh`: a scan place also answered when the reader flagged its line in any
   category; `SKILL.md`, `docs/security.md` and the README say so; verify spec scenario "Same line, another category" by
   `tests/cli/test_graft_vet.py`, every other steering scenario still passing
+- [ ] 5.5 `reader.json`'s `send`: a link named for a person to read, which nothing fetches, is no place; verify spec
+  scenario "A link to read" by `tests/cli/test_graft_vet.py`; measured by the user with
+  `CORPUS_SKILLS="docs-link fetch-run injected-run prose-fetch"`, `docs-link` unflagged and every payload still caught
 
 ## 6. Before archiving
 
