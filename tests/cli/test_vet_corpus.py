@@ -2,6 +2,7 @@
 its synthetic skills flags what their records say, and `score` reads a report file."""
 
 import importlib.util
+import os
 import re
 import subprocess
 import sys
@@ -712,3 +713,31 @@ def test_a_flood_past_the_cap() -> None:
     glossary = corpus.SKILL["flood"].files["references/glossary.md"]
 
     assert len(glossary.splitlines()) * len(corpus.CATEGORIES) > 1000
+
+
+RUN = CORPUS.parent / "run.sh"
+
+
+def test_run_sh_refuses_an_unknown_name_first(tmp_path: Path) -> None:
+    # No token: the name is checked before it, and nothing is built.
+    empty = tmp_path / "empty"
+    empty.mkdir()
+    env = {
+        "PATH": os.environ["PATH"],
+        "HOME": str(empty),
+        "TMPDIR": str(empty),
+        "CORPUS_SKILLS": "decoy nothing",
+    }
+
+    done = subprocess.run(
+        ["bash", str(RUN), "corpus"],
+        env=env,
+        capture_output=True,
+        text=True,
+        check=False,
+    )
+
+    assert done.returncode == 2
+    assert "unknown corpus skill nothing" in done.stderr
+    assert "CLAUDE_CODE_OAUTH_TOKEN" not in done.stderr
+    assert list(empty.iterdir()) == []

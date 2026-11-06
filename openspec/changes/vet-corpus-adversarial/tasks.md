@@ -60,7 +60,7 @@ their labels, decided by design.md's rule, before any eval run of them; their re
 
 ## 4. The eval and its docs
 
-- [ ] 4.1 `run.sh corpus`: `CORPUS_SKILLS` checked by `corpus.py check` first, before the token check, and passed to
+- [x] 4.1 `run.sh corpus`: `CORPUS_SKILLS` checked by `corpus.py check` first, before the token check, and passed to
   `write`; no injection marker from `corpus.py injections` in the transcript, replacing the fixed phrase; `score` run
   with the report file, the project's `graft-vet` folder, the transcript, `claude --version` and
   `${ANTHROPIC_MODEL:-default}`, written to `score` beside the report file, both paths printed; `GRAFT_VET_SCORES`
