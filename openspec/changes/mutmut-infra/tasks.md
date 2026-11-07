@@ -35,7 +35,7 @@ survivor's kind.
 - [x] 3.1 `git` (32: 17 to kill): `run` without `repo` (no `--git-dir`, git's own lazy fetch), non-UTF-8 stderr, the
   subcommand past options; `apply`'s `--whitespace=nowarn`, its `XDG_CONFIG_HOME`, its environment recorded, non-UTF-8
   stderr
-- [ ] 3.2 `errors` (13): `flush_stdout` suppressing a bare `ValueError` and a bare `OSError` from `_discard`; a failed
+- [x] 3.2 `errors` (13): `flush_stdout` suppressing a bare `ValueError` and a bare `OSError` from `_discard`; a failed
   flush of a real pipe pointing stdout's descriptor at `os.devnull`
 - [ ] 3.3 `files` (7) and `text` (10), new `tests/infra/test_files.py` and `test_text.py`: `atomic_write`'s temporary
   file beside its target; `text.ranges` called directly; pragmas on `atomic_write`'s `delete=False` and `os.umask(0)`

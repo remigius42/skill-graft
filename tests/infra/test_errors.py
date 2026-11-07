@@ -72,6 +72,35 @@ def test_stdout_closed_by_python_still_warns(
     assert capsys.readouterr().err == WARNING
 
 
+@pytest.mark.parametrize("failure", [ValueError, OSError])
+def test_closed_stdout_reported_whatever_discarding_raises(
+    monkeypatch: pytest.MonkeyPatch, failure: type[Exception]
+) -> None:
+    def fail(stdout: object) -> None:
+        raise failure("no descriptor")
+
+    monkeypatch.setattr(errors, "_discard", fail)
+    closed_stdout(monkeypatch)
+
+    with pytest.raises(BrokenPipeError):
+        errors.flush_stdout()
+
+
+def test_failed_flush_points_stdout_at_devnull(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    read, write = os.pipe()
+    os.close(read)  # the reader gone
+    with open(write, "w") as stdout:  # closing writes its rest to os.devnull
+        stdout.write("lost")
+        monkeypatch.setattr(sys, "stdout", stdout)
+
+        with pytest.raises(BrokenPipeError):
+            errors.flush_stdout()
+
+        assert os.path.samestat(os.fstat(write), os.stat(os.devnull))
+
+
 def lowest_free_descriptor() -> int:
     descriptor = os.open(os.devnull, os.O_RDONLY)
     os.close(descriptor)
