@@ -14,12 +14,12 @@ repository, all eight CPUs, gave:
 | `commands` |       191 |                                             |
 | all        |     1 084 | of 8 380 mutants; 7 291 killed, 5 timed out |
 
-in about two hours (1.1 mutants per second). The tests read files outside `src/` and `tests/` (`skills/`, `evals/`,
-`docs/` and more): mutmut copies the source into `mutants/` and runs the tests there, so a path it does not copy fails
-its first run, on the unchanged code ("failed to collect stats"), as the spike's first two attempts did. A test that
-starts `skill_graft` in a subprocess (`tests/cli/test_warnings.py`, `test_cli.py`'s `ON_WINDOWS` case,
-`tests/test_mutation.py`) imports the checkout's `src/` through the editable install, not the mutant: what only those
-tests would kill shows as a survivor.
+in about two hours (1.1 mutants per second); the final full run, `_parser` excluded, took 57 minutes (2.3 per second).
+The tests read files outside `src/` and `tests/` (`skills/`, `evals/`, `docs/` and more): mutmut copies the source into
+`mutants/` and runs the tests there, so a path it does not copy fails its first run, on the unchanged code ("failed to
+collect stats"), as the spike's first two attempts did. A test that starts `skill_graft` in a subprocess
+(`tests/cli/test_warnings.py`, `test_cli.py`'s `ON_WINDOWS` case, `tests/test_mutation.py`) imports the checkout's
+`src/` through the editable install, not the mutant: what only those tests would kill shows as a survivor.
 
 ## Goals / Non-Goals
 
@@ -102,9 +102,9 @@ Timeouts (`hull.reach`, `deployed._blocks`, `deployed._myers`) count as killed.
 
 ### The baseline, in `CONTRIBUTING.md`
 
-Survivors per layer, after this change, in the Mutation testing section, as the number to beat, with the commit it was
-measured on. It goes stale too, but as a dated reference a reader compares a fresh run against, not data a tool reads: a
-committed results file would look current and be wrong after the next source edit.
+Survivors per layer, after this change, in the Mutation testing section, as the number to beat, dated with the change it
+was measured on. It goes stale too, but as a dated reference a reader compares a fresh run against, not data a tool
+reads: a committed results file would look current and be wrong after the next source edit.
 
 ## Risks / Trade-offs
 

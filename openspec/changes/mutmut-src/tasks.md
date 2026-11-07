@@ -16,9 +16,9 @@ before it passes on the code. Survivor counts are the spike's.
 - [x] 1.2 `# pragma: no mutate start` and `end` around `def _parser` in `cli.py`; verify a rerun of
   `skill_graft.cli.x__parser*` reports no mutants of it, and `uv run pytest` passes
 - [x] 1.3 `CONTRIBUTING.md`'s Mutation testing section: which harness covers what, how to run mutmut (all, one module by
-  glob, `mutmut results`, `mutmut show`), opt-in, about two hours, Linux and macOS only, never a gate; equivalent
-  mutants as a bare `# pragma: no mutate`, its reason in a comment above; message wording and mutants mypy refuses as
-  known noise. A line in `AGENTS.md`'s Tests section, a row in `docs/README.md`, new words in `.cspell.yaml`; verify the
+  glob, `mutmut results`, `mutmut show`), opt-in, about an hour, Linux and macOS only, never a gate; equivalent mutants
+  as a bare `# pragma: no mutate`, its reason in a comment above; message wording and mutants mypy refuses as known
+  noise. A line in `AGENTS.md`'s Tests section, a row in `docs/README.md`, new words in `.cspell.yaml`; verify the
   markdown and cspell hooks pass
 
 ## 2. `pipeline/` survivors
@@ -40,5 +40,5 @@ Verify per task: the module's rerun leaves only those two kinds of survivor, and
 
 ## 3. The baseline
 
-- [ ] 3.1 A full `uv run mutmut run`; the survivors per layer into `CONTRIBUTING.md` as the baseline to beat; verify
+- [x] 3.1 A full `uv run mutmut run`; the survivors per layer into `CONTRIBUTING.md` as the baseline to beat; verify
   `pipeline` has no survivor but those two kinds, and the markdown hooks pass

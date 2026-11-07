@@ -94,9 +94,9 @@ runs them all; a target is named as in `targets.py`, such as `config.NAME` or `v
 
 `uv run mutmut run`, from the repository root, mutates every function in `src/skill_graft/` (`[tool.mutmut]` in
 `pyproject.toml`) and runs the tests that reach each mutant, in a copy of the repository in `mutants/`. A full run takes
-about two hours; `uv run mutmut run "skill_graft.pipeline.lock*"` runs one module's mutants in a few minutes, and a
-rerun skips functions that did not change. It forks, so it runs on Linux and macOS only. `uv run mutmut results` lists
-the survivors, `uv run mutmut show <mutant>` prints one's diff. It never fails a build: read the survivors after
+about an hour on 8 CPUs; `uv run mutmut run "skill_graft.pipeline.lock*"` runs one module's mutants in a few minutes,
+and a rerun skips functions that did not change. It forks, so it runs on Linux and macOS only. `uv run mutmut results`
+lists the survivors, `uv run mutmut show <mutant>` prints one's diff. It never fails a build: read the survivors after
 changing a module, and kill each with a test in the module's test file. Two kinds are known noise, not gaps: a message's
 wording (help texts sit in a `# pragma: no mutate start` … `end` region around `cli._parser`), and a change mypy would
 refuse, which the hooks keep from landing. A mutant that cannot change behavior gets a bare `# pragma: no mutate` on its
@@ -104,6 +104,16 @@ line, and `# Equivalent mutants: <reason>` in a comment above; a line the pragma
 would wrap, sits in a `# pragma: no mutate start, <reason>` … `# pragma: no mutate end` region instead, the `end` before
 the next statement of the same block. Either silences every mutant on its lines, so use it sparingly. The `linear_time`
 tests are left out: their wall-clock limit misses under load, and the regex harness times them.
+
+The baseline to beat, a full run of 7392 mutants with the change `mutmut-src` (2026-11-07): 6867 killed, 4 timed out,
+521 survived. Survivors per layer:
+
+| Layer      | Survivors | Of which                                        |
+| ---------- | --------: | ----------------------------------------------- |
+| `cli`      |        80 | not yet triaged                                 |
+| `commands` |       191 | not yet triaged                                 |
+| `infra`    |       201 | not yet triaged                                 |
+| `pipeline` |        49 | all known noise: message wording, mypy refusals |
 
 ## Evals
 
