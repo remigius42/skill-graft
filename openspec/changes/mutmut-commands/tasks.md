@@ -48,5 +48,5 @@ Counts are from `afa64801`; see `design.md` for each survivor's kind.
 
 ## 4. The baseline
 
-- [ ] 4.1 Rerun `skill_graft.commands.*`; the `commands` row of `CONTRIBUTING.md`'s baseline to its new count, triaged
+- [x] 4.1 Rerun `skill_graft.commands.*`; the `commands` row of `CONTRIBUTING.md`'s baseline to its new count, triaged
   as known noise and marked equivalents, and the total of survivors with it; verify the markdown hooks pass
