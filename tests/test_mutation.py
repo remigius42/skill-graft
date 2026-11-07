@@ -270,9 +270,19 @@ def test_selection_for_a_pattern_imported_by_name() -> None:
     ]
 
 
-def test_selection_skips_a_missing_test_file_and_adds_extras() -> None:
-    # No `tests/infra/test_text.py`: `hidden` holds the pattern too.
+def test_selection_skips_a_missing_test_file_and_adds_extras(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    holders = targets.holders
+    monkeypatch.setattr(
+        targets,
+        "holders",
+        lambda name: [*holders(name), "skill_graft.infra"],
+    )
+
+    # No `tests/infra/test_infra.py`; `hidden` holds the pattern too.
     assert harness.select(target("text.CRITICAL_CHARS")) == [
+        "tests/infra/test_text.py",
         "tests/pipeline/test_hidden.py",
         "tests/pipeline/test_deployed.py",
         "tests/cli/test_hidden_characters.py",

@@ -64,13 +64,21 @@ def check_files(folder: Path) -> None:
             raise SkillGraftError(f"{link} points to {target}: not a regular file")
 
 
+# The mask `atomic_write` sets only to read the one in force, which it then
+# puts back at once: any would do.
+ANY_MASK = 0
+
+
 def atomic_write(file: Path, data: bytes) -> None:
     """Replaces `file` with `data` in one step, never leaving it half written.
 
     Keeps the mode of the file it replaces; a new file gets the umask's.
     """
     with tempfile.NamedTemporaryFile(
-        dir=file.parent, prefix=f".{file.name}.", delete=False
+        dir=file.parent,
+        prefix=f".{file.name}.",
+        # Equivalent mutants: `None` is as false.
+        delete=False,  # pragma: no mutate
     ) as tmp:
         try:
             tmp.write(data)
@@ -78,7 +86,7 @@ def atomic_write(file: Path, data: bytes) -> None:
             if file.exists():
                 shutil.copymode(file, tmp.name)
             else:
-                umask = os.umask(0)
+                umask = os.umask(ANY_MASK)
                 os.umask(umask)
                 os.chmod(tmp.name, 0o666 & ~umask)
             os.replace(tmp.name, file)
