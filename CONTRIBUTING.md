@@ -82,9 +82,9 @@ regexes and fails on a survivor; mutmut mutates the rest of `src/skill_graft/` a
 ### The regex harness
 
 `uv run python -m mutation [target…]`, from the repository root, mutates each security-relevant regex: the **Vet**'s,
-**Reference** finding, the `name:` comment, `skill-graft.toml` names and URLs, the **Hidden character** classes
-([mutation/targets.py](mutation/targets.py)). For each mutant, one token changed, it runs the tests of the modules
-holding the pattern, on one process per CPU, and exits 1 on a mutant no test kills, unless
+**Reference** finding, the `name:` comment, `skill-graft.toml` names and URLs, the URLs `tree` links to, the **Hidden
+character** classes ([mutation/targets.py](mutation/targets.py)). For each mutant, one token changed, it runs the tests
+of the modules holding the pattern, on one process per CPU, and exits 1 on a mutant no test kills, unless
 [mutation/equivalent.toml](mutation/equivalent.toml) lists it with the reason it cannot change behavior, and on a listed
 one that no longer survives or exists. It is opt-in and takes minutes, so no hook or CI job runs it; run it after
 changing a target pattern, then kill each survivor with a test in its module's test file, or list it. With no target it

@@ -625,6 +625,7 @@ def test_why_names_a_remote_sources_upstream_folder(
         ("https://oauth2:secret@gitlab.com/g/r", "https://gitlab.com/g/r"),
         ("HTTPS://GITHUB.COM/o/r", "https://github.com/o/r"),
         ("https://github.com:443/o/r", "https://github.com/o/r"),
+        ("https://github.com:x/o/r", None),
         ("https://github.com/o/r.git.git", "https://github.com/o/r.git"),
         ("https://github.com@evil.example/o/r", None),
         ("https://evil.example/github.com/o/r", None),
@@ -653,7 +654,112 @@ def test_why_names_a_remote_sources_upstream_folder(
         ("https://github.com/o/r x", None),
         ("https://github.com/o/r\n", None),
         ("https://github.com/o/r\x00", None),
+        ("https://to ken@github.com/o/r", None),
+        ("https://to\x01ken@github.com/o/r", None),
+        ("https://to\x7fken@github.com/o/r", None),
     ],
 )
 def test_repository(url: str, repository: str | None) -> None:
     assert explain.repository(url) == repository
+
+
+def test_tree_rewritten_prose_edge_before_its_target_expands(
+    home: Path, capsys: Capsys
+) -> None:
+    skill(home / "mp" / "tdd", "see `grilling`\n")
+    skill(home / "mp" / "plan", "/grilling\n")
+    skill(home / "mp" / "grilling", "/notes\n")
+    skill(home / "mp" / "notes")
+    write_config(
+        'entries = ["mp/tdd", "mp/plan"]\n[sources.mp]\npath = "~/mp"\n'
+        '[rename]\n"mp/grilling" = "mp-grilling"\n'
+    )
+
+    assert main(["tree"]) == 0
+
+    assert capsys.readouterr().out == (
+        "mp/tdd\n"
+        "└── mp/grilling as mp-grilling (`grilling`, prose) (*)\n"
+        "mp/plan\n"
+        "└── mp/grilling as mp-grilling (/grilling)\n"
+        "    └── mp/notes (/notes)\n"
+    )
+
+
+def test_tree_prose_edge_after_one_left_alone(home: Path, capsys: Capsys) -> None:
+    skill(home / "mp" / "tdd", "/grilling /notes, see `grilling` and `notes`\n")
+    skill(home / "mp" / "grilling")
+    skill(home / "mp" / "notes")
+    write_config(
+        'entries = ["mp/tdd"]\n[sources.mp]\npath = "~/mp"\n'
+        '[rename]\n"mp/notes" = "mp-notes"\n'
+    )
+
+    assert main(["tree"]) == 0
+
+    assert capsys.readouterr().out == (
+        "mp/tdd\n"
+        "├── mp/grilling (/grilling)\n"
+        "├── mp/notes as mp-notes (/notes)\n"
+        "└── mp/notes as mp-notes (`notes`, prose) (*)\n"
+    )
+
+
+@pytest.mark.parametrize("skipped", ["path source", "other host", "unreadable cache"])
+def test_mermaid_links_a_source_after_a_skipped_one(
+    home: Path, tmp_path: Path, capsys: Capsys, skipped: str
+) -> None:
+    upstream = Upstream(tmp_path / "upstream")
+    sha = upstream.commit({"tdd/SKILL.md": "# tdd\n"})
+    skill(home / "own" / "tdd")
+    url, broken = "https://github.com/o/mp", "https://github.com/o/a"
+    seed(upstream, url)
+    seed(upstream, broken)
+    first = {
+        "path source": 'path = "~/own"\n',
+        "other host": f'git = "{upstream.url}"\nref = "{sha}"\n',
+        "unreadable cache": f'git = "{broken}"\nref = "{sha}"\n',
+    }[skipped]
+    write_config(
+        'entries = ["a/tdd", "mp/tdd"]\n'
+        f'[sources.a]\n{first}[sources.mp]\ngit = "{url}"\nref = "{sha}"\n'
+        '[rename]\n"mp/tdd" = "mp-tdd"\n'
+    )
+    assert main(["tree", "--format", "mermaid"]) == 0  # caches the trees
+    (Cache.default().repository(broken) / "config").write_text("[broken\n")
+    capsys.readouterr()
+
+    assert main(["tree", "--format", "mermaid"]) == 0
+
+    a, mp = capsys.readouterr().out.split("  subgraph s1")
+    assert 'subgraph s0["a"]\n' in a
+    assert "mp · github.com/o/mp</a>" in mp
+
+
+def test_mermaid_double_quote_as_an_entity(home: Path) -> None:
+    skill(home / "mp" / "tdd")
+    configure(["mp/tdd"], mp="~/mp")
+    scope = paths.Scope(home)
+    found = explain.Repository('example.com/o/"mp', "https://example.com/tree", "")
+
+    with compute.compute_hull(scope, config.load(scope), Cache.default()) as hull:
+        diagram = explain.mermaid(hull, {"mp": found})
+
+    assert "'>mp · example.com/o/#quot;mp</a>\"]\n" in diagram
+
+
+def test_link_fragment_is_the_level_9_deflate_unpadded() -> None:
+    # Fragments of every length mod 4, one ending in `X` (n = 150, on Linux's zlib).
+    for n in range(160):
+        diagram = "flowchart TD\n" + "".join(
+            f"  n{i * i % 89} --> n{i * 31 % 97}\n" for i in range(n)
+        )
+
+        fragment = explain.link(diagram).removeprefix("https://mermaid.live/edit#pako:")
+
+        assert not fragment.endswith("=")
+        state = {"code": diagram, "mermaid": json.dumps({"theme": "default"})}
+        # Compressed here, not pinned: zlib-ng and Apple's zlib deflate differently.
+        deflated = zlib.compress(json.dumps(state).encode(), 9)
+        padding = "=" * (-len(fragment) % 4)
+        assert base64.urlsafe_b64decode(fragment + padding) == deflated
