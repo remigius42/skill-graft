@@ -27,7 +27,7 @@ survivor's kind.
   git before 2.36; `git.FSCK` and `--recurse-submodules=no` on the blob fetch and refetch, recorded; the overlay's
   `--local`, `extensions.partialclone` (set by the test) and a space in the source path; `_pin` writing no ref when its
   pin exists, recorded
-- [ ] 2.3 Housekeeping: `prune`'s boundary, `break` and unremovable leftover; `_build`'s cleanup; `_temporary`'s `.tmp`;
+- [x] 2.3 Housekeeping: `prune`'s boundary, `break` and unremovable leftover; `_build`'s cleanup; `_temporary`'s `.tmp`;
   `key`'s trailing `X`; a dry-run checkout of a subdirectory
 
 ## 3. The other modules

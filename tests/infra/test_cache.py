@@ -42,6 +42,7 @@ def test_relative_xdg_cache_home_is_ignored(
         ("/srv/skills", "skills"),
         ("https://example.com/", "example.com"),
         ("file:///", "repo"),
+        ("/srv/repoX/", "repoX"),
     ],
 )
 def test_key_is_readable(url: str, name: str) -> None:
@@ -216,6 +217,45 @@ def test_interrupted_clone_does_not_block(tmp_path: Path) -> None:
 
     assert git_cache.has_commit(upstream.url, sha)
     assert (leftover / "junk").exists()  # perhaps another run's clone in progress
+
+
+def test_killed_clone_leaves_what_prune_removes(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    upstream = Upstream(tmp_path / "up")
+    upstream.commit({"a/SKILL.md": "# a\n"})
+    calls = recorded(monkeypatch)
+    cache.Cache.default().fetch("mp", upstream.url)
+    (clone,) = [call for call in calls if "clone" in call]
+    # What the clone would have left, killed: its temporary folder.
+    leftover = aged(folder(Path(clone[-1])), 31)
+
+    cache.prune(paths.cache(), NOW)
+
+    assert not leftover.exists()
+
+
+@pytest.mark.needs_permissions
+def test_failed_clone_keeps_its_error_over_the_cleanup(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    stuck = []
+
+    def failing(*args: str, **kwargs: Any) -> bytes:
+        # Leaves a file in the clone's folder that cannot be removed.
+        sub = Path(args[-1]) / "sub"
+        folder(sub).chmod(0o555)
+        stuck.append(sub)
+        raise SkillGraftError("the clone failed")
+
+    monkeypatch.setattr(git, "run", failing)
+
+    try:
+        with pytest.raises(SkillGraftError, match="the clone failed"):
+            cache.Cache.default().fetch("mp", str(tmp_path / "up"))
+    finally:
+        for sub in stuck:
+            sub.chmod(0o755)
 
 
 def test_fetch_waits_for_another_run(tmp_path: Path) -> None:
@@ -1007,6 +1047,17 @@ def test_reference_layered_checkout_writes_no_real_cache(
     assert real.is_dir() and not [call for call in calls if "clone" in call]
 
 
+def test_reference_layered_checkout_of_a_subdirectory(tmp_path: Path) -> None:
+    upstream = Upstream(tmp_path / "up")
+    sha = upstream.commit({"x/a.md": "a\n", "y.md": "y\n"})
+    cache.Cache.default().checkout("mp", upstream.url, sha)  # the whole tree
+    layered = cache.Cache(tmp_path / "dry", cache.Cache.default())
+
+    tree = layered.checkout("mp", upstream.url, sha, "x")
+
+    assert files_in(tree) == {"x/a.md"}
+
+
 def test_reference_layered_checkout_lists_missing_files_once(
     tmp_path: Path, monkeypatch: pytest.MonkeyPatch
 ) -> None:
@@ -1492,6 +1543,52 @@ def test_prune_leftovers_but_no_repository() -> None:
 
     assert not export_leftover.exists() and not clone_leftover.exists()
     assert repository.exists() and trees.is_dir()
+
+
+def test_prune_keeps_what_is_exactly_unused_for_long() -> None:
+    now = 2_000_000_000
+    export = folder(paths.cache() / "trees" / "up-0123456789ab" / ("a" * 40))
+    os.utime(export, (now - cache.UNUSED, now - cache.UNUSED))
+
+    cache.prune(paths.cache(), now)
+
+    assert export.exists()
+
+
+def test_prune_past_an_entry_vanished_before_its_age_is_read(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    trees = paths.cache() / "trees" / "up-0123456789ab"
+    old = [aged(folder(trees / (c * 40)), 31) for c in "abc"]
+    lstat = Path.lstat
+    vanished: list[Path] = []
+
+    def vanishing_first(self: Path) -> os.stat_result:
+        if not vanished:  # another run removed it a moment ago
+            vanished.append(self)
+            raise FileNotFoundError(self)
+        return lstat(self)
+
+    monkeypatch.setattr(Path, "lstat", vanishing_first)
+
+    cache.prune(paths.cache(), NOW)
+
+    assert [path for path in old if path.exists()] == vanished
+
+
+@pytest.mark.needs_permissions
+def test_prune_over_a_leftover_it_cannot_remove() -> None:
+    leftover = folder(paths.cache() / "trees" / "up-0123456789ab" / "a.x1y2.tmp")
+    sub = folder(leftover / "sub")
+    sub.chmod(0o555)
+    aged(leftover, 31)
+    try:
+        cache.prune(paths.cache(), NOW)
+    finally:
+        for stuck in leftover.parent.glob("*/sub"):
+            stuck.chmod(0o755)
+
+    assert not leftover.exists()  # renamed first, so no run takes it for complete
 
 
 def test_prune_never_follows_a_symlink(tmp_path: Path) -> None:
