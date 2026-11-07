@@ -1269,3 +1269,60 @@ def test_diff_file_without_the_locks_ref(
 
     lines = (home / "review.diff").read_text().splitlines()
     assert f"# source mp: {sha}; upstream folder tdd" in lines
+
+
+def bound_and_resolved(home: Path, bind: str = "") -> None:
+    """Entries `mp/tdd`, which runs `/grilling`, and `mp/notes`; `own/grill`
+    beside them; then `bind`; resolved."""
+    skill(home / "mp" / "tdd", "/grilling\n")
+    mp_skills(home, "grilling", "notes")
+    skill(home / "own" / "grill")
+    write_config('entries = ["mp/tdd", "mp/notes"]\n' + TWO_SOURCES + bind)
+    assert main(["resolve"]) == 0
+
+
+BOUND = '[bind]\n"mp/grilling" = "own/grill"\n'
+
+
+@pytest.mark.parametrize(
+    ("argv", "bind"),
+    [
+        (["remove", "mp/notes"], ""),
+        (["rename", "mp/tdd", "t"], ""),
+        (["bind", "mp/grilling", "own/grill"], ""),
+        (["unbind", "mp/grilling"], BOUND),
+    ],
+)
+def test_dry_run_hint_names_the_edit(
+    home: Path, capsys: Capsys, argv: list[str], bind: str
+) -> None:
+    bound_and_resolved(home, bind)
+    # A `~` for each: the hint follows a skill added or changed, not one removed.
+    skill(home / "mp" / "tdd", "/grilling, edited\n")
+    capsys.readouterr()
+
+    assert main([*argv, "--dry-run"]) == 0
+
+    hint = f"review: skill-graft {' '.join(argv)} --dry-run --diff-file <file>"
+    assert hint in capsys.readouterr().out.splitlines()
+
+
+@pytest.mark.parametrize(
+    ("argv", "bind"),
+    [(["bind", "mp/grilling", "own/grill"], ""), (["unbind", "mp/grilling"], BOUND)],
+)
+def test_diff_file_of_a_bind(home: Path, argv: list[str], bind: str) -> None:
+    bound_and_resolved(home, bind)
+
+    assert main([*argv, "--dry-run", "--diff-file", "review.diff"]) == 0
+
+    assert (home / "review.diff").read_text().startswith(HEADER)
+
+
+def test_remove_without_entries(home: Path, capsys: Capsys) -> None:
+    mp_skills(home, "tdd")
+    write_config(SOURCES)
+
+    assert main(["remove", "mp/tdd"]) == 1
+
+    assert "`mp/tdd` is no entry" in capsys.readouterr().err

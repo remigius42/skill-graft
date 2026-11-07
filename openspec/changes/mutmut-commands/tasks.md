@@ -39,7 +39,7 @@ Counts are from `afa64801`; see `design.md` for each survivor's kind.
 - [x] 3.3 `deploy` (13): `deploy --into` failing mid-stage, and mid-swap with `swap_back` failing, leaves `into` empty;
   `test_interrupted`, whose interrupt hit `resolve` and never reached `deploy`, removed; `started` annotated, so mypy
   refuses its equivalent `None` mutant
-- [ ] 3.4 `edit` (12): each edit's dry-run hint; `bind` and `unbind` with `--diff-file`; `remove` without `entries`
+- [x] 3.4 `edit` (12): each edit's dry-run hint; `bind` and `unbind` with `--diff-file`; `remove` without `entries`
 - [ ] 3.5 `vet` (9): `vet --into`'s nested file and modes; an unremovable alias folder (`needs_permissions`); `!` and
   `~` in a file name
 - [ ] 3.6 `update` (1 more), `transaction` (3), `resolve`, `init_package`, `scope` (1 each): `update`'s hint with two
