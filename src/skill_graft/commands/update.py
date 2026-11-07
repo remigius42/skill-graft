@@ -333,7 +333,9 @@ def _tip(alias: str, source: GitSource) -> str:
                 sha = value
         if branch and sha:
             return sha
-        if not _ls_remote(context, ["--heads"], source.url, []):
+        # A branch or a tag means commits; not every ref, as a forge lists each
+        # pull request's.
+        if not _ls_remote(context, ["--heads", "--tags"], source.url, []):
             raise SkillGraftError(f"{context}: the remote has no commits yet")
         raise SkillGraftError(
             f"{context}: the remote names no default branch; "

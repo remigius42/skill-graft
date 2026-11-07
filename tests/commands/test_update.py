@@ -177,6 +177,21 @@ def test_no_default_branch(upstream: Upstream, capsys: Capsys) -> None:
     assert code == 1 and "'mp'" in err and "branch = " in err
 
 
+def test_remote_holding_only_tags_names_no_default_branch(
+    upstream: Upstream, capsys: Capsys
+) -> None:
+    upstream.commit({"tdd/SKILL.md": "# tdd\n"})
+    upstream.git("tag", "v1")
+    upstream.git("checkout", "-q", "--orphan", "nothing")
+    upstream.git("branch", "-D", "main")
+    write_config(git_source("mp", upstream))
+
+    code, _, err = update(capsys, "mp")
+
+    assert code == 1 and "'mp'" in err and "branch = " in err
+    assert "no commits" not in err
+
+
 def test_empty_remote(upstream: Upstream, capsys: Capsys) -> None:
     write_config(git_source("mp", upstream))
 

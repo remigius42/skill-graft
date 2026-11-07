@@ -22,7 +22,7 @@ Counts are from `afa64801`; see `design.md` for each survivor's kind.
 
 ## 2. The bug
 
-- [ ] 2.1 `fix(update): a remote holding only tags names no default branch`: `update` against a remote with a tag and an
+- [x] 2.1 `fix(update): a remote holding only tags names no default branch`: `update` against a remote with a tag and an
   unborn `HEAD` fails naming the alias and suggesting a `branch` key; `_tip` asks `_ls_remote` for heads and tags, not
   heads only; an empty remote still says it has no commits
 
