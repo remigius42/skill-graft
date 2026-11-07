@@ -14,7 +14,7 @@ Counts are from `afa64801`; see `design.md` for each survivor's kind.
   its segment check; `_path_url` without `safe=''`; `fetch_hint` by `zip` with the last line paired with none;
   `vendored` through `config.split_id`; `_tip`'s calls through `_ls_remote`; `update`'s target and diff as one value;
   verify `uv run pytest` passes before any new test (the harness's survivors on the new target are task 3.2's)
-- [ ] 1.2 `refactor(commands): one dry-run cache, review.dry_cache`: `dry_cache(stack) -> Cache`, its `root` the folder;
+- [x] 1.2 `refactor(commands): one dry-run cache, review.dry_cache`: `dry_cache(stack) -> Cache`, its `root` the folder;
   `Run.__init__` and `update.update` call it; verify `uv run pytest` passes
 - [ ] 1.3 `refactor(commands): mark mutmut's equivalent mutants`: the 3 pragmas in `design.md`, each expression alone on
   its line with its reason above; verify `ruff format` leaves each pragma on its line, and the module reruns no longer

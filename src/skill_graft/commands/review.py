@@ -266,9 +266,16 @@ def _source_line(
     return f"# source {skill.alias}: {refs}; upstream folder {shown}\n"
 
 
+def dry_cache(stack: ExitStack) -> Cache:
+    """A dry run's cache: a temporary folder, its `root`, that `stack` removes,
+    layered over the real cache."""
+    root = stack.enter_context(tempfile.TemporaryDirectory(prefix="skill-graft-"))
+    return Cache(Path(root), Cache.default())
+
+
 class Run:
-    """One run of a command that writes the lock: its cache, a dry run's layered
-    over a temporary folder the run removes; `--diff-file`'s file, refused if bad before
+    """One run of a command that writes the lock: its cache, a dry run's
+    `dry_cache`; `--diff-file`'s file, refused if bad before
     anything else; and the lines a dry run prints last."""
 
     def __init__(
@@ -284,18 +291,12 @@ class Run:
         self.command = " ".join(shlex.quote(arg) for arg in command)
         self.dry_run = dry_run
         self.written = written
-        self.cache = Cache.default()
-        self.tmp: Path | None = None
+        self.cache = dry_cache(stack) if dry_run else Cache.default()
         self.shown: dict[SkillId, tuple[deployed.View, deployed.View]] = {}
         self.text = ""  # the Deployed diff, built before any write
         self.changed = False  # whether the Hull diff marks a skill `+` or `~`
         # Whether the writes went through: a later failure keeps the Deployed diff.
         self.committed = False
-        if dry_run:
-            self.tmp = Path(
-                stack.enter_context(tempfile.TemporaryDirectory(prefix="skill-graft-"))
-            )
-            self.cache = Cache(self.tmp, self.cache)
 
     def proceed(self) -> None:
         """Past the command's no-op check: removes an earlier Deployed diff, so a
@@ -326,13 +327,13 @@ def running(
             try:
                 yield run
             except PatchError as error:
-                if run.tmp is None:
+                if not run.dry_run:
                     raise
                 keep = (
                     f"run `skill-graft {run.command}` without `--dry-run` "
                     "to keep what it fetched"
                 )
-                raise fetch_hint(error, run.tmp, keep) from None
+                raise fetch_hint(error, run.cache.root, keep) from None
         except BaseException:
             if run.target is not None and not run.committed:
                 clear(run.target)
