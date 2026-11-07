@@ -214,7 +214,12 @@ def test_lock_goes_through_lock_write(
     with transaction.resolving(scope, config.load(scope), [], Cache.default()):
         pass
     with transaction.resolving(
-        scope, config.load(scope), [], Cache.default(), lock_file=other, checked=True
+        scope,
+        config.load(scope),
+        [],
+        Cache.default(),
+        lock_file=other,
+        skills=tmp_path / "skills",
     ):
         pass
 
@@ -589,7 +594,6 @@ def test_into_writes_no_gitattributes(scope: paths.Scope, tmp_path: Path) -> Non
         scope,
         skills=into / ".apm" / "skills",
         lock_file=into / "skill-graft.lock",
-        checked=True,
     )
 
     assert (into / ".apm" / "skills" / "tdd").is_dir()
@@ -608,13 +612,6 @@ def test_first_resolve_lock_write_fails_leaves_no_copies(
 
     held = {str(p.relative_to(scope.package)) for p in scope.package.rglob("*")}
     assert held == {"skill-graft.toml", ".apm"}
-
-
-def test_checked_skips_the_check(scope: paths.Scope) -> None:
-    resolve(scope)
-    copy_of(scope).write_text("edited\n")
-
-    resolve(scope, write=False, checked=True)
 
 
 def project_warnings(

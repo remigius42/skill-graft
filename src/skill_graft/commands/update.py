@@ -33,7 +33,7 @@ def update(
     scope: paths.Scope,
     warnings: list[str],
     aliases: list[str],
-    dry_run: bool = False,
+    dry_run: bool,
     diff_file: Path | None = None,
     expect: str | None = None,
 ) -> None:
@@ -119,7 +119,7 @@ def _update(
         print(f"{alias} {tips[alias]}{unchanged}")
     # The lock even if no ref moved: a path source may have changed.
     with transaction.resolving(
-        scope, loaded, warnings, git_cache, tips, write=write, checked=True
+        scope, loaded, warnings, git_cache, tips, write=write
     ) as resolution:
         hull = resolution.hull
         hashes = resolution.hashes = lock.skill_hashes(hull)
@@ -137,18 +137,22 @@ def _update(
                     f"the hull is not the one reviewed: its hull digest is {digest}, "
                     f"not {expect}; review it again: {rerun}"
                 )
-            diff = ""  # built before any write
-            if target is not None:
-                diff = review.deployed_diff(
-                    HEADER, loaded, tips, previous, hull, hashes, shown, edited
+            # The file and its text, built before any write.
+            written = (
+                None
+                if target is None
+                else (
+                    target,
+                    review.deployed_diff(
+                        HEADER, loaded, tips, previous, hull, hashes, shown, edited
+                    ).encode(),
                 )
+            )
         moved = {
             alias: tip for alias, tip in tips.items() if tip != selected[alias].ref
         }
-        if write and target is not None:  # first: no diff of what was not written
-            resolution.writes.append(
-                (target, lambda: files.atomic_write(target, diff.encode()))
-            )
+        if write and written is not None:  # first: no diff of what was not written
+            resolution.writes.append((written[0], lambda: files.atomic_write(*written)))
         if write and moved:
             resolution.writes.append(
                 (scope.config_file.resolve(), lambda: _write_refs(scope, moved))
@@ -157,8 +161,8 @@ def _update(
     explain.announce_suggestions(hull, dry_run=not write and bool(moved))
     if write:
         return
-    if target is not None:
-        files.atomic_write(target, diff.encode())
+    if written is not None:
+        files.atomic_write(*written)
     if target is None and (shown or isinstance(previous, str)):
         print(f"review: {rerun}")
     elif not edited:  # all the text of what it would deploy was shown
@@ -323,30 +327,36 @@ def _tip(alias: str, source: GitSource) -> str:
     """The sha of the source's branch tip, as the remote reports it now."""
     context = f"source {alias!r} ({source.url})"
     if source.branch is None:
-        output = git.run(
-            "ls-remote", "--symref", "--", source.url, "HEAD", context=context
-        )
         # A default branch needs both lines: `ref: refs/heads/<b>` and its sha. A
         # detached HEAD has only the sha, of a commit perhaps on no branch.
         branch, sha = False, None
-        for line in output.decode().splitlines():
-            value, _, name = line.partition("\t")
+        for value, name in _ls_remote(context, ["--symref"], source.url, ["HEAD"]):
             if name == "HEAD" and value.startswith("ref: refs/heads/"):
                 branch = True
             elif name == "HEAD":
                 sha = value
         if branch and sha:
             return sha
-        if not git.run("ls-remote", "--heads", "--", source.url, context=context):
+        if not _ls_remote(context, ["--heads"], source.url, []):
             raise SkillGraftError(f"{context}: the remote has no commits yet")
         raise SkillGraftError(
             f"{context}: the remote names no default branch; "
             'set `branch = "…"` in its [sources] table'
         )
     ref = f"refs/heads/{source.branch}"
-    output = git.run("ls-remote", "--", source.url, ref, context=context)
-    for line in output.decode().splitlines():
-        sha, _, name = line.partition("\t")
+    for sha, name in _ls_remote(context, [], source.url, [ref]):
         if name == ref:
             return sha
     raise SkillGraftError(f"{context}: no branch {source.branch!r}")
+
+
+def _ls_remote(
+    context: str, options: list[str], url: str, patterns: list[str]
+) -> list[tuple[str, str]]:
+    """Each line `git ls-remote` prints for `url`, as its value and its ref."""
+    arguments = ["ls-remote", *options, "--", url, *patterns]
+    found = []
+    for line in git.run(*arguments, context=context).decode().splitlines():
+        value, _, name = line.partition("\t")
+        found.append((value, name))
+    return found

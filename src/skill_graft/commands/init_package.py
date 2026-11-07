@@ -32,7 +32,7 @@ CONFIG_TEMPLATE = """\
 APM_YML = "name: skill-graft\nversion: 0.1.0\n"
 
 
-def init(scope: paths.Scope, project: bool = False) -> None:
+def init(scope: paths.Scope, project: bool) -> None:
     """Creates and registers the user scope's package, or with `project` the one in
     the scope's root: the working folder."""
     if project and scope.user:

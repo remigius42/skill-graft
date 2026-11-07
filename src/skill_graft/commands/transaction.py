@@ -139,7 +139,6 @@ def resolving(
     lock_file: Path | None = None,
     write: bool = True,
     skills: Path | None = None,
-    checked: bool = False,
 ) -> Generator[Resolution]:
     """The hull, every source at its ref but those `refs` names; after the block,
     the lock rendered and verified while the patched copies exist and, unless
@@ -148,7 +147,7 @@ def resolving(
     and the lock written. On any failure, the swap is undone and each file
     written restored, in reverse, to its bytes right before its write.
 
-    First checks the copies in `skills` against the lock, unless `checked`.
+    First checks the copies in `skills` against the lock.
     Adds the hull's warnings to `warnings` at once, so a later failure keeps them,
     and, for the package's own lock, one per path source it records absolute.
     """
@@ -157,8 +156,7 @@ def resolving(
     skills = skills or scope.skills
     lock_file = lock_file or scope.lock_file
     locked = lock.load(lock_file)
-    if not checked:
-        check_copies(skills, locked)
+    check_copies(skills, locked)
     with compute.compute_hull(scope, loaded, cache, refs) as hull:
         warnings.extend(hull.warnings)
         resolution = Resolution(hull)

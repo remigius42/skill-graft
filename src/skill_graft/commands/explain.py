@@ -18,6 +18,10 @@ from skill_graft.pipeline import compute
 from skill_graft.pipeline.config import NAME, SCP, Config, GitSource, SkillId
 from skill_graft.pipeline.hull import Edge, Hull, PatchError
 
+# What `repository` refuses in a URL: urlsplit drops tabs and newlines; a query or
+# fragment holds tokens.
+_UNSAFE_URL = re.compile(r"[?#\s\x00-\x1f\x7f]")
+
 
 def show_tree(
     scope: paths.Scope, warnings: list[str], as_mermaid: bool, as_link: bool
@@ -293,8 +297,8 @@ def repository(url: str) -> str | None:
     Rebuilt from the host and the path's name segments only, so no user info,
     port, query or token is copied; None for any other URL.
     """
-    if re.search(r"[?#\s\x00-\x1f\x7f]", url):
-        return None  # urlsplit drops tabs and newlines; a query holds tokens
+    if _UNSAFE_URL.search(url):
+        return None
     scp = SCP.fullmatch(url)
     if scp and "://" not in url:
         host, path = scp["host"].lower(), scp["path"]
@@ -306,15 +310,16 @@ def repository(url: str) -> str | None:
             _ = parts.port  # a port that is not a number raises
         except ValueError:
             return None
-        host, path = parts.hostname or "", parts.path.removeprefix("/")
+        if parts.hostname is None:
+            return None
+        host, path = parts.hostname, parts.path.removeprefix("/")
     if host not in _FORGES:
         return None
     segments = path.removesuffix("/").split("/")
     segments[-1] = segments[-1].removesuffix(".git")
     forge = _FORGES[host]
-    if not (
-        len(segments) == forge.segments
-        or (forge.deeper and len(segments) > forge.segments)
+    if len(segments) < forge.segments or (
+        not forge.deeper and len(segments) > forge.segments
     ):
         return None
     if not all(NAME.fullmatch(segment) for segment in segments):
@@ -363,7 +368,7 @@ def repositories(config: Config, cache: Cache, hull: Hull) -> dict[str, Reposito
 
 def _path_url(tree: str, folder: str | Path) -> str:
     """`tree`'s page of `folder`, each segment percent-encoded; `.` adds nothing."""
-    return tree + "".join(f"/{quote(part, safe='')}" for part in Path(folder).parts)
+    return tree + "".join(f"/{quote(part)}" for part in Path(folder).parts)
 
 
 def _anchor(url: str, text: str) -> str:

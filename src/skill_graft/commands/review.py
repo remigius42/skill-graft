@@ -15,7 +15,7 @@ from skill_graft.commands import explain, transaction
 from skill_graft.infra import files, paths, text
 from skill_graft.infra.cache import Cache
 from skill_graft.infra.errors import SkillGraftError
-from skill_graft.pipeline import deployed, lock, rename
+from skill_graft.pipeline import config, deployed, lock, rename
 from skill_graft.pipeline.config import Config, GitSource, SkillId
 from skill_graft.pipeline.hull import Hull, PatchError
 
@@ -67,8 +67,7 @@ def vendored(skills: Path, locked: dict[str, Any] | None) -> Before:
         folder = transaction.pending(skills, locked)
         entries = {e.name: e for e in folder.iterdir()} if folder.is_dir() else {}
         for item in locked["skills"]:
-            alias, _, name = item["id"].partition("/")
-            skill = SkillId(alias, name)
+            skill = SkillId(*config.split_id(item["id"]))
             if (copy := entries.get(lock.deployed_name(item))) is not None:
                 hashes[skill], folders[skill] = item["hash"], copy
                 upstream[skill] = str(item.get("upstream", ""))
@@ -144,10 +143,12 @@ def fetch_hint(error: PatchError, tmp: Path, fetch: str) -> PatchError:
     # A hidden character in a fetched skill is named by its path in `tmp` too.
     gone = {skill for skill, line in error.hidden if line.startswith(f"{tmp}/")}
     hidden = []
-    for i, (skill, line) in enumerate(error.hidden):
+    # Each line with the next one's skill, the last with none.
+    for (skill, line), after in zip(
+        error.hidden, [*(s for s, _ in error.hidden[1:]), None]
+    ):
         hidden.append((skill, line))
-        after = error.hidden[i + 1 : i + 2]
-        if skill in gone and (not after or after[0][0] != skill):  # its last line
+        if skill in gone and after != skill:  # its last line
             hidden.append((skill, fetch))
     return PatchError(error.failures, error.other, hints, hidden)
 

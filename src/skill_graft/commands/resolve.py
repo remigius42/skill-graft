@@ -16,7 +16,7 @@ HEADER = review.header(
 def resolve(
     scope: paths.Scope,
     warnings: list[str],
-    dry_run: bool = False,
+    dry_run: bool,
     diff: Path | None = None,
 ) -> None:
     """Resolves the hull, vendors it, writes the lock, and prints the tree and

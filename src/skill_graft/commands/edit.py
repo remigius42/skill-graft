@@ -59,7 +59,7 @@ def add(
     scope: paths.Scope,
     warnings: list[str],
     skills: list[str],
-    dry_run: bool = False,
+    dry_run: bool,
     diff: Path | None = None,
 ) -> None:
     """Appends each skill ID to `entries`."""
@@ -96,7 +96,7 @@ def remove(
     scope: paths.Scope,
     warnings: list[str],
     skills: list[str],
-    dry_run: bool = False,
+    dry_run: bool,
     diff: Path | None = None,
 ) -> None:
     """Deletes each skill ID from `entries`."""
@@ -126,7 +126,7 @@ def rename(
     warnings: list[str],
     text: str,
     name: str,
-    dry_run: bool = False,
+    dry_run: bool,
     diff: Path | None = None,
 ) -> None:
     """Sets the skill's `[rename]` value to `name`."""
@@ -164,7 +164,7 @@ def bind(
     warnings: list[str],
     key: str,
     target: str,
-    dry_run: bool = False,
+    dry_run: bool,
     diff: Path | None = None,
 ) -> None:
     """Sets `[bind]` key `key` to the skill ID `target`, or to `false`."""
@@ -201,7 +201,7 @@ def unbind(
     scope: paths.Scope,
     warnings: list[str],
     key: str,
-    dry_run: bool = False,
+    dry_run: bool,
     diff: Path | None = None,
 ) -> None:
     """Deletes `[bind]` key `key`, leaving the table."""

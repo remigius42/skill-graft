@@ -17,6 +17,7 @@ MODULES = {
     "config": "skill_graft.pipeline.config",
     "text": "skill_graft.infra.text",
     "hidden": "skill_graft.pipeline.hidden",
+    "explain": "skill_graft.commands.explain",
 }
 PATTERNS = "vet._PATTERNS:"
 
@@ -61,6 +62,7 @@ TARGETS = (
         Target("text.CRITICAL_CHARS", _DEPLOYED),
         Target("hidden.WARNING_CHARS", _DEPLOYED),
     ]
+    + [Target("explain._UNSAFE_URL")]
 )
 
 

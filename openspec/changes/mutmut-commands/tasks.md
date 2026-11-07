@@ -8,7 +8,7 @@ Counts are from `afa64801`; see `design.md` for each survivor's kind.
 
 ## 1. Refactors: equivalent mutants dropped or marked, `dry_cache` extracted
 
-- [ ] 1.1 `refactor(commands): drop what mutmut's equivalent mutants show redundant`: the `dry_run` and `project`
+- [x] 1.1 `refactor(commands): drop what mutmut's equivalent mutants show redundant`: the `dry_run` and `project`
   defaults, `resolving`'s `checked` (its test and callers with it), `_undo_into`'s `missing_ok`; `explain.repository`'s
   regex as `_UNSAFE_URL`, a target in `mutation/targets.py` (`explain` in its `MODULES`), its return without a host and
   its segment check; `_path_url` without `safe=''`; `fetch_hint` by `zip` with the last line paired with none;

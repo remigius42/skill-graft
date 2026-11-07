@@ -49,7 +49,6 @@ def deploy(
             cache,
             lock_file=lock_file,
             skills=skills,
-            checked=into is not None,  # its folder is empty: no copies to check
         ) as resolution:
             resolved = resolution.hull
             resolution.verify = verify
@@ -87,6 +86,6 @@ def _undo_into(into: Path) -> None:
     ):  # `.new` stays on Ctrl-C
         shutil.rmtree(folder / name, ignore_errors=True)
     with contextlib.suppress(OSError):
-        (into / "skill-graft.lock").unlink(missing_ok=True)
+        (into / "skill-graft.lock").unlink()
     with contextlib.suppress(OSError):  # kept if another process wrote into it
         folder.rmdir()
