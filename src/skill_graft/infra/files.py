@@ -70,7 +70,7 @@ def atomic_write(file: Path, data: bytes) -> None:
     Keeps the mode of the file it replaces; a new file gets the umask's.
     """
     with tempfile.NamedTemporaryFile(
-        "wb", dir=file.parent, prefix=f".{file.name}.", delete=False
+        dir=file.parent, prefix=f".{file.name}.", delete=False
     ) as tmp:
         try:
             tmp.write(data)

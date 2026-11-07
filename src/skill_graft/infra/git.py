@@ -22,6 +22,10 @@ REDIRECTS = (
 # Rejects malformed trees, such as paths holding `..` or `.git`, as they arrive.
 FSCK = ["-c", "transfer.fsckObjects=true"]
 
+# git speaks English: `C`, as any other `LC_ALL` git does not know falls back
+# to it, and `LANGUAGE`, which `C` ignores, emptied.
+LOCALE = {"LC_ALL": "C", "LANGUAGE": ""}
+
 
 def run(
     *args: str,
@@ -39,10 +43,9 @@ def run(
         *(["--git-dir", str(repo)] if repo else []),
         *args,
         input=input,
-        env={"LC_ALL": "C", "LANGUAGE": ""}
-        | ({"GIT_NO_LAZY_FETCH": "1"} if repo else {}),
+        env=LOCALE | ({"GIT_NO_LAZY_FETCH": "1"} if repo else {}),
     )
-    if result.returncode != 0:
+    if result.returncode != 0:  # `_call` leaves the exit code to its caller
         stderr = "; ".join(
             line
             for line in result.stderr.decode(errors="replace").splitlines()
@@ -71,13 +74,12 @@ def _call(
         if k not in REDIRECTS and not (no_config and k.startswith("GIT_CONFIG"))
     }
     try:
-        return subprocess.run(
+        return subprocess.run(  # noqa: PLW1510, the exit code is the caller's
             ["git", *args],
             capture_output=True,
             input=input,
             cwd=cwd,
             env=base | (env or {}),
-            check=False,
         )
     except FileNotFoundError:
         raise SkillGraftError(missing) from None
@@ -93,11 +95,10 @@ def apply(folder: Path, patch: bytes, home: Path) -> tuple[bool, str]:
     above `folder` is looked for. A hunk that fails leaves a `.rej` file.
     """
     result = _call(
+        # `-p1`, and the patch read from stdin, are git's defaults.
         "apply",
-        "-p1",
         "--reject",
         "--whitespace=nowarn",
-        "-",
         input=patch,
         cwd=folder,
         env={

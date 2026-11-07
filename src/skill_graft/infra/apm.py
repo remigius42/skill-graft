@@ -39,7 +39,7 @@ def install(scope: paths.Scope) -> None:
     """Registers and deploys the package."""
     command = _command(scope)
     try:
-        result = subprocess.run(command, cwd=scope.root, check=False)
+        result = subprocess.run(command, cwd=scope.root)  # noqa: PLW1510, read below
     except FileNotFoundError:
         raise SkillGraftError(MISSING) from None
     except OSError as error:

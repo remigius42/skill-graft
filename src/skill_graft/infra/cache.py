@@ -2,6 +2,7 @@
 
 import fcntl
 import hashlib
+import itertools
 import os
 import re
 import shutil
@@ -15,6 +16,13 @@ from skill_graft.infra.errors import SkillGraftError
 
 # Characters a cache folder name keeps; others become `_`.
 UNSAFE = re.compile(r"[^A-Za-z0-9._-]")
+
+# The hex digits of a subdirectory's hash in its export's name: stable, apart
+# from `key`'s, so changing one never renames the other's folders.
+SUBDIRECTORY_HASH = 12
+
+# The context of a check whose failure is swallowed: no one reads it.
+UNREAD = "cache check"
 
 
 def key(url: str) -> str:
@@ -134,11 +142,9 @@ class Cache:
             return
         self._pinned.add((url, sha))
         pin = f"refs/skill-graft/{sha}"
-        try:
-            git.run("rev-parse", "--verify", "-q", pin, repo=repo, context=str(repo))
-        except SkillGraftError:  # absent
+        if not _has_commit(repo, pin):
             try:
-                git.run("update-ref", pin, sha, repo=repo, context=str(repo))
+                git.run("update-ref", pin, sha, repo=repo, context=UNREAD)
             except SkillGraftError:
                 pass
 
@@ -196,7 +202,6 @@ class Cache:
             )
             git.run(
                 "init",
-                "-q",
                 "--bare",
                 f"--object-format={object_format.decode().strip()}",
                 str(tmp),
@@ -214,7 +219,7 @@ class Cache:
                 context=context,
             )
             for line in promisor.decode().splitlines():
-                name, value = line.split(" ", 1)
+                name, _, value = line.partition(" ")  # `<name> ` if empty
                 git.run("config", name, value, repo=tmp, context=context)
 
         overlay = self.repository(url)
@@ -228,7 +233,8 @@ class Cache:
         """`<sha>`, or `<sha>-<hash>` per subdirectory: each complete for its own."""
         name = ref
         if subdirectory is not None:
-            name += f"-{hashlib.sha256(subdirectory.encode()).hexdigest()[:12]}"
+            digest = hashlib.sha256(subdirectory.encode()).hexdigest()
+            name += f"-{digest[:SUBDIRECTORY_HASH]}"
         return self.root / "trees" / key(url) / name
 
     def _repository_with(self, url: str, sha: str) -> Path | None:
@@ -360,7 +366,7 @@ def _place(tmp: Path, final: Path) -> None:
 
 def _has_commit(repo: Path, sha: str) -> bool:
     try:
-        git.run("cat-file", "-e", f"{sha}^{{commit}}", repo=repo, context=str(repo))
+        git.run("cat-file", "-e", f"{sha}^{{commit}}", repo=repo, context=UNREAD)
     except SkillGraftError:
         return False
     return True
@@ -381,12 +387,11 @@ def _missing(
         "rev-list",
         "--objects",
         "--missing=print",
-        "--no-walk",
         *tips,
         repo=repo,
         context=context,
     )
-    wanted = {record.split(b"\t", 1)[0].split(b" ")[2] for record in records}
+    wanted = {record.split(b"\t", 1)[0].split()[2] for record in records}
     return [
         line[1:]
         for line in listing.splitlines()
@@ -405,7 +410,6 @@ def _fetch_blobs(repo: Path, missing: list[bytes], context: str) -> None:
         "-c",
         "fetch.negotiationAlgorithm=noop",
         "fetch",
-        "-q",
         "--no-tags",
         "--no-write-fetch-head",
         "--recurse-submodules=no",
@@ -459,20 +463,21 @@ def _export(repo: Path, records: list[bytes], folder: Path, context: str) -> Non
     and unlike `git archive`, `export-ignore` files are kept. Submodules are
     skipped.
     """
-    entries = []
+    files: list[tuple[bytes, bytes, str]] = []
+    symlinks: list[tuple[bytes, bytes, str]] = []
     for record in records:
         meta, name = record.split(b"\t", 1)
-        mode, kind, oid = meta.split(b" ")
+        mode, kind, oid = meta.split()
         if kind == b"blob":
-            entries.append((mode, oid, _safe(os.fsdecode(name), context)))
-    blobs = _read_blobs(repo, [oid for _, oid, _ in entries], context)
-    written = list(zip(entries, blobs, strict=True))
+            entry = (mode, oid, _safe(os.fsdecode(name), context))
+            (symlinks if mode == b"120000" else files).append(entry)
     # Symlinks last, so no file is written through one; and every write must
     # land in a new path whose real parent is inside `folder`, which a tree with
     # duplicate names (or names equal but for case) would otherwise defeat.
-    written.sort(key=lambda item: item[0][0] == b"120000")
+    entries = files + symlinks
+    blobs = _read_blobs(repo, [oid for _, oid, _ in entries], context)
     root = folder.resolve()
-    for (mode, _, path), content in written:
+    for (mode, _, path), content in zip(entries, blobs):
         target = folder / path
         if not target.parent.resolve().is_relative_to(root) or os.path.lexists(target):
             raise SkillGraftError(f"{context}: refusing the tree path {path!r}")
@@ -493,18 +498,18 @@ def _listing(
     exported as such; and the objects to list their missing blobs from.
 
     Those are trees, which a blobless repository always has, and no pathspec:
-    under one, `rev-list --no-walk` lists nothing at a commit not touching it,
-    on some git versions. The subdirectory's own tree, or for a blob on the
-    path, the folder holding it.
+    under one, `rev-list` lists nothing at a commit not touching it, on some
+    git versions. `ref`'s whole tree, or the subdirectory's own tree, or for a
+    blob on the path, the folder holding it.
 
     For a prefix that is a folder git lists its children too: only exact
     paths are kept. A name is matched literally and by case, whatever
     `core.ignorecase` the clone recorded.
     """
     if subdirectory is None:
-        return _ls_tree(repo, context, "-r", ref), [ref]
+        return _ls_tree(repo, context, "-r", ref), [f"{ref}^{{tree}}"]
     parts = subdirectory.split("/")
-    paths = ["/".join(parts[:i]) for i in range(1, len(parts) + 1)]
+    paths = list(itertools.accumulate(parts, lambda a, b: f"{a}/{b}"))
     records = _ls_tree(repo, context, "-r", ref, "--", subdirectory)
     exact = {os.fsencode(path) for path in paths}
     on_path = []  # (kind, oid, name, record) of each entry at exactly a path
@@ -512,7 +517,7 @@ def _listing(
     for record in _ls_tree(repo, context, "-t", ref, "--", *paths):
         meta, name = record.split(b"\t", 1)
         if name in exact:
-            _, kind, raw = meta.split(b" ")
+            _, kind, raw = meta.split()
             on_path.append((kind, raw.decode(), name, record))
     trees = {b"": f"{ref}^{{tree}}"}
     trees |= {name: oid for kind, oid, name, _ in on_path if kind == b"tree"}
@@ -538,7 +543,6 @@ def _ls_tree(repo: Path, context: str, *args: str) -> list[bytes]:
         *LITERAL,
         "ls-tree",
         "-z",
-        "--full-tree",
         *args,
         repo=repo,
         context=context,
@@ -571,7 +575,7 @@ def _read_blobs(repo: Path, oids: list[bytes], context: str) -> list[bytes]:
     blobs, at = [], 0
     for oid in oids:
         header_end = output.index(b"\n", at)
-        header = output[at:header_end].split(b" ")
+        header = output[at:header_end].split()
         if len(header) != 3:  # `<oid> missing`, or worse
             raise SkillGraftError(
                 f"{context}: object {oid.decode()} is missing from {repo}, "

@@ -8,7 +8,7 @@ survivor's kind.
 
 ## 1. Equivalent mutants dropped
 
-- [ ] 1.1 `refactor(infra): drop what mutmut's equivalent mutants show redundant`: the 15 removals and 23 restructures
+- [x] 1.1 `refactor(infra): drop what mutmut's equivalent mutants show redundant`: the 15 removals and 23 restructures
   in `design.md` (redundant `check=False`, `"wb"`, `-p1`, `-`, `strict=True`, `--full-tree`, `--no-tags` in `fetch` and
   `_refetch` with a comment on `tagopt`, `-q` in `init`, and in `_fetch_blobs` only if a probe of its failure shows the
   same text without it; `.split()`, `accumulate`, tree tips without `--no-walk` and the docstrings that name it, files

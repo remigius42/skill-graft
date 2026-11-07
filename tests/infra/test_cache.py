@@ -935,7 +935,8 @@ def test_pin_checked_once_per_command(
         git_cache.checkout("mp", upstream.url, sha, subdirectory)
 
     pin = f"refs/skill-graft/{sha}"
-    assert len([call for call in calls if pin in call]) == 2  # rev-parse, update-ref
+    checks = [call for call in calls if any(arg.startswith(pin) for arg in call)]
+    assert len(checks) == 2  # the check, update-ref
 
 
 def test_pin_skipped_without_the_commit(

@@ -93,8 +93,8 @@ def folded(path: Path) -> Path:
 
 def cache() -> Path:
     """Where git sources are cached: `$XDG_CACHE_HOME`, if absolute, else `~/.cache`."""
-    xdg = os.environ.get("XDG_CACHE_HOME", "")
-    root = Path(xdg) if os.path.isabs(xdg) else Path.home() / ".cache"
+    xdg = os.environ.get("XDG_CACHE_HOME")
+    root = Path(xdg) if xdg and os.path.isabs(xdg) else Path.home() / ".cache"
     return root / "skill-graft"
 
 

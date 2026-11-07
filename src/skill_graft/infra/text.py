@@ -22,11 +22,15 @@ def ranges(code_points: list[tuple[int, int]]) -> re.Pattern[str]:
 CRITICAL_CHARS = ranges([(a, b) for a, b, _ in CRITICAL])
 
 
+# Python's escapes, as `show` writes them.
+ESCAPE = "unicode_escape"
+
+
 def show(text: str) -> str:
     """`text` with each hidden or unprintable character escaped, as Python would,
     so printing it reorders or hides nothing."""
     return "".join(
-        char.encode("unicode_escape").decode()
+        char.encode(ESCAPE).decode()
         if CRITICAL_CHARS.match(char) or not char.isprintable()
         else char
         for char in text
