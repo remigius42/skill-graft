@@ -54,6 +54,7 @@ words:
   - finditer
   - followlinks
   - frontmatter
+  - fsdecode
   - fsencode
   - fstat
   - fullmatch
@@ -73,15 +74,18 @@ words:
   - ignorewhitespace
   - importlinter
   - ionice
+  - isabs
   - isascii
   - isfile
   - isinstance
   - isprintable
   - ISREG
   - iterdir
+  - itertools
   - keepends
   - keygen
   - kiro
+  - lexists
   - libcst
   - linecap
   - linejoin
@@ -90,6 +94,7 @@ words:
   - mailx
   - mattpocock
   - mawk
+  - maxsplit
   - metavar
   - mkfifo
   - mktemp
@@ -149,11 +154,13 @@ words:
   - RDONLY
   - realpath
   - reflog
+  - refspec
   - relatime
   - Remigius
   - repr
   - rglob
   - rmtree
+  - rpartition
   - RSTART
   - rstrip
   - runas
@@ -186,6 +193,7 @@ words:
   - surrogateescape
   - symref
   - sysconfig
+  - tagopt
   - testpaths
   - tomlkit
   - tomllib
@@ -195,6 +203,7 @@ words:
   - ugoa
   - ultraplan
   - ultrareview
+  - unfetched
   - unicodedata
   - unpadded
   - unrenamed
