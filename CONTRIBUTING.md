@@ -92,28 +92,32 @@ runs them all; a target is named as in `targets.py`, such as `config.NAME` or `v
 
 ### mutmut
 
-`uv run mutmut run`, from the repository root, mutates every function in `src/skill_graft/` (`[tool.mutmut]` in
-`pyproject.toml`) and runs the tests that reach each mutant, in a copy of the repository in `mutants/`. A full run takes
-about an hour on 8 CPUs; `uv run mutmut run "skill_graft.pipeline.lock*"` runs one module's mutants in a few minutes,
-and a rerun skips functions that did not change. It forks, so it runs on Linux and macOS only. `uv run mutmut results`
-lists the survivors, `uv run mutmut show <mutant>` prints one's diff. It never fails a build: read the survivors after
-changing a module, and kill each with a test in the module's test file. Two kinds are known noise, not gaps: a message's
-wording (help texts sit in a `# pragma: no mutate start` … `end` region around `cli._parser`), and a change mypy would
-refuse, which the hooks keep from landing. A mutant that cannot change behavior gets a bare `# pragma: no mutate` on its
-line, and `# Equivalent mutants: <reason>` in a comment above; a line the pragma would push past 88 columns, which ruff
-would wrap, sits in a `# pragma: no mutate start, <reason>` … `# pragma: no mutate end` region instead, the `end` before
-the next statement of the same block. Either silences every mutant on its lines, so use it sparingly. The `linear_time`
-tests are left out: their wall-clock limit misses under load, and the regex harness times them.
+`nice -n 19 ionice -c 3 uv run mutmut run`, from the repository root, mutates every function in `src/skill_graft/`
+(`[tool.mutmut]` in `pyproject.toml`) and runs the tests that reach each mutant, in a copy of the repository in
+`mutants/`; `nice` and `ionice` keep its one process per CPU from freezing the machine. A full run takes about an hour
+on 8 CPUs; `uv run mutmut run "skill_graft.pipeline.lock*"` runs one module's mutants in a few minutes, and a rerun
+skips functions that did not change. Run one at a time per checkout: two share `mutants/`. It forks, so it runs on Linux
+and macOS only. `uv run mutmut results` lists the survivors, `uv run mutmut show <mutant>` prints one's diff. It never
+fails a build: read the survivors after changing a module, and kill each with a test in the module's test file. Three
+kinds are known noise, not gaps: a message's wording (most of `cli.py`'s help texts sit in the module-level `_TEXT`,
+which mutmut never mutates; `_review_options` and `_diff_file_option` still build theirs), a change mypy would refuse,
+which the hooks keep from landing, and code that runs only at import, such as `vet._commands`, which no test reaches
+with a mutant switched on. A mutant that cannot change behavior: first remove what it shows redundant, or restructure so
+none exists, or name the value in a module-level constant; else put the equivalent expression alone on a line of its own
+with a bare `# pragma: no mutate`, and `# Equivalent mutants: <reason>` in a comment above. A pragma silences every
+mutant on its line, killed ones too, so never on a line holding anything else, and no `start` … `end` regions. The
+`linear_time` tests are left out: their wall-clock limit misses under load, and the regex harness times them.
 
-The baseline to beat, a full run of 7392 mutants with the change `mutmut-src` (2026-11-07): 6867 killed, 4 timed out,
-521 survived. Survivors per layer:
+The baseline to beat, 8097 mutants with the change `mutmut-src` (2026-11-07): 7532 killed, 5 timed out, 560 survived.
+`commands` and `infra`, unchanged since, are from its full run; `cli` and `pipeline` from their reruns after it.
+Survivors per layer:
 
-| Layer      | Survivors | Of which                                        |
-| ---------- | --------: | ----------------------------------------------- |
-| `cli`      |        80 | not yet triaged                                 |
-| `commands` |       191 | not yet triaged                                 |
-| `infra`    |       201 | not yet triaged                                 |
-| `pipeline` |        49 | all known noise: message wording, mypy refusals |
+| Layer      | Survivors | Of which                                                             |
+| ---------- | --------: | -------------------------------------------------------------------- |
+| `cli`      |       117 | 37 in `_parser`, all noise (usage wording); the other 80 not triaged |
+| `commands` |       191 | not yet triaged                                                      |
+| `infra`    |       201 | not yet triaged                                                      |
+| `pipeline` |        51 | all known noise: message wording, mypy refusals, import-time code    |
 
 ## Evals
 

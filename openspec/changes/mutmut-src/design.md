@@ -71,34 +71,46 @@ gains `exclude = ["mutants"]`, and pytest's `norecursedirs` gains `mutants`: `te
 
 ### Message wording is not mutated, or not counted
 
-`def _parser` in `cli.py` sits between `# pragma: no mutate start` and `# pragma: no mutate end`, each on its own line:
-its 340 survivors are help text. Not `block`: on its own line at module level it silences every statement after it to
-the module's end, and after the `def` line it would push that line past 88 columns. Other messages (`SkillGraftError`
+`cli.py`'s help texts in `_parser`, 340 of the first run's survivors, sit in a module-level table, `_TEXT`, keyed by
+command and argument, which `_parser` looks up (`_review_options` and `_diff_file_option` still build theirs, left to
+`mutmut-cli`): mutmut mutates functions only, so their wording is never mutated, while the parser's structure (`type=`,
+`choices`, `nargs`, the mutually exclusive group, `parser_class`) is, and a test checks each text is shown. A first take
+put `_parser` in a pragma region, which the review found also silenced that structure. Other messages (`SkillGraftError`
 texts, **Vet** reasons, warnings) are scattered through expressions a pragma would cover too much of; their mutants stay
 in the report as noise. A test already pins a message's key phrase where a user acts on it; pinning exact wording would
 make every rewording a test change. `do_not_mutate_patterns` (a regex over source lines) was considered and rejected: a
-line holding a message often holds logic too.
+line holding a message often holds logic too. Code run only at import (`vet._commands`) is a third kind of noise: no
+test reaches its mutants with one switched on, so they survive, unmarked, as they are not equivalent.
 
 ### An equivalent mutant: a pragma with its reason
 
-A bare `# pragma: no mutate` on the line, its reason in a comment above, `# Equivalent mutants: <reason>`. ruff counts a
-`# pragma:` comment toward its 88 columns, and wraps a statement it pushes past them: the pragma then sits on the
-closing line, where mutmut does not read it for the mutated expression. Task 2.1 found a reason on the line itself,
-after a comma, pushed most lines past 88; the bare pragma, 21 characters, fits all but two. A line that cannot take it
-sits in a `# pragma: no mutate start, <reason>` … `# pragma: no mutate end` region, each on its own line, the `end`
-before the next statement of the same block: mutmut scans a module's top level before the functions' bodies, so a region
-cannot end outside the block it starts in. Next to the code, the reason is where a reader of the line sees it, and
-survives line moves; a list like `equivalent.toml` needs a wrapper to check it, and mutmut names mutants by function and
-number, which shift with every edit. A pragma silences every mutant on its line, so it goes on the narrowest line,
-sparingly: a reviewer reads each.
+A pragma silences every mutant on its line, the ones the tests kill too, so it goes only on a line that holds nothing
+but the equivalent expression; the review found the first take's pragmas, on whole lines and in regions, also silenced
+checks the tests kill, some security-relevant (`vet`'s chmod modes, `hidden`'s patch scan). In order of preference:
+
+1. Remove what the mutant shows redundant: `decode()` for `decode("utf-8")`, a slice or `rstrip` a later step repeats, a
+   default no caller uses, a condition never false where it is read.
+1. Restructure so no equivalent mutant exists: one `width = 2 * d + 1` that both pays the budget and sizes the row, so
+   any change to it changes the step count a test pins; an `if` statement for a conditional expression.
+1. Name the value in a module-level constant, which mutmut does not mutate, where the name says something: a sentinel
+   (`_UNREACHED = -1`), a membership string, the edit script's ops.
+1. Else the equivalent expression alone on a local line, `unread = ""`, with a bare `# pragma: no mutate` and its reason
+   above, `# Equivalent mutants: <reason>`; the comment names any other mutant the line still holds beyond the
+   assignment's own `= None`, which is killed, refused by mypy, or itself equivalent.
+
+The pragma is bare because ruff counts it toward its 88 columns and wraps a statement it pushes past them; mutmut then
+reads it on the closing line only. Regions (`start` … `end`) are not used: one cannot end outside the block it starts
+in, and it silences every line between. Next to the code, the reason is where a reader of the line sees it, and survives
+line moves; a list like `equivalent.toml` needs a wrapper to check it, and mutmut names mutants by function and number,
+which shift with every edit.
 
 ### Killing `pipeline/` survivors
 
 Per module, a rerun of its mutants (`uv run mutmut run "skill_graft.pipeline.<module>*"`), then for each survivor a test
 in `tests/pipeline/test_<module>.py` (`compute` needed none: its survivors are noise but one equivalent), test-first:
-the test fails against the mutant (`mutmut apply <mutant>`, reverted after) and passes on the code. A survivor that is a
-bug gets the fix and, where a spec covers the behavior, a delta spec; its `Fixed` entry comes with the archive commit.
-Timeouts (`hull.reach`, `deployed._blocks`, `deployed._myers`) count as killed.
+the module's next rerun shows the mutant killed, and the test passes on the code. A survivor that is a bug gets the fix
+and, where a spec covers the behavior, a delta spec; its `Fixed` entry comes with the archive commit. Timeouts
+(`hull.reach`, `deployed._blocks`, `deployed._myers`) count as killed.
 
 ### The baseline, in `CONTRIBUTING.md`
 
@@ -108,9 +120,12 @@ reads: a committed results file would look current and be wrong after the next s
 
 ## Risks / Trade-offs
 
-- [Two hours per full run discourages running it] → a per-module glob runs in about two minutes (`rename`, 122 s, most
-  of it the unchanged run and the test-to-function map mutmut builds first).
-- [A pragma hides a real gap] → one per line, with a reason, read in review; a region only around `_parser`.
+- [An hour per full run discourages running it] → a per-module glob runs in about two minutes (`rename`, 122 s, most of
+  it the unchanged run and the test-to-function map mutmut builds first).
+- [A pragma hides a real gap] → only on a line holding the equivalent expression alone, with a reason, read in review;
+  no regions.
+- [A module-level constant hides a value's mutants without a pragma] → only for a value whose name says what it is, and
+  every constant so used has a comment.
 - [mutmut's config moves again within 3.x] → pinned minor version; a key it no longer reads warns at start.
 - [A mutant only a subprocess test would kill shows as a survivor] → its triage finds the subprocess test and adds an
   in-process one, which the layer rule asks for anyway.

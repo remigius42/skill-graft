@@ -72,6 +72,7 @@ words:
   - ignorecase
   - ignorewhitespace
   - importlinter
+  - ionice
   - isascii
   - isfile
   - isinstance
@@ -99,6 +100,7 @@ words:
   - mptdd
   - mutmut
   - mypy
+  - nargs
   - ncat
   - netrc
   - noatime
@@ -153,6 +155,7 @@ words:
   - rglob
   - rmtree
   - RSTART
+  - rstrip
   - runas
   - samefile
   - sandboxed
