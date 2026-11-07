@@ -402,6 +402,79 @@ def test_symlink_under_a_symlinked_folder_is_refused(tmp_path: Path) -> None:
     assert list(outside.iterdir()) == []
 
 
+def no_fsck(monkeypatch: pytest.MonkeyPatch) -> None:
+    """Switches git's fsck off, so a hostile tree reaches the export's own checks."""
+    monkeypatch.setattr(git, "FSCK", [])
+
+
+def hostile_commit(upstream: Upstream, root: bytes) -> str:
+    """Commits the raw tree `root` on `main`, as a hostile upstream could."""
+    tree = write_object(upstream, "tree", root)
+    sha = upstream.git("commit-tree", tree, "-m", "evil")
+    upstream.git("update-ref", "refs/heads/main", sha)
+    return sha
+
+
+@pytest.mark.parametrize("name", ["z/", ".", "..", ".git", ".GIT"])
+def test_hostile_tree_path_refused_without_fsck(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch, name: str
+) -> None:
+    no_fsck(monkeypatch)
+    upstream = Upstream(tmp_path / "up")
+    upstream.commit({})
+    blob = write_object(upstream, "blob", b"x\n")
+    inner = write_object(upstream, "tree", tree_entry("100644", "y", blob))
+    middle = write_object(upstream, "tree", tree_entry("40000", name, inner))
+    sha = hostile_commit(upstream, tree_entry("40000", "x", middle))
+
+    with pytest.raises(SkillGraftError, match="refusing the tree path"):
+        cache.Cache.default().checkout("mp", upstream.url, sha)
+
+
+def test_symlink_written_after_the_folder_of_its_name(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    no_fsck(monkeypatch)
+    upstream = Upstream(tmp_path / "up")
+    upstream.commit({})
+    keep = write_object(upstream, "blob", b"k\n")
+    x = write_object(upstream, "blob", b"x\n")
+    link = write_object(upstream, "blob", b"b")
+    # A symlink `a` to the folder `b`, then a folder `a` holding `x`: written
+    # first, the symlink would put `x` in `b`.
+    sha = hostile_commit(
+        upstream,
+        tree_entry(
+            "40000",
+            "b",
+            write_object(upstream, "tree", tree_entry("100644", "k", keep)),
+        )
+        + tree_entry("120000", "a", link)
+        + tree_entry(
+            "40000", "a", write_object(upstream, "tree", tree_entry("100644", "x", x))
+        ),
+    )
+
+    with pytest.raises(SkillGraftError, match="refusing the tree path 'a'"):
+        cache.Cache.default().checkout("mp", upstream.url, sha)
+
+
+def test_duplicate_file_refused_without_fsck(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    no_fsck(monkeypatch)
+    upstream = Upstream(tmp_path / "up")
+    upstream.commit({})
+    one = write_object(upstream, "blob", b"1\n")
+    two = write_object(upstream, "blob", b"2\n")
+    sha = hostile_commit(
+        upstream, tree_entry("100644", "a", one) + tree_entry("100644", "a", two)
+    )
+
+    with pytest.raises(SkillGraftError, match="refusing the tree path 'a'"):
+        cache.Cache.default().checkout("mp", upstream.url, sha)
+
+
 def test_missing_object_is_reported(tmp_path: Path) -> None:
     upstream = Upstream(tmp_path / "up")
     sha = upstream.commit({"a/SKILL.md": "# a\n"})
@@ -448,6 +521,36 @@ def test_blob_the_fetch_did_not_bring(
     blob = upstream.git("rev-parse", f"{sha}:a/SKILL.md")
     assert "'mp'" in str(error.value) and blob in str(error.value)
     assert "delete" not in str(error.value)
+
+
+def test_cat_file_output_out_of_step_is_an_error(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    upstream = Upstream(tmp_path / "up")
+    sha = upstream.commit({"a.md": "a\n"})
+    run = git.run
+
+    def out_of_step(*args: str, **kwargs: Any) -> bytes:
+        output = run(*args, **kwargs)
+        if "--batch" not in args:
+            return output
+        oid, rest = output.split(b" ", 1)
+        return b"0" * len(oid) + b" " + rest  # another object's header
+
+    monkeypatch.setattr(git, "run", out_of_step)
+
+    with pytest.raises(SkillGraftError, match="unexpected output"):
+        cache.Cache.default().checkout("mp", upstream.url, sha)
+
+
+def test_export_of_several_files(tmp_path: Path) -> None:
+    upstream = Upstream(tmp_path / "up")
+    files = {"a.md": "a\n", "b.md": "bb\n", "c/d.md": "", "e.md": "eee\n"}
+    sha = upstream.commit(files)
+
+    tree = cache.Cache.default().checkout("mp", upstream.url, sha)
+
+    assert {name: (tree / name).read_text() for name in files} == files
 
 
 def files_in(tree: Path) -> set[str]:
@@ -510,6 +613,16 @@ def test_subdirectory_is_a_literal_name(tmp_path: Path) -> None:
 
     assert files_in(tree) == {"s*/a.md"}
     assert files_in(other_case) == set()
+
+
+@pytest.mark.parametrize("name", ["s\tt", ":x", "--name-only"])
+def test_subdirectory_named_as_git_could_misread(tmp_path: Path, name: str) -> None:
+    upstream = Upstream(tmp_path / "up")
+    sha = upstream.commit({f"{name}/a.md": "a\n", "x/b.md": "b\n"})
+
+    tree = cache.Cache.default().checkout("mp", upstream.url, sha, name)
+
+    assert files_in(tree) == {f"{name}/a.md"}
 
 
 def blobless(upstream: Upstream) -> Path:
@@ -671,6 +784,49 @@ def test_symlinked_prefix_fetched_in_the_same_request(
 
     assert os.readlink(tree / "a" / "b") == "elsewhere"
     assert len(blob_fetches(calls)) == 1
+
+
+def listed_from(calls: list[tuple[str, ...]]) -> set[tuple[str, ...]]:
+    """The objects each `rev-list` in `calls` lists missing blobs from."""
+    return {
+        call[call.index("--missing=print") + 1 :]
+        for call in calls
+        if "rev-list" in call
+    }
+
+
+@pytest.mark.parametrize(
+    ("files", "nearest"),
+    [
+        ({"a/b/c/x.md": "x\n", "a/y.md": "y\n"}, "a/b/c"),  # its own tree
+        ({"a/b": "f\n", "a/s.md": "s\n", "t.md": "t\n"}, "a"),  # a file's folder
+    ],
+)
+def test_missing_files_listed_from_the_nearest_tree(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+    files: dict[str, str],
+    nearest: str,
+) -> None:
+    upstream = Upstream(tmp_path / "up")
+    sha = upstream.commit(files)
+    blobless(upstream)
+    calls = recorded(monkeypatch)
+
+    cache.Cache.default().checkout("mp", upstream.url, sha, "a/b/c")
+
+    assert listed_from(calls) == {(upstream.git("rev-parse", f"{sha}:{nearest}"),)}
+
+
+def test_files_beside_a_file_on_the_path_stay_unfetched(tmp_path: Path) -> None:
+    upstream = Upstream(tmp_path / "up")
+    sha = upstream.commit({"a/b": "f\n", "a/s.md": "s\n"})
+    repo = blobless(upstream)
+
+    tree = cache.Cache.default().checkout("mp", upstream.url, sha, "a/b/c")
+
+    assert files_in(tree) == {"a/b"}
+    assert upstream.git("rev-parse", f"{sha}:a/s.md") in missing_blobs(repo)
 
 
 def test_one_subdirectory_of_a_monorepo(tmp_path: Path) -> None:
@@ -1113,3 +1269,18 @@ def test_checkout_keeps_modes_and_skips_submodules(tmp_path: Path) -> None:
     assert not os.access(tree / "a" / "b.md", os.X_OK)
     assert os.readlink(tree / "a" / "link.md") == "b.md"
     assert not (tree / "a" / "sub").exists()
+
+
+def test_executable_written_as_755(tmp_path: Path) -> None:
+    upstream = Upstream(tmp_path / "up")
+    script = upstream.path / "run.sh"
+    script.write_text("#!/bin/sh\n")
+    script.chmod(0o755)
+    sha = upstream.commit({})
+    umask = os.umask(0o022)
+    try:
+        tree = cache.Cache.default().checkout("mp", upstream.url, sha)
+    finally:
+        os.umask(umask)
+
+    assert (tree / "run.sh").stat().st_mode & 0o777 == 0o755

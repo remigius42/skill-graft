@@ -391,7 +391,7 @@ def _missing(
         repo=repo,
         context=context,
     )
-    wanted = {record.split(b"\t", 1)[0].split()[2] for record in records}
+    wanted = {record.split()[2] for record in records}  # `<mode> <kind> <oid>\t…`
     return [
         line[1:]
         for line in listing.splitlines()
@@ -576,6 +576,11 @@ def _read_blobs(repo: Path, oids: list[bytes], context: str) -> list[bytes]:
     for oid in oids:
         header_end = output.index(b"\n", at)
         header = output[at:header_end].split()
+        if header[:1] != [oid]:  # out of step: the bytes are another object's
+            raise SkillGraftError(
+                f"{context}: unexpected output from `git cat-file --batch` "
+                f"for object {oid.decode()}"
+            )
         if len(header) != 3:  # `<oid> missing`, or worse
             raise SkillGraftError(
                 f"{context}: object {oid.decode()} is missing from {repo}, "

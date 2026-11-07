@@ -18,7 +18,7 @@ survivor's kind.
 
 ## 2. `cache` (131: 74 to kill)
 
-- [ ] 2.1 The export: `_safe`, the symlinks-last order and the existing-path check with `git.FSCK` off; tab in a tree
+- [x] 2.1 The export: `_safe`, the symlinks-last order and the existing-path check with `git.FSCK` off; tab in a tree
   path; subdirectories `a*` and `--name-only`; mode `0o755`; two files; `_read_blobs` checking each header's oid, with
   an error of its own; a sibling blob left unfetched; the tips `_missing` lists from, recorded
 - [ ] 2.2 Fetching: `fetch`'s `--prune`; `-q` in `fetch` and `_refetch` (a ref lock fails them after `From …`);
