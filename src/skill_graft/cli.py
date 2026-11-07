@@ -136,252 +136,303 @@ class _Parser(_Command):
         self.exit(2, f"{self.prog}: error: {message}\n\ncommands:\n{self.commands}")
 
 
-# pragma: no mutate start, help texts: their wording is not tested
+# The help texts, by command and argument: at module level, as mutmut mutates
+# only functions, so their wording is never mutated (CONTRIBUTING.md).
+_TEXT = {
+    "skill-graft: description": (
+        "Build your agent skills from other people's repositories: the entries "
+        "you ask for, every skill they reach, renamed and patched as the "
+        "package's skill-graft.toml declares, deployed through APM. The package "
+        "is the nearest .apm/skill-graft/ above the working folder, else "
+        "~/.apm/skill-graft/."
+    ),
+    "skill-graft --version": "print the installed version and exit",
+    "init": "create and register ~/.apm/skill-graft/",
+    "init: description": (
+        "Create ~/.apm/skill-graft/ with a commented skill-graft.toml and an "
+        "apm.yml, and register it with `apm install -g`. Refuses if the folder "
+        "exists."
+    ),
+    "init --project": (
+        "create ./.apm/skill-graft/ instead, a package for this project, and "
+        "register it with `apm install ./.apm/skill-graft` here"
+    ),
+    "resolve": "compute the hull, vendor it, write the lock, and show the tree",
+    "resolve: description": (
+        "Compute the hull (the entries and every skill their slash and Skill "
+        "tool references reach), vendor its skills under their deployed names "
+        "into the package's .apm/skills/, patched and renamed, write "
+        "skill-graft.lock, and print the tree, then the skills prose mentions "
+        "outside the hull. Reads each git source at its ref, fetching only a "
+        "commit not yet cached. Run it after editing skill-graft.toml or a "
+        "patch by hand."
+    ),
+    "deploy": "deploy what skill-graft.lock records through APM",
+    "deploy: description": (
+        "Deploy what skill-graft.lock records: resolve, refuse a hull other "
+        "than the lock's (run `skill-graft resolve` to accept it) or an edited "
+        "vendored copy, vendor the hull into the package's .apm/skills/, and "
+        "deploy through `apm install`: with -g for ~/.apm/skill-graft/, in the "
+        "project root for a project's package. A path source's changed skill "
+        "is deployed as is, and named."
+    ),
+    "deploy --no-apm-install": "stop before running APM",
+    "deploy --into": (
+        "vendor into DIR/.apm/skills/ and write DIR/skill-graft.lock instead, "
+        "leaving the package as it is; never runs APM. DIR must be an existing, "
+        "empty folder outside any package, source and the cache"
+    ),
+    "update": "move git sources' refs to their branch tips",
+    "update: description": (
+        "Fetch each git source's branch tip, resolve the hull there, and only "
+        "if that succeeds write the new ref into skill-graft.toml and the lock. "
+        "Prints the hull diff, each changed file of each changed or added skill, "
+        "and any patch hunk that no longer applies. To review an update, run "
+        "`update --dry-run --diff-file review.diff`, read the file in an editor, "
+        "then run the `apply:` line it prints, `update --expect <hull-digest>`."
+    ),
+    "update aliases": "a source alias; default: every git source",
+    "update --dry-run": f"show the new shas, write {_ONLY_DIFF_FILE}",
+    "update --expect": (
+        "update only if the new hull has this hull digest, as the `apply:` line "
+        "of a dry run with --diff-file gives it: so exactly the hull reviewed is "
+        "written"
+    ),
+    "tree": "show the hull as a tree, writing nothing",
+    "tree: description": (
+        "Compute the hull as resolve does and print its tree, without the prose "
+        "suggestions and without writing the lock; or print it as a Mermaid "
+        "flowchart, to paste into Markdown."
+    ),
+    "tree --format": "text (default): resolve's tree; mermaid: a Mermaid flowchart",
+    "tree --link": (
+        "with --format mermaid: print a mermaid.live URL that holds the diagram "
+        "in its fragment instead; nothing is uploaded, but the URL names the "
+        "GitHub and GitLab repositories of the sources"
+    ),
+    "why": "show why a skill is in the hull, writing nothing",
+    "why: description": (
+        "Compute the hull as resolve does and print the paths that reach a "
+        "skill, as an inverted tree: the skill first, then each skill whose "
+        "slash or Skill tool reference reaches it, up to the entries."
+    ),
+    "why skill": (
+        "a skill ID (<source alias>/<name>), or the name a hull skill deploys as"
+    ),
+    "vet": "flag the lines of each skill worth reading, writing nothing",
+    "vet: description": (
+        "Compute the hull as resolve does and scan each skill as it would "
+        "deploy, patches and renames applied, every file of it, for where it "
+        "may make an agent read, write or send outside the project, run code, "
+        "gain privilege, persist, widen its permissions, or hide from review. "
+        "Print a flag per line: <skill id> <file>:<line> <category> <owasp ids> "
+        "<pattern>, line 0 for a whole file; file names as ASCII, never the "
+        "text it matched. Exits 0 whatever it flags: a flag is not a fault, and "
+        "no flag is not a pass. Never reads the lock or runs APM."
+    ),
+    "vet skills": (
+        "<source alias>/<name>; default: every hull skill. One outside the hull "
+        "is vetted with every skill its add would bring in"
+    ),
+    "vet --into": (
+        "also write each skill vetted, as scanned, to DIR/<alias>/<name>/, once "
+        "every skill is scanned; nothing on an error. DIR must be an existing, "
+        "empty folder outside any package, source and the cache"
+    ),
+    "add": "add skills to the entries, then resolve",
+    "add: description": (
+        "Append each skill ID to `entries` in skill-graft.toml, keeping its "
+        "comments and formatting. The edited config is resolved first; only if "
+        "it resolves are skill-graft.toml and the lock written and the tree "
+        "printed. Never deploys."
+    ),
+    "add skills": "<source alias>/<name>",
+    "remove": "remove skills from the entries, then resolve",
+    "remove: description": (
+        "Delete each skill ID from `entries` in skill-graft.toml, keeping its "
+        "other comments and formatting, as add does. A removed skill another "
+        "entry reaches stays in the hull. Never deploys."
+    ),
+    "remove skills": "an entry to remove",
+    "rename": "give a skill a new deployed name, then resolve",
+    "rename: description": (
+        "Set the skill's value in [rename] of skill-graft.toml, keeping its "
+        "comments and formatting, as add does. The new deployed name is carried "
+        "into every reference to the skill. Renaming a skill to the name it "
+        "deploys as without one (its source's prefix, if any, before its own "
+        "name) undoes its rename. Never deploys."
+    ),
+    "rename skill": "<source alias>/<name>",
+    "rename name": "the name it deploys as",
+    "bind": "bind a name to a skill or to nothing, then resolve",
+    "bind: description": (
+        "Set `[bind]` key <source alias>/<name> in skill-graft.toml to a skill "
+        "ID, so every reference to <name> from that source resolves to it, or "
+        "to false, so <name> from that source is no reference. Keeps comments "
+        "and formatting, as add does. Never deploys."
+    ),
+    "bind key": "<source alias>/<name>",
+    "bind target": "a skill ID (<source alias>/<name>), or the word false",
+    "unbind": "remove a bind, then resolve",
+    "unbind: description": (
+        "Delete `[bind]` key <source alias>/<name> from skill-graft.toml, so "
+        "references to <name> from that source resolve by default again. Keeps "
+        "comments and formatting, as add does. Never deploys."
+    ),
+    "unbind key": "<source alias>/<name>",
+    "help": "show the help of skill-graft or of a command",
+    "help: description": "Show the same text as `skill-graft [command] --help`.",
+}
+
+
 def _parser() -> tuple[_Parser, dict[str, argparse.ArgumentParser]]:
     """The parser and each command's own, by name."""
     parser = _Parser(
         prog="skill-graft",
-        description=(
-            "Build your agent skills from other people's repositories: the entries "
-            "you ask for, every skill they reach, renamed and patched as the "
-            "package's skill-graft.toml declares, deployed through APM. The package "
-            "is the nearest .apm/skill-graft/ above the working folder, else "
-            "~/.apm/skill-graft/."
-        ),
+        description=_TEXT["skill-graft: description"],
     )
     parser.add_argument(
-        "--version", action=_Version, help="print the installed version and exit"
+        "--version", action=_Version, help=_TEXT["skill-graft --version"]
     )
     commands = parser.add_subparsers(
         dest="command", metavar="command", parser_class=_Command
     )
     init_parser = commands.add_parser(
         "init",
-        help="create and register ~/.apm/skill-graft/",
-        description=(
-            "Create ~/.apm/skill-graft/ with a commented skill-graft.toml and an "
-            "apm.yml, and register it with `apm install -g`. Refuses if the folder "
-            "exists."
-        ),
+        help=_TEXT["init"],
+        description=_TEXT["init: description"],
     )
     init_parser.add_argument(
         "--project",
         action="store_true",
-        help=(
-            "create ./.apm/skill-graft/ instead, a package for this project, and "
-            "register it with `apm install ./.apm/skill-graft` here"
-        ),
+        help=_TEXT["init --project"],
     )
     resolve = commands.add_parser(
         "resolve",
-        help="compute the hull, vendor it, write the lock, and show the tree",
-        description=(
-            "Compute the hull (the entries and every skill their slash and Skill "
-            "tool references reach), vendor its skills under their deployed names "
-            "into the package's .apm/skills/, patched and renamed, write "
-            "skill-graft.lock, and print the tree, then the skills prose mentions "
-            "outside the hull. Reads each git source at its ref, fetching only a "
-            "commit not yet cached. Run it after editing skill-graft.toml or a "
-            "patch by hand."
-        ),
+        help=_TEXT["resolve"],
+        description=_TEXT["resolve: description"],
     )
     deploy = commands.add_parser(
         "deploy",
-        help="deploy what skill-graft.lock records through APM",
-        description=(
-            "Deploy what skill-graft.lock records: resolve, refuse a hull other "
-            "than the lock's (run `skill-graft resolve` to accept it) or an edited "
-            "vendored copy, vendor the hull into the package's .apm/skills/, and "
-            "deploy through `apm install`: with -g for ~/.apm/skill-graft/, in the "
-            "project root for a project's package. A path source's changed skill "
-            "is deployed as is, and named."
-        ),
+        help=_TEXT["deploy"],
+        description=_TEXT["deploy: description"],
     )
     install = deploy.add_mutually_exclusive_group()
     install.add_argument(
-        "--no-apm-install", action="store_true", help="stop before running APM"
+        "--no-apm-install", action="store_true", help=_TEXT["deploy --no-apm-install"]
     )
     install.add_argument(
         "--into",
         type=_into,
         metavar="DIR",
-        help=(
-            "vendor into DIR/.apm/skills/ and write DIR/skill-graft.lock instead, "
-            "leaving the package as it is; never runs APM. DIR must be an existing, "
-            "empty folder outside any package, source and the cache"
-        ),
+        help=_TEXT["deploy --into"],
     )
     update_parser = commands.add_parser(
         "update",
-        help="move git sources' refs to their branch tips",
-        description=(
-            "Fetch each git source's branch tip, resolve the hull there, and only "
-            "if that succeeds write the new ref into skill-graft.toml and the lock. "
-            "Prints the hull diff, each changed file of each changed or added skill, "
-            "and any patch hunk that no longer applies. To review an update, run "
-            "`update --dry-run --diff-file review.diff`, read the file in an editor, "
-            "then run the `apply:` line it prints, `update --expect <hull-digest>`."
-        ),
+        help=_TEXT["update"],
+        description=_TEXT["update: description"],
     )
     update_parser.add_argument(
         "aliases",
         nargs="*",
         metavar="source",
-        help="a source alias; default: every git source",
+        help=_TEXT["update aliases"],
     )
     update_parser.add_argument(
         "--dry-run",
         action="store_true",
-        help=f"show the new shas, write {_ONLY_DIFF_FILE}",
+        help=_TEXT["update --dry-run"],
     )
     _diff_file_option(update_parser, "each changed skill")
     update_parser.add_argument(
         "--expect",
         metavar="hull-digest",
-        help=(
-            "update only if the new hull has this hull digest, as the `apply:` line "
-            "of a dry run with --diff-file gives it: so exactly the hull reviewed is "
-            "written"
-        ),
+        help=_TEXT["update --expect"],
     )
     tree = commands.add_parser(
         "tree",
-        help="show the hull as a tree, writing nothing",
-        description=(
-            "Compute the hull as resolve does and print its tree, without the prose "
-            "suggestions and without writing the lock; or print it as a Mermaid "
-            "flowchart, to paste into Markdown."
-        ),
+        help=_TEXT["tree"],
+        description=_TEXT["tree: description"],
     )
     tree.add_argument(
         "--format",
         choices=["text", "mermaid"],
-        default="text",
-        help="text (default): resolve's tree; mermaid: a Mermaid flowchart",
+        # Equivalent mutants: argparse checks `choices` against what is passed, never
+        # the default, and `tree` prints text for any format but `mermaid`.
+        default="text",  # pragma: no mutate
+        help=_TEXT["tree --format"],
     )
     tree.add_argument(
         "--link",
         action="store_true",
-        help=(
-            "with --format mermaid: print a mermaid.live URL that holds the diagram "
-            "in its fragment instead; nothing is uploaded, but the URL names the "
-            "GitHub and GitLab repositories of the sources"
-        ),
+        help=_TEXT["tree --link"],
     )
     why = commands.add_parser(
         "why",
-        help="show why a skill is in the hull, writing nothing",
-        description=(
-            "Compute the hull as resolve does and print the paths that reach a "
-            "skill, as an inverted tree: the skill first, then each skill whose "
-            "slash or Skill tool reference reaches it, up to the entries."
-        ),
+        help=_TEXT["why"],
+        description=_TEXT["why: description"],
     )
     why.add_argument(
         "skill",
-        help="a skill ID (<source alias>/<name>), or the name a hull skill deploys as",
+        help=_TEXT["why skill"],
     )
     vet_parser = commands.add_parser(
         "vet",
-        help="flag the lines of each skill worth reading, writing nothing",
-        description=(
-            "Compute the hull as resolve does and scan each skill as it would "
-            "deploy, patches and renames applied, every file of it, for where it "
-            "may make an agent read, write or send outside the project, run code, "
-            "gain privilege, persist, widen its permissions, or hide from review. "
-            "Print a flag per line: <skill id> <file>:<line> <category> <owasp ids> "
-            "<pattern>, line 0 for a whole file; file names as ASCII, never the "
-            "text it matched. Exits 0 whatever it flags: a flag is not a fault, and "
-            "no flag is not a pass. Never reads the lock or runs APM."
-        ),
+        help=_TEXT["vet"],
+        description=_TEXT["vet: description"],
     )
     vet_parser.add_argument(
         "skills",
         nargs="*",
         metavar="skill-id",
-        help=(
-            "<source alias>/<name>; default: every hull skill. One outside the hull "
-            "is vetted with every skill its add would bring in"
-        ),
+        help=_TEXT["vet skills"],
     )
     vet_parser.add_argument(
         "--into",
         type=_into,
         metavar="DIR",
-        help=(
-            "also write each skill vetted, as scanned, to DIR/<alias>/<name>/, once "
-            "every skill is scanned; nothing on an error. DIR must be an existing, "
-            "empty folder outside any package, source and the cache"
-        ),
+        help=_TEXT["vet --into"],
     )
     add = commands.add_parser(
         "add",
-        help="add skills to the entries, then resolve",
-        description=(
-            "Append each skill ID to `entries` in skill-graft.toml, keeping its "
-            "comments and formatting. The edited config is resolved first; only if "
-            "it resolves are skill-graft.toml and the lock written and the tree "
-            "printed. Never deploys."
-        ),
+        help=_TEXT["add"],
+        description=_TEXT["add: description"],
     )
-    add.add_argument(
-        "skills", nargs="+", metavar="skill-id", help="<source alias>/<name>"
-    )
+    add.add_argument("skills", nargs="+", metavar="skill-id", help=_TEXT["add skills"])
     remove = commands.add_parser(
         "remove",
-        help="remove skills from the entries, then resolve",
-        description=(
-            "Delete each skill ID from `entries` in skill-graft.toml, keeping its "
-            "other comments and formatting, as add does. A removed skill another "
-            "entry reaches stays in the hull. Never deploys."
-        ),
+        help=_TEXT["remove"],
+        description=_TEXT["remove: description"],
     )
     remove.add_argument(
-        "skills", nargs="+", metavar="skill-id", help="an entry to remove"
+        "skills", nargs="+", metavar="skill-id", help=_TEXT["remove skills"]
     )
     rename = commands.add_parser(
         "rename",
-        help="give a skill a new deployed name, then resolve",
-        description=(
-            "Set the skill's value in [rename] of skill-graft.toml, keeping its "
-            "comments and formatting, as add does. The new deployed name is carried "
-            "into every reference to the skill. Renaming a skill to the name it "
-            "deploys as without one (its source's prefix, if any, before its own "
-            "name) undoes its rename. Never deploys."
-        ),
+        help=_TEXT["rename"],
+        description=_TEXT["rename: description"],
     )
-    rename.add_argument("skill", metavar="skill-id", help="<source alias>/<name>")
-    rename.add_argument("name", help="the name it deploys as")
+    rename.add_argument("skill", metavar="skill-id", help=_TEXT["rename skill"])
+    rename.add_argument("name", help=_TEXT["rename name"])
     bind = commands.add_parser(
         "bind",
-        help="bind a name to a skill or to nothing, then resolve",
-        description=(
-            "Set `[bind]` key <source alias>/<name> in skill-graft.toml to a skill "
-            "ID, so every reference to <name> from that source resolves to it, or "
-            "to false, so <name> from that source is no reference. Keeps comments "
-            "and formatting, as add does. Never deploys."
-        ),
+        help=_TEXT["bind"],
+        description=_TEXT["bind: description"],
     )
-    bind.add_argument("key", metavar="alias/name", help="<source alias>/<name>")
-    bind.add_argument(
-        "target", help="a skill ID (<source alias>/<name>), or the word false"
-    )
+    bind.add_argument("key", metavar="alias/name", help=_TEXT["bind key"])
+    bind.add_argument("target", help=_TEXT["bind target"])
     unbind = commands.add_parser(
         "unbind",
-        help="remove a bind, then resolve",
-        description=(
-            "Delete `[bind]` key <source alias>/<name> from skill-graft.toml, so "
-            "references to <name> from that source resolve by default again. Keeps "
-            "comments and formatting, as add does. Never deploys."
-        ),
+        help=_TEXT["unbind"],
+        description=_TEXT["unbind: description"],
     )
-    unbind.add_argument("key", metavar="alias/name", help="<source alias>/<name>")
+    unbind.add_argument("key", metavar="alias/name", help=_TEXT["unbind key"])
     for staging in (resolve, add, remove, rename, bind, unbind):
         _review_options(staging)
     help_parser = commands.add_parser(
         "help",
-        help="show the help of skill-graft or of a command",
-        description="Show the same text as `skill-graft [command] --help`.",
+        help=_TEXT["help"],
+        description=_TEXT["help: description"],
     )
     # Not `command`: the subcommand's namespace would overwrite the top level's.
     help_parser.add_argument("topic", nargs="?", metavar="command")
@@ -389,9 +440,6 @@ def _parser() -> tuple[_Parser, dict[str, argparse.ArgumentParser]]:
         f"  {action.dest:<10}{action.help}\n" for action in commands._choices_actions
     )
     return parser, dict(commands.choices)
-
-
-# pragma: no mutate end
 
 
 def main(argv: list[str] | None = None) -> int:

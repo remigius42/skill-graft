@@ -10,6 +10,7 @@ from pathlib import Path
 import pytest
 from conftest import FakeApm, write_config
 
+from skill_graft import cli
 from skill_graft.cli import main
 
 COMMANDS = [
@@ -86,6 +87,57 @@ def test_help_command_same_text(capsys: pytest.CaptureFixture[str]) -> None:
     assert "--format" in out
     assert (code, out) == run(["tree", "--help"], capsys)[:2]
     assert run(["help"], capsys) == run(["--help"], capsys)
+
+
+def flat(text: str) -> str:
+    return " ".join(text.split())
+
+
+def test_every_help_text_shown(capsys: pytest.CaptureFixture[str]) -> None:
+    for key, text in cli._TEXT.items():
+        # `<command>` is its summary, in the top level's help; `<command>: description`
+        # and `<command> <argument>` are in the command's own.
+        command = key.split(":")[0].split(" ")[0]
+        own = " " in key and command != "skill-graft"
+
+        code, out, _ = run([command, "--help"] if own else ["--help"], capsys)
+
+        assert code == 0
+        if not (" " in key and ":" not in key):
+            assert flat(text) in flat(out), key
+            continue
+        # An argument's: among the arguments, below the description, once for each
+        # argument whose help holds it (`<source alias>/<name>` is in two of bind's).
+        sections = [out.find(h) for h in ("arguments:", "options:") if h in out]
+        arguments = flat(out[min(sections) :])
+        holding = [
+            other
+            for other, its in cli._TEXT.items()
+            if other.startswith(f"{command} ") and flat(text) in flat(its)
+        ]
+        assert arguments.count(flat(text)) >= len(holding), key
+
+
+def test_command_option_never_abbreviated(capsys: pytest.CaptureFixture[str]) -> None:
+    code, _, err = run(["update", "--dry"], capsys)
+
+    assert code == 2 and "--dry" in err
+
+
+@pytest.mark.parametrize(("value", "code"), [("text", 0), ("mermaid", 0), ("nope", 2)])
+def test_tree_format_choices(
+    capsys: pytest.CaptureFixture[str], value: str, code: int
+) -> None:
+    assert run(["tree", "--format", value, "--help"], capsys)[0] == code
+
+
+def test_usage_error_lists_each_command_on_a_line(
+    capsys: pytest.CaptureFixture[str],
+) -> None:
+    _, _, err = run(["nope"], capsys)
+
+    lines = err.split("commands:\n")[1].splitlines()
+    assert sorted(line.split()[0] for line in lines) == sorted(COMMANDS)
 
 
 def test_help_unknown_topic(capsys: pytest.CaptureFixture[str]) -> None:
