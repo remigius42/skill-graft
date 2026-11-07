@@ -26,6 +26,7 @@ words:
   - collectreport
   - commitlint
   - conftest
+  - contextlib
   - contextvars
   - copymode
   - copystat
