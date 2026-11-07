@@ -29,6 +29,9 @@ FIRST_0_3 = (
     "# skill-graft Deployed diff: each Skill's text as `build` deploys it, Patches and"
     " Renames applied,\n"
 )
+_FIRSTS = (FIRST.encode(), FIRST_0_3.encode())
+# The bytes `check_target` reads: enough for either first line.
+_FIRST_LENGTH = max(map(len, _FIRSTS))
 
 
 def header(compared: str) -> str:
@@ -116,9 +119,12 @@ def check_target(file: Path) -> Path:
         return target
     if not stat.S_ISREG(mode):
         raise SkillGraftError(f"--diff-file {file}: not a regular file")
-    firsts = (FIRST.encode(), FIRST_0_3.encode())
     with open(target, "rb") as written:
-        if not written.read(max(map(len, firsts))).startswith(firsts):
+        start = (
+            # Equivalent mutants: reading the whole file starts the same.
+            written.read(_FIRST_LENGTH)  # pragma: no mutate
+        )
+        if not start.startswith(_FIRSTS):
             raise SkillGraftError(
                 f"--diff-file {file}: not a Deployed diff skill-graft wrote; left as "
                 "it is"
@@ -278,6 +284,9 @@ class Run:
     `dry_cache`; `--diff-file`'s file, refused if bad before
     anything else; and the lines a dry run prints last."""
 
+    # The Deployed diff, built before any write: set by `stage`, read by `finish`.
+    text: str
+
     def __init__(
         self,
         stack: ExitStack,
@@ -293,7 +302,6 @@ class Run:
         self.written = written
         self.cache = dry_cache(stack) if dry_run else Cache.default()
         self.shown: dict[SkillId, tuple[deployed.View, deployed.View]] = {}
-        self.text = ""  # the Deployed diff, built before any write
         self.changed = False  # whether the Hull diff marks a skill `+` or `~`
         # Whether the writes went through: a later failure keeps the Deployed diff.
         self.committed = False

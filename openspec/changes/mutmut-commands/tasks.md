@@ -16,9 +16,9 @@ Counts are from `afa64801`; see `design.md` for each survivor's kind.
   verify `uv run pytest` passes before any new test (the harness's survivors on the new target are task 3.2's)
 - [x] 1.2 `refactor(commands): one dry-run cache, review.dry_cache`: `dry_cache(stack) -> Cache`, its `root` the folder;
   `Run.__init__` and `update.update` call it; verify `uv run pytest` passes
-- [ ] 1.3 `refactor(commands): mark mutmut's equivalent mutants`: the 3 pragmas in `design.md`, each expression alone on
-  its line with its reason above; verify `ruff format` leaves each pragma on its line, and the module reruns no longer
-  list them
+- [x] 1.3 `refactor(commands): mark mutmut's equivalent mutants`: the 2 pragmas in `design.md` (`Run.text` declared on
+  its class instead), each expression alone on its line with its reason above; verify `ruff format` leaves each pragma
+  on its line, and the module reruns no longer list them
 
 ## 2. The bug
 

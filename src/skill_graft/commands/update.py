@@ -353,6 +353,10 @@ def _ls_remote(
     arguments = ["ls-remote", *options, "--", url, *patterns]
     found = []
     for line in git.run(*arguments, context=context).decode().splitlines():
-        value, _, name = line.partition("\t")
+        value, _, name = (
+            # Equivalent mutants: a line holds one tab, and a ref name no control
+            # character, so `rpartition` splits it alike.
+            line.partition("\t")  # pragma: no mutate
+        )
         found.append((value, name))
     return found
