@@ -487,3 +487,63 @@ def test_into_emptied_when_its_notice_fails(
         commands.vet(scope, [], [], into)
 
     assert list(into.iterdir()) == []
+
+
+def test_into_nested_files_and_their_modes(
+    home: Path, tmp_path: Path, scope: paths.Scope
+) -> None:
+    tdd = skill(home / "mp" / "tdd")
+    (tdd / "SKILL.md").chmod(0o600)
+    (tdd / "scripts" / "lib").mkdir(parents=True)
+    (tdd / "scripts" / "lib" / "run.sh").write_text("echo\n")
+    (tdd / "scripts" / "lib" / "run.sh").chmod(0o700)
+    configure(["mp/tdd"], mp="~/mp")
+    into = empty(tmp_path)
+
+    commands.vet(scope, [], [], into)
+
+    written = into / "mp" / "tdd"
+    assert {
+        path: (written / path).stat().st_mode & 0o777
+        for path in ["SKILL.md", "scripts/lib/run.sh"]
+    } == {"SKILL.md": 0o644, "scripts/lib/run.sh": 0o755}
+
+
+class LockingStdout(ClosedStdout):
+    """A closed stdout whose first write leaves `folder` unremovable."""
+
+    def __init__(self, folder: Path) -> None:
+        super().__init__()
+        self.folder = folder
+
+    def write(self, text: str) -> int:
+        self.folder.chmod(0o555)
+        return super().write(text)
+
+
+@pytest.mark.needs_permissions
+def test_into_print_error_kept_over_an_unremovable_folder(
+    home: Path, tmp_path: Path, scope: paths.Scope, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    skill(home / "mp" / "tdd", "sudo it\n")
+    configure(["mp/tdd"], mp="~/mp")
+    into = empty(tmp_path)
+    monkeypatch.setattr(sys, "stdout", LockingStdout(into / "mp"))
+
+    try:
+        with pytest.raises(BrokenPipeError):
+            commands.vet(scope, [], [], into)
+    finally:
+        (into / "mp").chmod(0o755)
+
+
+def test_bang_and_tilde_kept_in_a_file_name(home: Path, capsys: Capsys) -> None:
+    tdd = skill(home / "mp" / "tdd")
+    (tdd / "!run~.sh").write_text("sudo make install\n")
+    configure(["mp/tdd"], mp="~/mp")
+
+    assert main(["vet"]) == 0
+
+    assert (
+        capsys.readouterr().out == "mp/tdd !run~.sh:1 privilege ASI03 privilege.sudo\n"
+    )
