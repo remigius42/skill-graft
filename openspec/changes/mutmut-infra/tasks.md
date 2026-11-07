@@ -21,7 +21,7 @@ survivor's kind.
 - [x] 2.1 The export: `_safe`, the symlinks-last order and the existing-path check with `git.FSCK` off; tab in a tree
   path; subdirectories `a*` and `--name-only`; mode `0o755`; two files; `_read_blobs` checking each header's oid, with
   an error of its own; a sibling blob left unfetched; the tips `_missing` lists from, recorded
-- [ ] 2.2 Fetching: `fetch`'s `--prune`; `-q` in `fetch` and `_refetch` (a ref lock fails them after `From …`);
+- [x] 2.2 Fetching: `fetch`'s `--prune`; `-q` in `fetch` and `_refetch` (a ref lock fails them after `From …`);
   `_clone`'s reference, `--no-tags`, `-q`, and `--` recorded; `_fetch_blobs`'s `origin` against a global
   `branch.main.remote`, its `--no-tags` (no tag in the overlay), and its `-q` if 1.1 kept it; `_refetch`'s refspec and
   git before 2.36; `git.FSCK` and `--recurse-submodules=no` on the blob fetch and refetch, recorded; the overlay's

@@ -82,6 +82,71 @@ def test_fetch_once_per_url_per_command(tmp_path: Path) -> None:
     assert later.has_commit(upstream.url, newer)
 
 
+def refs(repo: Path) -> list[str]:
+    """The refs `repo` holds."""
+    out = subprocess.run(
+        ["git", "--git-dir", str(repo), "for-each-ref", "--format=%(refname)"],
+        capture_output=True,
+        text=True,
+        check=True,
+    ).stdout
+    return out.split()
+
+
+def test_fetch_prunes_a_branch_deleted_upstream(tmp_path: Path) -> None:
+    upstream = Upstream(tmp_path / "up")
+    upstream.commit({"a/SKILL.md": "# a\n"})
+    upstream.git("branch", "other")
+    cache.Cache.default().fetch("mp", upstream.url)
+    upstream.git("branch", "-D", "other")
+
+    cache.Cache.default().fetch("mp", upstream.url)
+
+    assert refs(cache.Cache.default().repository(upstream.url)) == ["refs/heads/main"]
+
+
+def test_clone_takes_no_tags(tmp_path: Path) -> None:
+    upstream = Upstream(tmp_path / "up")
+    upstream.commit({"a/SKILL.md": "# a\n"})
+    upstream.git("tag", "v1")
+
+    cache.Cache.default().fetch("mp", upstream.url)
+
+    assert refs(cache.Cache.default().repository(upstream.url)) == ["refs/heads/main"]
+
+
+def test_fetch_refuses_a_hostile_commit(tmp_path: Path) -> None:
+    upstream = Upstream(tmp_path / "up")
+    upstream.commit({"a/SKILL.md": "# a\n"})
+    cache.Cache.default().fetch("mp", upstream.url)
+    blob = write_object(upstream, "blob", b"x\n")
+    inner = write_object(upstream, "tree", tree_entry("100644", "config", blob))
+    hostile_commit(upstream, tree_entry("40000", ".GIT", inner))
+
+    with pytest.raises(SkillGraftError, match="`git fetch` failed"):
+        cache.Cache.default().fetch("mp", upstream.url)
+
+
+def lock_main(repo: Path) -> None:
+    """Leaves `main`'s ref lock in `repo`, as a killed git would."""
+    (repo / "refs" / "heads").mkdir(parents=True, exist_ok=True)
+    (repo / "refs" / "heads" / "main.lock").touch()
+
+
+def test_failed_fetch_reports_only_the_error(tmp_path: Path) -> None:
+    upstream = Upstream(tmp_path / "up")
+    upstream.commit({"a/SKILL.md": "# a\n"})
+    cache.Cache.default().fetch("mp", upstream.url)
+    upstream.commit({"b/SKILL.md": "# b\n"})
+    lock_main(cache.Cache.default().repository(upstream.url))
+
+    with pytest.raises(SkillGraftError) as error:
+        cache.Cache.default().fetch("mp", upstream.url)
+
+    assert "`git fetch` failed" in str(error.value)
+    assert "From " not in str(error.value)
+
+
 def unlocked(folder: Path) -> list[str]:
     """The names in `folder`, if any, but lock files, which stay, as `flock` needs."""
     if not folder.exists():
@@ -94,6 +159,50 @@ def leftover_of(final: Path) -> Path:
     folder = cache._temporary(final)
     assert folder.parent == final.parent and folder.name.startswith(f"{final.name}.")
     return folder
+
+
+def test_failed_clone_reports_only_the_error(tmp_path: Path) -> None:
+    upstream = Upstream(tmp_path / "up")
+    upstream.commit({})
+    blob = write_object(upstream, "blob", b"x\n")
+    inner = write_object(upstream, "tree", tree_entry("100644", "config", blob))
+    hostile_commit(upstream, tree_entry("40000", ".GIT", inner))
+
+    # fsck refuses it once the transfer started: git said where it clones to.
+    with pytest.raises(SkillGraftError) as error:
+        cache.Cache.default().fetch("mp", upstream.url)
+
+    assert "`git clone` failed" in str(error.value)
+    assert "Cloning into" not in str(error.value)
+
+
+def test_reference_lends_its_objects_to_a_clone(tmp_path: Path) -> None:
+    upstream = Upstream(tmp_path / "up")
+    upstream.commit({"a/SKILL.md": "# a\n"})
+    real = cache.Cache.default()
+    real.fetch("mp", upstream.url)
+    layered = cache.Cache(tmp_path / "dry", real)
+
+    layered.fetch("mp", upstream.url)
+
+    alternates = layered.repository(upstream.url) / "objects" / "info" / "alternates"
+    assert (
+        Path(alternates.read_text().strip())
+        == (real.repository(upstream.url) / "objects").resolve()
+    )
+
+
+def test_clone_url_never_read_as_an_option(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    upstream = Upstream(tmp_path / "up")
+    upstream.commit({"a/SKILL.md": "# a\n"})
+    calls = recorded(monkeypatch)
+
+    cache.Cache.default().fetch("mp", upstream.url)
+
+    (clone,) = [call for call in calls if "clone" in call]
+    assert clone[clone.index(upstream.url) - 1] == "--"
 
 
 def test_interrupted_clone_does_not_block(tmp_path: Path) -> None:
@@ -1038,6 +1147,207 @@ def test_refusal_the_refetch_does_not_cure(
 
     assert "'mp'" in str(error.value)
     assert recorded_filter(repo) == "blob:none"
+
+
+def test_files_fetched_checked_and_without_submodules(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    protocol_v0(monkeypatch)
+    upstream = Upstream(tmp_path / "up")
+    sha = upstream.commit({"x/a.md": "a\n"})
+    blobless(upstream)
+    calls = recorded(monkeypatch)
+
+    cache.Cache.default().checkout("mp", upstream.url, sha, "x")
+
+    transfers = [call for call in calls if "fetch" in call]
+    assert len(transfers) == 2  # the refused blob fetch, the refetch
+    for call in transfers:
+        assert call[:2] == ("-c", "transfer.fsckObjects=true")
+        assert "--recurse-submodules=no" in call
+
+
+def tags_wanted(monkeypatch: pytest.MonkeyPatch) -> None:
+    """Has every fetch take every tag, by config in the environment, which
+    outranks the repository's own `remote.origin.tagopt`."""
+    count = int(os.environ.get("GIT_CONFIG_COUNT", "0"))
+    monkeypatch.setenv(f"GIT_CONFIG_KEY_{count}", "remote.origin.tagOpt")
+    monkeypatch.setenv(f"GIT_CONFIG_VALUE_{count}", "--tags")
+    monkeypatch.setenv("GIT_CONFIG_COUNT", str(count + 1))
+
+
+def test_refetch_takes_no_tags_whatever_the_config(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    protocol_v0(monkeypatch)
+    upstream = Upstream(tmp_path / "up")
+    sha = upstream.commit({"x/a.md": "a\n"})
+    repo = blobless(upstream)
+    upstream.git("tag", "v1")
+    tags_wanted(monkeypatch)
+
+    cache.Cache.default().checkout("mp", upstream.url, sha, "x")
+
+    assert not [ref for ref in refs(repo) if ref.startswith("refs/tags/")]
+
+
+def test_refetch_brings_every_branch(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    protocol_v0(monkeypatch)
+    upstream = Upstream(tmp_path / "up")
+    sha = upstream.commit({"x/a.md": "a\n"})
+    blobless(upstream)
+    upstream.git("checkout", "-q", "-b", "other")
+    other = upstream.commit({"y.md": "y\n"})
+
+    cache.Cache.default().checkout("mp", upstream.url, sha, "x")
+
+    assert cache.Cache.default().has_commit(upstream.url, other)
+
+
+def test_failed_refetch_reports_only_the_error(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    protocol_v0(monkeypatch)
+    upstream = Upstream(tmp_path / "up")
+    sha = upstream.commit({"x/a.md": "a\n"})
+    repo = blobless(upstream)
+    upstream.commit({"y.md": "y\n"})
+    lock_main(repo)
+
+    with pytest.raises(SkillGraftError) as error:
+        cache.Cache.default().checkout("mp", upstream.url, sha, "x")
+
+    assert "`git fetch` failed" in str(error.value)
+    assert "From " not in str(error.value)
+
+
+def test_refetch_on_git_before_2_36(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    protocol_v0(monkeypatch)
+    upstream = Upstream(tmp_path / "up")
+    sha = upstream.commit({"x/a.md": "a\n"})
+    blobless(upstream)
+    run = git.run
+
+    def old_git(*args: str, **kwargs: Any) -> bytes:
+        if "--refetch" in args:
+            raise SkillGraftError("`git fetch` failed: error: unknown option `refetch'")
+        return run(*args, **kwargs)
+
+    monkeypatch.setattr(git, "run", old_git)
+
+    with pytest.raises(SkillGraftError, match="needs git 2.36 or later"):
+        cache.Cache.default().checkout("mp", upstream.url, sha, "x")
+
+
+def test_blob_fetch_from_origin_whatever_the_branch_says(
+    tmp_path: Path,
+) -> None:
+    upstream = Upstream(tmp_path / "up")
+    sha = upstream.commit({"x/a.md": "a\n"})
+    blobless(upstream)
+    Path(os.environ["GIT_CONFIG_GLOBAL"]).write_text(
+        '[branch "main"]\n\tremote = elsewhere\n'
+    )
+
+    tree = cache.Cache.default().checkout("mp", upstream.url, sha, "x")
+
+    assert (tree / "x" / "a.md").read_text() == "a\n"
+
+
+def test_overlay_blob_fetch_lists_no_tags(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    upstream = Upstream(tmp_path / "up")
+    sha = upstream.commit({"x/a.md": "a\n"})
+    blobless(upstream)
+    layered = cache.Cache(tmp_path / "dry", cache.Cache.default())
+    calls = recorded(monkeypatch)
+
+    layered.checkout("mp", upstream.url, sha, "x")
+
+    # The overlay has no `remote.origin.tagopt`: without `--no-tags`, git would
+    # list every tag upstream first, and store none.
+    (fetch,) = blob_fetches(calls)
+    assert "--no-tags" in fetch
+
+
+PROMISOR = (
+    r"^(remote\.origin\.(url|promisor|partialclonefilter)|extensions\.partialclone)$"
+)
+
+
+def promisor(repo: Path) -> list[str]:
+    """`repo`'s own promisor settings, as `name value` lines."""
+    out = subprocess.run(
+        ["git", "--git-dir", str(repo), "config", "--local", "--get-regexp", PROMISOR],
+        capture_output=True,
+        text=True,
+        check=True,
+    ).stdout
+    return sorted(out.splitlines())
+
+
+def test_overlay_takes_the_promisor_settings(tmp_path: Path) -> None:
+    upstream = Upstream(tmp_path / "up stream")  # a space in the URL
+    sha = upstream.commit({"x/a.md": "a\n"})
+    real = blobless(upstream)
+    # As git before 2.55 records it.
+    upstream.git("--git-dir", str(real), "config", "extensions.partialclone", "origin")
+    layered = cache.Cache(tmp_path / "dry", cache.Cache.default())
+
+    layered.checkout("mp", upstream.url, sha, "x")
+
+    overlay = promisor(layered.repository(upstream.url))
+    assert overlay == promisor(real)
+    assert "extensions.partialclone origin" in overlay
+    assert f"remote.origin.url {upstream.url}" in overlay
+
+
+def test_overlay_takes_no_global_promisor_setting(tmp_path: Path) -> None:
+    upstream = Upstream(tmp_path / "up")
+    sha = upstream.commit({"x/a.md": "a\n"})
+    real = blobless(upstream)
+    Path(os.environ["GIT_CONFIG_GLOBAL"]).write_text(
+        "[extensions]\n\tpartialclone = elsewhere\n"
+    )
+    layered = cache.Cache(tmp_path / "dry", cache.Cache.default())
+
+    layered.checkout("mp", upstream.url, sha, "x")
+
+    assert promisor(layered.repository(upstream.url)) == promisor(real)
+
+
+def test_overlay_takes_an_empty_promisor_setting(tmp_path: Path) -> None:
+    upstream = Upstream(tmp_path / "up")
+    sha = upstream.commit({"x/a.md": "a\n"})
+    real = blobless(upstream)
+    # git lists an empty value as `<name> ` alone.
+    upstream.git(
+        "--git-dir", str(real), "config", "remote.origin.partialclonefilter", ""
+    )
+    layered = cache.Cache(tmp_path / "dry", cache.Cache.default())
+
+    layered.checkout("mp", upstream.url, sha, "x")
+
+    assert promisor(layered.repository(upstream.url)) == promisor(real)
+
+
+def test_fetch_into_the_overlay_takes_no_tags(tmp_path: Path) -> None:
+    upstream = Upstream(tmp_path / "up")
+    first = upstream.commit({"x/a.md": "a\n"})
+    blobless(upstream)
+    layered = cache.Cache(tmp_path / "dry", cache.Cache.default())
+    layered.checkout("mp", upstream.url, first, "x")  # the overlay, which has no tagopt
+    later = upstream.commit({"x/a.md": "b\n"})
+    upstream.git("tag", "v2")
+
+    layered.checkout("mp", upstream.url, later, "x")
+
+    assert refs(layered.repository(upstream.url)) == ["refs/heads/main"]
 
 
 def pinned(repo: Path, sha: str) -> bool:
