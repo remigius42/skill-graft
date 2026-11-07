@@ -108,15 +108,15 @@ with a bare `# pragma: no mutate`, and `# Equivalent mutants: <reason>` in a com
 mutant on its line, killed ones too, so never on a line holding anything else, and no `start` … `end` regions. The
 `linear_time` tests are left out: their wall-clock limit misses under load, and the regex harness times them.
 
-The baseline to beat, 8097 mutants with the change `mutmut-src` (2026-11-07): 7532 killed, 5 timed out, 560 survived.
-`commands` and `infra`, unchanged since, are from its full run; `cli` and `pipeline` from their reruns after it.
-Survivors per layer:
+The baseline to beat, 8097 mutants with the change `mutmut-src` (2026-11-07): 7532 killed, 5 timed out, 560 survived;
+397 survive since the change `mutmut-infra`. `commands`, unchanged since, is from its full run; `cli` and `pipeline`
+from their reruns after it; `infra` from its rerun with the change `mutmut-infra`. Survivors per layer:
 
 | Layer      | Survivors | Of which                                                             |
 | ---------- | --------: | -------------------------------------------------------------------- |
 | `cli`      |       117 | 37 in `_parser`, all noise (usage wording); the other 80 not triaged |
 | `commands` |       191 | not yet triaged                                                      |
-| `infra`    |       201 | not yet triaged                                                      |
+| `infra`    |        38 | all known noise: message wording, mypy refusals                      |
 | `pipeline` |        51 | all known noise: message wording, mypy refusals, import-time code    |
 
 ## Evals
