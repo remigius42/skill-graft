@@ -755,6 +755,40 @@ def test_steps_of_one_changed_line() -> None:
     assert 10**7 - budget.left == 15
 
 
+def test_steps_of_two_changed_lines() -> None:
+    budget = deployed.Budget()
+
+    deployed.diff({"f": (b"x\nx\n", False)}, {"f": (b"y\ny\n", False)}, budget)
+
+    # D = 0 to 4: 1 + 3 + 5 + 7 + 9 entries kept, 1 + 2 + 3 + 4 + 3 diagonals
+    # tried, 1 + 2 + 1 pairs compared.
+    assert 10**7 - budget.left == 42
+
+
+def test_row_paid_with_the_last_steps_leaves_none() -> None:
+    old = {
+        "a": (b"".join(b"%d\n" % i for i in range(12)), False),
+        "b": (b"x\ny\n", False),
+    }
+    new = {
+        "a": (b"".join(b"%d\n" % i for i in reversed(range(12))), False),
+        "b": (b"y\nx\n", False),
+    }
+
+    # 153 steps: `a`'s diff overruns on a row that costs exactly what is left, which
+    # it spends, so `b`, next, has none left and shows whole.
+    text = deployed.diff(old, new, deployed.Budget(153))
+
+    assert hunks(text.split("diff --git a/b b/b\n")[1].split("\n")) == [
+        "@@ -1,2 +1,2 @@",
+        "-x",
+        "-y",
+        "+y",
+        "+x",
+        "",
+    ]
+
+
 def lcs(a: list[str], b: list[str]) -> int:
     """The longest common subsequence's length, by the textbook table."""
     row = [0] * (len(b) + 1)

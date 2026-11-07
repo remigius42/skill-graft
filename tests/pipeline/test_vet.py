@@ -415,6 +415,11 @@ def test_no_front_matter_key(name: str, text: str) -> None:
     assert flags(text, name) == set()
 
 
+@pytest.mark.parametrize("name", ["SKILL.md", "notes.md"])
+def test_key_on_line_1_without_front_matter_no_flag(name: str) -> None:
+    assert flags("hooks: x\n", name) == set()
+
+
 def test_key_first_in_front_matter() -> None:
     assert flags("---\nhooks: x\n---\n") == {("SKILL.md", 2, "persistence.hooks")}
 

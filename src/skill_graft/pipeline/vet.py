@@ -29,8 +29,9 @@ OWASP = {
 def _commands(*names: str) -> str:
     """Any of these command names, as a word: not part of a dotted or hyphenated
     name, so `.ssh` and `ssh-keygen` are no `ssh`; `/usr/bin/ssh` is."""
-    # Equivalent mutants: it runs at import, before mutmut switches a mutant on.
-    return rf"(?<![\w.-])(?:{'|'.join(names)})(?![\w-])"  # pragma: no mutate
+    # Run at import only, before mutmut switches a mutant on: its mutants survive,
+    # known noise; `test_vet.py`'s tables test the patterns it builds.
+    return rf"(?<![\w.-])(?:{'|'.join(names)})(?![\w-])"
 
 
 _SHELLS = "sh|bash|zsh|dash|ksh|fish|pwsh|powershell"
@@ -49,9 +50,9 @@ def _destructive(line: str) -> bool:
     """Whether `line` removes recursively and by force, or wipes a disk or file."""
     for options in _RM.findall(line):
         words = options.split()
-        # pragma: no mutate start, letters joined by X's hold no more `r` or `f`
-        short = "".join(w[1:] for w in words if not w.startswith("--"))
-        # pragma: no mutate end
+        # Equivalent mutants: letters joined by X's hold no more `r` or `f`.
+        glue = ""  # pragma: no mutate
+        short = glue.join(w[1:] for w in words if not w.startswith("--"))
         if ("--recursive" in words or "r" in short.lower()) and (
             "--force" in words or "f" in short
         ):
@@ -62,14 +63,18 @@ def _destructive(line: str) -> bool:
 # Each `chmod`'s mode: its first argument not an option, without the quote or
 # backtick around it.
 _CHMOD = re.compile(r"""\bchmod\s+(?:-[\w-]+\s+)*[`'"]?([^\s`'"]+)""", re.IGNORECASE)
+# A mode's last octal digit that lets others write; a first of four that sets
+# the setuid or setgid bit; what ends a sentence after a mode.
+_OTHERS_WRITE, _SETS_ID, _SENTENCE_END = "2367", "234567", ".,;:)"
+# A URL's: its path is no path.
+_SCHEME_END = "://"
 _OCTAL = re.compile(r"0*([0-7]{1,4})")
 _SYMBOLIC = re.compile(r"([ugoa]*)[+=]([rwxXst]*)")
 
 
 def _modes(line: str) -> list[str]:
     """Each `chmod`'s mode on `line`, without the punctuation ending a sentence."""
-    # Equivalent mutants: a trailing `X` neither writes nor sets an id.
-    return [mode.rstrip(".,;:)") for mode in _CHMOD.findall(line)]  # pragma: no mutate
+    return [mode.rstrip(_SENTENCE_END) for mode in _CHMOD.findall(line)]
 
 
 def _clauses(mode: str) -> list[tuple[str, str]]:
@@ -85,8 +90,7 @@ def _world_writable(line: str) -> bool:
     """Whether a `chmod` on `line` lets others write."""
     for mode in _modes(line):
         if octal := _OCTAL.fullmatch(mode):
-            # Equivalent mutants: a digit is no `X`. Others may write:
-            if octal[1][-1] in "2367":  # pragma: no mutate
+            if octal[1][-1] in _OTHERS_WRITE:
                 return True
         elif any(set(who) & {"o", "a"} and "w" in add for who, add in _clauses(mode)):
             return True
@@ -97,8 +101,7 @@ def _setuid(line: str) -> bool:
     """Whether a `chmod` on `line` sets the setuid or setgid bit."""
     for mode in _modes(line):
         if octal := _OCTAL.fullmatch(mode):
-            # Equivalent mutants: a digit is no `X`.
-            if len(octal[1]) == 4 and octal[1][0] in "234567":  # pragma: no mutate
+            if len(octal[1]) == 4 and octal[1][0] in _SETS_ID:
                 return True
         elif any(
             (not who or set(who) & {"u", "g", "a"}) and "s" in add
@@ -225,15 +228,13 @@ def scan(view: View) -> list[Flag]:
         if encoding != "UTF-8":
             found.append(Flag(path, 0, "unreviewable.encoding"))
         lines = text.split("\n")
-        # Equivalent mutants: a front matter ending at line 1 holds no key.
-        front = _front_matter(lines) if path == "SKILL.md" else 0  # pragma: no mutate
+        front = _front_matter(lines) if path == "SKILL.md" else 0
         for number, line in enumerate(lines, 1):
             names = _line(line)
             if number == 1 and line.startswith("#!"):
                 names.add("run.shebang")
             key = _KEY.match(line)
-            # Equivalent mutants: line 1 of a front matter is `---`.
-            if 1 < number <= front and key and key[1] in _KEYS:  # pragma: no mutate
+            if number <= front and key and key[1] in _KEYS:  # line 1 is `---`
                 names.add(_KEYS[key[1]])
             found += [Flag(path, number, name) for name in sorted(names)]
     return found
@@ -243,13 +244,13 @@ def _front_matter(lines: list[str]) -> int:
     """The number of the last line of the front matter, the block between a first
     line `---` and the next; 0 without one."""
     if lines[0].lstrip("\ufeff").rstrip() != "---":  # as `references` reads it
-        # Equivalent mutants: a front matter ending at line 1 holds no key.
-        return 0  # pragma: no mutate
-    # pragma: no mutate start, one more takes in the closing `---`, no key
-    ends = (n for n, line in enumerate(lines[1:], 2) if line.rstrip() == "---")
-    # pragma: no mutate end
+        return 0
+    # Equivalent mutants: one line more takes in the closing `---`, no key.
+    second = 2  # pragma: no mutate
+    ends = (n for n, line in enumerate(lines[1:], second) if line.rstrip() == "---")
     # Equivalent mutants: a front matter ending at line 1 holds no key.
-    return next(ends, 1) - 1  # pragma: no mutate
+    unclosed = 1  # pragma: no mutate
+    return next(ends, unclosed) - 1
 
 
 def _line(line: str) -> set[str]:
@@ -264,8 +265,7 @@ def _line(line: str) -> set[str]:
 def _outside(token: str) -> bool:
     """Whether path-like `token` leads outside the project: by its start, or by
     climbing above it. A URL's path is no path."""
-    # Equivalent mutants: a URL starts with its scheme, no outside start.
-    if "://" in token:  # pragma: no mutate
+    if _SCHEME_END in token:
         return False
     return (
         bool(_OUTSIDE.match(token)) or posixpath.normpath(token).split("/")[0] == ".."

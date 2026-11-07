@@ -1,5 +1,7 @@
 """Finds the slash and Skill tool references in a skill's Markdown files."""
 
+import bisect
+import itertools
 import re
 from dataclasses import dataclass
 from pathlib import Path
@@ -75,8 +77,7 @@ def scan(folder: Path) -> list[Reference]:
     found = []
     for file in _markdown_files(folder):
         try:
-            # Equivalent mutants: a codec's name has no case.
-            text = file.read_bytes().decode("utf-8")  # pragma: no mutate
+            text = file.read_bytes().decode()  # UTF-8, the default
         except UnicodeDecodeError:  # the hidden character scan reports it
             continue
         except OSError as error:
@@ -86,18 +87,18 @@ def scan(folder: Path) -> list[Reference]:
         named = [
             ref
             for ref in _sentence_names(text, file, tool_words)
-            # Equivalent mutants: a quoted name neither starts nor ends a line.
-            if not (skip and skip[0] <= ref.span[0] < skip[1])  # pragma: no mutate
+            if not (skip and _inside(ref.span, skip))
         ]
         taken = {ref.span for ref in named}
         closers = _code_span_closers(text)
+        lengths = (len(line) + 1 for line in text.split("\n"))  # its line feed too
+        starts = list(itertools.accumulate(lengths, initial=0))  # of each line
         here, calls = [], []
         for match in REFERENCE.finditer(text):
-            # Equivalent mutants: no reference starts `name:`.
-            if skip and skip[0] <= match.start() < skip[1]:  # pragma: no mutate
+            if skip and match.start() in range(*skip):
                 continue  # the skill's own name, never a reference
             group = next(g for g in FORMS if match[g])
-            if group == "prose" and _yaml_key(text, match):
+            if group == "prose" and _yaml_key(text, match, starts):
                 continue
             if group == "slash" and match.start() in closers:
                 continue  # right after a code span closes
@@ -150,29 +151,32 @@ def _code_span_closers(text: str) -> set[int]:
     """The offsets just past each backtick run (`` ` `` or ``` `` ```) that closes a
     code span: one with an odd number of runs before it on its line. One pass, so a
     long line costs no more than many short ones."""
-    closers, runs = set(), 0
+    closers, odd = set(), False  # whether an odd number of runs precede
     for match in BACKTICK_RUN_OR_NEWLINE.finditer(text):
-        if match[0] == "\n":
-            runs = 0
-            continue
-        if runs % 2 == 1:
+        newline = match[0] == "\n"
+        if odd and not newline:
             closers.add(match.end())
-        # Equivalent mutants: `-= 1` keeps the same parity.
-        runs += 1  # pragma: no mutate
+        odd = not (odd or newline)  # a line feed starts the count again
     return closers
 
 
 def _inside(span: tuple[int, int], outer: tuple[int, int]) -> bool:
-    # Equivalent mutants: no span checked starts or ends where its outer one
-    # does, nor overlaps it.
-    return outer[0] <= span[0] and span[1] <= outer[1]  # pragma: no mutate
+    """Whether `span` lies wholly inside `outer`: a prose name may start inside
+    `Skill tool` and run past it (`Skill tool-use`)."""
+    start, end = span
+    first, last = outer
+    # Equivalent mutants: no span checked starts where its outer one does.
+    starts_inside = first <= start  # pragma: no mutate
+    # Equivalent mutants: no span checked ends where its outer one does.
+    ends_inside = end <= last  # pragma: no mutate
+    return starts_inside and ends_inside
 
 
-def _yaml_key(text: str, match: re.Match[str]) -> bool:
-    """Whether the match opens its line, past indent or `- `, followed by `:`."""
-    # pragma: no mutate start, `rfind`'s start: a line feed at 0 strips away
-    before = text[text.rfind("\n", 0, match.start()) + 1 : match.start()]
-    # pragma: no mutate end
+def _yaml_key(text: str, match: re.Match[str], starts: list[int]) -> bool:
+    """Whether the match opens its line, past indent or `- `, followed by `:`;
+    `starts` are the offsets of `text`'s lines."""
+    line = starts[bisect.bisect_right(starts, match.start()) - 1]
+    before = text[line : match.start()]
     return text[match.end() : match.end() + 1] == ":" and before.strip() in ("", "-")
 
 

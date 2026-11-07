@@ -11,7 +11,13 @@ import tomlkit
 
 from skill_graft.infra import files, paths
 from skill_graft.pipeline import deployed, rename
-from skill_graft.pipeline.config import Config, GitSource, PathSource, SkillId
+from skill_graft.pipeline.config import (
+    Config,
+    GitSource,
+    PathSource,
+    SkillId,
+    split_id,
+)
 from skill_graft.pipeline.hull import Hull
 
 
@@ -96,8 +102,7 @@ def skill_hashes(hull: Hull) -> dict[SkillId, str]:
     """Each hull skill's hash as it would be vendored: rewrites applied."""
     rewrites = rename.rewrites(hull)
     return {
-        # Equivalent mutants: `folder_hash` takes None as no overrides.
-        skill: folder_hash(folder, rewrites.get(skill, {}))  # pragma: no mutate
+        skill: folder_hash(folder, rewrites.get(skill))  # None: no overrides
         for skill, folder in hull.skills.items()
     }
 
@@ -117,9 +122,7 @@ def digest(hull: Hull, hashes: dict[SkillId, str]) -> str:
     """The Hull digest: SHA-256 of each skill's ID, deployed name and hash, sorted,
     so equal digests deploy the same text under the same names."""
     triples = sorted([str(s), hull.deployed[s], hashes[s]] for s in hull.skills)
-    # Equivalent mutants: names and hashes are ASCII, so escaping changes nothing.
-    text = json.dumps(triples, ensure_ascii=True)  # pragma: no mutate
-    return hashlib.sha256(text.encode()).hexdigest()
+    return hashlib.sha256(json.dumps(triples).encode()).hexdigest()  # ASCII-escaped
 
 
 def copy_problems(skills: Path, locked: dict[str, Any]) -> list[str]:
@@ -146,13 +149,11 @@ def deployed_names(locked: dict[str, Any]) -> set[str]:
     return {deployed_name(item) for item in locked["skills"]}
 
 
-# pragma: no mutate start, an ID holds one `/`, so `rpartition` splits it alike
 def deployed_name(item: dict[str, Any]) -> str:
     """A lock skill's deployed name: `deployed`, else the name in its ID."""
-    return str(item.get("deployed") or str(item["id"]).partition("/")[2])
+    return str(item.get("deployed") or split_id(str(item["id"]))[1])
 
 
-# pragma: no mutate end
 def drift(
     new: dict[str, Any], old: dict[str, Any] | None, path_aliases: set[str]
 ) -> tuple[list[str], str | None]:
@@ -173,8 +174,7 @@ def drift(
     patched = {s["id"] for data in (new, old) for s in data["skills"] if "patches" in s}
 
     def trusted(skill_id: object) -> bool:
-        # Equivalent mutants: an ID holds one `/`, so `rpartition` splits it alike.
-        alias = str(skill_id).partition("/")[0]  # pragma: no mutate
+        alias = split_id(str(skill_id))[0]
         return alias in path_aliases and str(skill_id) not in patched
 
     def shape(data: dict[str, Any]) -> dict[str, Any]:
@@ -199,9 +199,7 @@ def drift(
     before = {s["id"]: s for s in old_shape["skills"]}
     for skill in new_shape["skills"]:
         if (was := before.get(skill["id"])) is not None:
-            # pragma: no mutate start, `id` is equal: looked up by it
-            keys = sorted((skill.keys() | was.keys()) - {"id", "hash"})
-            # pragma: no mutate end
+            keys = sorted((skill.keys() | was.keys()) - {"hash"})  # `id` is equal
             parts += [
                 f"{key} of {skill['id']} changed"
                 for key in keys
@@ -230,15 +228,11 @@ def without_paths(data: dict[str, Any], path_aliases: set[str]) -> dict[str, Any
     sources = data.get("sources")
     if not _tables(sources):
         return data
-    return data | {
-        "sources": {
-            alias: {k: v for k, v in source.items() if k != "path"}
-            # Equivalent mutants: a source outside `path_aliases` holds no `path`.
-            if alias in path_aliases  # pragma: no mutate
-            else source
-            for alias, source in sources.items()
-        }
+    stripped = {
+        alias: {k: v for k, v in sources[alias].items() if k != "path"}
+        for alias in path_aliases & sources.keys()
     }
+    return data | {"sources": sources | stripped}
 
 
 def _tables(sources: object) -> TypeGuard[dict[str, Any]]:
@@ -308,7 +302,5 @@ def recorded(data: dict[str, Any] | None) -> dict[SkillId, str] | None:
         skill_id, digest = item.get("id"), item.get("hash")
         if not (isinstance(skill_id, str) and isinstance(digest, str)):
             return None
-        # Equivalent mutants: an ID holds one `/`, so `rpartition` splits it alike.
-        alias, _, name = skill_id.partition("/")  # pragma: no mutate
-        hashes[SkillId(alias, name)] = digest
+        hashes[SkillId(*split_id(skill_id))] = digest
     return hashes

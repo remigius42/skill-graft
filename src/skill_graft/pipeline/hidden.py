@@ -77,21 +77,27 @@ def not_utf8(folder: Path, entries: list[Path]) -> list[str]:
         for entry in entries
         if entry.name.lower().endswith(".md")
         and entry.is_file()
-        # Equivalent mutants: Markdown is read strictly, whatever handles errors.
-        and decode(entry.read_bytes(), True, "replace") is None  # pragma: no mutate
+        and _utf8(entry.read_bytes()) is None
     ]
+
+
+def _utf8(data: bytes) -> str | None:
+    """`data` as strict UTF-8, as Markdown must be; None if it is not."""
+    try:
+        return data.decode()
+    except UnicodeDecodeError:
+        return None
 
 
 def scan_patch(name: str, data: bytes) -> tuple[list[str], list[str]]:
     """As `scan`, for the lines patch file `name` adds, by its own line numbers:
     the lines it keeps repeat the upstream ones, which `scan` reports. A patch is
     text whatever bytes it holds: each that is not UTF-8 counts as no character."""
-    # Equivalent mutants: UTF-8 is the default, and a codec's name has no case.
-    text = data.decode("utf-8", errors="replace")  # pragma: no mutate
+    text = data.decode(errors="replace")  # UTF-8, the default
     lines = text.split("\n")
-    # pragma: no mutate start, X's add no character and no line
-    added = "\n".join(line if line.startswith("+") else "" for line in lines)
-    # pragma: no mutate end
+    # Equivalent mutants: X's add no character and no line.
+    newline, blank = "\n", ""  # pragma: no mutate
+    added = newline.join(line if line.startswith("+") else blank for line in lines)
     return _report(name, added)
 
 
@@ -121,23 +127,23 @@ def decode_as(data: bytes, markdown: bool, errors: str) -> tuple[str, str] | Non
     UTF-8, one bad byte hiding nothing, only a file without them, as scanning
     random bytes would turn up a bidi control about once per 2 MB.
     """
+    if markdown:
+        text = _utf8(data)
+        return None if text is None else (text, "UTF-8")
     codecs = ["UTF-8"]
-    if not markdown:  # UTF-32LE's mark starts with UTF-16LE's: tried first
-        if data.startswith((b"\xff\xfe\0\0", b"\0\0\xfe\xff")):
-            # Equivalent mutants: its mark is no UTF-8, so the order does not matter.
-            codecs.insert(0, "UTF-32")  # pragma: no mutate
-        elif data.startswith((b"\xff\xfe", b"\xfe\xff")):
-            # Equivalent mutants: its mark is no UTF-8, so the order does not matter.
-            codecs.insert(0, "UTF-16")  # pragma: no mutate
+    # UTF-32LE's mark starts with UTF-16LE's: tried first.
+    if data.startswith((b"\xff\xfe\0\0", b"\0\0\xfe\xff")):
+        codecs = ["UTF-32"]  # its mark is no UTF-8
+    elif data.startswith((b"\xff\xfe", b"\xfe\xff")):
+        codecs = ["UTF-16"]  # its mark is no UTF-8
     for codec in codecs:
         try:
             return data.decode(codec), codec
         except UnicodeDecodeError:
             pass
-    if markdown or b"\0" in data:
+    if b"\0" in data:
         return None
-    # Equivalent mutants: UTF-8 is the default, and a codec's name has no case.
-    return data.decode("utf-8", errors=errors), LENIENT  # pragma: no mutate
+    return data.decode(errors=errors), LENIENT  # UTF-8, the default
 
 
 def characters(text: str) -> tuple[list[tuple[int, str]], list[tuple[int, str]]]:

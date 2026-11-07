@@ -545,6 +545,12 @@ def test_yaml_key_on_a_later_line(
     assert found(folder) == expected
 
 
+def test_prose_running_past_the_tool_words(tmp_path: Path) -> None:
+    text = "Use the Skill tool-use flow.\nthe `Skill` tool-kit here.\n"
+
+    assert kinds(text, tmp_path) == [("tool-use", "prose"), ("tool-kit", "prose")]
+
+
 def test_front_matter_needs_its_fence_alone() -> None:
     assert references.front_matter("X---\nname: x\n---\n") is None
 

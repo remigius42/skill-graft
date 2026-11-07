@@ -910,3 +910,7 @@ def test_recorded_hash_not_a_string_none() -> None:
         lock.recorded(loaded({"a/x": "1"}) | {"skills": [{"id": "a/x", "hash": 3}]})
         is None
     )
+
+
+def test_hand_edited_id_named_by_all_after_its_first_slash() -> None:
+    assert lock.deployed_name({"id": "a/b/c"}) == "b/c"

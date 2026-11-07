@@ -52,7 +52,8 @@ def apply(skill: SkillId, upstream: Path, patches: list[PatchFile], work: Path) 
     # An empty stand-in for the user's home, so git reads no config. No alias
     # starts with a dot, so no copy ever lands in it.
     # Equivalent mutants: any name no alias takes does.
-    home = work / ".home"  # pragma: no mutate
+    stand_in = ".home"  # pragma: no mutate
+    home = work / stand_in
     home.mkdir(exist_ok=True)
     name = discovery.read_name(upstream)
     for i, patch in enumerate(patches):
@@ -83,9 +84,9 @@ def _size(path: Path) -> int | None:
         mode = path.lstat()
     except (FileNotFoundError, NotADirectoryError):  # gone, or its folder is a file
         return None
-    # Equivalent mutants: a link's size is never 0, and a folder
-    # still holds its emptied files when it is reached.
-    return mode.st_size if stat.S_ISREG(mode.st_mode) else None  # pragma: no mutate
+    if not stat.S_ISREG(mode.st_mode):
+        return None
+    return mode.st_size
 
 
 def _filled(folder: Path) -> list[Path]:

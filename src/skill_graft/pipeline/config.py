@@ -171,7 +171,8 @@ def _check(raw: object, text: str) -> None:
             continue
         number = isinstance(raw[key], (int, float)) and not isinstance(raw[key], bool)
         # Equivalent mutants: any text but a number's fails alike.
-        written = table[key].as_string() if number else ""  # pragma: no mutate
+        unwritten = ""  # pragma: no mutate
+        written = table[key].as_string() if number else unwritten
         if kind == "count" and not COUNT.fullmatch(written):
             raise SkillGraftError(f"'check.{key}' must be a positive integer, like 30")
         if kind == "budget" and not (
@@ -397,10 +398,16 @@ def _patch_data(where: str, path: str, file: Path) -> bytes:
     return data
 
 
+def split_id(text: str) -> tuple[str, str]:
+    """A skill ID's alias and name: split at its first `/`, so a hand-edited
+    `a/b/c` is named `b/c`."""
+    alias, _, name = text.partition("/")
+    return alias, name
+
+
 def parse_skill_id(where: str, text: str, sources: dict[str, Source]) -> SkillId:
     """`<alias>/<name>`, both one path segment, the alias declared."""
-    # Equivalent mutants: split at the last `/`, the alias fails `NAME` alike.
-    alias, _, name = text.partition("/")  # pragma: no mutate
+    alias, name = split_id(text)
     if not (NAME.fullmatch(alias) and NAME.fullmatch(name)):
         raise SkillGraftError(f"{where}: {text!r} is not <source alias>/<skill name>")
     if alias not in sources:

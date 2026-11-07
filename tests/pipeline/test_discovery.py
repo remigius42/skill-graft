@@ -176,7 +176,10 @@ def test_empty_quoted_name_reads_empty(home: Path) -> None:
     assert discovery.read_name(home / "x") == ""  # one path segment it is not
 
 
-@pytest.mark.parametrize("text", ["---\nname: |\n---\n", "---\nname: a\n b\n---\n"])
+@pytest.mark.parametrize(
+    "text",
+    ["---\nname: |\n---\n", "---\nname: a\n b\n---\n", '---\nname: "abc\n---\n'],
+)
 def test_unsupported_name_refused(home: Path, text: str) -> None:
     skill(home / "x", text)
 

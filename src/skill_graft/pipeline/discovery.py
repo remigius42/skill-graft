@@ -20,12 +20,7 @@ COMMENT = re.compile(r"(?<!\s)\s+#.*")
 SAFE = frozenset((string.ascii_letters + string.digits + "._/-").encode())
 
 
-def _skill_folders(
-    # Equivalent mutants: every caller passes `confined`.
-    scope: paths.Scope,
-    source: Path,
-    confined: bool = False,  # pragma: no mutate
-) -> list[Path]:
+def _skill_folders(scope: paths.Scope, source: Path, confined: bool) -> list[Path]:
     """Every folder under `source` holding a `SKILL.md`, not looking inside one.
 
     Follows symlinked folders, visiting each resolved folder once, and skips `.git`,
@@ -71,25 +66,18 @@ def read_name(folder: Path) -> str:
     skill_md = folder / "SKILL.md"
     flags = os.O_RDONLY | os.O_NONBLOCK | os.O_NOCTTY
     try:
-        # Equivalent mutants: a codec's name has no case; None reads in the
-        # locale's encoding, UTF-8 where the tests run.
-        # pragma: no mutate start
-        with open(os.open(skill_md, flags), encoding="utf-8-sig") as file:
-            # pragma: no mutate end
+        with open(os.open(skill_md, flags), "rb") as file:
             if not stat.S_ISREG(os.fstat(file.fileno()).st_mode):
                 raise SkillGraftError(f"{skill_md}: not a regular file")
-            text = file.read()
+            text = file.read().decode()  # UTF-8; `name_line` skips a BOM
     except (OSError, UnicodeDecodeError) as error:
         raise SkillGraftError(f"{skill_md}: cannot be read: {error}") from None
     found = references.name_line(text)
     if found is None:
         return folder.name
-    # Equivalent mutants: only the first line is read.
-    following = text[found[1] :].splitlines()[:1]  # pragma: no mutate
+    following = text[found[1] :].splitlines()
     continued = bool(following) and following[0][:1].isspace()
-    # pragma: no mutate start, `_scalar` strips what is left
-    value = _scalar(text[found[0] : found[1]].rstrip("\r\n").removeprefix("name:"))
-    # pragma: no mutate end
+    value = _scalar(text[found[0] : found[1]].removeprefix("name:"))  # strips it
     if value is None or continued:
         raise SkillGraftError(f"{skill_md}: unsupported form of `name:`")
     return value
@@ -100,10 +88,7 @@ def _scalar(raw: str) -> str | None:
     raw = raw.strip()
     if raw[:1] in ("'", '"'):
         end = raw.find(raw[0], 1)
-        # Equivalent mutants: `find` starts at 1, so it is never 0.
-        if end < 0:  # pragma: no mutate
-            return None
-        rest = raw[end + 1 :]
+        rest = raw[end + 1 :]  # unclosed, the whole value: refused below
         if rest.strip() and not COMMENT.match(rest):
             return None
         return raw[1:end]
