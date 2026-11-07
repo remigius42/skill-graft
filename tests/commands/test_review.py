@@ -2,6 +2,7 @@
 
 import shutil
 from collections.abc import Callable
+from contextlib import ExitStack
 from pathlib import Path
 from typing import Any, TypeAlias, cast
 
@@ -14,6 +15,8 @@ from skill_graft.commands import review
 from skill_graft.infra import paths
 from skill_graft.infra.cache import Cache
 from skill_graft.pipeline import compute, config, lock
+from skill_graft.pipeline.config import SkillId
+from skill_graft.pipeline.hull import PatchError
 
 Capsys: TypeAlias = pytest.CaptureFixture[str]
 
@@ -148,3 +151,97 @@ def test_resolve_dry_run_after_a_killed_run(home: Path, capsys: Capsys) -> None:
 
     out = capsys.readouterr().out.splitlines()
     assert "  SKILL.md (changed, 2 -> 3 bytes)" in out  # not 7, the copy in skills/
+
+
+def test_dry_cache_is_a_temporary_folder_over_the_real_cache(home: Path) -> None:
+    with ExitStack() as stack:
+        cache = review.dry_cache(stack)
+
+        assert cache.root.is_dir() and cache.root.name.startswith("skill-graft-")
+        assert cache.reference is not None
+        assert cache.reference.root == paths.cache()
+    assert not cache.root.exists()
+
+
+@pytest.fixture
+def resolved(home: Path) -> tuple[Path, dict[str, Any]]:
+    """The copies of a resolved `mp/tdd`, and its lock as loaded."""
+    skill(home / "mp" / "tdd")
+    configure(["mp/tdd"], mp="~/mp")
+    assert main(["resolve"]) == 0
+    scope = paths.Scope(home)
+    locked = lock.load(scope.lock_file)
+    assert locked is not None
+    return scope.skills, locked
+
+
+def test_lock_of_another_version_reads_no_copy(
+    resolved: tuple[Path, dict[str, Any]],
+) -> None:
+    skills, locked = resolved
+
+    assert review.vendored(skills, locked | {"version": 2}).hashes == {}
+
+
+def test_no_copies_folder_reads_no_copy(
+    resolved: tuple[Path, dict[str, Any]],
+) -> None:
+    skills, locked = resolved
+    shutil.rmtree(skills)
+
+    assert review.vendored(skills, locked).hashes == {}
+
+
+def test_item_without_upstream_reads_an_empty_folder(
+    resolved: tuple[Path, dict[str, Any]],
+) -> None:
+    skills, locked = resolved
+    del locked["skills"][0]["upstream"]
+
+    assert review.vendored(skills, locked).upstream(SkillId("mp", "tdd")) == ""
+
+
+@pytest.mark.parametrize(
+    ("sources", "refs"),
+    [
+        pytest.param("x", {}, id="sources not a table"),
+        pytest.param({"mp": "x"}, {"mp": None}, id="source not a table"),
+        pytest.param({"mp": {"ref": 5}}, {"mp": None}, id="ref not a string"),
+    ],
+)
+def test_hand_edited_sources_read_no_ref(
+    resolved: tuple[Path, dict[str, Any]], sources: object, refs: dict[str, None]
+) -> None:
+    skills, locked = resolved
+
+    assert review.vendored(skills, locked | {"sources": sources}).refs == refs
+
+
+def test_fetch_hint_follows_a_fetched_skills_last_hidden_line(tmp_path: Path) -> None:
+    tmp = tmp_path / "tmp"
+    fetched, other = SkillId("mp", "a"), SkillId("own", "b")
+    hidden = [
+        (fetched, f"{tmp}/a/SKILL.md:1: U+202E"),
+        (fetched, f"{tmp}/a/notes.md:2: U+202E"),
+        (other, f"{tmp_path}/own/b/SKILL.md:1: U+202E"),
+    ]
+
+    error = review.fetch_hint(PatchError([], hidden=hidden), tmp, "fetch it")
+
+    assert error.hidden == [*hidden[:2], (fetched, "fetch it"), hidden[2]]
+
+
+def test_failing_dry_run_hints_no_review(home: Path, capsys: Capsys) -> None:
+    skill(home / "mp" / "tdd")
+    configure(["mp/gone"], mp="~/mp")
+
+    assert main(["resolve", "--dry-run"]) == 1
+
+    out = capsys.readouterr().out
+    assert "dry run:" in out and "review:" not in out
+
+
+def test_fetch_hint_keeps_the_other_errors(tmp_path: Path) -> None:
+    error = review.fetch_hint(PatchError([], other=["boom"]), tmp_path, "fetch it")
+
+    assert error.other == ["boom"]

@@ -28,8 +28,9 @@ Counts are from `afa64801`; see `design.md` for each survivor's kind.
 
 ## 3. Survivors killed
 
-- [ ] 3.1 `review` (21, with `update`'s 3 in `dry_cache`): `dry_cache`'s root name, removal and fallback cache;
-  `vendored`'s malformed and partial locks; `fetch_hint`'s two hidden lines; `running`'s failing dry run without a hint
+- [x] 3.1 `review` (22, with `update`'s 3 in `dry_cache`): `dry_cache`'s root name, removal and fallback cache;
+  `vendored`'s malformed and partial locks; `fetch_hint`'s two hidden lines, and the other errors it keeps; `running`'s
+  failing dry run without a hint
 - [ ] 3.2 `explain` (15): `tree_lines`' prose edges; `repository`'s port; `repositories`' skipped sources and non-forge
   URL; `link`'s fragment decoded and compared with level-9 compression on the same machine; `mermaid`'s `"`; then
   `uv run python -m mutation explain._UNSAFE_URL`, each survivor killed by a test (a URL holding `\x7f`, for one) or
