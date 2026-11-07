@@ -528,3 +528,17 @@ def test_init_help_describes_project(capsys: pytest.CaptureFixture[str]) -> None
         main(["init", "--help"])
 
     assert "--project" in capsys.readouterr().out
+
+
+def test_apm_fails_after_registering_names_the_error(
+    home: Path,
+    fake_apm: FakeApm,
+    monkeypatch: pytest.MonkeyPatch,
+    capsys: pytest.CaptureFixture[str],
+) -> None:
+    project_root(home, monkeypatch)
+    fake_apm.exit_code = 1
+
+    assert main(["init", "--project"]) == 1
+
+    assert "failed with exit code 1" in capsys.readouterr().err

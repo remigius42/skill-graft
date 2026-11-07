@@ -2158,3 +2158,21 @@ def test_marked_hull_in_the_diff(
     assert text.startswith(
         HEADER + "# ~ mp/tdd\n# + └── mp/grilling (/grilling)\n# + mp/grilling\n"
     )
+
+
+def test_hint_names_each_source(upstream: Upstream, capsys: Capsys) -> None:
+    old = upstream.commit({"tdd/SKILL.md": "1\n"})
+    upstream.commit({"tdd/SKILL.md": "2\n"})
+    write_config(
+        'entries = ["mp/tdd", "cp/tdd"]\n'
+        + git_source("mp", upstream, f'ref = "{old}"\n')
+        + git_source("cp", upstream, f'ref = "{old}"\nprefix = "cp-"\n')
+    )
+    assert resolve_and_deploy(["deploy", "--no-apm-install"]) == 0
+
+    code, out, _ = update(capsys, "mp", "cp", "--dry-run")
+
+    assert code == 0
+    assert "review: skill-graft update mp cp --dry-run --diff-file <file>" in (
+        out.splitlines()
+    )

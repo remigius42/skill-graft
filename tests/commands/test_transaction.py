@@ -677,3 +677,37 @@ def test_own_lock_file_does_not_warn(home: Path, tmp_path: Path) -> None:
     into_lock = tmp_path / "into" / "skill-graft.lock"
 
     assert project_warnings(tmp_path, str(tmp_path / "opt"), into_lock) == []
+
+
+@pytest.mark.parametrize("version", [None, 2], ids=["no lock", "another version"])
+def test_pending_keeps_no_skills_old_without_a_lock_to_check(
+    scope: paths.Scope, version: int | None
+) -> None:
+    resolve(scope)
+    shutil.copytree(scope.skills, scope.skills.with_name("skills.old"))
+    loaded = lock.load(scope.lock_file)
+    assert loaded is not None
+    locked = None if version is None else loaded | {"version": version}
+
+    assert transaction.pending(scope.skills, locked) == scope.skills
+
+
+def test_restore_of_a_file_already_gone_is_quiet(
+    scope: paths.Scope,
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+    capsys: pytest.CaptureFixture[str],
+) -> None:
+    file = tmp_path / "file"
+    monkeypatch.setattr(lock, "write", failing(OSError("disk full")))
+
+    with (
+        pytest.raises(OSError, match="disk full"),
+        transaction.resolving(
+            scope, config.load(scope), [], Cache.default()
+        ) as resolution,
+    ):
+        resolution.writes.append((file, lambda: None))  # writes nothing after all
+
+    assert not file.exists()
+    assert "could not restore" not in capsys.readouterr().err

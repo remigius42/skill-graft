@@ -12,6 +12,7 @@ from conftest import FakeApm, resolve_and_deploy, skill
 from skill_graft.cli import main
 from skill_graft.commands import scope
 from skill_graft.infra import paths
+from skill_graft.infra.errors import SkillGraftError
 
 
 def project(root: Path, entries: str = '["own/chisel"]') -> Path:
@@ -439,3 +440,16 @@ def test_of_deploy_names_the_package(
 
     package = home / ".apm" / "skill-graft"
     assert capsys.readouterr().err == f"skill-graft: package: {package}\n"
+
+
+def test_deleted_working_folder_without_pwd(
+    home: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    gone = home / "gone"
+    gone.mkdir()
+    monkeypatch.chdir(gone)
+    monkeypatch.delenv("PWD", raising=False)
+    gone.rmdir()
+
+    with pytest.raises(SkillGraftError, match="^the working folder no longer exists$"):
+        scope.of("tree", False)

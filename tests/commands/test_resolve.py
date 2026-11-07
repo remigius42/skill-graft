@@ -16,6 +16,8 @@ from conftest import (
 )
 
 from skill_graft.cli import main
+from skill_graft.commands import explain
+from skill_graft.infra.errors import SkillGraftError
 from skill_graft.pipeline import lock, vendor
 from skill_graft.pipeline.hull import Hull
 
@@ -434,3 +436,20 @@ def test_dry_run_hint(home: Path, capsys: Capsys) -> None:
         "review: skill-graft resolve --dry-run --diff-file <file>",
         DRY_RUN,
     ]
+
+
+def test_diff_file_kept_when_printing_the_tree_fails(
+    home: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    skill(home / "own" / "tdd")
+    configure(["own/tdd"], own="~/own")
+    monkeypatch.setattr(explain, "show", failing_show)
+
+    assert main(["resolve", "--diff-file", "review.diff"]) == 1
+
+    assert "own/tdd" in (home / "review.diff").read_text()
+    assert lock_file(home).exists()
+
+
+def failing_show(hull: Hull) -> None:
+    raise SkillGraftError("cannot print the tree")
