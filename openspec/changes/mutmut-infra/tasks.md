@@ -39,7 +39,7 @@ survivor's kind.
   flush of a real pipe pointing stdout's descriptor at `os.devnull`
 - [x] 3.3 `files` (7) and `text` (10), new `tests/infra/test_files.py` and `test_text.py`: `atomic_write`'s temporary
   file beside its target; `text.ranges` called directly; pragmas on `atomic_write`'s `delete=False` and `os.umask(0)`
-- [ ] 3.4 `apm` (7): `registered` with an item starting `X/`
+- [x] 3.4 `apm` (7): `registered` with an item starting `X/`
 
 ## 4. The baseline
 

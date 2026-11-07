@@ -39,3 +39,10 @@ def test_long_run_of_whitespace_in_an_item_scans_at_once(tmp_path: Path) -> None
 
     assert time.perf_counter() - start < 1
     assert not found
+
+
+def test_item_starting_with_x_registers(tmp_path: Path) -> None:
+    scope = project(tmp_path)
+    scope.manifest.write_text("dependencies:\n  - X/../.apm/skill-graft\n")
+
+    assert apm.registered(scope)
