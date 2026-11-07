@@ -4,6 +4,7 @@ import os
 import shutil
 import subprocess
 from pathlib import Path
+from typing import Any
 
 import pytest
 from conftest import Upstream, make_patch, no_lazy_fetch
@@ -162,3 +163,99 @@ def test_failure_of_several_lines_is_one(tmp_path: Path) -> None:
     assert failed.value.lines == [str(failed.value)]
     assert "\n" not in str(failed.value)
     assert "fatal: " in str(failed.value) and "; " in str(failed.value)
+
+
+def test_run_without_a_repository_uses_the_working_folder(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    upstream = Upstream(tmp_path / "up")
+    sha = upstream.commit({"a.md": "a\n"})
+    monkeypatch.chdir(upstream.path)
+
+    assert git.run("rev-parse", "HEAD", context="mp").decode().strip() == sha
+
+
+@no_lazy_fetch
+def test_run_without_a_repository_lets_git_fetch_lazily(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    upstream = Upstream(tmp_path / "up")
+    sha = upstream.commit({"a.md": "a\n"})
+    clone = tmp_path / "clone"
+    upstream.git(
+        "clone",
+        "-q",
+        "--no-checkout",
+        "--no-local",
+        "--filter=blob:none",
+        upstream.url,
+        str(clone),
+    )
+    monkeypatch.chdir(clone)
+
+    assert git.run("cat-file", "-p", f"{sha}:a.md", context="mp") == b"a\n"
+
+
+def test_failure_names_the_subcommand_past_options() -> None:
+    with pytest.raises(SkillGraftError, match="^mp: `git no-such` failed"):
+        git.run("--literal-pathspecs", "-c", "a.b=c", "no-such", context="mp")
+
+
+def test_failure_of_undecodable_output(tmp_path: Path) -> None:
+    repo = Path(os.fsdecode(os.fsencode(tmp_path) + b"/\xff"))
+
+    with pytest.raises(SkillGraftError, match="�"):
+        git.run("rev-parse", "HEAD", repo=repo, context="mp")
+
+
+def test_apply_failure_of_undecodable_output(tmp_path: Path) -> None:
+    patch = b"--- a/\xff.md\n+++ b/\xff.md\n@@ -1 +1 @@\n-a\n+b\n"
+    folder = folder_with(tmp_path, {})
+
+    ok, message = git.apply(folder, patch, home_in(tmp_path))
+
+    assert not ok and "�" in message
+
+
+def test_apply_says_nothing_of_whitespace(tmp_path: Path) -> None:
+    patch = make_patch(
+        tmp_path,
+        {"SKILL.md": LINES},
+        {"SKILL.md": LINES.replace("line 5\n", "line five   \n")},
+    )
+    folder = folder_with(tmp_path, {"SKILL.md": LINES})
+
+    ok, message = git.apply(folder, patch, home_in(tmp_path))
+
+    assert ok and "whitespace" not in message
+
+
+def test_apply_reads_no_xdg_config(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    xdg = tmp_path / "xdg"
+    (xdg / "git").mkdir(parents=True)
+    (xdg / "git" / "config").write_text("[broken\n")
+    monkeypatch.setenv("XDG_CONFIG_HOME", str(xdg))
+
+    assert_whitespace_strict(tmp_path)
+
+
+def test_apply_environment(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
+    envs: list[dict[str, str]] = []
+    run = subprocess.run
+
+    def recording(*args: Any, **kwargs: Any) -> Any:
+        envs.append(kwargs["env"])
+        return run(*args, **kwargs)
+
+    monkeypatch.setattr(subprocess, "run", recording)
+    home = home_in(tmp_path)
+
+    git.apply(folder_with(tmp_path, {}), b"", home)
+
+    # Neither the system's config and attributes, which a test cannot write,
+    # nor the user's, which `home` standing in for them would hide.
+    (env,) = envs
+    assert env["HOME"] == env["XDG_CONFIG_HOME"] == str(home)
+    assert env["GIT_CONFIG_NOSYSTEM"] == env["GIT_ATTR_NOSYSTEM"] == "1"

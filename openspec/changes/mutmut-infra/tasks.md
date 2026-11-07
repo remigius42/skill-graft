@@ -32,7 +32,7 @@ survivor's kind.
 
 ## 3. The other modules
 
-- [ ] 3.1 `git` (32: 17 to kill): `run` without `repo` (no `--git-dir`, git's own lazy fetch), non-UTF-8 stderr, the
+- [x] 3.1 `git` (32: 17 to kill): `run` without `repo` (no `--git-dir`, git's own lazy fetch), non-UTF-8 stderr, the
   subcommand past options; `apply`'s `--whitespace=nowarn`, its `XDG_CONFIG_HOME`, its environment recorded, non-UTF-8
   stderr
 - [ ] 3.2 `errors` (13): `flush_stdout` suppressing a bare `ValueError` and a bare `OSError` from `_discard`; a failed
