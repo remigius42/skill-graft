@@ -622,26 +622,6 @@ def test_lock_write_fails(
     assert list(into.iterdir()) == []
 
 
-def test_interrupted(
-    home: Path, tmp_path: Path, monkeypatch: pytest.MonkeyPatch
-) -> None:
-    skill(home / "src" / "chisel")
-    write_config('entries = ["own/chisel"]\n[sources.own]\npath = "~/src"\n')
-    into = empty_folder(tmp_path)
-    copy = vendor.stage
-
-    def copy_then_interrupt(hull: Hull, skills: Path) -> None:
-        copy(hull, skills)
-        raise KeyboardInterrupt
-
-    monkeypatch.setattr(vendor, "stage", copy_then_interrupt)
-
-    with pytest.raises(KeyboardInterrupt):
-        resolve_and_deploy(["deploy", "--into", str(into)])
-
-    assert list(into.iterdir()) == []
-
-
 def test_foreign_file_kept(
     home: Path, tmp_path: Path, monkeypatch: pytest.MonkeyPatch
 ) -> None:
@@ -1414,3 +1394,47 @@ def test_into_config_edited_by_hand(home: Path, tmp_path: Path, capsys: Capsys) 
     assert "skill-graft resolve" in refused(capsys, "deploy", "--into", str(into))
 
     assert list(into.iterdir()) == []
+
+
+def test_into_emptied_after_an_interrupt_mid_stage(
+    home: Path, tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    chisel_config(home)
+    assert main(["resolve"]) == 0
+    into = empty_folder(tmp_path)
+
+    def interrupted(hull: Hull, skills: Path) -> None:
+        (skills.with_name("skills.new") / "chisel").mkdir(parents=True)
+        raise KeyboardInterrupt
+
+    monkeypatch.setattr(vendor, "stage", interrupted)
+
+    with pytest.raises(KeyboardInterrupt):
+        main(["deploy", "--into", str(into)])
+
+    assert list(into.iterdir()) == []
+
+
+def test_into_emptied_when_the_swap_cannot_be_undone(
+    home: Path, tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    chisel_config(home)
+    assert main(["resolve"]) == 0
+    into = empty_folder(tmp_path)
+
+    def fail(text: str, file: Path) -> None:
+        file.write_text(text)
+        for name in ["skills.old", "skills.trash"]:
+            (into / ".apm" / name / "chisel").mkdir(parents=True)
+        raise OSError("disk full")
+
+    monkeypatch.setattr(lock, "write", fail)
+    monkeypatch.setattr(vendor, "swap_back", failing_rename)
+
+    assert main(["deploy", "--into", str(into)]) == 1
+
+    assert list(into.iterdir()) == []
+
+
+def failing_rename(skills: Path) -> None:
+    raise OSError("rename failed")

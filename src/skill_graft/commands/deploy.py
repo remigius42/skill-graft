@@ -24,7 +24,8 @@ def deploy(
     into = None if given is None else given.resolve()
     skills = scope.skills if into is None else into / ".apm" / "skills"
     lock_file = None if into is None else into / "skill-graft.lock"
-    started = False
+    # Annotated: mypy then refuses mutmut's `None`, which would act as `False`.
+    started: bool = False
     changed: list[str] = []
     try:
         loaded = transaction.load(scope, warnings)

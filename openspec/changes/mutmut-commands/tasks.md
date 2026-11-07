@@ -36,7 +36,7 @@ Counts are from `afa64801`; see `design.md` for each survivor's kind.
   `Repository` whose name holds one, as no `tree` input does; then `uv run python -m mutation explain._UNSAFE_URL`, each
   survivor killed by a test (a URL holding `\x7f`, for one) or listed in `mutation/equivalent.toml` with its reason,
   until it exits 0
-- [ ] 3.3 `deploy` (13): `deploy --into` failing mid-stage, and mid-swap with `swap_back` failing, leaves `into` empty;
+- [x] 3.3 `deploy` (13): `deploy --into` failing mid-stage, and mid-swap with `swap_back` failing, leaves `into` empty;
   `test_interrupted`, whose interrupt hit `resolve` and never reached `deploy`, removed; `started` annotated, so mypy
   refuses its equivalent `None` mutant
 - [ ] 3.4 `edit` (12): each edit's dry-run hint; `bind` and `unbind` with `--diff-file`; `remove` without `entries`
