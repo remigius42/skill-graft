@@ -21,7 +21,8 @@ Unique within a **Source**. _Avoid_: Path, slug
 (`/grilling`), a Skill tool call (`Skill(grilling)`, or a sentence telling the reader to call the Skill tool with
 `"grilling"`), or prose (`grilling` in backticks, or a hyphenated name). A slash or Skill tool **Reference** resolves in
 its own **Source** first, else in exactly one other **Source**; a prose **Reference** resolves only in its own
-**Source**. _Avoid_: Dependency, link, import
+**Source**. One that resolves to a **Hull** **Skill** is vendored as the **Reference prefix**, if any, then the target's
+**Deployed name**. _Avoid_: Dependency, link, import
 
 **Bind**: A user rule that fixes where **References** of every form to one name from one **Source** resolve, overriding
 the default, or that they resolve nowhere: such a name is then not a **Reference** at all. A **Reference** bound to a
@@ -50,6 +51,10 @@ overrides its **Source**'s **Prefix**, so it may restore the **Skill**'s own nam
 **Skill** of it a new **Deployed name**, carried into every **Reference** as a **Rename** is. A **Rename** of the
 **Skill** overrides it. _Avoid_: Namespace, glob rename
 
+**Reference prefix**: A string the harness needs before every **Skill**'s name, such as `foo:` for the **Skills** of a
+Claude Code plugin `foo`: put before the **Deployed name** in every **Reference**, never in a folder or `name:`. One per
+**Package**, refused in a **Package** APM deploys. _Avoid_: Namespace, plugin prefix
+
 **Patch**: A user's unified diff against a **Skill**'s upstream text. Applied before **References** resolve and before
 **Renames**, so it never mentions a **Deployed name**. _Avoid_: Override, fix
 
@@ -58,7 +63,8 @@ path **Source**'s folder), before any **Patch**. As an adverb, "upstream" means 
 upstream"); as a noun it is never the **Source** itself. _Avoid_: Original, pristine, vanilla
 
 **Deployed name**: The name a **Skill** carries once installed: its **Rename**, else its **Source**'s **Prefix** before
-its name, else its name. Unique across the **Hull**. _Avoid_: Target name, alias
+its name, else its name. Unique across the **Hull**. **References** carry it after the **Reference prefix**, if any.
+_Avoid_: Target name, alias
 
 **Vendored copy**: A **Skill** as its **Package** holds it, **Patches** and **Renames** applied: the text the lock
 records a hash of and APM deploys. _Avoid_: Build output, deployed copy, vendor folder

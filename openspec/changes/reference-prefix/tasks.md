@@ -63,7 +63,7 @@ equivalent expression alone.
 
 ## 3. Docs
 
-- [ ] 3.1 `CONTEXT.md` gains **Reference prefix** (a string the harness needs before every **Skill**'s name, put before
+- [x] 3.1 `CONTEXT.md` gains **Reference prefix** (a string the harness needs before every **Skill**'s name, put before
   the **Deployed name** in every **Reference**, never in a folder or `name:`; _Avoid_: Namespace, plugin prefix), and
   **Reference** and **Deployed name** point to it. `docs/adr/0012-reference-prefix-is-a-package-option.md` records
   design.md's decisions on a package key, on not allowing `:` in names, and on refusing it where APM deploys.

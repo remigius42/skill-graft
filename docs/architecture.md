@@ -51,8 +51,10 @@ parent, so no user, system or environment setting, and no enclosing repository, 
 on any git version.
 
 Patches apply before references resolve, and renames after both: a patch never mentions a deployed name, and the rename
-sets `name:`, which APM requires to equal the folder. Patching happens before APM, never after: APM reports a
-hand-edited deployed file as `modified` drift.
+sets `name:`, which APM requires to equal the folder. A reference is rewritten to `Hull.called(target)`, the reference
+prefix before the deployed name, while the folder and `name:` take the deployed name alone: `rename.rewrites` and the
+tree's prose edges both compare with `called`, so the five callers of `rewrites` agree without a parameter. Patching
+happens before APM, never after: APM reports a hand-edited deployed file as `modified` drift.
 
 ## Hidden character scan
 
@@ -76,8 +78,9 @@ normalized, as `Skill(name)`.
 ## The lock's version
 
 The lock holds `version = 1`. Any change to its keys or to what they mean raises `version`, since the `graft-check`
-skill reads version 1 only. `test_version_1_keys` in `tests/pipeline/test_lock.py` fails on a change to the keys, as a
-reminder; a change to what a key means, no test catches.
+skill reads version 1 only. `reference-prefix` is the one exception: written after `version` only when set, so a lock
+without it is as before, and graft-check's lock check accepts it. `test_version_1_keys` in `tests/pipeline/test_lock.py`
+fails on a change to the keys, as a reminder; a change to what a key means, no test catches.
 
 ## Source layers
 

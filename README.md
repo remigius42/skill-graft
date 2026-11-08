@@ -150,9 +150,9 @@ vendored copies. `update`'s `--expect <hull-digest>` updates only to the hull a 
 
 ### Deploying
 
-| Command                                     | What it does                                                                                                                                                                                                                                                             |
-| ------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
-| `deploy [--no-apm-install \| --into <dir>]` | Deploy what the lock records through APM, refusing a hull other than the lock's or an edited vendored copy. `--no-apm-install` stops before running APM. `--into <dir>` writes the skills and the lock into an empty `<dir>` instead, never touching the package or APM. |
+| Command                                     | What it does                                                                                                                                                                                                                                                                                                                   |
+| ------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| `deploy [--no-apm-install \| --into <dir>]` | Deploy what the lock records through APM, refusing a hull other than the lock's or an edited vendored copy. `--no-apm-install` stops before running APM; with `reference-prefix`, deploy needs it or `--into`. `--into <dir>` writes the skills and the lock into an empty `<dir>` instead, never touching the package or APM. |
 
 ### Inspecting
 
@@ -173,6 +173,7 @@ it: it then sees which upstream repositories and refs you use, a target list for
 ```toml
 entries = ["mp/tdd", "mp/implement", "own/chisel"]
 reserved = ["review"]
+# reference-prefix = "foo:"  # only in a plugin's own package: see below
 
 [sources.mp]
 git = "https://github.com/mattpocock/skills.git"
@@ -216,6 +217,11 @@ readers-at-once = 4
   root.
 - `prefix` and `[rename]`: a skill deploys as its `[rename]` value, else its source's prefix before its name, else its
   name. Carried into its folder, `name:` and every reference.
+- `reference-prefix`: put before the deployed name in every reference, never in a folder or `name:`, for a harness that
+  names a plugin's skills `foo:<name>`. Used as written, so give the separator too: `"foo:"`; one ending in a letter or
+  digit warns. Its skills work only inside the plugin, so every command that writes `.apm/skills/` refuses it in a
+  package APM deploys, and `deploy` then needs `--no-apm-install` or `--into` (see
+  [Curate a plugin's skills](docs/howto.md#curate-a-plugins-skills)).
 - `[bind]`: settles which skill a reference means when several sources have one of that name, or with `false` makes it
   no reference at all.
 - `[patches]`: unified diffs, applied before renames, so a patch can change what a skill calls (see

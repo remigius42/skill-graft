@@ -95,6 +95,34 @@ skill-graft. Keep path sources inside the project (`path = "../../skills"`) or u
 reads the same on every machine. Any other path, such as `/opt/skills`, `../shared` or `~/x/../skills`, is recorded
 absolute, and every command that writes the project's own lock warns of it.
 
+## Curate a plugin's skills
+
+Claude Code names each skill of a plugin `foo` as `foo:<name>`, so a skill vendored into it must call `/foo:grilling`,
+not `/grilling`: a bare name resolves only while no other skill has it, and may silently run another. `reference-prefix`
+writes every reference that way, while folders and `name:` keep the deployed name the harness puts the prefix before.
+
+1. In the plugin's folder, make the package by hand, `.apm/skill-graft/skill-graft.toml`: not with `init`, which
+   registers it with APM, and in a package APM deploys the key is refused. Set the plugin's name and its separator:
+
+   ```toml
+   reference-prefix = "foo:"
+   entries = ["mp/tdd"]
+
+   [sources.mp]
+   git = "https://github.com/mattpocock/skills.git"
+   ```
+
+1. Run `skill-graft update mp`, then `skill-graft resolve`, or `skill-graft deploy --no-apm-install` later: they need no
+   `apm.yml`. A plain `deploy` refuses the key, as its skills work only inside the plugin.
+
+1. Point the plugin's `plugin.json` at the vendored skills: `"skills": "./.apm/skill-graft/.apm/skills/"`.
+
+The plugin's own commands, agents and hooks are not vendored: write their calls to these skills with the prefix
+yourself. Every prose reference is rewritten too, not only those to a renamed skill; `resolve` says how many, and
+`skill-graft tree` shows the skills they name. A word that only happens to match a skill's name, such as `follow-up`,
+ends with a [patch](#write-a-patch) of that line; `bind <alias>/<name> false` ends the name as a reference in its whole
+source, slash calls included, so it suits only a name that never means a skill.
+
 ## Check a package with graft-check
 
 skill-graft finds references by their form alone, so it misses "run the grilling skill", takes `/tmp` for a call, and
