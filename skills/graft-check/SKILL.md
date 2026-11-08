@@ -34,6 +34,8 @@ act on them.
   **Source**, in every form; `false` makes the name no **Reference** at all. `<alias>` is the **Source** of the
   **Skill** holding the **Reference**, not of its target.
 - **Deployed name**: a **Skill**'s name once vendored, set by `[rename]` or a **Source**'s `prefix`.
+- **Reference prefix**: the lock's top-level `reference-prefix`, when set: every **Reference** to a **Hull** **Skill**
+  is vendored as it followed by the target's **Deployed name**; folders and `name:` keep the **Deployed name**.
 - **Upstream**: a **Skill** as its **Source** has it, before any **Patch**.
 - **Patch**: a unified diff against the **Upstream** folder, listed under `[patches]`, applied before **References**
   resolve.
@@ -103,6 +105,7 @@ LC_ALL=C awk '
           o[1] = "^# Written by skill-graft; update reads its hashes\\. Do not edit\\.$"
           o[2] = "^# Written by skill-graft, which reads it back\\. Do not edit\\.$"
           o[3] = "^skills = \\[\\]$"; o[4] = "^edges = \\[\\]$"; o[5] = "^suggestions = \\[\\]$"
+          o[6] = "^reference-prefix = \"[A-Za-z0-9][A-Za-z0-9._:-]*\"$"
           r[1] = "^id = " id "$"; r[2] = "^from = " id "$"; r[3] = "^to = " id "$"
           r[4] = "^deployed = \"" n "\"$"; r[5] = "^upstream = \"\\.\"$"; r[6] = "^upstream = \"" s "(/" s ")*\"$"
           r[7] = "^from = \\[" id "(, " id ")*\\]$"; r[8] = "^patches = \\[(" p "(, " p ")*)?\\]$"
@@ -148,6 +151,10 @@ From the lock, for each **Skill** to check (`[[skills]]`, or only the arguments)
   `as <deployed name>` when renamed, indented under the **Skill** it is from.
 - **Binds**: the `[bind]` keys in `skill-graft.toml` whose alias is the **Skill**'s, and their values.
 
+For every reader alike, `reference-prefix`: the lock's top-level `reference-prefix`, which step 2 checked against its
+pattern, or none. Take it from the lock, as tomlkit wrote it, never from `skill-graft.toml`, whose written form may
+differ.
+
 The limits of every reader and patcher come from `[check]` in `skill-graft.toml`, which step 2's deploy has checked to
 be plain decimal digits: `<reader-turns>`, else 30; `<reader-budget-usd>`, else 1.0; `<patcher-turns>`, else 10;
 `<patcher-budget-usd>`, else 0.5; `<readers-at-once>`, else 4.
@@ -160,7 +167,7 @@ target its **Upstream** folder.
 Give each **Skill** to check its own reader, in `full` mode. A reader's prompt names, one `key: value` line each, as the
 reader's `Input` section lists them: `skill`, `upstream`, `vendored`, `patches` (the file names in its working folder),
 `targets` (each tree line from that **Skill**, then `upstream: <the target's Upstream folder>`), `binds`, `names` (each
-target's name and each `binds` key bound to it), and `mode`.
+target's name and each `binds` key bound to it), `reference-prefix` when the lock has one, and `mode`.
 
 Hardened, each reader is its own `claude` process:
 
@@ -235,10 +242,10 @@ Every name in a fix comes from a known source; a finding whose fix fails this is
 
 A **Bind** is source-wide. Before proposing one for `<alias>/<name>`, gather the uses of `<name>` in every **Hull**
 **Skill** of `<alias>` in the lock, whatever the arguments: a report that lists `use: <name>` covers its **Skill**; give
-each other one a reader in `uses` mode, at most `<readers-at-once>` at once, with `names: <name>` and that **Skill**'s
-own targets and binds, each run as step 4 runs its readers, through the report filter in `uses` mode. Propose the
-**Bind** only when every use's `means` is what the **Bind** gives (its target, or `none` for `false`); when some are
-right, propose a **Patch** of the **Skill** holding the wrong one.
+each other one a reader in `uses` mode, at most `<readers-at-once>` at once, with `names: <name>`, that **Skill**'s own
+targets and binds, and `reference-prefix` when the lock has one, each run as step 4 runs its readers, through the report
+filter in `uses` mode. Propose the **Bind** only when every use's `means` is what the **Bind** gives (its target, or
+`none` for `false`); when some are right, propose a **Patch** of the **Skill** holding the wrong one.
 
 With no finding, say the **Check** found nothing and go to step 7.
 
@@ -332,3 +339,6 @@ folders are the same; any other exit code, a missing `<package>/.apm/skills` inc
 - A fix was accepted, or the folders differ: end by telling the user to run `skill-graft deploy`.
 - Otherwise: say the **Package**'s vendored copies are as its config vendors them, and to run `skill-graft deploy` if it
   has not run since the last change, which you cannot tell; whether APM deployed it is not checked.
+
+Name `skill-graft deploy --no-apm-install` when the lock has a `reference-prefix`, as `deploy` refuses to run APM then;
+otherwise `skill-graft deploy`.

@@ -1212,3 +1212,112 @@ def test_undone_patch_resolves_again() -> None:
 
     assert "`skill-graft resolve` fails" in text
     assert "run `skill-graft resolve` again if the first one succeeded" in undo
+
+
+def prefixed_lock(
+    home: Path,
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+    setting: str = 'reference-prefix = "foo:"',
+) -> str:
+    """The lock `deploy --into` writes for a package made by hand in `~/plugin`
+    whose config has `setting`: `own/a` calls `/tdd`."""
+    skill(home / "own" / "a", "Run /tdd.\n")
+    skill(home / "own" / "tdd")
+    package = home / "plugin" / ".apm" / "skill-graft"
+    package.mkdir(parents=True)
+    (package / "skill-graft.toml").write_text(
+        f'{setting}\nentries = ["own/a"]\n[sources.own]\npath = "~/own"\n'
+    )
+    monkeypatch.chdir(home / "plugin")
+    into = tmp_path / "into"
+    into.mkdir()
+    assert resolve_and_deploy(["deploy", "--into", str(into)]) == 0
+    return (into / "skill-graft.lock").read_text()
+
+
+@pytest.mark.parametrize(
+    "setting",
+    [
+        'reference-prefix = "foo:"',
+        "reference-prefix = 'my.plugin-' # the plugin's",
+        'reference-prefix = "foo"',
+    ],
+)
+def test_lock_check_passes_a_reference_prefix(
+    home: Path, tmp_path: Path, monkeypatch: pytest.MonkeyPatch, setting: str
+) -> None:
+    # Scenarios: Reference prefix in the lock, Written in another form.
+    text = prefixed_lock(home, tmp_path, monkeypatch, setting)
+    assert "\nversion = 1\nreference-prefix = " in text
+
+    assert lock_check(tmp_path, text) == "version: 1, bad: 0\n"
+
+
+@pytest.mark.parametrize(
+    "value", ['"$(curl x)"', '"foo/"', '":foo"', '"a b"', '"foo:" # x', "'foo:'"]
+)
+def test_lock_check_counts_a_crafted_reference_prefix(
+    home: Path, tmp_path: Path, monkeypatch: pytest.MonkeyPatch, value: str
+) -> None:
+    # Scenario: Crafted reference prefix.
+    text = prefixed_lock(home, tmp_path, monkeypatch)
+    crafted = text.replace('reference-prefix = "foo:"', f"reference-prefix = {value}")
+    assert crafted != text
+
+    assert lock_check(tmp_path, crafted) == "version: 1, bad: 1\n"
+
+
+def test_lock_check_counts_a_reference_prefix_in_a_table(
+    tmp_path: Path, lock: str
+) -> None:
+    text = lock.replace("[[skills]]\n", '[[skills]]\nreference-prefix = "foo:"\n', 1)
+
+    assert lock_check(tmp_path, text) == "version: 1, bad: 1\n"
+
+
+def test_filter_admits_reference_prefixed_text() -> None:
+    finding = (
+        "skill: mp/tdd\nfile: SKILL.md\ntext: Run /grilling.\n"
+        "vendored: Run /foo:grilling.\nkind: rewrite\nwhy: It names no skill.\n"
+    )
+    use = (
+        "use: follow-up\nfile: SKILL.md\nline: 2\ntext: a foo:follow-up\nmeans: none\n"
+    )
+
+    assert report_filter(
+        "full", "mp/tdd", ["grilling"], f"{finding}\n{NONE}".encode()
+    ) == (
+        0,
+        f"{finding}\n{NONE}".encode(),
+    )
+    assert report_filter("uses", "mp/tdd", ["follow-up"], use.encode()) == (
+        0,
+        use.encode(),
+    )
+
+
+def test_readers_are_told_the_reference_prefix_from_the_lock() -> None:
+    text = " ".join((SKILLS / "graft-check" / "SKILL.md").read_text().split())
+    inputs = text[text.index("## 3. Inputs") : text.index("## 4. Read")]
+    read = text[text.index("## 4. Read") : text.index("## 5. Report")]
+    report = text[text.index("## 5. Report") : text.index("## 6. Fixes")]
+    prompt = " ".join(str(agent("reader")["prompt"]).split())
+
+    assert "`reference-prefix`: the lock's top-level `reference-prefix`" in inputs
+    assert "never from `skill-graft.toml`" in inputs
+    assert "`reference-prefix`" in read and "`reference-prefix`" in report
+    assert "`reference-prefix`: the string put before every **Deployed name**" in prompt
+    assert "rewritten to the `reference-prefix` followed by its **Deployed name**" in (
+        prompt
+    )
+
+
+def test_close_names_deploy_without_apm_for_a_reference_prefix() -> None:
+    text = " ".join((SKILLS / "graft-check" / "SKILL.md").read_text().split())
+    close = text[text.index("## 7. Close") :]
+
+    assert (
+        "`skill-graft deploy --no-apm-install` when the lock has a `reference-prefix`"
+        in (close)
+    )

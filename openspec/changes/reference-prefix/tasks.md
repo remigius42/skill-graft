@@ -47,7 +47,7 @@ equivalent expression alone.
 
 ## 2. graft-check
 
-- [ ] 2.1 `skills/graft-check/SKILL.md`: the lock check's awk accepts a top-level `reference-prefix` line whose value
+- [x] 2.1 `skills/graft-check/SKILL.md`: the lock check's awk accepts a top-level `reference-prefix` line whose value
   matches `[A-Za-z0-9][A-Za-z0-9._:-]*`; step 3 takes `reference-prefix` from the throwaway lock; step 4 adds a
   `reference-prefix: <value>` input line to every `full` and `uses` reader when it is set; step 7 tells the user to run
   `skill-graft deploy --no-apm-install` instead of `skill-graft deploy` when it is set. `reader.json`'s Input,
@@ -58,7 +58,8 @@ equivalent expression alone.
   and a `uses` report whose `text` holds `foo:follow-up`; the reader prompt and `SKILL.md` name `reference-prefix`, step
   3 names the lock as its source, and step 7 names `--no-apm-install`. The prefixed-rewrites-not-reported,
   reference-prefix-in-a-word-that-names-no-skill, written-in-another-form and uses-of-a-name scenarios, and the close's
-  choice, are judged by the agent, so they are left to an eval run only on the user's request.
+  choice, are judged by the agent: the eval scenario `reference-prefix` in `evals/graft-check/run.sh` checks them, run
+  only on the user's request.
 
 ## 3. Docs
 

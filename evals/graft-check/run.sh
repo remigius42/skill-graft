@@ -4,7 +4,7 @@
 #   run.sh [scenario…]   default: every scenario
 set -euo pipefail
 
-scenarios=(defects clean never-deployed scoped unknown-argument deploy-fails newer-lock fix injected unhardened older-claude)
+scenarios=(defects clean never-deployed scoped unknown-argument deploy-fails newer-lock fix injected unhardened older-claude reference-prefix)
 selected=("$@")
 [[ ${#selected[@]} -gt 0 ]] || selected=("${scenarios[@]}")
 for name in "${selected[@]}"; do
@@ -78,10 +78,30 @@ real_claude="$work/bin/claude"
 write() { mkdir -p "$(dirname "$1")"; cat > "$1"; }
 
 # A git source at $1: with `defects`, every defect but the wrong target; with
+# `prefixed`, two calls and a prose word a reference prefix rewrites; with
 # `clean`, none. Prints the commit.
 source_repo() {
   local up="$1"
-  if [[ "$2" == defects ]]; then
+  if [[ "$2" == prefixed ]]; then
+    write "$up/lead/SKILL.md" <<'MD'
+# lead
+
+Plan the change with /code-style in mind, and file leftovers with /follow-up.
+
+Answer every follow-up question from the reviewer.
+MD
+    # Headings that are no skill's name: no prose word but lead's is rewritten.
+    write "$up/code-style/SKILL.md" <<'MD'
+# Code style
+
+The house style for code.
+MD
+    write "$up/follow-up/SKILL.md" <<'MD'
+# Leftovers
+
+Files an issue for each task left over from a change.
+MD
+  elif [[ "$2" == defects ]]; then
     write "$up/lead/SKILL.md" <<'MD'
 # lead
 
@@ -152,12 +172,14 @@ MD
 # `defects`, the defects source prefixed `up-`, a path source `art` whose
 # `format` is not what `lead` means by /format, and a user patch of `lead`;
 # with `clean`, the clean source; with `missing`, the clean source and an entry
-# it lacks, which fails to resolve. Resolved, which vendors it in place.
-# `never-deployed` keeps its lock but not its vendored copies.
+# it lacks, which fails to resolve; with `prefixed`, the prefixed source and
+# `reference-prefix = "foo:"`, in a project no apm.yml registers, as in a plugin.
+# Resolved, which vendors it in place. `never-deployed` keeps its lock but not
+# its vendored copies.
 project() {
   local dir="$work/$1" kind="$2"
   local package="$dir/project/.apm/skill-graft" sha
-  sha="$(source_repo "$dir/up" "$([[ $kind == defects ]] && echo defects || echo clean)")"
+  sha="$(source_repo "$dir/up" "$([[ $kind == defects || $kind == prefixed ]] && echo "$kind" || echo clean)")"
   if [[ "$kind" == defects ]]; then
     write "$dir/art/format/SKILL.md" <<'MD'
 # format
@@ -183,6 +205,15 @@ path = "$dir/art"
 
 [patches]
 "up/lead" = ["patches/lead.patch"]
+TOML
+  elif [[ "$kind" == prefixed ]]; then
+    write "$package/skill-graft.toml" <<TOML
+reference-prefix = "foo:"
+entries = ["up/lead"]
+
+[sources.up]
+git = "$dir/up"
+ref = "$sha"
 TOML
   else
     write "$package/skill-graft.toml" <<TOML
@@ -255,6 +286,13 @@ deploy_advice() {
   report "${1:-}" | grep -iP 'skill-graft deploy\b(?!`?\s*--into)' | grep -viE "don't|do not|no need|not need"
 }
 advises_deploy() { deploy_advice "$@" > /dev/null; }
+# `skill-graft deploy` advised in reply $1 with neither `--into` nor
+# `--no-apm-install` after it. A line saying not to run it, or step 7's caveat
+# that it cannot tell whether it has run, does not count.
+advises_plain_deploy() {
+  report "${1:-}" | grep -iP 'skill-graft deploy\b(?!`?\s*--(into|no-apm-install))' |
+    grep -viE "don't|do not|no need|not need|\bnot\b|instead|refuse|can(no|'|’)t tell|whether" > /dev/null
+}
 # Advised, and not only if it has not run since the last change, as step 7 allows:
 # a line advising it with no condition, no "if", "unless" or "can't tell".
 advises_deploy_unconditionally() {
@@ -316,6 +354,17 @@ readers_capped() {
   local log="$work/$1/calls"
   grep -q -- '--add-dir' "$log" 2> /dev/null &&
     ! grep -vE -- '--max-turns 30 .*--max-budget-usd 1(\.0)? ' "$log" > /dev/null
+}
+# Every `full` and `uses` reader prompt written after file $1, one at least,
+# gives the readers `reference-prefix: foo:`.
+prompts_carry_prefix() {
+  local found=0 prompt
+  while IFS= read -r prompt; do
+    grep -qE '^mode: *(full|uses)' "$prompt" || continue
+    found=1
+    grep -qF 'reference-prefix: foo:' "$prompt" || return 1
+  done < <(find "$TMPDIR" -name prompt -newer "$1")
+  [[ "$found" == 1 ]]
 }
 # Secret $1, holding $2, read by no one: $2 in no transcript, the outer
 # session's included; no tool call aimed at $1, nor a reader's at a folder above
@@ -497,6 +546,21 @@ SH
       check "--restricted named" has "--restricted"
       check "no reader after the probe" only_probe older-claude
       check "no skill read" no_skill_read older-claude
+      check "package unchanged" unchanged
+      ;;
+    reference-prefix)
+      project reference-prefix prefixed
+      # The reader prompts this scenario writes are the ones newer than this.
+      touch "$work/reference-prefix/started"
+      ask reference-prefix report "/graft-check"
+      # A second turn reaches the close past every fix offered.
+      ask reference-prefix reply --continue "Decline every fix, then finish."
+      check "rewrite: follow-up question" found rewrite "follow-up question"
+      # `/foo:code-style` is the call rewritten as intended: no table row names it.
+      check "prefixed call not a finding" eval '! report | grep "^|" | grep -iF code-style > /dev/null'
+      check "readers told foo:" prompts_carry_prefix "$work/reference-prefix/started"
+      check "deploy --no-apm-install named" has "deploy --no-apm-install" reply
+      check "no plain deploy advised" eval '! advises_plain_deploy reply'
       check "package unchanged" unchanged
       ;;
   esac
