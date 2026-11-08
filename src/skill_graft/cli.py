@@ -198,6 +198,10 @@ _TEXT = {
     ),
     "update aliases": "a source alias; default: every git source",
     "update --dry-run": f"show the new shas, write {_ONLY_DIFF_FILE}",
+    "update --diff-file": (
+        "write the Deployed diff, each changed skill's text as deployed, to FILE, a "
+        "new file or one it wrote before, named *.diff; read it in an editor"
+    ),
     "update --expect": (
         "update only if the new hull has this hull digest, as the `apply:` line "
         "of a dry run with --diff-file gives it: so exactly the hull reviewed is "
@@ -287,6 +291,18 @@ _TEXT = {
     "unbind key": "<source alias>/<name>",
     "help": "show the help of skill-graft or of a command",
     "help: description": "Show the same text as `skill-graft [command] --help`.",
+    # Of each command that writes the lock, keyed by the first: resolve, add, remove,
+    # rename, bind, unbind.
+    "resolve: review": (
+        "To review what it would vendor first, run it with --dry-run --diff-file "
+        "review.diff and read review.diff in an editor, never by printing it to a "
+        "terminal."
+    ),
+    "resolve --dry-run": f"resolve and print the hull diff, writing {_ONLY_DIFF_FILE}",
+    "resolve --diff-file": (
+        "write the Deployed diff, each added or changed skill's text as deployed, to "
+        "FILE, a new file or one it wrote before, named *.diff; read it in an editor"
+    ),
 }
 
 
@@ -348,7 +364,7 @@ def _parser() -> tuple[_Parser, dict[str, argparse.ArgumentParser]]:
         action="store_true",
         help=_TEXT["update --dry-run"],
     )
-    _diff_file_option(update_parser, "each changed skill")
+    _diff_file_option(update_parser, _TEXT["update --diff-file"])
     update_parser.add_argument(
         "--expect",
         metavar="hull-digest",
@@ -481,30 +497,16 @@ def _fails_on_flush(failed: bool) -> bool:
 
 def _review_options(parser: argparse.ArgumentParser) -> None:
     """The options a command that writes the lock offers to review it first."""
-    parser.description = (
-        f"{parser.description} To review what it would vendor first, run it with "
-        "--dry-run --diff-file review.diff and read review.diff in an editor, never by "
-        "printing it to a terminal."
-    )
+    parser.description = f"{parser.description} {_TEXT['resolve: review']}"
     parser.add_argument(
-        "--dry-run",
-        action="store_true",
-        help=f"resolve and print the hull diff, writing {_ONLY_DIFF_FILE}",
+        "--dry-run", action="store_true", help=_TEXT["resolve --dry-run"]
     )
-    _diff_file_option(parser, "each added or changed skill")
+    _diff_file_option(parser, _TEXT["resolve --diff-file"])
 
 
-def _diff_file_option(parser: argparse.ArgumentParser, skills: str) -> None:
-    """`--diff-file`, writing the Deployed diff of `skills`."""
-    parser.add_argument(
-        "--diff-file",
-        type=Path,
-        metavar="FILE",
-        help=(
-            f"write the Deployed diff, {skills}'s text as deployed, to FILE, a new "
-            "file or one it wrote before, named *.diff; read it in an editor"
-        ),
-    )
+def _diff_file_option(parser: argparse.ArgumentParser, text: str) -> None:
+    """`--diff-file`, writing the Deployed diff, with its help `text`."""
+    parser.add_argument("--diff-file", type=Path, metavar="FILE", help=text)
 
 
 def _main(argv: list[str] | None) -> int:

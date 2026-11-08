@@ -99,8 +99,10 @@ value in a module-level constant; only then the equivalent expression alone on a
   replaces.
 
 **Moved into `_TEXT` (8):** `_review_options`' description suffix and `--dry-run` help, and the two `--diff-file` helps
-(`"update --diff-file"`, `"review --diff-file"`), as `_TEXT` entries; `_diff_file_option(parser, help)` takes the text.
-The help output stays byte for byte the same.
+as `_TEXT` entries; `_diff_file_option(parser, help)` takes the text. The texts the six commands that write the lock
+share are keyed by the first, `resolve` (`"resolve: review"`, `"resolve --dry-run"`, `"resolve --diff-file"`), as
+`test_every_help_text_shown` finds each key's text in its command's help; `update`'s is `"update --diff-file"`. The help
+output stays byte for byte the same.
 
 **Marked (2):** `_Formatter._fill_text`'s `initial_indent=indent` and `subsequent_indent=indent`, each alone on its line
 already. argparse passes an indent other than `""` only for an argument group's description, and no parser has one;
