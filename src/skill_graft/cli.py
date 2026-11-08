@@ -22,6 +22,12 @@ if TYPE_CHECKING:
 WINDOWS = "native Windows is unsupported: run skill-graft in WSL"
 # What a dry run writes, in `--dry-run`'s help.
 _ONLY_DIFF_FILE = "nothing but the --diff-file FILE"
+# The installed distribution, found whatever the case (importlib normalizes it).
+_DISTRIBUTION = "skill-graft"
+# Its metadata field, found whatever the case (`email.message.Message`).
+_VERSION = "Version"
+# Help texts as argparse wraps them: each whitespace run one space.
+_WHITESPACE = re.compile(r"\s+")
 
 
 class _Formatter(argparse.HelpFormatter):
@@ -41,17 +47,15 @@ class _Formatter(argparse.HelpFormatter):
 
 
 def _flat(text: str) -> str:
-    return re.sub(r"\s+", " ", text).strip()
+    return _WHITESPACE.sub(" ", text).strip()
 
 
 class _Command(argparse.ArgumentParser):
     """A command's parser, wrapping help as the top level does, and taking each option
     only by its full name."""
 
-    def __init__(self, *args: Any, **kwargs: Any) -> None:
-        kwargs.setdefault("formatter_class", _Formatter)
-        kwargs.setdefault("allow_abbrev", False)
-        super().__init__(*args, **kwargs)
+    def __init__(self, **kwargs: Any) -> None:
+        super().__init__(formatter_class=_Formatter, allow_abbrev=False, **kwargs)
 
     def print_help(self, file: "SupportsWrite[str] | None" = None) -> None:
         """Writes the help itself: argparse ignores a failed write, which, with stdout
@@ -66,13 +70,11 @@ class _Version(argparse.Action):
     """Prints the installed version and exits, read only when asked for."""
 
     def __init__(self, option_strings: list[str], dest: str, **kwargs: Any) -> None:
-        super().__init__(
-            option_strings, dest, nargs=0, default=argparse.SUPPRESS, **kwargs
-        )
+        super().__init__(option_strings, dest, nargs=0, **kwargs)
 
     def __call__(self, parser: argparse.ArgumentParser, *_: Any) -> NoReturn:
         try:
-            distribution = metadata.distribution("skill-graft")
+            distribution = metadata.distribution(_DISTRIBUTION)
         except metadata.PackageNotFoundError:
             version, origin = "unknown", ""
         else:
@@ -90,7 +92,7 @@ def _version(distribution: metadata.Distribution) -> str:
         return "unknown"
     # Check first: CPython deprecates indexing a missing field and will make it raise
     # KeyError (`PackageMetadata` declares no `.get`).
-    version = fields["Version"].strip() if "Version" in fields else None
+    version = fields[_VERSION].strip() if _VERSION in fields else None
     return version if _printable(version) else "unknown"
 
 
@@ -105,7 +107,10 @@ def _origin(distribution: metadata.Distribution) -> str:
     direct_url.json (PEP 610); anything else, malformed or unreadable included, adds
     nothing."""
     try:
-        direct_url = json.loads(distribution.read_text("direct_url.json") or "{}")
+        text = distribution.read_text("direct_url.json")
+        if text is None:  # no such file, or unreadable
+            return ""
+        direct_url = json.loads(text)
     except (OSError, ValueError, RecursionError):  # unreadable, not JSON, too deep
         return ""
     vcs_info = direct_url.get("vcs_info") if isinstance(direct_url, dict) else None
@@ -357,9 +362,7 @@ def _parser() -> tuple[_Parser, dict[str, argparse.ArgumentParser]]:
     tree.add_argument(
         "--format",
         choices=["text", "mermaid"],
-        # Equivalent mutants: argparse checks `choices` against what is passed, never
-        # the default, and `tree` prints text for any format but `mermaid`.
-        default="text",  # pragma: no mutate
+        # No default: `tree` prints text for any format but `mermaid`.
         help=_TEXT["tree --format"],
     )
     tree.add_argument(
@@ -591,7 +594,7 @@ def _main(argv: list[str] | None) -> int:
         status = 1
     # The one place that sees every command end: `init` reads no source, and a
     # dry run writes no cache.
-    if args.command != "init" and not getattr(args, "dry_run", False):
+    if args.command != "init" and not vars(args).get("dry_run"):
         housekeeping.prune()
     return status
 
