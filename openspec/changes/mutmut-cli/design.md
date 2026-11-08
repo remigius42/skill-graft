@@ -11,7 +11,7 @@ diff, read once (`mutmut show`), falls in one of five kinds:
 | `main`                    |        18 |      16 |       0 |          0 |            2 |       0 |
 | `_review_options`         |         9 |       0 |       0 |          6 |            1 |       2 |
 | `_diff_file_option`       |         8 |       0 |       0 |          2 |            0 |       6 |
-| `_main`                   |         8 |       2 |       2 |          0 |            1 |       3 |
+| `_main`                   |         8 |       3 |       1 |          0 |            1 |       3 |
 | `_Formatter._fill_text`   |         4 |       1 |       2 |          0 |            1 |       0 |
 | `_version`                |         4 |       0 |       4 |          0 |            0 |       0 |
 | `_Command.__init__`       |         3 |       0 |       3 |          0 |            0 |       0 |
@@ -22,7 +22,7 @@ diff, read once (`mutmut show`), falls in one of five kinds:
 | `_Version.__init__`       |         2 |       0 |       2 |          0 |            0 |       0 |
 | `_Version.__call__`       |         2 |       0 |       2 |          0 |            0 |       0 |
 | `_flat`                   |         1 |       0 |       1 |          0 |            0 |       0 |
-| all                       |        68 |      22 |      17 |          8 |            7 |      14 |
+| all                       |        68 |      23 |      16 |          8 |            7 |      14 |
 
 "Dropped" are equivalent mutants a removed redundancy or a module-level constant leaves without a counterpart; "To
 `_TEXT`" wording mutants of help texts that move into the table, which mutmut never mutates. The mypy kind is `None` for
@@ -61,11 +61,16 @@ included.
   line; `--help` exits 1 the same way; a usage error exits 2 with no error line of the flush. The conftest's
   `ClosedStdout` fails on write too, so the command would fail first: the test defines the flush-only stdout.
 - Help at the terminal's width (2): `_Formatter` passes `width` to `textwrap`; dropped, it wraps at 70. With `COLUMNS`
-  set to 50, no line of any command's help is longer than 48, the width argparse wraps at.
+  set to 50, no line of any command's help after the usage is longer than 48, the width argparse wraps at; the usage,
+  which argparse wraps itself, runs to 49 for `tree` and `remove`.
 - A git install's upper-case commit (1): `_origin` accepts `[0-9a-fA-F]`; with `commit_id` upper-case, `--version` shows
   its first seven characters as they are.
 - `init` prunes nothing (2): `_main` skips `housekeeping.prune` for `init`; with a stale export in the cache, `init`
   leaves it.
+- A command without `--dry-run` prunes (1): `getattr(args, "dry_run", True)` stopped `deploy`, `tree`, `why` and `vet`
+  pruning, and no test noticed: `deploy` in `test_failed_command_prunes_too` never runs, as `resolve` fails first. After
+  a `resolve`, a stale export, then `deploy --no-apm-install`, which removes it. The restructure below leaves no such
+  mutant, so the test was checked against it by hand.
 
 ### Equivalent mutants: dropped, none marked
 
@@ -73,7 +78,7 @@ included.
 value in a module-level constant; only then the equivalent expression alone on a line of its own, a bare
 `# pragma: no mutate` on it, `# Equivalent mutants: <reason>` above. No regions.
 
-**Removed or restructured (8):**
+**Removed or restructured (7, and `--format`'s default outside the 68):**
 
 - `_Command.__init__` (3): its `kwargs.setdefault`s become keywords of the `super().__init__` call,
   `formatter_class=_Formatter, allow_abbrev=False`, and its `*args` goes: `_Parser` and argparse's `add_parser` pass
@@ -83,10 +88,11 @@ value in a module-level constant; only then the equivalent expression alone on a
   reads; `None` there, its mutants' value, changes no output.
 - `_origin`'s `or "{}"` (1): with no `direct_url.json`, it returns `""` at once, before `json.loads`; `"XX{}XX"` failed
   to parse and returned `""` as well.
-- `_main`'s `getattr(args, "dry_run", False)` (2): `vars(args).get("dry_run")`, whose missing key is `None`, with no
-  default to mutate. Its `None` and `True` mutants were the one equivalent and one gap: no test runs a command without
-  `--dry-run` that succeeds and prunes; `deploy` in `test_failed_command_prunes_too` never runs, as `resolve` fails
-  first. The restructure leaves no mutant for that test to kill, so none is added.
+- `_main`'s `getattr(args, "dry_run", False)` (1): `vars(args).get("dry_run")`, whose missing key is `None`, with no
+  default to mutate. Its `None` mutant was equivalent; its `True` mutant, a gap, is killed above.
+- `_parser`'s `default="text",  # pragma: no mutate` on `--format`, from `mutmut-src`: the default goes, and the pragma
+  with it, as `tree` prints text for any format but `mermaid`. The pragma hid the call's dropped `choices`, which
+  `test_tree_format_choices` kills; `_parser`'s count moves with it.
 
 **Named in a module-level constant (7):** mutmut mutates only functions.
 
@@ -105,22 +111,25 @@ share are keyed by the first, `resolve` (`"resolve: review"`, `"resolve --dry-ru
 output stays byte for byte the same.
 
 **No pragma:** `_Formatter._fill_text`'s `initial_indent=indent` and `subsequent_indent=indent` (2) were first marked,
-each alone on its line. The review found what the rerun showed: a pragma on an argument's line silences every mutant of
-the call it sits in, `_fill_text`'s dropped `width` and `break_on_hyphens=True` among them, mutants a test kills.
-argparse passes an indent other than `""` only for an argument group's description, and no parser has one, so
-`_fill_text` drops the indent: it joins `_split_lines`' lines, the same text `textwrap.fill` gave. A group's description
-added later would wrap unindented, which its own help shows at once.
+each alone on its line. The review found what the rerun showed: a pragma on an argument's line also silences the mutants
+of the call it sits in, each argument dropped or `None`, though not the other lines' own: `_fill_text`'s dropped
+`width`, a mutant a test kills, went with them. `_fill_text` now wraps through `_split_lines` and indents the lines
+after, `textwrap.indent(…, indent)`: the same text `textwrap.fill` gave with the `""` argparse passes every description
+today, and an argument group's description, which argparse indents, still indented. The call has no equivalent mutant:
+the indent dropped is a `TypeError`, `None` one mypy refuses. A first version dropped the indent altogether; the third
+review found a group's description would then print flush-left, for a fix of one line.
 
 Applied, the rerun after group 1, the pragmas still in, left 38 survivors outside `_parser` (34 there): 21 to kill, 7
 mypy refuses, 10 wording. The `help` mutants of `_review_options` and `_diff_file_option` were killed, not wording:
-keyed by `resolve`, their texts are in `test_every_help_text_shown`'s reach.
+keyed by `resolve`, their texts are in `test_every_help_text_shown`'s reach. The rerun after every task and the review
+fixes left 48 of 845 mutants (797 killed): 34 in `_parser`, 4 mypy refuses, 10 wording.
 
 ## Risks / Trade-offs
 
 - \[In-process Windows test sets `sys.platform`\] → `monkeypatch` restores it, and `main` returns before importing any
   command module.
-- \[`vars(args)` reads argparse's `Namespace` as a dict\] → its documented use; a `Namespace` holds only the options
-  set.
+- \[`vars(args)` reads argparse's `Namespace` as a dict\] → its documented use; a `Namespace` holds every action's
+  default but `SUPPRESS`'s, `version=None` included, and only `dry_run`'s presence matters here.
 - \[Dropping `*args` from `_Command`\] → a later positional caller fails at once with a `TypeError`, not silently.
 
 ## Migration Plan

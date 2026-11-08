@@ -99,26 +99,28 @@ on 8 CPUs; `uv run mutmut run "skill_graft.pipeline.lock*"` runs one module's mu
 skips functions that did not change. Run one at a time per checkout: two share `mutants/`. It forks, so it runs on Linux
 and macOS only. `uv run mutmut results` lists the survivors, `uv run mutmut show <mutant>` prints one's diff. It never
 fails a build: read the survivors after changing a module, and kill each with a test in the module's test file. Three
-kinds are known noise, not gaps: a message's wording (most of `cli.py`'s help texts sit in the module-level `_TEXT`,
-which mutmut never mutates; `_review_options` and `_diff_file_option` still build theirs), a change mypy would refuse,
-which the hooks keep from landing, and code that runs only at import, such as `vet._commands`, which no test reaches
-with a mutant switched on. A mutant that cannot change behavior: first remove what it shows redundant, or restructure so
-none exists, or name the value in a module-level constant; else put the equivalent expression alone on a line of its own
-with a bare `# pragma: no mutate`, and `# Equivalent mutants: <reason>` in a comment above. A pragma silences every
-mutant on its line, killed ones too, so never on a line holding anything else, and no `start` … `end` regions. The
-`linear_time` tests are left out: their wall-clock limit misses under load, and the regex harness times them.
+kinds are known noise, not gaps: a message's wording (`cli.py`'s help texts sit in the module-level `_TEXT`, which
+mutmut never mutates), a change mypy would refuse, which the hooks keep from landing, and code that runs only at import,
+such as `vet._commands`, which no test reaches with a mutant switched on. A mutant that cannot change behavior: first
+remove what it shows redundant, or restructure so none exists, or name the value in a module-level constant; else put
+the equivalent expression alone on a line of its own with a bare `# pragma: no mutate`, and
+`# Equivalent mutants: <reason>` in a comment above. A pragma silences every mutant on its line, killed ones too, so
+never on a line holding anything else, and no `start` … `end` regions. On an argument's line it also silences the call's
+mutants, each argument dropped or `None`, though not the other lines' own: name the argument's value first, and mark
+that line instead. The `linear_time` tests are left out: their wall-clock limit misses under load, and the regex harness
+times them.
 
 The baseline to beat, 8097 mutants with the change `mutmut-src` (2026-11-07): 7532 killed, 5 timed out, 560 survived;
-271 survive since the change `mutmut-commands`. `cli` and `pipeline` are from their reruns after the change
-`mutmut-src`; `infra` from its rerun with the change `mutmut-infra`; `commands` from its rerun, 2261 mutants, with the
-change `mutmut-commands`. Survivors per layer:
+202 survive since the change `mutmut-cli`. `pipeline` is from its rerun after the change `mutmut-src`; `infra` from its
+rerun with the change `mutmut-infra`; `commands` from its rerun, 2261 mutants, with the change `mutmut-commands`; `cli`
+from its rerun, 845 mutants, with the change `mutmut-cli`. Survivors per layer:
 
-| Layer      | Survivors | Of which                                                             |
-| ---------- | --------: | -------------------------------------------------------------------- |
-| `cli`      |       117 | 37 in `_parser`, all noise (usage wording); the other 80 not triaged |
-| `commands` |        65 | all known noise: message wording, mypy refusals, import-time code    |
-| `infra`    |        38 | all known noise: message wording, mypy refusals                      |
-| `pipeline` |        51 | all known noise: message wording, mypy refusals, import-time code    |
+| Layer      | Survivors | Of which                                                                       |
+| ---------- | --------: | ------------------------------------------------------------------------------ |
+| `cli`      |        48 | all known noise: 34 usage wording in `_parser`, message wording, mypy refusals |
+| `commands` |        65 | all known noise: message wording, mypy refusals, import-time code              |
+| `infra`    |        38 | all known noise: message wording, mypy refusals                                |
+| `pipeline` |        51 | all known noise: message wording, mypy refusals, import-time code              |
 
 ## Evals
 
