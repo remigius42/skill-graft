@@ -95,6 +95,14 @@ class FakeApm:
         self._set("register", value)
 
 
+def pytest_collection_modifyitems(items: list[pytest.Item]) -> None:
+    """Coverage tracing slows the code a test times against a fixed limit:
+    pytest-cov's `no_cover` pauses it for each `linear_time` test."""
+    for item in items:
+        if item.get_closest_marker("linear_time"):
+            item.add_marker("no_cover")
+
+
 @pytest.fixture(autouse=True)
 def home(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> Path:
     home = tmp_path / "home"

@@ -69,12 +69,13 @@ repos:
 
   - repo: local
     hooks:
+      # Measures coverage against `fail_under` in pyproject.toml, so it runs on that file too.
       - id: pytest
         name: pytest
-        entry: uv run pytest -q
+        entry: uv run pytest -q --cov
         language: system
         pass_filenames: false
-        types: [python]
+        types_or: [python, toml]
       # Refuses an import that goes up a layer, or a cycle between siblings; the contracts
       # live in pyproject.toml.
       - id: lint-imports

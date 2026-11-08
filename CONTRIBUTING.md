@@ -33,7 +33,9 @@ uv run pre-commit run --all-files
 uv run pytest
 ```
 
-The hooks are listed in [.pre-commit-config.yaml](.pre-commit-config.yaml).
+The hooks are listed in [.pre-commit-config.yaml](.pre-commit-config.yaml). The `pytest` hook measures line and branch
+coverage, as one percentage, and fails below the `fail_under` in `pyproject.toml`; `uv run pytest --cov` does the same
+by hand.
 
 The tests point `HOME` at a temporary directory. The APM integration test runs the `apm` from the dev group and is
 skipped when `apm` is not on `PATH`.

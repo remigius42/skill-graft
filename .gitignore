@@ -28,6 +28,7 @@ tags
 ### Python ###
 __pycache__/
 *.py[cod]
+.coverage
 .import_linter_cache/
 .mypy_cache/
 .pytest_cache/

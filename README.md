@@ -278,6 +278,9 @@ Report bugs and suggest ideas in [GitHub issues](https://github.com/remigius42/s
 as [SECURITY.md](https://github.com/remigius42/skill-graft/blob/main/SECURITY.md) says. To change the code, see
 [CONTRIBUTING.md](https://github.com/remigius42/skill-graft/blob/main/CONTRIBUTING.md).
 
+CI fails below 99% combined line and branch coverage, and mutation testing checks that the tests also catch faults in
+the code they cover ([docs/mutation-testing.md](docs/mutation-testing.md)).
+
 This is a personal exploration project with best-effort maintenance. Responses to issues or pull requests may be slow,
 and changes that don't align with the project's direction are unlikely to merge.
 

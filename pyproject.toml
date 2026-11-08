@@ -27,6 +27,7 @@ dev = [
   "mypy==2.4.1",
   "pre-commit",
   "pytest",
+  "pytest-cov",
 ]
 
 [build-system]
@@ -95,6 +96,18 @@ markers = [
   "root_safe: takes the owner's rights away and passes as root too",
   "linear_time: times a regex over Upstream text on a pumped input against a fixed limit",
 ]
+
+# Measured by the pytest hook only (`--cov`), so it does not slow mutmut or the other test runs.
+# `fail_under` takes lines and branches as one percentage.
+[tool.coverage.run]
+source = ["skill_graft"]
+branch = true
+
+# A floor, not a goal: a little below the measured coverage, so 100% does not force pragmas.
+[tool.coverage.report]
+fail_under = 99
+show_missing = true
+skip_covered = true
 
 # Opt-in, never in hooks or CI: `uv run mutmut run`, from the repository root (docs/mutation-testing.md).
 [tool.mutmut]
