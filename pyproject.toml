@@ -96,7 +96,7 @@ markers = [
   "linear_time: times a regex over Upstream text on a pumped input against a fixed limit",
 ]
 
-# Opt-in, never in hooks or CI: `uv run mutmut run`, from the repository root (CONTRIBUTING.md).
+# Opt-in, never in hooks or CI: `uv run mutmut run`, from the repository root (docs/mutation-testing.md).
 [tool.mutmut]
 source_paths = ["src/skill_graft/"]
 # What the tests read besides `src/`; directories and top-level files only, as mutmut

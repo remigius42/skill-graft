@@ -15,8 +15,10 @@
 | [SECURITY.md](../SECURITY.md)                                 | how to report a vulnerability                                                                         |
 | [skills/graft-check/SKILL.md](../skills/graft-check/SKILL.md) | the **Check**: the skill an agent follows to check a package                                          |
 | [skills/graft-vet/SKILL.md](../skills/graft-vet/SKILL.md)     | the **Vet** with readers: the scan plus a confined reader per skill                                   |
-| [CONTRIBUTING.md](../CONTRIBUTING.md)                         | setup, the change workflow, checks, mutation testing, evals and releasing                             |
+| [CONTRIBUTING.md](../CONTRIBUTING.md)                         | setup, the change workflow, checks, tooling and evals                                                 |
+| [mutation-testing.md](mutation-testing.md)                    | how to run the two mutation harnesses and read their survivors; mutmut's baseline                     |
+| [releasing.md](releasing.md)                                  | the maintainer's steps to release a version                                                           |
 | [evals/graft-check/README.md](../evals/graft-check/README.md) | the opt-in evals of graft-check                                                                       |
 | [evals/graft-vet/README.md](../evals/graft-vet/README.md)     | the opt-in evals of graft-vet, and how to read and compare its corpus scores                          |
-| [mutation/](../mutation/)                                     | the opt-in mutation harness of the security-relevant regexes; mutmut, for the rest, in CONTRIBUTING   |
+| [mutation/](../mutation/)                                     | the regex harness: its targets, and the mutants listed as equivalent                                  |
 | [AGENTS.md](../AGENTS.md)                                     | the rules for commits, code and tests                                                                 |

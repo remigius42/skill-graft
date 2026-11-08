@@ -11,8 +11,7 @@ rest.
 - Conventional Commits (commitlint). No Co-Authored-By trailer.
 - Remote `origin`: <https://github.com/remigius42/skill-graft>. Never push without asking.
 - Work on a branch, never on main: one per OpenSpec change, `feat/opsx-<change-name>`.
-- A release is the one branch outside OpenSpec, `release/v<version>`: follow
-  [CONTRIBUTING.md](CONTRIBUTING.md#releasing).
+- A release is the one branch outside OpenSpec, `release/v<version>`: follow [docs/releasing.md](docs/releasing.md).
 
 ## Workflow
 
@@ -49,4 +48,5 @@ rest.
   after changing a pattern it targets.
 - mutmut (`nice -n 19 ionice -c 3 uv run mutmut run "skill_graft.<layer>.<module>*"`, one run at a time) mutates the
   rest: opt-in, never in hooks or CI, reports only. After changing a module, kill its new survivors with tests, as
-  CONTRIBUTING.md's Mutation testing says; a pragma only on a line holding the equivalent expression alone.
+  [docs/mutation-testing.md](docs/mutation-testing.md) says; a pragma only on a line holding the equivalent expression
+  alone.

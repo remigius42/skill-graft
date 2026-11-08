@@ -137,7 +137,7 @@ class _Parser(_Command):
 
 
 # The help texts, by command and argument: at module level, as mutmut mutates
-# only functions, so their wording is never mutated (CONTRIBUTING.md).
+# only functions, so their wording is never mutated (docs/mutation-testing.md).
 _TEXT = {
     "skill-graft: description": (
         "Build your agent skills from other people's repositories: the entries "
