@@ -17,6 +17,11 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 - `/graft-vet`'s steering count no longer counts a place of the scan whose line the reader flagged in another category:
   a reader that disagrees on the category has not been talked into silence
 
+### Fixed
+
+- `skill-graft update` of a git **Source** without `branch`, whose remote holds tags but names no default branch, says
+  so and suggests a `branch` key, where it said the remote had no commits yet
+
 ## [0.4.1] - 2026-11-06
 
 ### Added
