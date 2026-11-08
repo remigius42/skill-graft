@@ -37,13 +37,8 @@ class _Formatter(argparse.HelpFormatter):
         return textwrap.wrap(_flat(text), width, break_on_hyphens=False)
 
     def _fill_text(self, text: str, width: int, indent: str) -> str:
-        return textwrap.fill(
-            _flat(text),
-            width,
-            initial_indent=indent,
-            subsequent_indent=indent,
-            break_on_hyphens=False,
-        )
+        """A description, wrapped as a help text is, then indented as argparse asks."""
+        return textwrap.indent("\n".join(self._split_lines(text, width)), indent)
 
 
 def _flat(text: str) -> str:

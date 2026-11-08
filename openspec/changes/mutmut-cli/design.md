@@ -106,7 +106,13 @@ output stays byte for byte the same.
 
 **Marked (2):** `_Formatter._fill_text`'s `initial_indent=indent` and `subsequent_indent=indent`, each alone on its line
 already. argparse passes an indent other than `""` only for an argument group's description, and no parser has one;
-dropping the two would wrap such a description unindented the day one is added.
+dropping the two would wrap such a description unindented the day one is added. A pragma on an argument's line also
+silences the mutants of the call it sits in: `_fill_text`'s dropped `width` goes with them, a gap the `COLUMNS` test
+covers through `_split_lines`' alike.
+
+Applied, the rerun after group 1 left 38 survivors outside `_parser` (34 there): 21 to kill, 7 mypy refuses, 10 wording.
+The `help` mutants of `_review_options` and `_diff_file_option` were killed, not wording: keyed by `resolve`, their
+texts are in `test_every_help_text_shown`'s reach.
 
 ## Risks / Trade-offs
 

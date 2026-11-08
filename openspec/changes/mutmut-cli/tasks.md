@@ -17,7 +17,7 @@ refusals), `_parser`'s and the marked equivalents, and `uv run pytest` passes. C
 - [x] 1.2 `refactor(cli): option help texts in _TEXT`: `_review_options`' description suffix and `--dry-run` help, and
   both `--diff-file` helps, as `_TEXT` entries (`"resolve: review"`, `"resolve --dry-run"`, `"resolve --diff-file"`,
   `"update --diff-file"`); `_diff_file_option(parser, help)`; verify each command's help prints the same as before
-- [ ] 1.3 `refactor(cli): mark mutmut's equivalent mutants`: the 2 pragmas on `_Formatter._fill_text`'s `initial_indent`
+- [x] 1.3 `refactor(cli): mark mutmut's equivalent mutants`: the 2 pragmas on `_Formatter._fill_text`'s `initial_indent`
   and `subsequent_indent`, each reason above; verify `ruff format` leaves each pragma on its line, and the rerun no
   longer lists them
 
