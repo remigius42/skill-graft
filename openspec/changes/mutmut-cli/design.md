@@ -4,25 +4,25 @@
 
 `nice -n 19 ionice -c 3 uv run mutmut run "skill_graft.cli.*"` on `46385538` left 105 survivors of 874 mutants (769
 killed), 12 fewer than the baseline's 117: `_parser`'s 37, usage wording `mutmut-src` triaged, and 68 others. Each one's
-diff, read once (`mutmut show`), falls in one of six kinds:
+diff, read once (`mutmut show`), falls in one of five kinds:
 
-| Function                  | Survivors | To kill | Dropped | To `_TEXT` | Pragma | mypy refuses | Wording |
-| ------------------------- | --------: | ------: | ------: | ---------: | -----: | -----------: | ------: |
-| `main`                    |        18 |      16 |       0 |          0 |      0 |            2 |       0 |
-| `_review_options`         |         9 |       0 |       0 |          6 |      0 |            1 |       2 |
-| `_diff_file_option`       |         8 |       0 |       0 |          2 |      0 |            0 |       6 |
-| `_main`                   |         8 |       2 |       2 |          0 |      0 |            1 |       3 |
-| `_Formatter._fill_text`   |         4 |       1 |       0 |          0 |      2 |            1 |       0 |
-| `_version`                |         4 |       0 |       4 |          0 |      0 |            0 |       0 |
-| `_Command.__init__`       |         3 |       0 |       3 |          0 |      0 |            0 |       0 |
-| `_into`                   |         3 |       0 |       0 |          0 |      0 |            0 |       3 |
-| `_Formatter._split_lines` |         2 |       1 |       0 |          0 |      0 |            1 |       0 |
-| `_fails_on_flush`         |         2 |       1 |       0 |          0 |      0 |            1 |       0 |
-| `_origin`                 |         2 |       1 |       1 |          0 |      0 |            0 |       0 |
-| `_Version.__init__`       |         2 |       0 |       2 |          0 |      0 |            0 |       0 |
-| `_Version.__call__`       |         2 |       0 |       2 |          0 |      0 |            0 |       0 |
-| `_flat`                   |         1 |       0 |       1 |          0 |      0 |            0 |       0 |
-| all                       |        68 |      22 |      15 |          8 |      2 |            7 |      14 |
+| Function                  | Survivors | To kill | Dropped | To `_TEXT` | mypy refuses | Wording |
+| ------------------------- | --------: | ------: | ------: | ---------: | -----------: | ------: |
+| `main`                    |        18 |      16 |       0 |          0 |            2 |       0 |
+| `_review_options`         |         9 |       0 |       0 |          6 |            1 |       2 |
+| `_diff_file_option`       |         8 |       0 |       0 |          2 |            0 |       6 |
+| `_main`                   |         8 |       2 |       2 |          0 |            1 |       3 |
+| `_Formatter._fill_text`   |         4 |       1 |       2 |          0 |            1 |       0 |
+| `_version`                |         4 |       0 |       4 |          0 |            0 |       0 |
+| `_Command.__init__`       |         3 |       0 |       3 |          0 |            0 |       0 |
+| `_into`                   |         3 |       0 |       0 |          0 |            0 |       3 |
+| `_Formatter._split_lines` |         2 |       1 |       0 |          0 |            1 |       0 |
+| `_fails_on_flush`         |         2 |       1 |       0 |          0 |            1 |       0 |
+| `_origin`                 |         2 |       1 |       1 |          0 |            0 |       0 |
+| `_Version.__init__`       |         2 |       0 |       2 |          0 |            0 |       0 |
+| `_Version.__call__`       |         2 |       0 |       2 |          0 |            0 |       0 |
+| `_flat`                   |         1 |       0 |       1 |          0 |            0 |       0 |
+| all                       |        68 |      22 |      17 |          8 |            7 |      14 |
 
 "Dropped" are equivalent mutants a removed redundancy or a module-level constant leaves without a counterpart; "To
 `_TEXT`" wording mutants of help texts that move into the table, which mutmut never mutates. The mypy kind is `None` for
@@ -38,7 +38,7 @@ editable install, not mutmut's mutant.
 
 ## Goals / Non-Goals
 
-**Goals:** `cli.py` with no survivor but known noise, `_parser`'s, and two marked equivalents.
+**Goals:** `cli.py` with no survivor but known noise and `_parser`'s, and no pragma.
 
 **Non-Goals:** `_parser` (triaged in `mutmut-src`); testing message wording; changing what a user sees, help text
 included.
@@ -61,13 +61,13 @@ included.
   line; `--help` exits 1 the same way; a usage error exits 2 with no error line of the flush. The conftest's
   `ClosedStdout` fails on write too, so the command would fail first: the test defines the flush-only stdout.
 - Help at the terminal's width (2): `_Formatter` passes `width` to `textwrap`; dropped, it wraps at 70. With `COLUMNS`
-  set to 50, no line of `resolve --help` is longer than 50.
+  set to 50, no line of any command's help is longer than 48, the width argparse wraps at.
 - A git install's upper-case commit (1): `_origin` accepts `[0-9a-fA-F]`; with `commit_id` upper-case, `--version` shows
   its first seven characters as they are.
 - `init` prunes nothing (2): `_main` skips `housekeeping.prune` for `init`; with a stale export in the cache, `init`
   leaves it.
 
-### Equivalent mutants: dropped first, a pragma only where none can be
+### Equivalent mutants: dropped, none marked
 
 `CONTRIBUTING.md`'s rule: remove what an equivalent mutant shows redundant, or restructure so none exists, or name the
 value in a module-level constant; only then the equivalent expression alone on a line of its own, a bare
@@ -99,20 +99,21 @@ value in a module-level constant; only then the equivalent expression alone on a
   replaces.
 
 **Moved into `_TEXT` (8):** `_review_options`' description suffix and `--dry-run` help, and the two `--diff-file` helps
-as `_TEXT` entries; `_diff_file_option(parser, help)` takes the text. The texts the six commands that write the lock
+as `_TEXT` entries; `_diff_file_option(parser, text)` takes the text. The texts the six commands that write the lock
 share are keyed by the first, `resolve` (`"resolve: review"`, `"resolve --dry-run"`, `"resolve --diff-file"`), as
 `test_every_help_text_shown` finds each key's text in its command's help; `update`'s is `"update --diff-file"`. The help
 output stays byte for byte the same.
 
-**Marked (2):** `_Formatter._fill_text`'s `initial_indent=indent` and `subsequent_indent=indent`, each alone on its line
-already. argparse passes an indent other than `""` only for an argument group's description, and no parser has one;
-dropping the two would wrap such a description unindented the day one is added. A pragma on an argument's line also
-silences the mutants of the call it sits in: `_fill_text`'s dropped `width` goes with them, a gap the `COLUMNS` test
-covers through `_split_lines`' alike.
+**No pragma:** `_Formatter._fill_text`'s `initial_indent=indent` and `subsequent_indent=indent` (2) were first marked,
+each alone on its line. The review found what the rerun showed: a pragma on an argument's line silences every mutant of
+the call it sits in, `_fill_text`'s dropped `width` and `break_on_hyphens=True` among them, mutants a test kills.
+argparse passes an indent other than `""` only for an argument group's description, and no parser has one, so
+`_fill_text` drops the indent: it joins `_split_lines`' lines, the same text `textwrap.fill` gave. A group's description
+added later would wrap unindented, which its own help shows at once.
 
-Applied, the rerun after group 1 left 38 survivors outside `_parser` (34 there): 21 to kill, 7 mypy refuses, 10 wording.
-The `help` mutants of `_review_options` and `_diff_file_option` were killed, not wording: keyed by `resolve`, their
-texts are in `test_every_help_text_shown`'s reach.
+Applied, the rerun after group 1, the pragmas still in, left 38 survivors outside `_parser` (34 there): 21 to kill, 7
+mypy refuses, 10 wording. The `help` mutants of `_review_options` and `_diff_file_option` were killed, not wording:
+keyed by `resolve`, their texts are in `test_every_help_text_shown`'s reach.
 
 ## Risks / Trade-offs
 

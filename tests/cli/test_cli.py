@@ -67,6 +67,19 @@ def test_top_level_help(capsys: pytest.CaptureFixture[str]) -> None:
         ), command
 
 
+def test_help_wrapped_at_the_terminal_width(
+    capsys: pytest.CaptureFixture[str], monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """The description and each argument's help, after the usage, which argparse wraps
+    itself: at the terminal's width less 2."""
+    monkeypatch.setenv("COLUMNS", "50")
+    for command in COMMANDS:
+        code, out, _ = run([command, "--help"], capsys)
+        assert code == 0
+        _, after_usage = out.split("\n\n", 1)
+        assert max(len(line) for line in after_usage.splitlines()) <= 48, command
+
+
 def test_command_help(capsys: pytest.CaptureFixture[str]) -> None:
     # No ~/.apm/skill-graft/: help never reads the config.
     code, out, _ = run(["update", "--help"], capsys)
@@ -358,6 +371,13 @@ def test_version_of_a_git_install(
 ) -> None:
     install(monkeypatch, "0.2.0", vcs(commit_id=COMMIT))
     assert run(["--version"], capsys)[1] == "skill-graft 0.2.0 (e294a0e)\n"
+
+
+def test_version_of_a_git_install_at_an_upper_case_commit(
+    capsys: pytest.CaptureFixture[str], monkeypatch: pytest.MonkeyPatch
+) -> None:
+    install(monkeypatch, "0.2.0", vcs(commit_id=COMMIT.upper()))
+    assert run(["--version"], capsys)[1] == "skill-graft 0.2.0 (E294A0E)\n"
 
 
 def test_version_of_a_git_install_at_a_branch(

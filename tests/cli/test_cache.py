@@ -95,6 +95,26 @@ def test_leftover_removed(home: Path) -> None:
     assert not leftover.exists()
 
 
+def test_command_without_a_dry_run_prunes(home: Path) -> None:
+    skill(home / "own" / "notes")
+    configure(["own/notes"], own="~/own")
+    assert main(["resolve"]) == 0
+    stale = export("a" * 40, 31)
+
+    assert main(["deploy", "--no-apm-install"]) == 0
+
+    assert not stale.exists()
+
+
+@pytest.mark.usefixtures("home", "fake_apm")
+def test_init_prunes_nothing() -> None:
+    stale = export("a" * 40, 31)
+
+    assert main(["init"]) == 0
+
+    assert stale.exists()
+
+
 def test_dry_run_prunes_nothing(tmp_path: Path, capsys: Capsys) -> None:
     upstream = Upstream(tmp_path / "up")
     sha = upstream.commit({"tdd/SKILL.md": "# tdd\n"})

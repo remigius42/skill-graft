@@ -11,12 +11,12 @@ the tests that would, run `skill-graft` in a subprocess, where mutmut's mutant n
 
 ## What Changes
 
-- Every surviving mutant in `cli.py` outside `_parser` is killed by a test, dropped, marked equivalent, or is known
-  noise (a message's wording, a change mypy refuses), as `CONTRIBUTING.md`'s Mutation testing section sets out.
-- Following its pragma rule, an equivalent mutant is dropped first: 15 go by removing a redundancy or naming a value in
-  a module-level constant (`_Command`'s unused `*args` and its `setdefault`s, `--version`'s `default`, the distribution
-  name, the `Version` field, `_flat`'s pattern, `_origin`'s fallback `"{}"`, the prune check's `getattr` default); 2
-  keep a bare `# pragma: no mutate` alone on their line (`_Formatter._fill_text`'s indents).
+- Every surviving mutant in `cli.py` outside `_parser` is killed by a test, dropped, or is known noise (a message's
+  wording, a change mypy refuses), as `CONTRIBUTING.md`'s Mutation testing section sets out.
+- Following its pragma rule, an equivalent mutant is dropped first: all 17 go by removing a redundancy or naming a value
+  in a module-level constant (`_Command`'s unused `*args` and its `setdefault`s, `--version`'s `default`, the
+  distribution name, the `Version` field, `_flat`'s pattern, `_origin`'s fallback `"{}"`, the prune check's `getattr`
+  default, `_Formatter._fill_text`'s indent, which no description gets); no pragma.
 - `_review_options`' and `_diff_file_option`'s help texts move into `_TEXT`, beside the others, so their 8 wording
   mutants go: `_diff_file_option` takes its help text, not a phrase to put in it.
 - In-process tests, in `tests/cli/test_cli.py`, through `main`: native Windows refused; a failed flush of stdout after a
@@ -37,8 +37,8 @@ None (`skip_specs: true`): no survivor is a bug.
 ## Impact
 
 - `src/skill_graft/cli.py`: three module-level constants, `_Command`'s and `_Version`'s constructors, `_origin`'s read,
-  `_main`'s prune check, the two option helpers' texts into `_TEXT`, 2 pragmas. What a user sees stays the same, help
-  text included.
+  `_main`'s prune check, the two option helpers' texts into `_TEXT`, `_fill_text` through `_split_lines`. What a user
+  sees stays the same, help text included.
 - `tests/cli/test_cli.py`, `tests/cli/test_cache.py`.
 - `CONTRIBUTING.md`: the `cli` row of the baseline, and its total.
 - No `CHANGELOG.md` entry: nothing a user sees changes.
