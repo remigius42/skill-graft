@@ -88,7 +88,8 @@ def show(hull: Hull) -> None:
 
 
 def find(hull: Hull, text: str, parse: Callable[[str], SkillId]) -> SkillId:
-    """The hull skill `text` names: a skill ID if it holds `/`, else a deployed name.
+    """The hull skill `text` names: a skill ID if it holds `/`, else a deployed name
+    as written, else after the reference prefix if it starts with it.
 
     `parse` reads a skill ID, raising unless its source has that skill.
     """
@@ -97,9 +98,13 @@ def find(hull: Hull, text: str, parse: Callable[[str], SkillId]) -> SkillId:
             if str(skill) == text:
                 return skill
         raise SkillGraftError(_outside(hull, parse(text)))
-    for skill, deployed in hull.deployed.items():
-        if deployed == text:
-            return skill
+    # Then the name a vendored reference shows, the reference prefix off.
+    stripped = text.removeprefix(hull.reference_prefix)
+    for name in (text, stripped):
+        for skill, deployed in hull.deployed.items():
+            if deployed == name:
+                return skill
+    text = stripped  # what the hints below name
     for skill, deployed in hull.deployed.items():
         if skill.name == text:
             raise SkillGraftError(

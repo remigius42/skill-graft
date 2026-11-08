@@ -33,7 +33,7 @@ equivalent expression alone.
   `config.REFERENCE_PREFIX` beside `config.NAME`, and the regex harness run on it leaves no survivor. Every existing
   test passes, and a config without the key vendors and locks byte for byte as before.
 
-- [ ] 1.2 `why` reads the reference prefix followed by a **Deployed name** as that **Deployed name**: `explain.find`
+- [x] 1.2 `why` reads the reference prefix followed by a **Deployed name** as that **Deployed name**: `explain.find`
   matches a name without `/` as written, then with `hull.reference_prefix` stripped from its front. Verify the explain
   delta scenarios (reference-prefixed-name, deployed-name-starting-with-the-reference-prefix,
   prefixed-upstream-name-of-a-renamed-skill, no-reference-prefix) in `tests/commands/test_explain.py`, then run mutmut

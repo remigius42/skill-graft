@@ -418,6 +418,72 @@ def test_why_upstream_name_of_a_renamed_skill(home: Path, capsys: Capsys) -> Non
     assert "mp/code-review" in err and "mp-code-review" in err
 
 
+def test_why_reference_prefixed_name(home: Path, capsys: Capsys) -> None:
+    skill(home / "mp" / "tdd", "/grilling\n")
+    skill(home / "mp" / "grilling")
+    write_config(
+        'reference-prefix = "foo:"\nentries = ["mp/tdd"]\n[sources.mp]\npath = "~/mp"\n'
+    )
+    assert main(["why", "grilling"]) == 0
+    unprefixed = capsys.readouterr().out
+
+    assert main(["why", "foo:grilling"]) == 0
+
+    assert capsys.readouterr().out == unprefixed
+    assert unprefixed.startswith("mp/grilling\n")
+
+
+@pytest.mark.parametrize(
+    ("config", "names", "asked"),
+    [
+        ('reference-prefix = "mp-"\n', ["tdd"], "mp-tdd"),
+        ('reference-prefix = "re"\n', ["review", "view"], "review"),
+    ],
+)
+def test_why_deployed_name_starting_with_the_reference_prefix(
+    home: Path, capsys: Capsys, config: str, names: list[str], asked: str
+) -> None:
+    for name in names:
+        skill(home / "mp" / name)
+    entries = ", ".join(f'"mp/{name}"' for name in names)
+    prefix = 'prefix = "mp-"\n' if asked == "mp-tdd" else ""
+    write_config(
+        f'{config}entries = [{entries}]\n[sources.mp]\npath = "~/mp"\n{prefix}'
+    )
+
+    assert main(["why", asked]) == 0
+
+    assert capsys.readouterr().out.startswith(f"mp/{names[0]}")
+
+
+def test_why_prefixed_upstream_name_of_a_renamed_skill(
+    home: Path, capsys: Capsys
+) -> None:
+    skill(home / "mp" / "tdd", "/code-review\n")
+    skill(home / "mp" / "code-review")
+    write_config(
+        'reference-prefix = "foo:"\nentries = ["mp/tdd"]\n[sources.mp]\npath = "~/mp"\n'
+        '[rename]\n"mp/code-review" = "mp-code-review"\n'
+    )
+
+    err = why_fails(["why", "foo:code-review"], capsys)
+
+    assert err == why_fails(["why", "code-review"], capsys)
+    assert "mp/code-review" in err and "mp-code-review" in err
+
+
+def test_why_prefixed_name_without_a_reference_prefix(
+    home: Path, capsys: Capsys
+) -> None:
+    skill(home / "mp" / "tdd", "/grilling\n")
+    skill(home / "mp" / "grilling")
+    write_config('entries = ["mp/tdd"]\n[sources.mp]\npath = "~/mp"\n')
+
+    err = why_fails(["why", "foo:grilling"], capsys)
+
+    assert "no skill in the hull deploys as `foo:grilling`" in err
+
+
 def test_why_outside_the_hull_mentioned_in_prose(home: Path, capsys: Capsys) -> None:
     skill(home / "mp" / "tdd", "then diagnosing-bugs\n")
     skill(home / "mp" / "diagnosing-bugs")
