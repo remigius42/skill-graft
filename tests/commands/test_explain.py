@@ -67,6 +67,26 @@ def test_mermaid_diagram(home: Path, capsys: Capsys) -> None:
     )
 
 
+def test_mermaid_titled_with_the_reference_prefix(home: Path, capsys: Capsys) -> None:
+    skill(home / "mp" / "tdd", "/grilling, see `grilling`\n")
+    skill(home / "mp" / "grilling")
+    text = (
+        'entries = ["mp/tdd"]\n[sources.mp]\npath = "~/mp"\n'
+        '[rename]\n"mp/grilling" = "mp-grilling"\n'
+    )
+    write_config(text)
+    assert main(["tree", "--format", "mermaid"]) == 0
+    without = capsys.readouterr().out
+    write_config('reference-prefix = "foo:"\n' + text)
+
+    assert main(["tree", "--format", "mermaid"]) == 0
+
+    assert capsys.readouterr().out == (
+        '---\ntitle: "reference-prefix: foo:"\n---\n' + without
+    )
+    assert without.startswith("flowchart TD\n")
+
+
 def test_mermaid_subgraphs_in_hull_order(home: Path, capsys: Capsys) -> None:
     skill(home / "a" / "x", "/y\n")
     skill(home / "b" / "y", "/z\n")

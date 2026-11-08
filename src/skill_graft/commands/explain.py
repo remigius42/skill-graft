@@ -388,6 +388,7 @@ def mermaid(hull: Hull, repositories: dict[str, Repository]) -> str:
     so Mermaid moves no node into the subgraph an arrow is written in. Prose
     arrows are dotted. A source in `repositories` and its skills link to the
     forge's tree at its ref, unless a skill's folder resolves outside the tree.
+    A reference prefix titles the diagram, in Mermaid front matter.
     """
     roots = {alias: hull.roots[alias].resolve() for alias in repositories}
     ids = {skill: f"n{i}" for i, skill in enumerate(hull.skills)}
@@ -395,6 +396,12 @@ def mermaid(hull: Hull, repositories: dict[str, Repository]) -> str:
     for skill in hull.skills:
         groups.setdefault(skill.alias, []).append(skill)
     lines = ["flowchart TD"]
+    if hull.reference_prefix:  # its pattern holds no `"` or `\`: a plain YAML string
+        lines[:0] = [
+            "---",
+            f'title: "reference-prefix: {hull.reference_prefix}"',
+            "---",
+        ]
     for i, (alias, skills) in enumerate(groups.items()):
         title = alias
         if found := repositories.get(alias):

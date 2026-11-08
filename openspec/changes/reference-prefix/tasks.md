@@ -39,7 +39,7 @@ equivalent expression alone.
   prefixed-upstream-name-of-a-renamed-skill, no-reference-prefix) in `tests/commands/test_explain.py`, then run mutmut
   on `commands.explain` and kill its new survivors.
 
-- [ ] 1.3 `tree --format mermaid` titles the diagram with the reference prefix: `explain.mermaid` writes the Mermaid
+- [x] 1.3 `tree --format mermaid` titles the diagram with the reference prefix: `explain.mermaid` writes the Mermaid
   front matter `---`, `title: "reference-prefix: <value>"`, `---` before `flowchart TD` when `hull.reference_prefix` is
   set, and nothing more without it. Verify the explain delta scenarios (mermaid-titled-with-the-reference-prefix,
   no-title-without-one) in `tests/commands/test_explain.py`, then run mutmut on `commands.explain` and kill its new
