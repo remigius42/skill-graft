@@ -185,10 +185,10 @@ naming the key, never a crash.
 
 ### Requirement: Unsupported keys are errors
 
-Any top-level key other than `sources`, `entries`, `bind`, `rename`, `reserved`, `patches` and `check`, any source key
-other than `path`, `git`, `branch`, `ref`, `prefix` and `subdirectory`, and any `[check]` key other than `reader-turns`,
-`reader-budget-usd`, `patcher-turns`, `patcher-budget-usd` and `readers-at-once`, SHALL be an error, so declared intent
-is never silently ignored.
+Any top-level key other than `sources`, `entries`, `bind`, `rename`, `reserved`, `patches`, `check` and
+`reference-prefix`, any source key other than `path`, `git`, `branch`, `ref`, `prefix` and `subdirectory`, and any
+`[check]` key other than `reader-turns`, `reader-budget-usd`, `patcher-turns`, `patcher-budget-usd` and
+`readers-at-once`, SHALL be an error, so declared intent is never silently ignored.
 
 #### Scenario: Git source
 
@@ -219,6 +219,16 @@ is never silently ignored.
 
 - **WHEN** `[check]` has `reader-turns = 30` and `max-readers = 8`
 - **THEN** the command exits non-zero naming `check.max-readers` as unsupported, and not `check.reader-turns`
+
+#### Scenario: Reference prefix key
+
+- **WHEN** the TOML has `reference-prefix = "foo:"`
+- **THEN** it is not reported as unsupported
+
+#### Scenario: Reference prefix on a source
+
+- **WHEN** `[sources.mp]` has `git = "…"` and `reference-prefix = "foo:"`
+- **THEN** the command exits non-zero naming `sources.mp.reference-prefix` as unsupported
 
 ### Requirement: Check limits
 
@@ -492,3 +502,30 @@ A listed patch file holding a line `git apply` skips as noise, losing a change s
 
 - **WHEN** a listed patch holds an `Only in edited/refs: new.md` line, as `diff -ru` without `-N` writes it
 - **THEN** the command exits non-zero naming the patch file
+
+### Requirement: Reference prefix
+
+`reference-prefix`, an optional top-level key, SHALL be a string of the name characters and `:`, starting with a letter
+or digit (`[A-Za-z0-9][A-Za-z0-9._:-]*`); anything else, the empty string included, SHALL be an error naming
+`reference-prefix`.
+
+#### Scenario: Valid reference prefix
+
+- **WHEN** `skill-graft.toml` has `reference-prefix = "foo:"`, `reference-prefix = "foo"` or
+  `reference-prefix = "my.plugin:"`
+- **THEN** the config loads
+
+#### Scenario: Reference prefix not allowed
+
+- **WHEN** `skill-graft.toml` has `reference-prefix = ""`, `":foo"`, `"foo/"`, `"foo bar:"` or `1`
+- **THEN** the command exits non-zero naming `reference-prefix`
+
+#### Scenario: No separator at the end
+
+- **WHEN** `skill-graft.toml` has `reference-prefix = "foo"`
+- **THEN** the command warns that `reference-prefix` ends in a letter or digit, and proceeds
+
+#### Scenario: Separator at the end
+
+- **WHEN** `skill-graft.toml` has `reference-prefix = "foo:"` or `reference-prefix = "foo-"`
+- **THEN** no warning names `reference-prefix`

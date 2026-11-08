@@ -51,8 +51,9 @@ from the cache.
 SHALL record: each declared **Source**'s alias with its URL, `ref` and `subdirectory` when set, or its resolved folder
 (in project scope relative to the **Package** when inside the project root, else its `path` without empty or `.`
 segments when that starts with `~/` and has no `..` segment, else absolute); each **Hull** **Skill**'s **Skill ID**,
-whether it is an **Entry**, and a SHA-256 hash of its folder as vendored; and each edge: from, to, kind (`slash`,
-`skill-tool` or `prose`), and `bind = true` when a **Bind** decided it. One edge per from, to, kind and `bind`.
+whether it is an **Entry**, and a SHA-256 hash of its folder as vendored; the config's `reference-prefix`, top-level
+after `version`, only when set; and each edge: from, to, kind (`slash`, `skill-tool` or `prose`), and `bind = true` when
+a **Bind** decided it. One edge per from, to, kind and `bind`.
 
 #### Scenario: Edges with kinds
 
@@ -123,6 +124,12 @@ whether it is an **Entry**, and a SHA-256 hash of its folder as vendored; and ea
   `subdirectory`
 - **THEN** the lock's table for `cp` holds `subdirectory = "pstack/skills"`, and the one for `mp` holds no
   `subdirectory`
+
+#### Scenario: Reference prefix recorded
+
+- **WHEN** `reference-prefix = "foo:"`
+- **THEN** the lock holds `reference-prefix = "foo:"` after `version`, and without the key the lock holds no
+  `reference-prefix` and is byte for byte as before
 
 ### Requirement: Lock is deterministic
 

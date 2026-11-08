@@ -7,6 +7,19 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 
 ## [Unreleased]
 
+### Added
+
+- `reference-prefix`, a top-level key, for curating a Claude Code plugin's **Skills**, which the harness names
+  `foo:<name>`: every **Reference** to a **Hull** **Skill** is vendored as the **Reference prefix** followed by its
+  **Deployed name** (`/foo:grilling`), while folders and `name:` keep the **Deployed name**. Every command that writes
+  the **Package**'s `.apm/skills/` refuses it in a **Package** APM deploys; elsewhere `deploy` then runs only with
+  `--no-apm-install` or `--into`, and refuses a lock of another **Reference prefix**. The lock records it, `resolve`
+  says how many prose words it prefixed, `skill-graft why foo:grilling` finds the **Skill** deployed as `grilling`, and
+  `tree --format mermaid` titles the diagram with it. [docs/howto.md](docs/howto.md#curate-a-plugins-skills) shows the
+  setup
+- `/graft-check` gives its readers the lock's **Reference prefix**: a **Reference** rewritten to it is intended, one
+  left without it a **rewrite** finding; with one, it ends by naming `skill-graft deploy --no-apm-install`
+
 ### Changed
 
 - `/graft-vet`'s readers flag each line that speaks to them as a reviewer, telling them what to reply or flag or that
