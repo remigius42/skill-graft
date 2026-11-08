@@ -1,4 +1,5 @@
 import errno
+import io
 import json
 import os
 import subprocess
@@ -579,6 +580,15 @@ def test_native_windows_refused() -> None:
     assert (result.returncode, result.stdout, result.stderr) == (1, "", WINDOWS)
 
 
+def test_native_windows_refused_in_process(
+    capsys: pytest.CaptureFixture[str], monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """As above, in this process, which loads mutmut's mutants: a subprocess loads
+    the checkout."""
+    monkeypatch.setattr(sys, "platform", "win32")
+    assert run(["resolve"], capsys) == (1, "", WINDOWS)
+
+
 @pytest.mark.parametrize("args", [["help"], ["--help"], ["--version"]])
 def test_native_windows_refuses_help_and_version(args: list[str]) -> None:
     result = on_windows(*args)
@@ -589,3 +599,47 @@ def test_native_windows_refuses_help_and_version(args: list[str]) -> None:
 def test_native_windows_refuses_usage_errors(args: list[str]) -> None:
     result = on_windows(*args)
     assert (result.returncode, result.stdout, result.stderr) == (1, "", WINDOWS)
+
+
+class FlushFails(io.StringIO):
+    """A stdout whose reader has closed it, its buffer large enough for what is
+    printed: each write succeeds, the flush fails."""
+
+    def flush(self) -> None:
+        raise BrokenPipeError(32, "Broken pipe")
+
+
+BROKEN_PIPE = "skill-graft: [Errno 32] Broken pipe\n"
+
+
+@pytest.mark.usefixtures("discards")
+def test_failed_flush_fails_a_command(
+    capsys: pytest.CaptureFixture[str], monkeypatch: pytest.MonkeyPatch
+) -> None:
+    monkeypatch.setattr(sys, "stdout", FlushFails())
+    assert main(["help"]) == 1
+    assert capsys.readouterr().err == BROKEN_PIPE
+
+
+@pytest.mark.usefixtures("discards")
+def test_failed_flush_fails_an_argparse_exit(
+    capsys: pytest.CaptureFixture[str], monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """`--help` exits through `SystemExit(0)`; its code is checked as is, as `run`
+    would read a `None` as 1."""
+    monkeypatch.setattr(sys, "stdout", FlushFails())
+    with pytest.raises(SystemExit) as exit:
+        main(["--help"])
+    assert exit.value.code == 1
+    assert capsys.readouterr().err == BROKEN_PIPE
+
+
+@pytest.mark.usefixtures("discards")
+def test_failed_flush_keeps_a_usage_error(
+    capsys: pytest.CaptureFixture[str], monkeypatch: pytest.MonkeyPatch
+) -> None:
+    monkeypatch.setattr(sys, "stdout", FlushFails())
+    code, _, err = run(["explain"], capsys)
+    assert code == 2
+    assert "invalid choice: 'explain'" in err
+    assert "Broken pipe" not in err

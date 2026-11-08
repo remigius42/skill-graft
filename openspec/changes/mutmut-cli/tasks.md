@@ -23,7 +23,7 @@ refusals), `_parser`'s and the marked equivalents, and `uv run pytest` passes. C
 
 ## 2. Survivors killed
 
-- [ ] 2.1 `main` (16) and `_fails_on_flush` (1), in `tests/cli/test_cli.py`: native Windows refused in-process; a stdout
+- [x] 2.1 `main` (16) and `_fails_on_flush` (1), in `tests/cli/test_cli.py`: native Windows refused in-process; a stdout
   whose flush fails, after `help` (exit 1, the error line), `--help` (exit 1) and a usage error (exit 2, no error line
   of the flush)
 - [ ] 2.2 `_Formatter` (2), `_origin` (1), `_main` (2): help of `resolve` with `COLUMNS=50` has no line longer than 50,
