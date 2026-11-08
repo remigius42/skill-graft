@@ -340,6 +340,20 @@ def test_header_first_when_the_hull_is_empty(home: Path) -> None:
     assert parsed()["skills"] == []
 
 
+def test_reference_prefix_recorded(home: Path) -> None:
+    skill(home / "own" / "tdd")
+    configure(["own/tdd"], own="~/own")
+    without = render()
+    config_file = home / ".apm" / "skill-graft" / "skill-graft.toml"
+    config_file.write_text('reference-prefix = "foo:"\n' + config_file.read_text())
+
+    text = render()
+
+    assert 'version = 1\nreference-prefix = "foo:"\n' in text
+    assert text.replace('reference-prefix = "foo:"\n', "") == without
+    assert "reference-prefix" not in without
+
+
 def test_version_1_keys(home: Path, tmp_path: Path) -> None:
     upstream = Upstream(tmp_path / "up")
     tdd = "# tdd\n/g, then `diagnosing-bugs`\n"
@@ -682,6 +696,42 @@ def test_deployed_name_change_refused(home: Path) -> None:
 
     assert (
         refusal == "the hull differs from skill-graft.lock: deployed of own/tdd changed"
+    )
+
+
+@pytest.mark.parametrize(("before", "after"), [("foo:", None), (None, "foo:")])
+def test_reference_prefix_change_refused(
+    home: Path, before: str | None, after: str | None
+) -> None:
+    folder = own_tdd(home)
+    (folder / "SKILL.md").write_text("/notes\n")
+    config_file = home / ".apm" / "skill-graft" / "skill-graft.toml"
+    plain = config_file.read_text()
+
+    def set_prefix(prefix: str | None) -> None:
+        setting = f'reference-prefix = "{prefix}"\n' if prefix else ""
+        config_file.write_text(setting + plain)
+
+    set_prefix(before)
+    old = parsed()
+    set_prefix(after)
+
+    changed, refusal = lock.drift(parsed(), old, {"own"})
+
+    assert changed == ["own/tdd"]
+    assert refusal == "the hull differs from skill-graft.lock: reference-prefix changed"
+
+
+def test_reference_prefix_named_before_what_it_changed(home: Path) -> None:
+    (own_tdd(home) / "SKILL.md").write_text("/notes\n")
+    config_file = home / ".apm" / "skill-graft" / "skill-graft.toml"
+    old = parsed()
+    config_file.write_text('reference-prefix = "foo:"\n' + config_file.read_text())
+
+    _, refusal = lock.drift(parsed(), old, set())  # `own` read as a git source
+
+    assert refusal == (
+        "the hull differs from skill-graft.lock: reference-prefix changed, own/tdd changed"
     )
 
 

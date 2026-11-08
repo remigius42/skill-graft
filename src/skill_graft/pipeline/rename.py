@@ -129,16 +129,16 @@ def check_reserved(config: Config, names: dict[SkillId, str]) -> list[str]:
 def rewrites(hull: Hull) -> dict[SkillId, dict[Path, bytes]]:
     """Per hull skill, the files whose vendored bytes differ from upstream.
 
-    A reference whose target's deployed name differs from the name written is
-    rewritten in place; a renamed or prefixed skill's `SKILL.md` gets its new
-    `name:`. Keyed by the path relative to the skill's folder; unchanged files are
-    left out.
+    A reference whose target's name as called, the reference prefix before its
+    deployed name, differs from the name written is rewritten in place; a renamed
+    or prefixed skill's `SKILL.md` gets its new `name:`. Keyed by the path relative
+    to the skill's folder; unchanged files are left out.
     """
     result: dict[SkillId, dict[Path, bytes]] = {}
     for skill, folder in hull.skills.items():
         by_file: dict[Path, list[tuple[tuple[int, int], str, str]]] = {}
         for ref, target in hull.occurrences.get(skill, []):
-            if (new := hull.deployed[target]) != ref.name:
+            if (new := hull.called(target)) != ref.name:
                 by_file.setdefault(ref.file, []).append((ref.span, ref.name, new))
         renamed = hull.deployed[skill] != skill.name
         if renamed:

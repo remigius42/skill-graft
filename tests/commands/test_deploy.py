@@ -1438,3 +1438,193 @@ def test_into_emptied_when_the_swap_cannot_be_undone(
 
 def failing_rename(skills: Path) -> None:
     raise OSError("rename failed")
+
+
+PREFIXED = 'reference-prefix = "foo:"\n'
+NO_APM = (
+    'reference-prefix "foo:" makes skills that work only inside a plugin; run'
+    " skill-graft deploy --no-apm-install\n"
+)
+
+
+def prefixed_skills(home: Path, source: str = '[sources.mp]\npath = "~/mp"\n') -> str:
+    """`mp/tdd` calling `/grilling` at `~/mp`, `own/y` at `~/own`; the config text
+    without a reference prefix."""
+    skill(home / "mp" / "tdd", "Run /grilling.\n")
+    skill(home / "mp" / "grilling")
+    skill(home / "own" / "y")
+    return f'entries = ["mp/tdd"]\n{source}[sources.own]\npath = "~/own"\n'
+
+
+def plugin_package(
+    home: Path, monkeypatch: pytest.MonkeyPatch, text: str, manifest: str = ""
+) -> Path:
+    """`~/plugin` holding a package made by hand with `text` as its config, and
+    `manifest` as its `apm.yml` if given; its package."""
+    package = home / "plugin" / ".apm" / "skill-graft"
+    package.mkdir(parents=True)
+    (package / "skill-graft.toml").write_text(text)
+    if manifest:
+        (home / "plugin" / "apm.yml").write_text(manifest)
+    monkeypatch.chdir(home / "plugin")
+    return package
+
+
+def uncached_git(home: Path) -> str:
+    """A git source `mp` whose ref is not cached, and whose URL fetches nothing."""
+    return f'[sources.mp]\ngit = "{home / "nowhere"}"\nref = "{"a" * 40}"\n'
+
+
+WRITERS = [["resolve"], ["deploy"], ["deploy", "--no-apm-install"]]
+
+
+@pytest.mark.parametrize("args", WRITERS, ids=" ".join)
+def test_user_scope_refuses_a_reference_prefix(
+    home: Path, capsys: pytest.CaptureFixture[str], args: list[str]
+) -> None:
+    write_config(PREFIXED + prefixed_skills(home, uncached_git(home)))
+
+    assert main(args) == 1
+
+    assert (
+        'reference-prefix "foo:" makes skills that work only inside a plugin, and APM'
+        f" deploys {package()}: remove it, or curate the plugin's skills in a"
+        " package inside the plugin\n"
+    ) in capsys.readouterr().err
+    assert sorted(p.name for p in package().iterdir()) == ["skill-graft.toml"]
+
+
+@pytest.mark.parametrize("args", [*WRITERS, ["bind", "mp/x", "own/y"]], ids=" ".join)
+def test_registered_project_package_refuses_a_reference_prefix(
+    home: Path,
+    monkeypatch: pytest.MonkeyPatch,
+    capsys: pytest.CaptureFixture[str],
+    args: list[str],
+) -> None:
+    text = PREFIXED + prefixed_skills(home, uncached_git(home))
+    manifest = "dependencies:\n  apm:\n    - ./.apm/skill-graft\n"
+    package = plugin_package(home, monkeypatch, text, manifest)
+
+    assert main(args) == 1
+
+    assert (
+        'reference-prefix "foo:" makes skills that work only inside a plugin, and'
+        f" {home / 'plugin' / 'apm.yml'} lists {package} for APM to deploy: remove"
+        " one of them\n"
+    ) in capsys.readouterr().err
+    assert snapshot(package) == {"skill-graft.toml": text.encode()}
+
+
+def test_unregistered_project_package_takes_a_reference_prefix(
+    home: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    package = plugin_package(home, monkeypatch, PREFIXED + prefixed_skills(home))
+
+    assert main(["resolve"]) == 0
+
+    vendored = package / ".apm" / "skills"
+    assert (vendored / "tdd" / "SKILL.md").read_text() == "Run /foo:grilling.\n"
+    assert (vendored / "grilling" / "SKILL.md").read_text() == "# skill\n"
+
+
+@pytest.mark.parametrize(
+    "args", [["tree"], ["why", "mp/tdd"], ["vet"], ["resolve", "--dry-run"]]
+)
+def test_inspecting_stays_possible_with_a_reference_prefix(
+    home: Path, args: list[str]
+) -> None:
+    write_config(PREFIXED + prefixed_skills(home))
+
+    assert main(args) == 0
+
+    assert sorted(p.name for p in package().iterdir()) == ["skill-graft.toml"]
+
+
+def test_plain_deploy_refused_with_a_reference_prefix(
+    home: Path,
+    monkeypatch: pytest.MonkeyPatch,
+    fake_apm: FakeApm,
+    capsys: pytest.CaptureFixture[str],
+) -> None:
+    package = plugin_package(home, monkeypatch, PREFIXED + prefixed_skills(home))
+    assert main(["resolve"]) == 0
+    before = snapshot(package)
+    capsys.readouterr()
+
+    assert main(["deploy"]) == 1
+
+    err = capsys.readouterr().err
+    assert NO_APM in err
+    assert fake_apm.calls == []
+    assert snapshot(package) == before
+
+
+def test_deploy_refused_before_any_fetch(
+    home: Path, monkeypatch: pytest.MonkeyPatch, capsys: pytest.CaptureFixture[str]
+) -> None:
+    text = PREFIXED + prefixed_skills(home, uncached_git(home))
+    plugin_package(home, monkeypatch, text)
+
+    assert main(["deploy"]) == 1
+
+    err = capsys.readouterr().err
+    assert NO_APM in err
+    assert not Cache.default().repository(str(home / "nowhere")).exists()
+
+
+def test_deploy_without_apm_takes_a_reference_prefix(
+    home: Path, monkeypatch: pytest.MonkeyPatch, fake_apm: FakeApm
+) -> None:
+    package = plugin_package(home, monkeypatch, PREFIXED + prefixed_skills(home))
+
+    assert resolve_and_deploy(["deploy", "--no-apm-install"]) == 0
+
+    tdd = package / ".apm" / "skills" / "tdd" / "SKILL.md"
+    assert tdd.read_text() == "Run /foo:grilling.\n"
+    assert fake_apm.calls == []
+
+
+def test_deploy_into_a_folder_takes_a_reference_prefix(
+    home: Path, tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    plugin_package(home, monkeypatch, PREFIXED + prefixed_skills(home))
+    into = empty_folder(tmp_path)
+
+    assert resolve_and_deploy(["deploy", "--into", str(into)]) == 0
+
+    tdd = into / ".apm" / "skills" / "tdd" / "SKILL.md"
+    assert tdd.read_text() == "Run /foo:grilling.\n"
+
+
+def test_reference_prefix_removed(
+    home: Path, monkeypatch: pytest.MonkeyPatch, capsys: pytest.CaptureFixture[str]
+) -> None:
+    text = prefixed_skills(home)
+    package = plugin_package(home, monkeypatch, PREFIXED + text)
+    tdd = package / ".apm" / "skills" / "tdd" / "SKILL.md"
+    assert main(["resolve"]) == 0
+    (package / "skill-graft.toml").write_text(text)
+    capsys.readouterr()
+
+    assert main(["deploy", "--no-apm-install"]) == 1
+
+    err = capsys.readouterr().err
+    assert "reference-prefix changed" in err and "skill-graft resolve" in err
+    assert tdd.read_text() == "Run /foo:grilling.\n"
+    assert resolve_and_deploy(["deploy", "--no-apm-install"]) == 0
+    assert tdd.read_text() == "Run /grilling.\n"
+
+
+def test_reference_prefix_set(
+    home: Path, monkeypatch: pytest.MonkeyPatch, capsys: pytest.CaptureFixture[str]
+) -> None:
+    text = prefixed_skills(home)
+    package = plugin_package(home, monkeypatch, text)
+    assert main(["resolve"]) == 0
+    (package / "skill-graft.toml").write_text(PREFIXED + text)
+    capsys.readouterr()
+
+    assert main(["deploy", "--no-apm-install"]) == 1
+
+    err = capsys.readouterr().err
+    assert "reference-prefix changed" in err and "skill-graft resolve" in err

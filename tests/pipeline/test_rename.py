@@ -11,9 +11,11 @@ from conftest import (
     Upstream,
     after_package_line,
     configure,
+    make_patch,
     resolve_and_deploy,
     skill,
     write_config,
+    write_patch,
 )
 
 from skill_graft.cli import main
@@ -631,3 +633,100 @@ def test_hint_names_the_renamed_before_the_prefixed(
     assert main(["resolve"]) == 1
 
     assert 'change [rename] "mp/a" = "own-x"' in capsys.readouterr().err
+
+
+def with_reference_prefix(
+    entries: list[str], prefix: str = "foo:", extra: str = ""
+) -> None:
+    """Path source `mp` at `~/mp`, these entries and this reference prefix."""
+    text = f"entries = {entries!r}\n".replace("'", '"')
+    write_config(
+        f'reference-prefix = "{prefix}"\n{text}[sources.mp]\npath = "~/mp"\n{extra}'
+    )
+
+
+def test_slash_reference_gets_the_reference_prefix(home: Path) -> None:
+    skill(home / "mp" / "tdd", "Run /grilling.\n")
+    skill(home / "mp" / "grilling", "---\nname: grilling\n---\n")
+    with_reference_prefix(["mp/tdd"])
+
+    with resolved() as hull:
+        assert rewritten(hull) == {"mp/tdd": {"SKILL.md": "Run /foo:grilling.\n"}}
+        assert hull.deployed[SkillId("mp", "grilling")] == "grilling"
+
+
+def test_every_form_gets_the_reference_prefix(home: Path) -> None:
+    skill(home / "mp" / "grilling")
+    skill(
+        home / "mp" / "tdd",
+        'Skill(skill: "grilling", args: "x"), `grilling` and\n'
+        'Call the Skill tool with "grilling".\n',
+    )
+    with_reference_prefix(["mp/tdd"])
+
+    with resolved() as hull:
+        assert rewritten(hull)["mp/tdd"] == {
+            "SKILL.md": 'Skill(skill: "foo:grilling", args: "x"), `foo:grilling` and\n'
+            'Call the Skill tool with "foo:grilling".\n'
+        }
+
+
+def test_reference_prefix_after_a_prefix(home: Path) -> None:
+    skill(home / "mp" / "tdd", "---\nname: tdd\n---\n/grilling\n")
+    skill(home / "mp" / "grilling")
+    with_reference_prefix(["mp/tdd"], extra='prefix = "mp-"\n')
+
+    with resolved() as hull:
+        assert rewritten(hull)["mp/tdd"] == {
+            "SKILL.md": "---\nname: mp-tdd\n---\n/foo:mp-grilling\n"
+        }
+
+
+def test_reference_prefix_after_a_rename(home: Path) -> None:
+    skill(home / "mp" / "tdd", "/grilling\n")
+    skill(home / "mp" / "grilling")
+    with_reference_prefix(["mp/tdd"])
+
+    with resolved(mp__grilling="grill") as hull:
+        assert rewritten(hull)["mp/tdd"] == {"SKILL.md": "/foo:grill\n"}
+
+
+def test_self_reference_with_a_reference_prefix(home: Path) -> None:
+    skill(home / "mp" / "tdd", "/tdd\n")
+    with_reference_prefix(["mp/tdd"])
+
+    with resolved() as hull:
+        assert rewritten(hull) == {"mp/tdd": {"SKILL.md": "/foo:tdd\n"}}
+
+
+def test_reference_prefix_used_as_written(home: Path) -> None:
+    skill(home / "mp" / "tdd", "/grilling\n")
+    skill(home / "mp" / "grilling")
+    with_reference_prefix(["mp/tdd"], "foo-")
+
+    with resolved() as hull:
+        assert rewritten(hull) == {"mp/tdd": {"SKILL.md": "/foo-grilling\n"}}
+
+
+def test_unresolved_names_keep_their_text(home: Path) -> None:
+    skill(home / "mp" / "tdd", "/nope\n```\npre-commit run\n```\n")
+    skill(home / "mp" / "pre-commit")
+    with_reference_prefix(["mp/tdd"], extra='[bind]\n"mp/pre-commit" = false\n')
+
+    with resolved() as hull:
+        assert rewritten(hull) == {}
+
+
+def test_patched_reference_gets_the_reference_prefix(
+    home: Path, tmp_path: Path
+) -> None:
+    skill(home / "mp" / "tdd", "Run it.\n")
+    skill(home / "mp" / "grilling")
+    before, after = {"SKILL.md": "Run it.\n"}, {"SKILL.md": "Run /grilling.\n"}
+    write_patch("tdd.patch", make_patch(tmp_path, before, after))
+    with_reference_prefix(
+        ["mp/tdd"], extra='[patches]\n"mp/tdd" = ["patches/tdd.patch"]\n'
+    )
+
+    with resolved() as hull:
+        assert rewritten(hull)["mp/tdd"] == {"SKILL.md": "Run /foo:grilling.\n"}

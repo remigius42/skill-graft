@@ -453,3 +453,80 @@ def test_diff_file_kept_when_printing_the_tree_fails(
 
 def failing_show(hull: Hull) -> None:
     raise SkillGraftError("cannot print the tree")
+
+
+def plugin(home: Path, monkeypatch: pytest.MonkeyPatch, tdd: str) -> Path:
+    """A plugin folder `~/plugin` holding a package made by hand, no `apm.yml`,
+    `reference-prefix = "foo:"`: entries `mp/tdd`, holding `tdd`, `mp/grilling`
+    and `mp/follow-up`. Its package."""
+    skill(home / "mp" / "tdd", tdd)
+    skill(home / "mp" / "grilling")
+    skill(home / "mp" / "follow-up")
+    package = home / "plugin" / ".apm" / "skill-graft"
+    package.mkdir(parents=True)
+    (package / "skill-graft.toml").write_text(
+        'reference-prefix = "foo:"\n'
+        'entries = ["mp/tdd", "mp/grilling", "mp/follow-up"]\n'
+        '[sources.mp]\npath = "~/mp"\n'
+    )
+    monkeypatch.chdir(home / "plugin")
+    return package
+
+
+PROSE_NOTICE = (
+    "skill-graft: reference-prefix: 3 prose words prefixed; skill-graft tree shows"
+    " the skills they name\n"
+)
+
+
+def test_prose_prefixed(
+    home: Path, monkeypatch: pytest.MonkeyPatch, capsys: Capsys
+) -> None:
+    package = plugin(home, monkeypatch, "`grilling`, `grilling` and follow-up\n")
+
+    assert main(["resolve"]) == 0
+
+    assert PROSE_NOTICE in capsys.readouterr().err
+    vendored = package / ".apm" / "skills" / "tdd" / "SKILL.md"
+    assert vendored.read_text() == "`foo:grilling`, `foo:grilling` and foo:follow-up\n"
+
+
+def test_one_prose_word_prefixed(
+    home: Path, monkeypatch: pytest.MonkeyPatch, capsys: Capsys
+) -> None:
+    plugin(home, monkeypatch, "see `grilling`\n")
+
+    assert main(["resolve"]) == 0
+
+    assert (
+        "skill-graft: reference-prefix: 1 prose word prefixed; skill-graft tree shows"
+        " the skill it names\n"
+    ) in capsys.readouterr().err
+
+
+def test_no_prose(home: Path, monkeypatch: pytest.MonkeyPatch, capsys: Capsys) -> None:
+    plugin(home, monkeypatch, "/grilling\n")
+
+    assert main(["resolve"]) == 0
+
+    assert "reference-prefix" not in capsys.readouterr().err
+
+
+@pytest.mark.parametrize("args", [["resolve", "--dry-run"], ["deploy", "--into"]])
+def test_nothing_written_prints_no_prose_count(
+    home: Path,
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+    capsys: Capsys,
+    args: list[str],
+) -> None:
+    plugin(home, monkeypatch, "`grilling`, `grilling` and follow-up\n")
+    assert main(["resolve"]) == 0
+    capsys.readouterr()
+    if args[-1] == "--into":
+        (tmp_path / "into").mkdir()
+        args = [*args, str(tmp_path / "into")]
+
+    assert main(args) == 0
+
+    assert "reference-prefix" not in capsys.readouterr().err

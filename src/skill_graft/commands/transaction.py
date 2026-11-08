@@ -9,7 +9,7 @@ from dataclasses import dataclass, field
 from pathlib import Path
 from typing import Any
 
-from skill_graft.infra import files, paths
+from skill_graft.infra import apm, files, paths
 from skill_graft.infra.cache import Cache
 from skill_graft.infra.errors import SkillGraftError, lines_of, notice
 from skill_graft.pipeline import compute, config, lock, vendor
@@ -151,9 +151,11 @@ def resolving(
     Adds the hull's warnings to `warnings` at once, so a later failure keeps them,
     and, for the package's own lock, one per path source it records absolute.
     """
+    skills = skills or scope.skills
+    if write and skills == scope.skills:  # before any source is read
+        check_reference_prefix(scope, loaded, apm_install=False)
     if lock_file is None:  # the lock a project commits; `deploy --into` gives its own
         warnings.extend(_machine_specific(scope, loaded, write))
-    skills = skills or scope.skills
     lock_file = lock_file or scope.lock_file
     locked = lock.load(lock_file)
     check_copies(skills, locked)
@@ -198,6 +200,50 @@ def resolving(
     except (SkillGraftError, OSError) as error:
         for line in lines_of(error):
             notice(line)
+    if skills == scope.skills:
+        _count_prose(resolution.hull)
+
+
+def check_reference_prefix(
+    scope: paths.Scope, loaded: config.Config, apm_install: bool
+) -> None:
+    """Refuses a reference prefix in a package APM deploys: the user scope's,
+    which `init` registers, or a project's its `apm.yml` lists; and, with
+    `apm_install`, in any package. Its references resolve only inside a plugin."""
+    if not loaded.reference_prefix:
+        return
+    plugin = (
+        f'reference-prefix "{loaded.reference_prefix}" makes skills that work only'
+        " inside a plugin"
+    )
+    if scope.user:
+        raise SkillGraftError(
+            f"{plugin}, and APM deploys {scope.package}: remove it, or curate the"
+            " plugin's skills in a package inside the plugin"
+        )
+    if apm.registered(scope):
+        raise SkillGraftError(
+            f"{plugin}, and {scope.manifest} lists {scope.package} for APM to"
+            " deploy: remove one of them"
+        )
+    if apm_install:
+        raise SkillGraftError(f"{plugin}; run skill-graft deploy --no-apm-install")
+
+
+def _count_prose(hull: Hull) -> None:
+    """Names how many prose words the reference prefix was put before: each one is
+    rewritten, not only those to a renamed skill. Repeats and a skill's own name
+    count too, so the tree, one line per skill named, shows fewer."""
+    prose = sum(
+        ref.kind == "prose" for found in hull.occurrences.values() for ref, _ in found
+    )
+    if hull.reference_prefix and prose:
+        words = "word" if prose == 1 else "words"
+        named = "the skill it names" if prose == 1 else "the skills they name"
+        notice(
+            f"reference-prefix: {prose} prose {words} prefixed; skill-graft tree shows"
+            f" {named}"
+        )
 
 
 def _restore(file: Path, data: bytes | None) -> None:

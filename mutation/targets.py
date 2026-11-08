@@ -57,7 +57,10 @@ TARGETS = (
     ]
     + [Target("discovery.COMMENT")]
     + [Target("config.NAME", _EDIT)]
-    + [Target(f"config.{name}") for name in "SEGMENT URL SCP REF".split()]
+    + [
+        Target(f"config.{name}")
+        for name in "REFERENCE_PREFIX SEGMENT URL SCP REF".split()
+    ]
     + [
         Target("text.CRITICAL_CHARS", _DEPLOYED),
         Target("hidden.WARNING_CHARS", _DEPLOYED),

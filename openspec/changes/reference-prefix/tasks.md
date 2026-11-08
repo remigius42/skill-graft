@@ -10,7 +10,7 @@ equivalent expression alone.
 
 ## 1. Reference prefix
 
-- [ ] 1.1 `reference-prefix` end to end. `pipeline/config.py`: a supported top-level key, validated by
+- [x] 1.1 `reference-prefix` end to end. `pipeline/config.py`: a supported top-level key, validated by
   `REFERENCE_PREFIX` (`[A-Za-z0-9][A-Za-z0-9._:-]*`), into `Config.reference_prefix` (`""` when absent), a warning when
   it ends in a letter or digit. `pipeline/hull.py`: `Hull.reference_prefix`, set by `hull.walk`, and
   `Hull.called(skill)`. `rename.rewrites` compares with and writes `hull.called(target)`; folders and `set_name` keep

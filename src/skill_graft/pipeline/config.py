@@ -18,6 +18,9 @@ NAME = re.compile(r"[A-Za-z0-9][A-Za-z0-9._-]*")
 # A folder on the way to a skill: the name characters, a leading dot (`.claude`)
 # allowed, not only dots, so never `.` or `..`.
 SEGMENT = re.compile(r"\.*[A-Za-z0-9_-][A-Za-z0-9._-]*")
+# What every reference is vendored with before the deployed name: the name
+# characters and `:`, the separator a harness like Claude Code's plugins wants.
+REFERENCE_PREFIX = re.compile(r"[A-Za-z0-9][A-Za-z0-9._:-]*")
 
 
 class SkillId(NamedTuple):
@@ -75,6 +78,8 @@ class Config:
     reserved: list[str]
     # Each patched skill's patches, in apply order.
     patches: dict[SkillId, list[PatchFile]]
+    # What every reference is vendored with before the deployed name; "": none.
+    reference_prefix: str
 
 
 def path_aliases(config: Config) -> set[str]:
@@ -125,7 +130,16 @@ def parse(scope: paths.Scope, text: str) -> Config:
         data = tomllib.loads(text)
     except tomllib.TOMLDecodeError as error:
         raise SkillGraftError(f"{file}: {error}") from None
-    known = {"sources", "entries", "bind", "rename", "reserved", "patches", "check"}
+    known = {
+        "sources",
+        "entries",
+        "bind",
+        "rename",
+        "reserved",
+        "patches",
+        "check",
+        "reference-prefix",
+    }
     if unknown := sorted(data.keys() - known):
         raise SkillGraftError(f"{unknown[0]!r} is unsupported in skill-graft.toml")
     sources, prefixes = _sources(scope, data.get("sources", {}), file.parent)
@@ -135,16 +149,38 @@ def parse(scope: paths.Scope, text: str) -> Config:
     reserved = _reserved(data.get("reserved", []))
     patches = _patches(data.get("patches", {}), sources, file.parent)
     _check(data.get("check", {}), text)
+    reference_prefix, warnings = _reference_prefix(data)
     return Config(
         sources,
         entries,
-        _overlap_warnings(scope, sources),
+        _overlap_warnings(scope, sources) + warnings,
         binds,
         renames,
         prefixes,
         reserved,
         patches,
+        reference_prefix,
     )
+
+
+def _reference_prefix(data: dict[str, object]) -> tuple[str, list[str]]:
+    """`reference-prefix`, "" when absent, and a warning if it ends in a letter or
+    digit: used as written, it runs into the name."""
+    if "reference-prefix" not in data:
+        return "", []
+    value = data["reference-prefix"]
+    if not (isinstance(value, str) and REFERENCE_PREFIX.fullmatch(value)):
+        raise SkillGraftError(
+            f"'reference-prefix' must be a name, a ':' allowed: "
+            f"{REFERENCE_PREFIX.pattern}"
+        )
+    if not value[-1].isalnum():
+        return value, []
+    warning = (
+        f'reference-prefix "{value}" ends in a letter or digit: /grilling is '
+        f"vendored as /{value}grilling"
+    )
+    return value, [warning]
 
 
 # Each `[check]` limit, written as the skill copies it into a command: decimal digits.

@@ -29,7 +29,11 @@ def deploy(
     changed: list[str] = []
     try:
         loaded = transaction.load(scope, warnings)
-        if given is not None:
+        if given is None:  # before any source is read
+            transaction.check_reference_prefix(
+                scope, loaded, apm_install=not no_apm_install
+            )
+        else:
             transaction.check_into_sources(given, loaded)
         recorded = lock.load(scope.lock_file)  # the package's, for `--into` too
         path_aliases = config.path_aliases(loaded)

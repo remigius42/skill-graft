@@ -39,6 +39,13 @@ class Hull:
     # Each source's root, which the lock records upstream relative to: a path
     # source's folder, a git source's tree even when only a subdirectory is walked.
     roots: dict[str, Path]
+    # What every reference is vendored with before the deployed name; "": none.
+    reference_prefix: str
+
+    def called(self, skill: SkillId) -> str:
+        """`skill`'s name as references to it are vendored: the reference prefix,
+        then its deployed name."""
+        return self.reference_prefix + self.deployed[skill]
 
 
 class PatchError(SkillGraftError):
@@ -209,6 +216,7 @@ def walk(
         upstream,
         patched,
         roots,
+        config.reference_prefix,
     )
     if found_hidden:  # complete, but none of its warnings matter as much
         raise PatchError([], hidden=found_hidden, hull=replace(result, warnings=[]))

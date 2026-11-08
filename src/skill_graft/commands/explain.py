@@ -174,7 +174,7 @@ def _shown_edges(hull: Hull) -> dict[SkillId, list[Edge]]:
     """
     children: dict[SkillId, dict[tuple[SkillId, str, bool], Edge]] = {}
     for edge in hull.edges:
-        if edge.kind == "prose" and hull.deployed[edge.target] == edge.name:
+        if edge.kind == "prose" and hull.called(edge.target) == edge.name:
             continue
         key = (edge.target, edge.kind, edge.bind)
         children.setdefault(edge.source, {}).setdefault(key, edge)

@@ -705,6 +705,27 @@ def test_tree_prose_edge_after_one_left_alone(home: Path, capsys: Capsys) -> Non
     )
 
 
+@pytest.mark.parametrize(
+    ("setting", "shown"),
+    [
+        ('reference-prefix = "foo:"\n', "└── mp/grilling (`grilling`, prose) (*)\n"),
+        ("", ""),
+    ],
+)
+def test_tree_prose_edge_with_a_reference_prefix(
+    home: Path, capsys: Capsys, setting: str, shown: str
+) -> None:
+    skill(home / "mp" / "tdd", "see `grilling`\n")
+    skill(home / "mp" / "grilling")
+    write_config(
+        setting + 'entries = ["mp/tdd", "mp/grilling"]\n[sources.mp]\npath = "~/mp"\n'
+    )
+
+    assert main(["tree"]) == 0
+
+    assert capsys.readouterr().out == "mp/tdd\n" + shown + "mp/grilling\n"
+
+
 @pytest.mark.parametrize("skipped", ["path source", "other host", "unreadable cache"])
 def test_mermaid_links_a_source_after_a_skipped_one(
     home: Path, tmp_path: Path, capsys: Capsys, skipped: str

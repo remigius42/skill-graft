@@ -36,6 +36,8 @@ def render(
     hashes = skill_hashes(hull) if hashes is None else hashes
     document = tomlkit.document()
     document["version"] = 1
+    if config.reference_prefix:  # unset: the lock as before the key existed
+        document["reference-prefix"] = config.reference_prefix
     sources = tomlkit.table()
     for alias in sorted(config.sources):
         source = config.sources[alias]
@@ -193,7 +195,10 @@ def drift(
     new_shape, old_shape = shape(new), shape(old)
     if new_shape == old_shape:
         return changed, None
-    parts = [f"{s} changed" for s in differ if not trusted(s)]
+    parts = []
+    if new.get("reference-prefix") != old.get("reference-prefix"):  # before its effects
+        parts.append("reference-prefix changed")
+    parts += [f"{s} changed" for s in differ if not trusted(s)]
     parts += [f"{s} added" for s in sorted(new_hashes.keys() - old_hashes, key=str)]
     parts += [f"{s} removed" for s in sorted(old_hashes.keys() - new_hashes, key=str)]
     before = {s["id"]: s for s in old_shape["skills"]}

@@ -623,3 +623,51 @@ def test_unknown_user_home_in_a_patch_is_an_error(home: Path) -> None:
 
     with pytest.raises(SkillGraftError, match="~ghost-no-such-user/tdd.patch"):
         config.parse(scope, text)
+
+
+@pytest.mark.parametrize(
+    "prefix", ["foo:", "foo", "my.plugin:", "Plugin:", "9:", "aB:", "a9:", "a"]
+)
+def test_valid_reference_prefix(home: Path, prefix: str) -> None:
+    scope = paths.Scope(home)
+
+    loaded = config.parse(scope, f'reference-prefix = "{prefix}"\n')
+
+    assert loaded.reference_prefix == prefix
+
+
+def test_no_reference_prefix_is_empty(home: Path) -> None:
+    assert config.parse(paths.Scope(home), "").reference_prefix == ""
+
+
+@pytest.mark.parametrize("value", ['""', '":foo"', '"foo/"', '"foo bar:"', "1"])
+def test_reference_prefix_not_allowed(home: Path, value: str) -> None:
+    scope = paths.Scope(home)
+
+    with pytest.raises(SkillGraftError, match="^'reference-prefix' must be"):
+        config.parse(scope, f"reference-prefix = {value}\n")
+
+
+def test_no_separator_at_the_end(home: Path) -> None:
+    loaded = config.parse(paths.Scope(home), 'reference-prefix = "foo"\n')
+
+    warning = (
+        'reference-prefix "foo" ends in a letter or digit: /grilling is vendored as'
+        " /foogrilling"
+    )
+    assert loaded.warnings == [warning]
+
+
+@pytest.mark.parametrize("prefix", ["foo:", "foo-", "foo.", "foo_"])
+def test_separator_at_the_end(home: Path, prefix: str) -> None:
+    loaded = config.parse(paths.Scope(home), f'reference-prefix = "{prefix}"\n')
+
+    assert loaded.warnings == []
+
+
+def test_reference_prefix_on_a_source(home: Path) -> None:
+    scope = paths.Scope(home)
+    text = '[sources.mp]\ngit = "/srv/s"\nreference-prefix = "foo:"\n'
+
+    with pytest.raises(SkillGraftError, match="'sources.mp.reference-prefix'"):
+        config.parse(scope, text)
